@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { FiArrowRight, FiClock } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import './TravelCourse.css'
@@ -38,7 +39,7 @@ const courses = [
   }
 ]
 
-const TravelCourse = () => {
+const TravelCourse = memo(() => {
   const { language, t } = useLanguage()
 
   return (
@@ -79,6 +80,8 @@ const TravelCourse = () => {
       </div>
     </section>
   )
-}
+})
+
+TravelCourse.displayName = 'TravelCourse'
 
 export default TravelCourse

@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FiMenu, FiX, FiSearch, FiMapPin, FiGlobe, FiSun, FiMoon } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import './Header.css'
 
-const Header = () => {
+const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
@@ -126,6 +126,8 @@ const Header = () => {
       </div>
     </header>
   )
-}
+})
+
+Header.displayName = 'Header'
 
 export default Header

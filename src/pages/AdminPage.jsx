@@ -17,7 +17,7 @@ import {
   deleteHeroSlide, deleteDbItem, updateDbItem, getSupabaseUsageStats 
 } from '../services/dbService'
 import { getApiStats, API_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
-import { StatCard, ApiStatsChart, DataTable, Pagination } from '../components/admin'
+import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats } from '../components/admin'
 import './AdminPage.css'
 
 // 페이지 관리 설정
@@ -1186,88 +1186,13 @@ const AdminPage = () => {
               </div>
               
               {/* Supabase 사용량 통계 섹션 */}
-              <div className="supabase-usage-section">
-                <div className="usage-header">
-                  <h3><FiCloud /> {language === 'ko' ? 'Supabase 사용량' : 'Supabase Usage'}</h3>
-                  <button onClick={loadSupabaseUsage} className="refresh-btn" disabled={usageLoading}>
-                    <FiRefreshCw className={usageLoading ? 'spinning' : ''} />
-                  </button>
-                </div>
-                
-                {usageLoading ? (
-                  <div className="usage-loading">
-                    {language === 'ko' ? '로딩 중...' : 'Loading...'}
-                  </div>
-                ) : supabaseUsage ? (
-                  <>
-                    {/* 총 사용량 요약 */}
-                    <div className="usage-summary">
-                      <div className="usage-card">
-                        <div className="usage-icon"><FiDatabase /></div>
-                        <div className="usage-info">
-                          <span className="usage-label">{language === 'ko' ? '총 데이터 행 수' : 'Total Rows'}</span>
-                          <span className="usage-value">{supabaseUsage.totalRows.toLocaleString()}</span>
-                          <div className="usage-bar-container">
-                            <div 
-                              className="usage-bar" 
-                              style={{ width: `${Math.min(supabaseUsage.usage.rowsPercent, 100)}%` }}
-                            />
-                          </div>
-                          <span className="usage-limit">
-                            / {supabaseUsage.limits.rows.max.toLocaleString()} ({supabaseUsage.usage.rowsPercent.toFixed(1)}%)
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="usage-card">
-                        <div className="usage-icon"><FiActivity /></div>
-                        <div className="usage-info">
-                          <span className="usage-label">{language === 'ko' ? '예상 저장 용량' : 'Est. Storage'}</span>
-                          <span className="usage-value">{supabaseUsage.estimatedStorageMB.toFixed(2)} MB</span>
-                          <div className="usage-bar-container">
-                            <div 
-                              className="usage-bar storage" 
-                              style={{ width: `${Math.min(supabaseUsage.usage.storagePercent, 100)}%` }}
-                            />
-                          </div>
-                          <span className="usage-limit">
-                            / 500 MB ({supabaseUsage.usage.storagePercent.toFixed(1)}%)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    {/* 테이블별 사용량 */}
-                    <div className="table-usage-list">
-                      <h4>{language === 'ko' ? '테이블별 행 수' : 'Rows by Table'}</h4>
-                      <div className="table-usage-grid">
-                        {Object.entries(supabaseUsage.tables).map(([tableName, info]) => (
-                          <div key={tableName} className="table-usage-item">
-                            <span className="table-name">{tableName}</span>
-                            <span className="table-rows">{info.rows.toLocaleString()}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    {/* Free Plan 안내 */}
-                    <div className="free-plan-notice">
-                      <span>ℹ️ </span>
-                      {language === 'ko' 
-                        ? 'Supabase Free Plan: 500MB DB 스토리지, 2GB 대역폭/월' 
-                        : 'Supabase Free Plan: 500MB DB storage, 2GB bandwidth/month'
-                      }
-                      <a href="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf" target="_blank" rel="noopener noreferrer">
-                        <FiExternalLink /> {language === 'ko' ? '대시보드 열기' : 'Open Dashboard'}
-                      </a>
-                    </div>
-                  </>
-                ) : (
-                  <div className="usage-empty">
-                    {language === 'ko' ? '사용량 정보를 불러올 수 없습니다.' : 'Unable to load usage information.'}
-                  </div>
-                )}
-              </div>
+              <SupabaseUsageStats
+                usage={supabaseUsage}
+                loading={usageLoading}
+                onRefresh={loadSupabaseUsage}
+                language={language}
+                dashboardUrl="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf"
+              />
               
               <div className="dashboard-info">
                 <div className="info-card">
@@ -1547,66 +1472,18 @@ const AdminPage = () => {
               />
               
               {/* 수정 모달 */}
-              {editingItem && (
-                <div className="edit-modal-overlay" onClick={() => setEditingItem(null)}>
-                  <div className="edit-modal" onClick={e => e.stopPropagation()}>
-                    <div className="edit-modal-header">
-                      <h3>{language === 'ko' ? '데이터 수정' : 'Edit Data'}</h3>
-                      <button className="close-btn" onClick={() => setEditingItem(null)}>
-                        <FiX />
-                      </button>
-                    </div>
-                    <div className="edit-modal-content">
-                      {PAGE_CONFIGS[selectedPage]?.fields.map(field => (
-                        <div key={field} className="form-group">
-                          <label>{PAGE_CONFIGS[selectedPage]?.labels[field] || field}</label>
-                          {field === 'imageUrl' ? (
-                            <>
-                              <input
-                                type="text"
-                                value={editForm[field] || ''}
-                                onChange={(e) => setEditForm({...editForm, [field]: e.target.value})}
-                                placeholder={`${field} 입력`}
-                              />
-                              {editForm[field] && (
-                                <div className="image-preview-small">
-                                  <img src={editForm[field]} alt="Preview" />
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <input
-                              type="text"
-                              value={editForm[field] || ''}
-                              onChange={(e) => setEditForm({...editForm, [field]: e.target.value})}
-                              placeholder={`${field} 입력`}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="edit-modal-footer">
-                      <button 
-                        className="cancel-btn" 
-                        onClick={() => setEditingItem(null)}
-                        disabled={editSaving}
-                      >
-                        {language === 'ko' ? '취소' : 'Cancel'}
-                      </button>
-                      <button 
-                        className="save-btn" 
-                        onClick={handleSaveEditItem}
-                        disabled={editSaving}
-                      >
-                        {editSaving 
-                          ? (language === 'ko' ? '저장 중...' : 'Saving...') 
-                          : (language === 'ko' ? '저장' : 'Save')
-                        }
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              <EditModal
+                isOpen={!!editingItem}
+                onClose={() => setEditingItem(null)}
+                title={language === 'ko' ? '데이터 수정' : 'Edit Data'}
+                fields={PAGE_CONFIGS[selectedPage]?.fields || []}
+                labels={PAGE_CONFIGS[selectedPage]?.labels || {}}
+                formData={editForm}
+                onFormChange={setEditForm}
+                onSave={handleSaveEditItem}
+                saving={editSaving}
+                language={language}
+              />
               
               {!pageLoading && pageData.length > 0 && (
                 <Pagination

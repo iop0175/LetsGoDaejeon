@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiMapPin, FiPhone, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import './Footer.css'
 
-const Footer = () => {
+const Footer = memo(() => {
   const { t } = useLanguage()
 
   return (
@@ -82,6 +83,8 @@ const Footer = () => {
       </div>
     </footer>
   )
-}
+})
+
+Footer.displayName = 'Footer'
 
 export default Footer

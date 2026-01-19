@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Link } from 'react-router-dom'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
@@ -5,7 +6,7 @@ import './TravelCard.css'
 
 const DEFAULT_IMAGE = '/images/no-image.svg'
 
-const TravelCard = ({ id, title, location, category, image, duration }) => {
+const TravelCard = memo(({ id, title, location, category, image, duration }) => {
   const { t } = useLanguage()
 
   const handleImageError = (e) => {
@@ -43,6 +44,8 @@ const TravelCard = ({ id, title, location, category, image, duration }) => {
       </div>
     </Link>
   )
-}
+})
+
+TravelCard.displayName = 'TravelCard'
 
 export default TravelCard

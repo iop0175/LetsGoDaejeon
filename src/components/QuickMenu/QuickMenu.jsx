@@ -1,8 +1,9 @@
+import { memo } from 'react'
 import { FiMap, FiCalendar, FiCamera, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import './QuickMenu.css'
 
-const QuickMenu = () => {
+const QuickMenu = memo(() => {
   const { t } = useLanguage()
 
   const quickMenuItems = [
@@ -34,6 +35,8 @@ const QuickMenu = () => {
       </div>
     </section>
   )
-}
+})
+
+QuickMenu.displayName = 'QuickMenu'
 
 export default QuickMenu
