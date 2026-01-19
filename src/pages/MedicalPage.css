@@ -1,0 +1,382 @@
+.medical-page {
+  min-height: 100vh;
+  padding-top: 80px;
+}
+
+.medical-hero {
+  background: linear-gradient(135deg, #00BCD4 0%, #00ACC1 100%);
+  color: white;
+  padding: 60px 0;
+  text-align: center;
+}
+
+.medical-hero h1 {
+  font-size: 2.5rem;
+  margin-bottom: 10px;
+}
+
+.medical-hero p {
+  font-size: 1.1rem;
+  opacity: 0.9;
+}
+
+.medical-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 500px;
+  margin: 30px auto;
+  padding: 12px 20px;
+  background: var(--card-bg, white);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 30px;
+  transition: all 0.3s ease;
+}
+
+.medical-search:focus-within {
+  border-color: #00BCD4;
+  box-shadow: 0 4px 20px rgba(0, 188, 212, 0.15);
+}
+
+.medical-search svg {
+  color: #00BCD4;
+  font-size: 1.2rem;
+}
+
+.medical-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-size: 1rem;
+  color: var(--text-primary, #333);
+  outline: none;
+}
+
+.medical-filters {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.medical-filters .filter-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--card-bg, white);
+  border: 2px solid var(--border-color, #e0e0e0);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+  color: var(--text-secondary, #666);
+}
+
+.medical-filters .filter-btn:hover {
+  border-color: #00BCD4;
+  color: #00BCD4;
+}
+
+.medical-filters .filter-btn.active {
+  background: #00BCD4;
+  border-color: #00BCD4;
+  color: white;
+}
+
+/* 위치 필터 */
+.medical-page .location-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.medical-page .district-buttons {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.medical-page .district-btn {
+  padding: 8px 16px;
+  border: 2px solid var(--border-color, #e0e0e0);
+  background: var(--card-bg, white);
+  border-radius: 20px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary, #666);
+}
+
+.medical-page .district-btn:hover {
+  border-color: #00BCD4;
+  color: #00BCD4;
+}
+
+.medical-page .district-btn.active {
+  background: #00BCD4;
+  border-color: #00BCD4;
+  color: white;
+}
+
+.medical-page .dong-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 800px;
+}
+
+.medical-page .dong-btn {
+  padding: 6px 12px;
+  border: 1px solid var(--border-color, #e0e0e0);
+  background: var(--card-bg, white);
+  border-radius: 15px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-secondary, #666);
+}
+
+.medical-page .dong-btn:hover {
+  border-color: #00ACC1;
+  color: #00ACC1;
+}
+
+.medical-page .dong-btn.active {
+  background: #00ACC1;
+  border-color: #00ACC1;
+  color: white;
+}
+
+.medical-page .location-select {
+  padding: 10px 20px;
+  border: 2px solid var(--border-color, #e0e0e0);
+  background: var(--card-bg, white);
+  border-radius: 25px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-primary, #333);
+  outline: none;
+  min-width: 140px;
+}
+
+.medical-page .location-select:hover {
+  border-color: #00BCD4;
+}
+
+.medical-page .location-select:focus {
+  border-color: #00BCD4;
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.1);
+}
+
+.medical-summary {
+  text-align: center;
+  color: var(--text-secondary, #666);
+  margin-bottom: 30px;
+  font-size: 0.95rem;
+}
+
+.medical-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.medical-card {
+  background: var(--card-bg, white);
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color, #f0f0f0);
+}
+
+.medical-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 30px rgba(0, 188, 212, 0.15);
+}
+
+.medical-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.medical-icon {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #00BCD4 0%, #00ACC1 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.medical-icon svg {
+  font-size: 24px;
+  color: white;
+}
+
+.medical-title h3 {
+  font-size: 1.05rem;
+  color: var(--text-primary, #222);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.medical-type {
+  display: inline-block;
+  padding: 3px 10px;
+  background: rgba(0, 188, 212, 0.1);
+  color: #00ACC1;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.medical-info {
+  margin-bottom: 16px;
+}
+
+.medical-info .info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: var(--text-secondary, #666);
+}
+
+.medical-info .info-item svg {
+  flex-shrink: 0;
+  margin-top: 3px;
+  color: #00BCD4;
+}
+
+.medical-info .info-item a {
+  color: #00ACC1;
+  text-decoration: none;
+}
+
+.medical-info .info-item a:hover {
+  text-decoration: underline;
+}
+
+.medical-card .navigate-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: #00BCD4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+}
+
+.medical-card .navigate-btn:hover {
+  background: #00ACC1;
+}
+
+.medical-page .loading,
+.medical-page .no-results {
+  text-align: center;
+  padding: 60px 0;
+  color: var(--text-secondary, #666);
+  font-size: 1.1rem;
+}
+
+.medical-page .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  margin: 40px 0;
+}
+
+.medical-page .pagination button {
+  padding: 10px 24px;
+  background: var(--card-bg, white);
+  border: 2px solid #00BCD4;
+  color: #00BCD4;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.medical-page .pagination button:hover:not(:disabled) {
+  background: #00BCD4;
+  color: white;
+}
+
+.medical-page .pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 다크모드 */
+.dark-theme .medical-card {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.dark-theme .medical-search {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.dark-theme .medical-type {
+  background: rgba(0, 188, 212, 0.2);
+}
+
+.dark-theme .medical-page .location-select {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.dark-theme .medical-page .district-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .medical-page .district-btn.active {
+  background: #00BCD4;
+  border-color: #00BCD4;
+  color: white;
+}
+
+.dark-theme .medical-page .dong-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .medical-page .dong-btn.active {
+  background: #00ACC1;
+  border-color: #00ACC1;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .medical-hero h1 {
+    font-size: 2rem;
+  }
+
+  .medical-grid {
+    grid-template-columns: 1fr;
+  }
+}

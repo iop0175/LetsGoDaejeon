@@ -1,0 +1,57 @@
+.popular-spots {
+  background: var(--bg-primary, white);
+}
+
+.spots-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+  margin-bottom: 48px;
+}
+
+.section-more {
+  text-align: center;
+}
+
+.spots-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+}
+
+.spots-loading .loading-spinner {
+  font-size: 2.5rem;
+  color: var(--primary-color);
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 반응형 */
+@media (max-width: 1200px) {
+  .spots-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .spots-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .spots-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+}
+
+/* 다크모드 스타일 */
+.dark-theme .popular-spots {
+  background: var(--bg-secondary);
+}

@@ -1,0 +1,387 @@
+/* 전역 스타일 초기화 */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root,
+.light-theme {
+  /* 대전 테마 컬러 */
+  --primary-color: #0066cc;
+  --primary-dark: #004499;
+  --secondary-color: #ff6b35;
+  --accent-color: #00b4d8;
+  --text-primary: #1a1a2e;
+  --text-secondary: #4a4a68;
+  --text-light: #8b8ba3;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --bg-tertiary: #e9ecef;
+  --bg-gradient: linear-gradient(135deg, #0066cc 0%, #00b4d8 100%);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+  --border-color: #e9ecef;
+  --card-bg: #ffffff;
+  --border-radius: 12px;
+  --transition: all 0.3s ease;
+}
+
+/* 다크모드 */
+.dark-theme {
+  --primary-color: #4da6ff;
+  --primary-dark: #0066cc;
+  --secondary-color: #ff8c5a;
+  --accent-color: #4dd4ec;
+  --text-primary: #f0f0f5;
+  --text-secondary: #b8b8c8;
+  --text-light: #8888a0;
+  --bg-primary: #121218;
+  --bg-secondary: #1a1a24;
+  --bg-tertiary: #252530;
+  --bg-gradient: linear-gradient(135deg, #1a4d80 0%, #1a6d7d 100%);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --border-color: #2d2d3a;
+  --card-bg: #1e1e28;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 컨테이너 */
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* 섹션 공통 스타일 */
+.section {
+  padding: 80px 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.section-subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+}
+
+/* 버튼 스타일 */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: var(--transition);
+}
+
+.btn-primary {
+  background: var(--bg-gradient);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--primary-color);
+  border: 2px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 카드 공통 스타일 */
+.card {
+  background: var(--card-bg);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+}
+
+/* 다크모드 공통 스타일 */
+.dark-theme .header {
+  background: rgba(18, 18, 24, 0.95);
+}
+
+.dark-theme .header.scrolled {
+  background: var(--bg-primary);
+}
+
+.dark-theme .nav {
+  background: var(--bg-primary);
+}
+
+.dark-theme .lang-btn,
+.dark-theme .theme-btn {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .lang-btn:hover,
+.dark-theme .theme-btn:hover {
+  background: var(--bg-tertiary);
+  color: var(--primary-color);
+}
+
+.dark-theme .food-card,
+.dark-theme .travel-card,
+.dark-theme .festival-card,
+.dark-theme .parking-card,
+.dark-theme .result-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.dark-theme .popular-spots,
+.dark-theme .food-section {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .festival-section {
+  background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+
+.dark-theme .nav-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .nav-btn:hover {
+  background: var(--primary-color);
+}
+
+.dark-theme .btn-secondary {
+  background: var(--card-bg);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.dark-theme .btn-secondary:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 다크모드 카드 스타일 확장 */
+.dark-theme .course-card,
+.dark-theme .food-card,
+.dark-theme .spot-card,
+.dark-theme .quick-menu-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.dark-theme .course-content,
+.dark-theme .food-content,
+.dark-theme .festival-content {
+  background: var(--card-bg);
+}
+
+.dark-theme .spot-badge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.dark-theme .food-category {
+  background: rgba(77, 166, 255, 0.15);
+  color: var(--primary-color);
+}
+
+/* 다크모드 섹션 배경 */
+.dark-theme .popular-spots {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .travel-course {
+  background: var(--bg-tertiary);
+}
+
+.dark-theme .food-section {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .festival-section {
+  background: linear-gradient(180deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+}
+
+/* 다크모드 버튼 스타일 */
+.dark-theme .btn-primary {
+  background: linear-gradient(135deg, #3385d6 0%, #3399cc 100%);
+}
+
+.dark-theme .nav-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .nav-btn:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+/* 다크모드 section-more 버튼 */
+.dark-theme .section-more .btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  color: var(--primary-color);
+}
+
+.dark-theme .section-more .btn:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.dark-theme .section-more .btn-primary {
+  background: linear-gradient(135deg, #3385d6 0%, #3399cc 100%);
+  border: none;
+  color: white;
+}
+
+.dark-theme .footer {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+}
+
+.dark-theme .quick-menu-item {
+  background: var(--card-bg);
+}
+
+.dark-theme .search-input-wrapper input {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.dark-theme .search-summary,
+.dark-theme .tab-btn,
+.dark-theme .filter-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .tab-btn.active,
+.dark-theme .filter-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.dark-theme .stat-card {
+  background: var(--card-bg);
+}
+
+.dark-theme .map-sidebar {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .place-item {
+  border-color: var(--border-color);
+}
+
+.dark-theme .place-item.selected {
+  background: var(--bg-tertiary);
+}
+
+.dark-theme .place-detail {
+  background: var(--card-bg);
+}
+
+.dark-theme .modal-content {
+  background: var(--card-bg);
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  .section {
+    padding: 60px 0;
+  }
+  
+  .section-title {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .section {
+    padding: 40px 0;
+  }
+  
+  .section-title {
+    font-size: 1.5rem;
+  }
+  
+  .section-subtitle {
+    font-size: 1rem;
+  }
+}

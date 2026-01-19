@@ -1,0 +1,517 @@
+.parking-page {
+  min-height: 100vh;
+  background: #f8f9fa;
+}
+
+/* 히어로 섹션 */
+.parking-hero {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  padding: 120px 0 60px;
+  color: white;
+  text-align: center;
+}
+
+.parking-hero .hero-content {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+.parking-hero h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+.parking-hero .hero-icon {
+  font-size: 2.5rem;
+}
+
+.parking-hero p {
+  font-size: 1.2rem;
+  opacity: 0.9;
+}
+
+/* 컨테이너 */
+.parking-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/* 필터 섹션 */
+.filter-section {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.filter-btn {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-btn:hover {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+
+.filter-btn.active {
+  background: #4f46e5;
+  border-color: #4f46e5;
+  color: white;
+}
+
+/* 구별 필터 셀렉트 */
+.district-select {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #e9ecef;
+  background: white;
+  border-radius: 25px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  outline: none;
+  min-width: 140px;
+}
+
+.district-select:hover {
+  border-color: #4f46e5;
+}
+
+.district-select:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+
+/* 통계 섹션 */
+.stats-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.stat-icon {
+  font-size: 2.5rem;
+  color: #4f46e5;
+}
+
+.stat-icon.public {
+  color: #10b981;
+}
+
+.stat-icon.private {
+  color: #f59e0b;
+}
+
+.stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-number {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+/* 로딩 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5rem 0;
+  color: #6c757d;
+}
+
+.loading-spinner {
+  font-size: 3rem;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+  color: #4f46e5;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* 에러 */
+.error-container {
+  text-align: center;
+  padding: 3rem;
+  background: white;
+  border-radius: 16px;
+}
+
+.error-container p {
+  color: #ef4444;
+  margin-bottom: 1rem;
+}
+
+.error-container button {
+  padding: 0.75rem 2rem;
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* 주차장 그리드 */
+.parking-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+}
+
+/* 주차장 카드 */
+.parking-card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.parking-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.parking-header {
+  padding: 1.25rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.parking-type {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.parking-category {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #e5e7eb;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+
+.parking-type.public {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.parking-type.private {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.charge-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.charge-badge.free {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.charge-badge.paid {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.parking-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.parking-body {
+  padding: 1.25rem;
+}
+
+.parking-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.parking-info:last-child {
+  margin-bottom: 0;
+}
+
+.info-icon {
+  color: #4f46e5;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.parking-info.fee {
+  background: #f3f4f6;
+  padding: 0.75rem;
+  border-radius: 8px;
+  margin-top: 0.5rem;
+}
+
+.parking-info strong {
+  color: #4f46e5;
+}
+
+.parking-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  transition: opacity 0.2s;
+}
+
+.parking-nav-btn:hover {
+  opacity: 0.9;
+}
+
+/* 데이터 없음 */
+.no-data {
+  text-align: center;
+  padding: 5rem 2rem;
+  background: white;
+  border-radius: 16px;
+}
+
+.no-data-icon {
+  font-size: 4rem;
+  color: #d1d5db;
+  margin-bottom: 1rem;
+}
+
+.no-data p {
+  color: #6b7280;
+  font-size: 1.1rem;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .parking-hero h1 {
+    font-size: 1.75rem;
+  }
+  
+  .parking-hero p {
+    font-size: 1rem;
+  }
+  
+  .parking-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-section {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* 다크 테마 */
+.dark-theme .parking-page {
+  background: var(--bg-primary);
+}
+
+.dark-theme .filter-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.dark-theme .filter-btn:hover {
+  border-color: #818cf8;
+  color: #818cf8;
+}
+
+.dark-theme .filter-btn.active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: white;
+}
+
+.dark-theme .district-select {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.dark-theme .district-select:hover,
+.dark-theme .district-select:focus {
+  border-color: #818cf8;
+}
+
+.dark-theme .district-select option {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.dark-theme .stat-card {
+  background: var(--card-bg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .stat-number {
+  color: var(--text-primary);
+}
+
+.dark-theme .stat-label {
+  color: var(--text-secondary);
+}
+
+.dark-theme .loading-container {
+  color: var(--text-secondary);
+}
+
+.dark-theme .error-container {
+  background: var(--card-bg);
+}
+
+.dark-theme .parking-card {
+  background: var(--card-bg);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .parking-card:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+.dark-theme .parking-header {
+  border-bottom-color: var(--border-color);
+}
+
+.dark-theme .parking-category {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.dark-theme .parking-header h3 {
+  color: var(--text-primary);
+}
+
+.dark-theme .parking-info {
+  color: var(--text-secondary);
+}
+
+.dark-theme .parking-info.fee {
+  background: rgba(79, 70, 229, 0.1);
+}
+
+.dark-theme .no-data {
+  background: var(--card-bg);
+}
+
+.dark-theme .no-data p {
+  color: var(--text-secondary);
+}
+
+/* 페이지네이션 */
+.parking-page .pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem;
+}
+
+.parking-page .pagination button {
+  padding: 0.75rem 1.5rem;
+  border: 2px solid #4f46e5;
+  background: white;
+  color: #4f46e5;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.parking-page .pagination button:hover:not(:disabled) {
+  background: #4f46e5;
+  color: white;
+}
+
+.parking-page .pagination button:disabled {
+  border-color: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.parking-page .pagination span {
+  font-weight: 600;
+  color: #374151;
+  font-size: 1rem;
+}
+
+/* 다크 테마 페이지네이션 */
+.dark-theme .parking-page .pagination button {
+  background: var(--card-bg);
+  border-color: #818cf8;
+  color: #818cf8;
+}
+
+.dark-theme .parking-page .pagination button:hover:not(:disabled) {
+  background: #6366f1;
+  color: white;
+}
+
+.dark-theme .parking-page .pagination button:disabled {
+  border-color: #4b5563;
+  color: #6b7280;
+  background: var(--card-bg);
+}
+
+.dark-theme .parking-page .pagination span {
+  color: var(--text-primary);
+}

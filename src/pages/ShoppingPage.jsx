@@ -1,0 +1,311 @@
+import { useState, useEffect, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
+import { getShoppingPlaces } from '../services/api';
+import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch } from 'react-icons/fi';
+import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
+import './ShoppingPage.css';
+
+// 대전시 구 목록
+const DISTRICTS = [
+  { id: 'all', ko: '전체 지역', en: 'All Districts' },
+  { id: '동구', ko: '동구', en: 'Dong-gu' },
+  { id: '중구', ko: '중구', en: 'Jung-gu' },
+  { id: '서구', ko: '서구', en: 'Seo-gu' },
+  { id: '유성구', ko: '유성구', en: 'Yuseong-gu' },
+  { id: '대덕구', ko: '대덕구', en: 'Daedeok-gu' }
+];
+
+const ShoppingPage = () => {
+  const { language } = useLanguage();
+  const [allShops, setAllShops] = useState([]); // 전체 데이터
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [districtFilter, setDistrictFilter] = useState('all');
+  const [dongFilter, setDongFilter] = useState('all');
+  const itemsPerPage = 12;
+
+  const text = {
+    ko: {
+      title: '쇼핑',
+      subtitle: '대전의 쇼핑 명소를 만나보세요',
+      loading: '불러오는 중...',
+      noResults: '검색 결과가 없습니다',
+      searchPlaceholder: '쇼핑 명소 검색',
+      address: '주소',
+      phone: '전화',
+      navigate: '길찾기',
+      totalCount: '총 {count}개의 쇼핑 명소'
+    },
+    en: {
+      title: 'Shopping',
+      subtitle: 'Discover shopping destinations in Daejeon',
+      loading: 'Loading...',
+      noResults: 'No results found',
+      searchPlaceholder: 'Search shopping places',
+      address: 'Address',
+      phone: 'Phone',
+      navigate: 'Navigate',
+      totalCount: 'Total {count} shopping places'
+    }
+  };
+
+  const t = text[language];
+
+  // 최초 1회 전체 데이터 로드
+  useEffect(() => {
+    fetchAllShops();
+  }, []);
+
+  const fetchAllShops = async () => {
+    setLoading(true);
+    try {
+      // 전체 데이터를 한 번에 불러옴 (500개)
+      const result = await getShoppingPlaces(1, 500);
+      if (result.success) {
+        setAllShops(result.items);
+      }
+    } catch (error) {
+      console.error('쇼핑 명소 불러오기 오류:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 주소에서 구 추출
+  const getDistrictFromAddr = (addr) => {
+    if (!addr) return null;
+    const districts = ['동구', '중구', '서구', '유성구', '대덕구'];
+    for (const district of districts) {
+      if (addr.includes(district)) return district;
+    }
+    return null;
+  };
+
+  // 주소에서 동 추출
+  const getDongFromAddr = (addr) => {
+    if (!addr) return null;
+    const dongMatch = addr.match(/([가-힣]+동)/);
+    return dongMatch ? dongMatch[1] : null;
+  };
+
+  // 선택된 구에 해당하는 동 목록 추출 (중복 제거)
+  const availableDongs = useMemo(() => {
+    if (districtFilter === 'all') return [];
+    
+    const dongs = new Set();
+    allShops.forEach(item => {
+      const district = getDistrictFromAddr(item.shppgAddr);
+      if (district === districtFilter) {
+        const dong = getDongFromAddr(item.shppgAddr);
+        if (dong) dongs.add(dong);
+      }
+    });
+    
+    return Array.from(dongs).sort();
+  }, [allShops, districtFilter]);
+
+  // 구 변경 시 동 필터 초기화 및 페이지 리셋
+  useEffect(() => {
+    setDongFilter('all');
+    setCurrentPage(1);
+  }, [districtFilter]);
+
+  // 필터 변경 시 페이지 리셋
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dongFilter, searchQuery]);
+
+  // 검색 + 구별 + 동별 필터링
+  const filteredShops = useMemo(() => {
+    let data = allShops;
+    
+    // 검색 필터
+    if (searchQuery) {
+      data = data.filter(s => 
+        s.shppgNm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        s.shppgAddr?.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+    
+    // 구별 필터링
+    if (districtFilter !== 'all') {
+      data = data.filter(item => {
+        const district = getDistrictFromAddr(item.shppgAddr);
+        return district === districtFilter;
+      });
+    }
+    
+    // 동별 필터링
+    if (dongFilter !== 'all') {
+      data = data.filter(item => {
+        const dong = getDongFromAddr(item.shppgAddr);
+        return dong === dongFilter;
+      });
+    }
+    
+    return data;
+  }, [allShops, searchQuery, districtFilter, dongFilter]);
+
+  // 현재 페이지에 해당하는 데이터
+  const paginatedShops = useMemo(() => {
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    return filteredShops.slice(startIndex, startIndex + itemsPerPage);
+  }, [filteredShops, currentPage, itemsPerPage]);
+
+  const handleNavigate = (shop) => {
+    const address = shop.shppgAddr || shop.shppgDtlAddr;
+    if (address) {
+      window.open(`https://map.kakao.com/link/search/${encodeURIComponent(address)}`, '_blank');
+    }
+  };
+
+  const getIcon = (name) => {
+    if (name?.includes('시장') || name?.includes('마트')) return <MdShoppingCart />;
+    if (name?.includes('몰') || name?.includes('백화점')) return <MdLocalMall />;
+    return <MdStorefront />;
+  };
+
+  const totalPages = Math.ceil(filteredShops.length / itemsPerPage);
+
+  return (
+    <div className="shopping-page">
+      <div className="shopping-hero">
+        <div className="container">
+          <h1>{t.title}</h1>
+          <p>{t.subtitle}</p>
+        </div>
+      </div>
+
+      <div className="container">
+        {/* 검색창 추가 */}
+        <div className="shopping-search">
+          <FiSearch />
+          <input
+            type="text"
+            placeholder={t.searchPlaceholder}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+
+        {/* 구/동 필터 */}
+        <div className="location-filters">
+          <div className="district-buttons">
+            {DISTRICTS.map(d => (
+              <button
+                key={d.id}
+                className={`district-btn ${districtFilter === d.id ? 'active' : ''}`}
+                onClick={() => setDistrictFilter(d.id)}
+              >
+                {language === 'ko' ? d.ko : d.en}
+              </button>
+            ))}
+          </div>
+
+          {districtFilter !== 'all' && availableDongs.length > 0 && (
+            <div className="dong-buttons">
+              <button
+                className={`dong-btn ${dongFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setDongFilter('all')}
+              >
+                {language === 'ko' ? '전체 동' : 'All Dong'}
+              </button>
+              {availableDongs.map(dong => (
+                <button
+                  key={dong}
+                  className={`dong-btn ${dongFilter === dong ? 'active' : ''}`}
+                  onClick={() => setDongFilter(dong)}
+                >
+                  {dong}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="shopping-summary">
+          {t.totalCount.replace('{count}', filteredShops.length)}
+        </div>
+
+        {loading ? (
+          <div className="loading">{t.loading}</div>
+        ) : paginatedShops.length === 0 ? (
+          <div className="no-results">{t.noResults}</div>
+        ) : (
+          <div className="shopping-grid">
+            {paginatedShops.map((shop, index) => (
+              <div key={index} className="shopping-card">
+                <div className="shopping-card-icon">
+                  {getIcon(shop.shppgNm)}
+                </div>
+                <div className="shopping-card-content">
+                  <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
+                  {shop.salsTime && (
+                    <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
+                  )}
+                  
+                  <div className="shop-info">
+                    {shop.shppgAddr && (
+                      <div className="info-item">
+                        <FiMapPin />
+                        <span>{shop.shppgAddr}</span>
+                      </div>
+                    )}
+                    {shop.shppgInqrTel && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
+                      </div>
+                    )}
+                    {shop.shppgIntrd && (
+                      <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
+                    )}
+                    {shop.shppgHmpgUrl && (
+                      <a 
+                        href={shop.shppgHmpgUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="homepage-link"
+                      >
+                        {language === 'ko' ? '홈페이지' : 'Website'}
+                      </a>
+                    )}
+                  </div>
+
+                  <button 
+                    className="navigate-btn"
+                    onClick={() => handleNavigate(shop)}
+                  >
+                    <FiNavigation />
+                    {t.navigate}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+            >
+              이전
+            </button>
+            <span>{currentPage} / {totalPages}</span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+            >
+              다음
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default ShoppingPage;

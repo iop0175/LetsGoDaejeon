@@ -1,0 +1,122 @@
+.quick-menu {
+  padding: 80px 0;
+  background: var(--bg-secondary);
+}
+
+.quick-menu-header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.quick-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 20px;
+}
+
+.quick-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px;
+  background: var(--card-bg, white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition);
+}
+
+.quick-menu-item:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+}
+
+.quick-menu-item:hover .quick-menu-icon {
+  background: var(--bg-gradient);
+  color: white;
+}
+
+.quick-menu-icon {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 102, 204, 0.1);
+  color: var(--primary-color);
+  border-radius: 50%;
+  font-size: 1.5rem;
+  transition: var(--transition);
+}
+
+.quick-menu-label {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* 반응형 */
+@media (max-width: 1024px) {
+  .quick-menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .quick-menu {
+    padding: 60px 0;
+  }
+
+  .quick-menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .quick-menu-item {
+    padding: 20px 12px;
+  }
+
+  .quick-menu-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+
+  .quick-menu-label {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .quick-menu-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* 다크모드 스타일 */
+.dark-theme .quick-menu {
+  background: var(--bg-tertiary);
+}
+
+.dark-theme .quick-menu-item {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+}
+
+.dark-theme .quick-menu-item:hover {
+  border-color: var(--primary-color);
+}
+
+.dark-theme .quick-menu-icon {
+  background: rgba(77, 166, 255, 0.15);
+  color: var(--primary-color);
+}
+
+.dark-theme .quick-menu-item:hover .quick-menu-icon {
+  background: linear-gradient(135deg, #3385d6 0%, #3399cc 100%);
+  color: white;
+}
+
+.dark-theme .quick-menu-label {
+  color: var(--text-primary);
+}

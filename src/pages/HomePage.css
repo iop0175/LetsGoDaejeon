@@ -1,0 +1,48 @@
+/* 오른쪽 사이드바 날씨 위젯 */
+.weather-sidebar {
+  position: fixed;
+  top: 100px;
+  right: 20px;
+  z-index: 100;
+  width: 280px;
+  transition: all 0.3s ease;
+}
+
+.weather-sidebar .weather-widget {
+  max-width: 100%;
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.25);
+}
+
+/* 스크롤 시 사이드바 위치 조정 */
+@media (max-width: 1400px) {
+  .weather-sidebar {
+    width: 260px;
+    right: 10px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .weather-sidebar {
+    position: static;
+    width: 100%;
+    max-width: 360px;
+    margin: 20px auto;
+    padding: 0 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .weather-sidebar {
+    max-width: 100%;
+    margin: 20px 0;
+  }
+  
+  .weather-sidebar .weather-widget {
+    border-radius: 0;
+  }
+}
+
+/* 다크모드 */
+.dark-theme .weather-sidebar .weather-widget {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
