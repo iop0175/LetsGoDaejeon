@@ -23,8 +23,8 @@ const PAGE_CONFIGS = {
     icon: FiMap,
     color: '#0066cc',
     fetchFn: getTourSpots,
-    fields: ['tourspotNm', 'tourspotAddr', 'tourspotSumm', 'signguNm'],
-    labels: { tourspotNm: '관광지명', tourspotAddr: '주소', tourspotSumm: '설명', signguNm: '구' },
+    fields: ['tourspotNm', 'tourspotAddr', 'tourspotSumm', 'signguNm', 'imageUrl'],
+    labels: { tourspotNm: '관광지명', tourspotAddr: '주소', tourspotSumm: '설명', signguNm: '구', imageUrl: '이미지' },
     tableName: 'travel_spots',
     uniqueField: 'tourspotNm'
   },
@@ -33,8 +33,8 @@ const PAGE_CONFIGS = {
     icon: FiCalendar,
     color: '#9c27b0',
     fetchFn: getFestivals,
-    fields: ['title', 'themeCdNm', 'placeCdNm', 'beginDt', 'endDt'],
-    labels: { title: '행사명', themeCdNm: '테마', placeCdNm: '장소유형', beginDt: '시작일', endDt: '종료일' },
+    fields: ['title', 'themeCdNm', 'placeCdNm', 'beginDt', 'endDt', 'imageUrl'],
+    labels: { title: '행사명', themeCdNm: '테마', placeCdNm: '장소유형', beginDt: '시작일', endDt: '종료일', imageUrl: '이미지' },
     tableName: 'festivals',
     uniqueField: 'title'
   },
@@ -43,8 +43,8 @@ const PAGE_CONFIGS = {
     icon: FiCoffee,
     color: '#ff6b35',
     fetchFn: getRestaurants,
-    fields: ['restrntNm', 'restrntAddr', 'reprMenu', 'telNo', 'signguNm'],
-    labels: { restrntNm: '식당명', restrntAddr: '주소', reprMenu: '대표메뉴', telNo: '전화', signguNm: '구' },
+    fields: ['restrntNm', 'restrntAddr', 'reprMenu', 'telNo', 'signguNm', 'imageUrl'],
+    labels: { restrntNm: '식당명', restrntAddr: '주소', reprMenu: '대표메뉴', telNo: '전화', signguNm: '구', imageUrl: '이미지' },
     tableName: 'restaurants',
     uniqueField: 'restrntNm'
   },
@@ -53,8 +53,8 @@ const PAGE_CONFIGS = {
     icon: FiActivity,
     color: '#2196f3',
     fetchFn: getCulturalFacilities,
-    fields: ['fcltyNm', 'locplc', 'fcltyKnd', 'operTime'],
-    labels: { fcltyNm: '시설명', locplc: '주소', fcltyKnd: '종류', operTime: '운영시간' },
+    fields: ['fcltyNm', 'locplc', 'fcltyKnd', 'operTime', 'imageUrl'],
+    labels: { fcltyNm: '시설명', locplc: '주소', fcltyKnd: '종류', operTime: '운영시간', imageUrl: '이미지' },
     tableName: 'cultural_facilities',
     uniqueField: 'fcltyNm'
   },
@@ -63,8 +63,8 @@ const PAGE_CONFIGS = {
     icon: FiHeart,
     color: '#e91e63',
     fetchFn: getMedicalFacilities,
-    fields: ['hsptlNm', 'locplc', 'hsptlKnd', 'fondSe', 'telno'],
-    labels: { hsptlNm: '병원명', locplc: '주소', hsptlKnd: '종류', fondSe: '설립구분', telno: '전화' },
+    fields: ['hsptlNm', 'locplc', 'hsptlKnd', 'fondSe', 'telno', 'imageUrl'],
+    labels: { hsptlNm: '병원명', locplc: '주소', hsptlKnd: '종류', fondSe: '설립구분', telno: '전화', imageUrl: '이미지' },
     tableName: 'medical_facilities',
     uniqueField: 'hsptlNm'
   },
@@ -73,8 +73,8 @@ const PAGE_CONFIGS = {
     icon: FiShoppingBag,
     color: '#4caf50',
     fetchFn: getShoppingPlaces,
-    fields: ['shppgNm', 'shppgAddr', 'shppgIntro', 'telNo'],
-    labels: { shppgNm: '상점명', shppgAddr: '주소', shppgIntro: '소개', telNo: '전화' },
+    fields: ['shppgNm', 'shppgAddr', 'shppgIntro', 'telNo', 'imageUrl'],
+    labels: { shppgNm: '상점명', shppgAddr: '주소', shppgIntro: '소개', telNo: '전화', imageUrl: '이미지' },
     tableName: 'shopping_places',
     uniqueField: 'shppgNm'
   },
@@ -83,8 +83,8 @@ const PAGE_CONFIGS = {
     icon: FiHome,
     color: '#795548',
     fetchFn: getTourRooms,
-    fields: ['romsNm', 'romsAddr', 'romsScl', 'romsRefadNo'],
-    labels: { romsNm: '숙소명', romsAddr: '주소', romsScl: '유형', romsRefadNo: '전화' },
+    fields: ['romsNm', 'romsAddr', 'romsScl', 'romsRefadNo', 'imageUrl'],
+    labels: { romsNm: '숙소명', romsAddr: '주소', romsScl: '유형', romsRefadNo: '전화', imageUrl: '이미지' },
     tableName: 'accommodations',
     uniqueField: 'romsNm'
   },
@@ -93,8 +93,8 @@ const PAGE_CONFIGS = {
     icon: FiTruck,
     color: '#607d8b',
     fetchFn: getDaejeonParking,
-    fields: ['name', 'addr', 'parkingType', 'totalLot', 'chargeInfo'],
-    labels: { name: '주차장명', addr: '주소', parkingType: '유형', totalLot: '주차면수', chargeInfo: '요금' },
+    fields: ['name', 'addr', 'parkingType', 'totalLot', 'chargeInfo', 'imageUrl'],
+    labels: { name: '주차장명', addr: '주소', parkingType: '유형', totalLot: '주차면수', chargeInfo: '요금', imageUrl: '이미지' },
     tableName: 'parking_lots',
     uniqueField: 'name'
   }

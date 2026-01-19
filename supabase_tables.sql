@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS travel_spots (
   "tourspotAddr" TEXT,
   "tourspotSumm" TEXT,
   "signguNm" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'travel',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -22,6 +23,7 @@ CREATE TABLE IF NOT EXISTS festivals (
   "placeCdNm" TEXT,
   "beginDt" TEXT,
   "endDt" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'festival',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -36,6 +38,7 @@ CREATE TABLE IF NOT EXISTS restaurants (
   "reprMenu" TEXT,
   "telNo" TEXT,
   "signguNm" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'food',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -49,6 +52,7 @@ CREATE TABLE IF NOT EXISTS cultural_facilities (
   locplc TEXT,
   "fcltyKnd" TEXT,
   "operTime" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'culture',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -63,6 +67,7 @@ CREATE TABLE IF NOT EXISTS medical_facilities (
   "hsptlKnd" TEXT,
   "fondSe" TEXT,
   telno TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'medical',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -76,6 +81,7 @@ CREATE TABLE IF NOT EXISTS shopping_places (
   "shppgAddr" TEXT,
   "shppgIntro" TEXT,
   "telNo" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'shopping',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -89,6 +95,7 @@ CREATE TABLE IF NOT EXISTS accommodations (
   "romsAddr" TEXT,
   "romsScl" TEXT,
   "romsRefadNo" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'accommodation',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -103,6 +110,7 @@ CREATE TABLE IF NOT EXISTS parking_lots (
   "parkingType" TEXT,
   "totalLot" TEXT,
   "chargeInfo" TEXT,
+  "imageUrl" TEXT,
   page_type TEXT DEFAULT 'parking',
   saved_at TIMESTAMPTZ DEFAULT NOW(),
   saved_by TEXT,
@@ -133,3 +141,16 @@ CREATE INDEX IF NOT EXISTS idx_medical_facilities_name ON medical_facilities("hs
 CREATE INDEX IF NOT EXISTS idx_shopping_places_name ON shopping_places("shppgNm");
 CREATE INDEX IF NOT EXISTS idx_accommodations_name ON accommodations("romsNm");
 CREATE INDEX IF NOT EXISTS idx_parking_lots_name ON parking_lots(name);
+
+-- ============================================================
+-- 마이그레이션: 기존 테이블에 imageUrl 컬럼 추가
+-- (이미 테이블이 있는 경우 아래 SQL을 실행하세요)
+-- ============================================================
+ALTER TABLE travel_spots ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE festivals ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE cultural_facilities ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE medical_facilities ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE shopping_places ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
