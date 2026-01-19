@@ -176,3 +176,142 @@ CREATE TABLE IF NOT EXISTS hero_slides (
 
 -- 히어로 슬라이드 인덱스
 CREATE INDEX IF NOT EXISTS idx_hero_slides_active ON hero_slides(is_active, sort_order);
+
+-- ============================================================
+-- 10. 페이지 방문 통계 테이블
+-- ============================================================
+CREATE TABLE IF NOT EXISTS page_visits (
+  id SERIAL PRIMARY KEY,
+  page_name TEXT NOT NULL,
+  visit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  visit_count INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(page_name, visit_date)
+);
+
+-- 페이지 방문 통계 인덱스
+CREATE INDEX IF NOT EXISTS idx_page_visits_date ON page_visits(visit_date DESC);
+CREATE INDEX IF NOT EXISTS idx_page_visits_page ON page_visits(page_name, visit_date);
+
+-- ============================================================
+-- 11. 검색 기록 테이블
+-- ============================================================
+CREATE TABLE IF NOT EXISTS search_logs (
+  id SERIAL PRIMARY KEY,
+  search_query TEXT NOT NULL,
+  search_date DATE NOT NULL DEFAULT CURRENT_DATE,
+  search_count INTEGER DEFAULT 1,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(search_query, search_date)
+);
+
+-- 검색 기록 인덱스
+CREATE INDEX IF NOT EXISTS idx_search_logs_date ON search_logs(search_date DESC);
+CREATE INDEX IF NOT EXISTS idx_search_logs_query ON search_logs(search_query, search_date);
+CREATE INDEX IF NOT EXISTS idx_search_logs_count ON search_logs(search_count DESC);
+
+-- ============================================================
+-- 12. 여행 계획 테이블 (Trip Plans)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS trip_plans (
+  id SERIAL PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  start_date DATE NOT NULL,
+  end_date DATE NOT NULL,
+  description TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 여행 계획 인덱스
+CREATE INDEX IF NOT EXISTS idx_trip_plans_user ON trip_plans(user_id);
+CREATE INDEX IF NOT EXISTS idx_trip_plans_dates ON trip_plans(start_date, end_date);
+
+-- ============================================================
+-- 13. 여행 일정 테이블 (Trip Days)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS trip_days (
+  id SERIAL PRIMARY KEY,
+  plan_id INTEGER NOT NULL REFERENCES trip_plans(id) ON DELETE CASCADE,
+  day_number INTEGER NOT NULL,
+  date DATE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(plan_id, day_number)
+);
+
+-- 여행 일정 인덱스
+CREATE INDEX IF NOT EXISTS idx_trip_days_plan ON trip_days(plan_id);
+
+-- ============================================================
+-- 14. 여행 장소 테이블 (Trip Places)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS trip_places (
+  id SERIAL PRIMARY KEY,
+  day_id INTEGER NOT NULL REFERENCES trip_days(id) ON DELETE CASCADE,
+  place_type TEXT NOT NULL,
+  place_name TEXT NOT NULL,
+  place_address TEXT,
+  place_description TEXT,
+  place_image TEXT,
+  order_index INTEGER DEFAULT 0,
+  visit_time TIME,
+  memo TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 여행 장소 인덱스
+CREATE INDEX IF NOT EXISTS idx_trip_places_day ON trip_places(day_id);
+CREATE INDEX IF NOT EXISTS idx_trip_places_order ON trip_places(day_id, order_index);
+
+-- ============================================================
+-- 15. 여행 계획 RLS 정책 (Row Level Security)
+-- ============================================================
+-- trip_plans RLS
+ALTER TABLE trip_plans ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view their own trip plans"
+  ON trip_plans FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert their own trip plans"
+  ON trip_plans FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update their own trip plans"
+  ON trip_plans FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete their own trip plans"
+  ON trip_plans FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- trip_days RLS
+ALTER TABLE trip_days ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their trip days"
+  ON trip_days FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM trip_plans 
+      WHERE trip_plans.id = trip_days.plan_id 
+      AND trip_plans.user_id = auth.uid()
+    )
+  );
+
+-- trip_places RLS
+ALTER TABLE trip_places ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can manage their trip places"
+  ON trip_places FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trip_plans ON trip_plans.id = trip_days.plan_id
+      WHERE trip_days.id = trip_places.day_id 
+      AND trip_plans.user_id = auth.uid()
+    )
+  );

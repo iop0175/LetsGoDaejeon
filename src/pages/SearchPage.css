@@ -89,6 +89,68 @@
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
+/* 인기 검색어 */
+.popular-keywords {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.popular-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.popular-label svg {
+  font-size: 1.1rem;
+}
+
+.popular-tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.popular-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 25px;
+  color: white;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popular-tag:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-2px);
+}
+
+.popular-tag .tag-rank {
+  background: rgba(255, 255, 255, 0.3);
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.popular-tag .tag-text {
+  font-weight: 500;
+}
+
 /* 컨테이너 */
 .search-page .container {
   padding: 2rem 1rem;
@@ -441,4 +503,162 @@
     padding: 0.5rem 1rem;
     font-size: 0.85rem;
   }
+  
+  .popular-tags {
+    gap: 8px;
+  }
+  
+  .popular-tag {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+  }
+}
+
+/* ===== 다크 모드 ===== */
+.dark-theme .search-page {
+  background: var(--bg-primary);
+}
+
+.dark-theme .search-hero {
+  background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
+}
+
+.dark-theme .search-input-wrapper input {
+  background: var(--card-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.dark-theme .search-input-wrapper input::placeholder {
+  color: var(--text-muted);
+}
+
+.dark-theme .search-input-wrapper .search-icon {
+  color: var(--text-muted);
+}
+
+.dark-theme .clear-btn {
+  color: var(--text-muted);
+}
+
+.dark-theme .clear-btn:hover {
+  color: var(--text-primary);
+}
+
+.dark-theme .search-submit {
+  background: var(--card-bg);
+  color: var(--primary-color);
+}
+
+.dark-theme .search-submit:hover {
+  background: var(--bg-secondary);
+}
+
+/* 인기 검색어 다크모드 */
+.dark-theme .popular-tag {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.dark-theme .popular-tag:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* 검색 결과 다크모드 */
+.dark-theme .search-summary {
+  color: var(--text-primary);
+}
+
+.dark-theme .search-summary strong {
+  color: var(--primary-color);
+}
+
+.dark-theme .result-count {
+  background: var(--card-bg);
+  color: var(--text-primary);
+}
+
+.dark-theme .tab-btn {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .tab-btn:hover {
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dark-theme .tab-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
+}
+
+.dark-theme .section-title {
+  color: var(--text-primary);
+}
+
+.dark-theme .section-title span {
+  color: var(--text-muted);
+}
+
+/* 결과 카드 다크모드 */
+.dark-theme .result-card {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.dark-theme .result-card:hover {
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .result-content h3 {
+  color: var(--text-primary);
+}
+
+.dark-theme .result-summary {
+  color: var(--text-secondary);
+}
+
+.dark-theme .result-meta {
+  color: var(--text-muted);
+}
+
+.dark-theme .result-link {
+  color: var(--primary-color);
+}
+
+/* 로딩 다크모드 */
+.dark-theme .loading-container {
+  color: var(--text-secondary);
+}
+
+.dark-theme .loading-spinner {
+  color: var(--primary-color);
+}
+
+/* 검색 결과 없음 다크모드 */
+.dark-theme .no-results {
+  background: var(--card-bg);
+}
+
+.dark-theme .no-results h3 {
+  color: var(--text-primary);
+}
+
+.dark-theme .no-results p {
+  color: var(--text-secondary);
+}
+
+.dark-theme .search-suggestions button {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.dark-theme .search-suggestions button:hover {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
 }

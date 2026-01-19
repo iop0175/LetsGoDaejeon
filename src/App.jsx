@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
@@ -13,11 +14,40 @@ import MedicalPage from './pages/MedicalPage'
 import ShoppingPage from './pages/ShoppingPage'
 import AccommodationPage from './pages/AccommodationPage'
 import AdminPage from './pages/AdminPage'
+import MyTripPage from './pages/MyTripPage'
+import { recordPageVisitDB } from './services/dbService'
 import './styles/App.css'
+
+// 경로를 페이지 이름으로 변환
+const getPageName = (pathname) => {
+  const pathMap = {
+    '/': 'home',
+    '/travel': 'travel',
+    '/festival': 'festival',
+    '/food': 'food',
+    '/search': 'search',
+    '/parking': 'parking',
+    '/map': 'map',
+    '/culture': 'culture',
+    '/medical': 'medical',
+    '/shopping': 'shopping',
+    '/accommodation': 'accommodation',
+    '/my-trip': 'my-trip'
+  }
+  return pathMap[pathname] || null
+}
 
 function App() {
   const location = useLocation()
   const isAdminPage = location.pathname.startsWith('/admin')
+  
+  // 페이지 방문 추적
+  useEffect(() => {
+    const pageName = getPageName(location.pathname)
+    if (pageName) {
+      recordPageVisitDB(pageName)
+    }
+  }, [location.pathname])
   
   return (
     <div className="app">
@@ -35,6 +65,7 @@ function App() {
           <Route path="/medical" element={<MedicalPage />} />
           <Route path="/shopping" element={<ShoppingPage />} />
           <Route path="/accommodation" element={<AccommodationPage />} />
+          <Route path="/my-trip" element={<MyTripPage />} />
           <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>

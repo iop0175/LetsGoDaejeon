@@ -201,6 +201,8 @@
   overflow: hidden;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
 }
 
 .parking-card:hover {
@@ -272,6 +274,7 @@
 
 .parking-body {
   padding: 1.25rem;
+  flex: 1;
 }
 
 .parking-info {

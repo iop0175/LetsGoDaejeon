@@ -4,7 +4,7 @@ import {
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud,
-  FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle
+  FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -14,9 +14,12 @@ import {
 } from '../services/api'
 import { 
   getAllDbCounts, getHeroSlides, createHeroSlide, updateHeroSlide, 
-  deleteHeroSlide, deleteDbItem, updateDbItem, getSupabaseUsageStats 
+  deleteHeroSlide, deleteDbItem, updateDbItem, getSupabaseUsageStats,
+  getPageVisitStats, getTodayPageVisitStats, getMostVisitedPageDB,
+  getPopularSearchQueries, getTodayPopularSearchQueries, getSearchStats,
+  getPageVisitStatsByPeriod
 } from '../services/dbService'
-import { getApiStats, API_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
+import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
 import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats } from '../components/admin'
 import './AdminPage.css'
 
@@ -167,6 +170,19 @@ const AdminPage = () => {
   // Supabase 사용량 통계
   const [supabaseUsage, setSupabaseUsage] = useState(null)
   const [usageLoading, setUsageLoading] = useState(false)
+  
+  // 페이지 방문 통계 (DB)
+  const [pageVisitStats, setPageVisitStats] = useState({})
+  const [todayVisitStats, setTodayVisitStats] = useState({})
+  const [mostVisitedPageDB, setMostVisitedPageDB] = useState(null)
+  const [visitStatsLoading, setVisitStatsLoading] = useState(false)
+  const [visitStatsPeriod, setVisitStatsPeriod] = useState('all') // 기간 필터
+  
+  // 검색 기록 통계 (DB)
+  const [popularSearches, setPopularSearches] = useState([])
+  const [todaySearches, setTodaySearches] = useState([])
+  const [searchStats, setSearchStats] = useState(null)
+  const [searchStatsLoading, setSearchStatsLoading] = useState(false)
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
   const parseDate = useCallback((dateStr) => {
@@ -287,6 +303,60 @@ const AdminPage = () => {
       console.error('Supabase 사용량 통계 로드 실패:', err)
     }
     setUsageLoading(false)
+  }, [])
+  
+  // 페이지 방문 통계 로드 (DB)
+  const loadPageVisitStats = useCallback(async (period = 'all') => {
+    setVisitStatsLoading(true)
+    try {
+      // 기간별 방문 통계
+      const periodStats = await getPageVisitStatsByPeriod(period)
+      if (periodStats.success) {
+        setPageVisitStats(periodStats.stats)
+      }
+      
+      // 오늘 방문 통계
+      const todayStats = await getTodayPageVisitStats()
+      if (todayStats.success) {
+        setTodayVisitStats(todayStats.stats)
+      }
+      
+      // 가장 많이 방문한 페이지
+      const mostVisited = await getMostVisitedPageDB()
+      if (mostVisited.success) {
+        setMostVisitedPageDB(mostVisited)
+      }
+    } catch (err) {
+      console.error('페이지 방문 통계 로드 실패:', err)
+    }
+    setVisitStatsLoading(false)
+  }, [])
+  
+  // 검색 기록 통계 로드 (DB)
+  const loadSearchStats = useCallback(async () => {
+    setSearchStatsLoading(true)
+    try {
+      // 인기 검색어 (전체)
+      const popular = await getPopularSearchQueries(10)
+      if (popular.success) {
+        setPopularSearches(popular.items)
+      }
+      
+      // 오늘 인기 검색어
+      const today = await getTodayPopularSearchQueries(10)
+      if (today.success) {
+        setTodaySearches(today.items)
+      }
+      
+      // 검색 통계 요약
+      const stats = await getSearchStats()
+      if (stats.success) {
+        setSearchStats(stats)
+      }
+    } catch (err) {
+      console.error('검색 통계 로드 실패:', err)
+    }
+    setSearchStatsLoading(false)
   }, [])
   
   // Hero 슬라이드 로드
@@ -875,8 +945,10 @@ const AdminPage = () => {
       loadStats()
       loadApiStats()
       loadSupabaseUsage()
+      loadPageVisitStats(visitStatsPeriod)
+      loadSearchStats()
     }
-  }, [user, activeSection, loadStats, loadApiStats, loadSupabaseUsage])
+  }, [user, activeSection, loadStats, loadApiStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
   
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
@@ -1140,7 +1212,7 @@ const AdminPage = () => {
                 {/* 최고 호출 API & 페이지 */}
                 <div className="top-stats">
                   <div className="top-stat-card">
-                    <span className="top-label">🏆 {language === 'ko' ? '최다 호출 API' : 'Most Called API'}</span>
+                    <span className="top-label">{language === 'ko' ? '최다 호출 API' : 'Most Called API'}</span>
                     {mostCalledApi ? (
                       <span className="top-value">{mostCalledApi.name} <strong>({mostCalledApi.count}회)</strong></span>
                     ) : (
@@ -1148,7 +1220,7 @@ const AdminPage = () => {
                     )}
                   </div>
                   <div className="top-stat-card">
-                    <span className="top-label">🏆 {language === 'ko' ? '최다 방문 페이지' : 'Most Visited Page'}</span>
+                    <span className="top-label">{language === 'ko' ? '최다 방문 페이지' : 'Most Visited Page'}</span>
                     {mostVisitedPage ? (
                       <span className="top-value">{mostVisitedPage.name} <strong>({mostVisitedPage.count}회)</strong></span>
                     ) : (
@@ -1194,9 +1266,197 @@ const AdminPage = () => {
                 dashboardUrl="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf"
               />
               
+              {/* 페이지 방문 통계 섹션 (DB) */}
+              <div className="dashboard-section visit-stats-section">
+                <h3>
+                  <FiTrendingUp />
+                  {language === 'ko' ? '페이지 방문 통계' : 'Page Visit Statistics'}
+                  {visitStatsLoading && <FiLoader className="loading-icon spinning" />}
+                </h3>
+                
+                <div className="visit-stats-summary">
+                  <div className="visit-stat-card">
+                    <span className="visit-label">{language === 'ko' ? '최다 방문 페이지 (전체)' : 'Most Visited (All Time)'}</span>
+                    {mostVisitedPageDB?.page ? (
+                      <span className="visit-value">
+                        {PAGE_NAMES[mostVisitedPageDB.page] || mostVisitedPageDB.page}
+                        <strong> ({mostVisitedPageDB.count.toLocaleString()}회)</strong>
+                      </span>
+                    ) : (
+                      <span className="visit-value empty">{language === 'ko' ? '데이터 없음' : 'No data'}</span>
+                    )}
+                  </div>
+                  <div className="visit-stat-card">
+                    <span className="visit-label">{language === 'ko' ? '오늘 총 방문' : 'Today Total Visits'}</span>
+                    <span className="visit-value">
+                      <strong>{Object.values(todayVisitStats).reduce((a, b) => a + b, 0).toLocaleString()}회</strong>
+                    </span>
+                  </div>
+                  <div className="visit-stat-card">
+                    <span className="visit-label">{language === 'ko' ? '전체 누적 방문' : 'Total Visits'}</span>
+                    <span className="visit-value">
+                      <strong>{Object.values(pageVisitStats).reduce((a, b) => a + b, 0).toLocaleString()}회</strong>
+                    </span>
+                  </div>
+                </div>
+                
+                {/* 페이지별 방문 통계 차트 */}
+                <div className="visit-chart-container">
+                  <div className="visit-chart-header">
+                    <h4>{language === 'ko' ? '페이지별 방문 횟수' : 'Visits by Page'}</h4>
+                    <div className="period-filter-tabs">
+                      <button 
+                        className={`period-tab ${visitStatsPeriod === 'all' ? 'active' : ''}`}
+                        onClick={() => setVisitStatsPeriod('all')}
+                      >
+                        {language === 'ko' ? '전체' : 'All'}
+                      </button>
+                      <button 
+                        className={`period-tab ${visitStatsPeriod === 'year' ? 'active' : ''}`}
+                        onClick={() => setVisitStatsPeriod('year')}
+                      >
+                        {language === 'ko' ? '년' : 'Year'}
+                      </button>
+                      <button 
+                        className={`period-tab ${visitStatsPeriod === 'month' ? 'active' : ''}`}
+                        onClick={() => setVisitStatsPeriod('month')}
+                      >
+                        {language === 'ko' ? '월' : 'Month'}
+                      </button>
+                      <button 
+                        className={`period-tab ${visitStatsPeriod === 'week' ? 'active' : ''}`}
+                        onClick={() => setVisitStatsPeriod('week')}
+                      >
+                        {language === 'ko' ? '주' : 'Week'}
+                      </button>
+                      <button 
+                        className={`period-tab ${visitStatsPeriod === 'day' ? 'active' : ''}`}
+                        onClick={() => setVisitStatsPeriod('day')}
+                      >
+                        {language === 'ko' ? '일' : 'Day'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="visit-bar-chart">
+                    {Object.entries(PAGE_NAMES).map(([key, name]) => {
+                      const totalVisits = Object.values(pageVisitStats).reduce((a, b) => a + b, 0) || 1
+                      const visits = pageVisitStats[key] || 0
+                      const percentage = (visits / totalVisits) * 100
+                      return (
+                        <div key={key} className="visit-bar-item">
+                          <span className="visit-page-name">{name}</span>
+                          <div className="visit-bar-container">
+                            <div 
+                              className="visit-bar" 
+                              style={{ 
+                                width: `${Math.max(percentage, 0)}%`,
+                                backgroundColor: PAGE_CONFIGS[key]?.color || '#4f46e5'
+                              }}
+                            />
+                          </div>
+                          <span className="visit-count">{visits.toLocaleString()}회</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+                
+                {/* 오늘의 방문 통계 */}
+                <div className="today-visits-container">
+                  <h4>{language === 'ko' ? '오늘의 페이지별 방문' : 'Today\'s Visits by Page'}</h4>
+                  <div className="today-visits-grid">
+                    {Object.entries(PAGE_NAMES).map(([key, name]) => (
+                      <div key={key} className="today-visit-card">
+                        <span className="today-page-name">{name}</span>
+                        <span className="today-visit-count">{todayVisitStats[key] || 0}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <button onClick={() => loadPageVisitStats(visitStatsPeriod)} className="refresh-btn">
+                  <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
+                </button>
+              </div>
+              
+              {/* 검색 기록 통계 섹션 */}
+              <div className="dashboard-section search-stats-section">
+                <h3>
+                  <FiSearch />
+                  {language === 'ko' ? '검색 기록 통계' : 'Search Statistics'}
+                  {searchStatsLoading && <FiLoader className="loading-icon spinning" />}
+                </h3>
+                
+                <div className="search-stats-summary">
+                  <div className="search-stat-card">
+                    <span className="search-label">{language === 'ko' ? '총 검색 횟수' : 'Total Searches'}</span>
+                    <span className="search-value">
+                      <strong>{searchStats?.totalSearches?.toLocaleString() || 0}회</strong>
+                    </span>
+                  </div>
+                  <div className="search-stat-card">
+                    <span className="search-label">{language === 'ko' ? '고유 검색어' : 'Unique Queries'}</span>
+                    <span className="search-value">
+                      <strong>{searchStats?.uniqueQueries?.toLocaleString() || 0}개</strong>
+                    </span>
+                  </div>
+                  <div className="search-stat-card">
+                    <span className="search-label">{language === 'ko' ? '최다 검색어' : 'Top Search'}</span>
+                    {searchStats?.topQuery ? (
+                      <span className="search-value">
+                        "{searchStats.topQuery.query}"
+                        <strong> ({searchStats.topQuery.count}회)</strong>
+                      </span>
+                    ) : (
+                      <span className="search-value empty">{language === 'ko' ? '데이터 없음' : 'No data'}</span>
+                    )}
+                  </div>
+                </div>
+                
+                {/* 인기 검색어 목록 (전체 기간) */}
+                <div className="popular-searches-container">
+                  <h4>{language === 'ko' ? '인기 검색어 TOP 10 (전체 기간)' : 'Top 10 Popular Searches (All Time)'}</h4>
+                  {popularSearches.length > 0 ? (
+                    <div className="popular-searches-list">
+                      {popularSearches.map((item, index) => (
+                        <div key={item.query} className="popular-search-item">
+                          <span className="search-rank">#{index + 1}</span>
+                          <span className="search-query">{item.query}</span>
+                          <span className="search-count">{item.count.toLocaleString()}회</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="no-data-text">{language === 'ko' ? '검색 기록이 없습니다.' : 'No search records.'}</p>
+                  )}
+                </div>
+                
+                {/* 오늘의 검색어 */}
+                <div className="today-searches-container">
+                  <h4>{language === 'ko' ? '오늘의 인기 검색어' : 'Today\'s Popular Searches'}</h4>
+                  {todaySearches.length > 0 ? (
+                    <div className="today-searches-list">
+                      {todaySearches.map((item, index) => (
+                        <div key={item.query} className="today-search-tag">
+                          <span className="tag-rank">#{index + 1}</span>
+                          <span className="tag-query">{item.query}</span>
+                          <span className="tag-count">{item.count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="no-data-text">{language === 'ko' ? '오늘 검색 기록이 없습니다.' : 'No searches today.'}</p>
+                  )}
+                </div>
+                
+                <button onClick={loadSearchStats} className="refresh-btn">
+                  <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
+                </button>
+              </div>
+              
               <div className="dashboard-info">
                 <div className="info-card">
-                  <h3>👋 {language === 'ko' ? '환영합니다!' : 'Welcome!'}</h3>
+                  <h3>{language === 'ko' ? '환영합니다!' : 'Welcome!'}</h3>
                   <p>
                     {language === 'ko' 
                       ? '대전 관광 포털 관리 시스템입니다. 위 카드를 클릭하거나 좌측 메뉴에서 관리할 페이지를 선택하세요.'

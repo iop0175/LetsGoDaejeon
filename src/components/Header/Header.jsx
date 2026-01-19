@@ -28,6 +28,7 @@ const Header = memo(() => {
     { path: '/medical', label: t.nav.medical },
     { path: '/shopping', label: t.nav.shopping },
     { path: '/accommodation', label: t.nav.accommodation },
+    { path: '/my-trip', label: language === 'ko' ? '나의 여행' : 'My Trip' },
   ]
 
   useEffect(() => {

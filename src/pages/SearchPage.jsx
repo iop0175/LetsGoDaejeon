@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
-import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX } from 'react-icons/fi'
+import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX, FiTrendingUp } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getTourSpots, getRestaurants, getFestivals } from '../services/api'
+import { recordSearchQuery, getPopularSearchQueries } from '../services/dbService'
 import './SearchPage.css'
 
 const SearchPage = () => {
@@ -22,6 +23,80 @@ const SearchPage = () => {
   const [tourTotal, setTourTotal] = useState(0)
   const [restaurantTotal, setRestaurantTotal] = useState(0)
   const [eventTotal, setEventTotal] = useState(0)
+  
+  // 인기 검색어
+  const [popularSearches, setPopularSearches] = useState([])
+  
+  // 인기 검색어 로드
+  useEffect(() => {
+    const loadPopularSearches = async () => {
+      try {
+        const result = await getPopularSearchQueries(8)
+        if (result.success) {
+          setPopularSearches(result.items)
+        }
+      } catch (err) {
+        console.error('인기 검색어 로드 실패:', err)
+      }
+    }
+    loadPopularSearches()
+  }, [])
+  
+  // 인기 검색어 클릭
+  const handlePopularSearchClick = async (searchQuery) => {
+    setQuery(searchQuery)
+    setSearchTerm(searchQuery)
+    setSearchParams({ q: searchQuery })
+    setLoading(true)
+    
+    // 검색 기록 저장
+    recordSearchQuery(searchQuery)
+    
+    try {
+      const [tourResult, restaurantResult, eventResult] = await Promise.all([
+        getTourSpots(1, 100),
+        getRestaurants(1, 100),
+        getFestivals(1, 100)
+      ])
+      
+      const sq = searchQuery.toLowerCase()
+      
+      if (tourResult.success) {
+        const filtered = tourResult.items.filter(item => 
+          item.tourspotNm?.toLowerCase().includes(sq) ||
+          item.tourspotSumm?.toLowerCase().includes(sq) ||
+          item.tourspotAddr?.toLowerCase().includes(sq)
+        )
+        setTourSpots(filtered)
+        setTourTotal(filtered.length)
+      }
+      
+      if (restaurantResult.success) {
+        const filtered = restaurantResult.items.filter(item =>
+          item.restrntNm?.toLowerCase().includes(sq) ||
+          item.restrntSumm?.toLowerCase().includes(sq) ||
+          item.rprsFod?.toLowerCase().includes(sq) ||
+          item.restrntAddr?.toLowerCase().includes(sq)
+        )
+        setRestaurants(filtered)
+        setRestaurantTotal(filtered.length)
+      }
+      
+      if (eventResult.success) {
+        const filtered = eventResult.items.filter(item =>
+          item.title?.toLowerCase().includes(sq) ||
+          item.placeCdNm?.toLowerCase().includes(sq) ||
+          item.placeDetail?.toLowerCase().includes(sq)
+        )
+        setEvents(filtered)
+        setEventTotal(filtered.length)
+      }
+    } catch (error) {
+      console.error('Search error:', error)
+    }
+    
+    setLoading(false)
+  }
 
   // 검색 실행
   const handleSearch = async (e) => {
@@ -31,6 +106,9 @@ const SearchPage = () => {
     setSearchTerm(query)
     setSearchParams({ q: query })
     setLoading(true)
+    
+    // 검색 기록 저장 (DB)
+    recordSearchQuery(query)
     
     try {
       // 모든 API를 병렬로 호출
@@ -137,6 +215,28 @@ const SearchPage = () => {
               {language === 'ko' ? '검색' : 'Search'}
             </button>
           </form>
+          
+          {/* 인기 검색어 */}
+          {popularSearches.length > 0 && !searchTerm && (
+            <div className="popular-keywords">
+              <div className="popular-label">
+                <FiTrendingUp />
+                {language === 'ko' ? '인기 검색어' : 'Popular Searches'}
+              </div>
+              <div className="popular-tags">
+                {popularSearches.map((item, index) => (
+                  <button
+                    key={item.query}
+                    className="popular-tag"
+                    onClick={() => handlePopularSearchClick(item.query)}
+                  >
+                    <span className="tag-rank">{index + 1}</span>
+                    <span className="tag-text">{item.query}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

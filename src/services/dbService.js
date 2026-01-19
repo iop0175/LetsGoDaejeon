@@ -427,7 +427,8 @@ export const getSupabaseUsageStats = async () => {
     // 모든 테이블의 행 수 조회
     const allTables = [
       ...Object.values(TABLE_CONFIGS).map(c => c.tableName),
-      'hero_slides'
+      'hero_slides',
+      'page_visits'
     ]
     
     for (const tableName of allTables) {
@@ -467,4 +468,377 @@ export const getSupabaseUsageStats = async () => {
   }
 }
 
+// ============================================================
+// 페이지 방문 통계
+// ============================================================
+
+/**
+ * 페이지 방문 기록 (DB에 저장)
+ * @param {string} pageName - 페이지 이름
+ */
+export const recordPageVisitDB = async (pageName) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    // upsert: 오늘 날짜의 기록이 있으면 count 증가, 없으면 새로 생성
+    const { data: existing } = await supabase
+      .from('page_visits')
+      .select('id, visit_count')
+      .eq('page_name', pageName)
+      .eq('visit_date', today)
+      .single()
+    
+    if (existing) {
+      // 기존 레코드 업데이트
+      await supabase
+        .from('page_visits')
+        .update({ 
+          visit_count: existing.visit_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+    } else {
+      // 새 레코드 삽입
+      await supabase
+        .from('page_visits')
+        .insert([{ 
+          page_name: pageName, 
+          visit_date: today,
+          visit_count: 1 
+        }])
+    }
+  } catch (err) {
+    console.error('페이지 방문 기록 실패:', err)
+  }
+}
+
+/**
+ * 페이지별 방문 통계 가져오기 (전체 기간)
+ * @returns {Promise<Object>} { success, stats }
+ */
+export const getPageVisitStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('page_visits')
+      .select('page_name, visit_count')
+    
+    if (error) throw error
+    
+    // 페이지별로 합계 계산
+    const stats = {}
+    data.forEach(item => {
+      if (!stats[item.page_name]) {
+        stats[item.page_name] = 0
+      }
+      stats[item.page_name] += item.visit_count
+    })
+    
+    return { success: true, stats }
+  } catch (err) {
+    console.error('페이지 방문 통계 조회 실패:', err)
+    return { success: false, stats: {} }
+  }
+}
+
+/**
+ * 기간별 페이지 방문 통계 가져오기
+ * @param {string} period - 기간 (all, year, month, week, day)
+ * @returns {Promise<Object>} { success, stats }
+ */
+export const getPageVisitStatsByPeriod = async (period = 'all') => {
+  try {
+    let startDate = null
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    switch (period) {
+      case 'day':
+        startDate = today.toISOString().split('T')[0]
+        break
+      case 'week':
+        const weekAgo = new Date(today)
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        startDate = weekAgo.toISOString().split('T')[0]
+        break
+      case 'month':
+        const monthAgo = new Date(today)
+        monthAgo.setMonth(monthAgo.getMonth() - 1)
+        startDate = monthAgo.toISOString().split('T')[0]
+        break
+      case 'year':
+        const yearAgo = new Date(today)
+        yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+        startDate = yearAgo.toISOString().split('T')[0]
+        break
+      case 'all':
+      default:
+        // 전체 기간
+        break
+    }
+    
+    let query = supabase
+      .from('page_visits')
+      .select('page_name, visit_count')
+    
+    if (startDate) {
+      query = query.gte('visit_date', startDate)
+    }
+    
+    const { data, error } = await query
+    
+    if (error) throw error
+    
+    // 페이지별로 합계 계산
+    const stats = {}
+    data.forEach(item => {
+      if (!stats[item.page_name]) {
+        stats[item.page_name] = 0
+      }
+      stats[item.page_name] += item.visit_count
+    })
+    
+    return { success: true, stats }
+  } catch (err) {
+    console.error('기간별 방문 통계 조회 실패:', err)
+    return { success: false, stats: {} }
+  }
+}
+
+/**
+ * 오늘의 페이지별 방문 통계 가져오기
+ * @returns {Promise<Object>} { success, stats }
+ */
+export const getTodayPageVisitStats = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    const { data, error } = await supabase
+      .from('page_visits')
+      .select('page_name, visit_count')
+      .eq('visit_date', today)
+    
+    if (error) throw error
+    
+    const stats = {}
+    data.forEach(item => {
+      stats[item.page_name] = item.visit_count
+    })
+    
+    return { success: true, stats }
+  } catch (err) {
+    console.error('오늘 방문 통계 조회 실패:', err)
+    return { success: false, stats: {} }
+  }
+}
+
+/**
+ * 최근 N일간 방문 통계 가져오기
+ * @param {number} days - 일 수 (기본 7일)
+ * @returns {Promise<Object>} { success, data }
+ */
+export const getRecentPageVisitStats = async (days = 7) => {
+  try {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().split('T')[0]
+    
+    const { data, error } = await supabase
+      .from('page_visits')
+      .select('*')
+      .gte('visit_date', startDateStr)
+      .order('visit_date', { ascending: true })
+    
+    if (error) throw error
+    
+    return { success: true, data }
+  } catch (err) {
+    console.error('최근 방문 통계 조회 실패:', err)
+    return { success: false, data: [] }
+  }
+}
+
+/**
+ * 가장 많이 방문한 페이지 가져오기
+ * @returns {Promise<Object>} { success, page, count }
+ */
+export const getMostVisitedPageDB = async () => {
+  try {
+    const { success, stats } = await getPageVisitStats()
+    if (!success) return { success: false, page: null, count: 0 }
+    
+    let maxPage = null
+    let maxCount = 0
+    
+    Object.entries(stats).forEach(([page, count]) => {
+      if (count > maxCount) {
+        maxCount = count
+        maxPage = page
+      }
+    })
+    
+    return { success: true, page: maxPage, count: maxCount }
+  } catch (err) {
+    console.error('최다 방문 페이지 조회 실패:', err)
+    return { success: false, page: null, count: 0 }
+  }
+}
+
+// ============================================================
+// 검색 기록 통계
+// ============================================================
+
+/**
+ * 검색 기록 저장 (DB)
+ * @param {string} query - 검색어
+ */
+export const recordSearchQuery = async (query) => {
+  if (!query || query.trim().length === 0) return
+  
+  const searchQuery = query.trim().toLowerCase()
+  
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    // 오늘 같은 검색어가 있는지 확인
+    const { data: existing } = await supabase
+      .from('search_logs')
+      .select('id, search_count')
+      .eq('search_query', searchQuery)
+      .eq('search_date', today)
+      .single()
+    
+    if (existing) {
+      // 기존 레코드 업데이트
+      await supabase
+        .from('search_logs')
+        .update({ 
+          search_count: existing.search_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existing.id)
+    } else {
+      // 새 레코드 삽입
+      await supabase
+        .from('search_logs')
+        .insert([{ 
+          search_query: searchQuery, 
+          search_date: today,
+          search_count: 1 
+        }])
+    }
+  } catch (err) {
+    console.error('검색 기록 저장 실패:', err)
+  }
+}
+
+/**
+ * 인기 검색어 가져오기 (전체 기간)
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, items }
+ */
+export const getPopularSearchQueries = async (limit = 10) => {
+  try {
+    // 검색어별로 합계 계산
+    const { data, error } = await supabase
+      .from('search_logs')
+      .select('search_query, search_count')
+    
+    if (error) throw error
+    
+    // 검색어별 합계 계산
+    const queryMap = {}
+    data.forEach(item => {
+      if (!queryMap[item.search_query]) {
+        queryMap[item.search_query] = 0
+      }
+      queryMap[item.search_query] += item.search_count
+    })
+    
+    // 정렬하여 상위 N개 반환
+    const sorted = Object.entries(queryMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, limit)
+      .map(([query, count]) => ({ query, count }))
+    
+    return { success: true, items: sorted }
+  } catch (err) {
+    console.error('인기 검색어 조회 실패:', err)
+    return { success: false, items: [] }
+  }
+}
+
+/**
+ * 오늘의 인기 검색어 가져오기
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, items }
+ */
+export const getTodayPopularSearchQueries = async (limit = 10) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    const { data, error } = await supabase
+      .from('search_logs')
+      .select('search_query, search_count')
+      .eq('search_date', today)
+      .order('search_count', { ascending: false })
+      .limit(limit)
+    
+    if (error) throw error
+    
+    const items = data.map(item => ({
+      query: item.search_query,
+      count: item.search_count
+    }))
+    
+    return { success: true, items }
+  } catch (err) {
+    console.error('오늘 인기 검색어 조회 실패:', err)
+    return { success: false, items: [] }
+  }
+}
+
+/**
+ * 검색 통계 요약 가져오기
+ * @returns {Promise<Object>} { success, totalSearches, uniqueQueries, topQuery }
+ */
+export const getSearchStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('search_logs')
+      .select('search_query, search_count')
+    
+    if (error) throw error
+    
+    // 총 검색 횟수
+    const totalSearches = data.reduce((sum, item) => sum + item.search_count, 0)
+    
+    // 고유 검색어 수
+    const uniqueQueries = new Set(data.map(item => item.search_query)).size
+    
+    // 최다 검색어
+    const queryMap = {}
+    data.forEach(item => {
+      if (!queryMap[item.search_query]) {
+        queryMap[item.search_query] = 0
+      }
+      queryMap[item.search_query] += item.search_count
+    })
+    
+    let topQuery = null
+    let topCount = 0
+    Object.entries(queryMap).forEach(([query, count]) => {
+      if (count > topCount) {
+        topCount = count
+        topQuery = { query, count }
+      }
+    })
+    
+    return { success: true, totalSearches, uniqueQueries, topQuery }
+  } catch (err) {
+    console.error('검색 통계 조회 실패:', err)
+    return { success: false, totalSearches: 0, uniqueQueries: 0, topQuery: null }
+  }
+}
+
 export { TABLE_CONFIGS }
+

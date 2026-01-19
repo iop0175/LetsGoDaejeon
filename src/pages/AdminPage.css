@@ -1953,3 +1953,441 @@
     margin-top: 8px;
   }
 }
+
+/* 페이지 방문 통계 섹션 */
+.visit-stats-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.visit-stats-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin-bottom: 20px;
+}
+
+.visit-stats-section h3 .loading-icon {
+  font-size: 1rem;
+}
+
+.visit-stats-section h3 .spinning {
+  animation: spin 1s linear infinite;
+}
+
+.visit-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.visit-stat-card {
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.visit-label {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.visit-value {
+  font-size: 1.1rem;
+  color: #1e293b;
+}
+
+.visit-value strong {
+  color: #4f46e5;
+}
+
+.visit-value.empty {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+/* 방문 차트 */
+.visit-chart-container {
+  margin-bottom: 24px;
+}
+
+.visit-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.visit-chart-header h4 {
+  font-size: 1rem;
+  color: #475569;
+  margin: 0;
+}
+
+.visit-chart-container h4 {
+  font-size: 1rem;
+  color: #475569;
+  margin-bottom: 16px;
+}
+
+/* 기간 필터 탭 */
+.period-filter-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.period-tab {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.period-tab:hover {
+  color: #475569;
+  background: #e2e8f0;
+}
+
+.period-tab.active {
+  background: #4f46e5;
+  color: white;
+}
+
+.visit-bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.visit-bar-item {
+  display: grid;
+  grid-template-columns: 100px 1fr 70px;
+  align-items: center;
+  gap: 12px;
+}
+
+.visit-page-name {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.visit-bar-container {
+  height: 24px;
+  background: #f1f5f9;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.visit-bar {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.5s ease;
+  min-width: 2px;
+}
+
+.visit-count {
+  font-size: 0.9rem;
+  color: #64748b;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* 오늘의 방문 */
+.today-visits-container {
+  margin-bottom: 20px;
+}
+
+.today-visits-container h4 {
+  font-size: 1rem;
+  color: #475569;
+  margin-bottom: 16px;
+}
+
+.today-visits-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 12px;
+}
+
+.today-visit-card {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  color: white;
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.today-page-name {
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+.today-visit-count {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.visit-stats-section .refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.visit-stats-section .refresh-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+@media (max-width: 768px) {
+  .visit-bar-item {
+    grid-template-columns: 80px 1fr 60px;
+  }
+  
+  .today-visits-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ================================================
+   검색 기록 통계 섹션
+   ================================================ */
+.search-stats-section {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 24px;
+}
+
+.search-stats-section h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.2rem;
+  color: #1e293b;
+  margin-bottom: 20px;
+}
+
+.search-stats-section h3 .loading-icon {
+  font-size: 1rem;
+}
+
+.search-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.search-stat-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.search-label {
+  font-size: 0.85rem;
+  color: #92400e;
+}
+
+.search-value {
+  font-size: 1.1rem;
+  color: #78350f;
+}
+
+.search-value strong {
+  color: #b45309;
+}
+
+.search-value.empty {
+  color: #a16207;
+  font-style: italic;
+}
+
+/* 인기 검색어 목록 */
+.popular-searches-container {
+  margin-bottom: 24px;
+}
+
+.popular-searches-container h4,
+.today-searches-container h4 {
+  font-size: 1rem;
+  color: #475569;
+  margin-bottom: 16px;
+}
+
+.popular-searches-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.popular-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border-radius: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.popular-search-item:hover {
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.search-rank {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #f59e0b;
+  min-width: 30px;
+}
+
+.search-query {
+  flex: 1;
+  font-size: 0.95rem;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+.search-count {
+  font-size: 0.85rem;
+  color: #64748b;
+  background: #e2e8f0;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+/* 오늘의 검색어 */
+.today-searches-container {
+  margin-bottom: 20px;
+}
+
+.today-searches-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.today-search-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.tag-rank {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.tag-query {
+  font-weight: 500;
+}
+
+/* 다크모드 기간 필터 탭 */
+.dark-theme .period-filter-tabs {
+  background: #374151;
+}
+
+.dark-theme .period-tab {
+  color: #9ca3af;
+}
+
+.dark-theme .period-tab:hover {
+  color: #e5e7eb;
+  background: #4b5563;
+}
+
+.dark-theme .period-tab.active {
+  background: #6366f1;
+  color: white;
+}
+
+.dark-theme .visit-chart-header h4 {
+  color: #e5e7eb;
+}
+.tag-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.no-data-text {
+  color: #94a3b8;
+  font-style: italic;
+  font-size: 0.9rem;
+  padding: 20px;
+  text-align: center;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.search-stats-section .refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-stats-section .refresh-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+@media (max-width: 768px) {
+  .search-stats-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .today-searches-list {
+    justify-content: center;
+  }
+}
