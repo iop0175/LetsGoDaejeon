@@ -125,7 +125,9 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
     const xmlDoc = parser.parseFromString(text, "text/xml");
     
     const resultCode = xmlDoc.querySelector('resultCode')?.textContent;
-    const totalCount = xmlDoc.querySelectorAll('item').length;
+    // 전체 개수 가져오기 (totalCount 태그 확인)
+    const totalCountNode = xmlDoc.querySelector('totalCount');
+    const apiTotalCount = totalCountNode ? parseInt(totalCountNode.textContent) : 0;
     
     if (resultCode === '00') {
       const parkingNodes = xmlDoc.querySelectorAll('item');
@@ -140,7 +142,7 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
         typeNum: node.querySelector('PRKPLCETYPE')?.textContent === '노외' ? '2' : '1', // 노상/노외
         parkingType: node.querySelector('PRKPLCESE')?.textContent || '', // 공영/민영 텍스트
         parkingCategory: node.querySelector('PRKPLCETYPE')?.textContent || '', // 노상/노외 텍스트
-        totalLot: parseInt(node.querySelector('PRKCMPRT')?.textContent || '0'), // 주차면수
+        totalLot: node.querySelector('PRKCMPRT')?.textContent || '', // 주차면수 (문자열로)
         // 운영시간
         weekdayOpen: node.querySelector('WEEKDAYOPEROPENHHMM')?.textContent || '',
         weekdayClose: node.querySelector('WEEKDAYOPERCOLSEHHMM')?.textContent || '',
@@ -165,61 +167,13 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
       
       return {
         success: true,
-        totalCount: items.length,
+        totalCount: apiTotalCount || items.length,
         items: items
       };
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
     console.error('대전시 주차장 API 호출 오류:', error);
-    return { success: false, items: [], totalCount: 0, error };
-  }
-};
-
-// 기상센서 정보 조회
-export const getWeatherSensor = async (pageNo = 1, numOfRows = 10) => {
-  try {
-    const response = await fetch(
-      `http://bigdata.daejeon.go.kr/openApi/6300000/getWetherSensorMesureInfoSttus/getWetherSensorMesureInfoSttuslist?pageNo=${pageNo}&numOfRows=${numOfRows}`
-    );
-    const data = await response.json();
-    
-    if (data.response?.body?.items) {
-      return {
-        success: true,
-        totalCount: data.response.body.totalCount || 0,
-        items: data.response.body.items
-      };
-    }
-    return { success: true, items: data.items || data || [], totalCount: 0 };
-  } catch (error) {
-    console.error('기상센서 API 호출 오류:', error);
-    return { success: false, items: [], totalCount: 0, error };
-  }
-};
-
-// 대전시 관내 음식점 조회 (빅데이터 API)
-export const getDaejeonStores = async () => {
-  try {
-    const response = await fetch('http://bigdata.daejeon.go.kr/api/stores/');
-    const data = await response.json();
-    
-    if (data && Array.isArray(data)) {
-      return {
-        success: true,
-        totalCount: data.length,
-        items: data
-      };
-    } else if (data?.stores) {
-      return {
-        success: true,
-        totalCount: data.stores.length,
-        items: data.stores
-      };
-    }
-    return { success: true, items: data || [], totalCount: 0 };
-  } catch (error) {
-    console.error('대전시 음식점 API 호출 오류:', error);
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -342,8 +296,8 @@ export const getTourRooms = async (pageNo = 1, numOfRows = 10) => {
 // 한국관광공사 포토갤러리 API
 // ============================
 
-// 키워드로 관광지 사진 검색
-export const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
+// 키워드로 관광지 사진 검색 (내부 사용)
+const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
   try {
     const encodedKeyword = encodeURIComponent(keyword);
     const response = await fetch(
@@ -366,108 +320,19 @@ export const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
   }
 };
 
-// 관광지 제목으로 사진 검색 (gallerySearchList1 API 사용)
-export const getKTOPhotosByTitle = async (title, pageNo = 1, numOfRows = 10) => {
-  try {
-    const encodedKeyword = encodeURIComponent(title);
-    const response = await fetch(
-      `${KTO_PHOTO_BASE_URL}/gallerySearchList1?serviceKey=${KTO_PHOTO_API_KEY}&numOfRows=${numOfRows}&pageNo=${pageNo}&MobileOS=ETC&MobileApp=LetsGoDaejeon&arrange=A&keyword=${encodedKeyword}&_type=json`
-    );
-    const data = await response.json();
-    
-    if (data.response?.header?.resultCode === '0000') {
-      const items = data.response.body.items?.item || [];
-      return {
-        success: true,
-        totalCount: data.response.body.totalCount || 0,
-        items: Array.isArray(items) ? items : [items]
-      };
-    }
-    return { success: false, items: [], totalCount: 0 };
-  } catch (error) {
-    console.error('한국관광공사 포토갤러리 검색 오류:', error);
-    return { success: false, items: [], totalCount: 0, error };
-  }
-};
-
-// 최신 관광 사진 목록 조회
-export const getLatestKTOPhotos = async (pageNo = 1, numOfRows = 10, arrange = 'A') => {
-  try {
-    // arrange: A=제목순, B=조회순, C=수정일순, D=생성일순
-    const response = await fetch(
-      `${KTO_PHOTO_BASE_URL}/galleryList1?serviceKey=${KTO_PHOTO_API_KEY}&numOfRows=${numOfRows}&pageNo=${pageNo}&MobileOS=ETC&MobileApp=LetsGoDaejeon&arrange=${arrange}&_type=json`
-    );
-    const data = await response.json();
-    
-    if (data.response?.header?.resultCode === '0000') {
-      const items = data.response.body.items?.item || [];
-      return {
-        success: true,
-        totalCount: data.response.body.totalCount || 0,
-        items: Array.isArray(items) ? items : [items]
-      };
-    }
-    return { success: false, items: [], totalCount: 0 };
-  } catch (error) {
-    console.error('한국관광공사 포토갤러리 목록 조회 오류:', error);
-    return { success: false, items: [], totalCount: 0, error };
-  }
-};
-
-// 대전 관광지 한국관광공사 사진 매핑
+// 대전 관광지 한국관광공사 사진 키워드 매핑
 const DAEJEON_KTO_PHOTOS = {
-  '유성온천': { keyword: '유성온천', hasPhotos: true },
-  '유성온천공원': { keyword: '유성온천공원', hasPhotos: true },
-  '한밭수목원': { keyword: '한밭수목원', hasPhotos: true },
-  '엑스포과학공원': { keyword: '엑스포', hasPhotos: true },
-  '대청호': { keyword: '대청호', hasPhotos: true },
-  '장태산': { keyword: '장태산', hasPhotos: true },
-  '장태산자연휴양림': { keyword: '장태산', hasPhotos: true },
-  '계족산': { keyword: '계족산', hasPhotos: true },
-  '보문산': { keyword: '보문산', hasPhotos: true },
-  '엑스포기념관': { keyword: '엑스포기념관', hasPhotos: true },
-  '대전교통문화센터': { keyword: '대전교통문화센터', hasPhotos: true }
-};
-
-// 대전 관광지에 대해 한국관광공사 사진 가져오기
-export const getDaejeonKTOPhoto = async (spotName) => {
-  // 매핑된 키워드 찾기
-  let searchKeyword = spotName;
-  
-  for (const [key, value] of Object.entries(DAEJEON_KTO_PHOTOS)) {
-    if (spotName?.includes(key) || key.includes(spotName?.split(' ')[0] || '')) {
-      if (value.hasPhotos) {
-        searchKeyword = value.keyword;
-        break;
-      }
-    }
-  }
-  
-  // 한국관광공사 사진 검색
-  const result = await searchKTOPhotos(searchKeyword, 1, 1);
-  
-  if (result.success && result.items.length > 0) {
-    const photo = result.items[0];
-    // 대전광역시 사진만 필터링
-    if (photo.galPhotographyLocation?.includes('대전')) {
-      return {
-        success: true,
-        imageUrl: photo.galWebImageUrl,
-        title: photo.galTitle,
-        photographer: photo.galPhotographer,
-        location: photo.galPhotographyLocation
-      };
-    }
-  }
-  
-  // 대전 사진이 없으면 기본 이미지 사용
-  return {
-    success: false,
-    imageUrl: DEFAULT_IMAGE,
-    title: spotName,
-    photographer: '한국관광공사',
-    location: '대전광역시'
-  };
+  '유성온천': '유성온천',
+  '유성온천공원': '유성온천공원',
+  '한밭수목원': '한밭수목원',
+  '엑스포과학공원': '엑스포',
+  '대청호': '대청호',
+  '장태산': '장태산',
+  '장태산자연휴양림': '장태산',
+  '계족산': '계족산',
+  '보문산': '보문산',
+  '엑스포기념관': '엑스포기념관',
+  '대전교통문화센터': '대전교통문화센터'
 };
 
 // 대전 관광지 사진 갤러리 가져오기 (여러 장)
@@ -477,10 +342,8 @@ export const getDaejeonPhotoGallery = async (spotName, numOfRows = 10) => {
   
   for (const [key, value] of Object.entries(DAEJEON_KTO_PHOTOS)) {
     if (spotName?.includes(key) || key.includes(spotName?.split(' ')[0] || '')) {
-      if (value.hasPhotos) {
-        searchKeyword = value.keyword;
-        break;
-      }
+      searchKeyword = value;
+      break;
     }
   }
   
@@ -526,10 +389,7 @@ export default {
   getTourSpots,
   getFestivals,
   getRestaurants,
-  getAccommodations,
   getDaejeonParking,
-  getWeatherSensor,
-  getDaejeonStores,
   getDaejeonFestivals,
   getCulturalFacilities,
   getMedicalFacilities,

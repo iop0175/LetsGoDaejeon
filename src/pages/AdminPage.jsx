@@ -1,10 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Chart } from 'react-google-charts'
 import { 
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
-  FiMenu, FiX, FiBarChart2, FiDatabase, FiPieChart, FiCoffee, FiHeart, 
-  FiPackage, FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp
+  FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
+  FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -12,7 +11,9 @@ import {
   getTourSpots, getFestivals, getRestaurants, getCulturalFacilities,
   getMedicalFacilities, getShoppingPlaces, getTourRooms, getDaejeonParking
 } from '../services/api'
-import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
+import { getAllDbCounts } from '../services/dbService'
+import { getApiStats, API_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
+import { StatCard, ApiStatsChart, DataTable, Pagination } from '../components/admin'
 import './AdminPage.css'
 
 // 페이지 관리 설정
@@ -23,7 +24,9 @@ const PAGE_CONFIGS = {
     color: '#0066cc',
     fetchFn: getTourSpots,
     fields: ['tourspotNm', 'tourspotAddr', 'tourspotSumm', 'signguNm'],
-    labels: { tourspotNm: '관광지명', tourspotAddr: '주소', tourspotSumm: '설명', signguNm: '구' }
+    labels: { tourspotNm: '관광지명', tourspotAddr: '주소', tourspotSumm: '설명', signguNm: '구' },
+    tableName: 'travel_spots',
+    uniqueField: 'tourspotNm'
   },
   festival: {
     title: { ko: '축제/행사', en: 'Festival' },
@@ -31,7 +34,9 @@ const PAGE_CONFIGS = {
     color: '#9c27b0',
     fetchFn: getFestivals,
     fields: ['title', 'themeCdNm', 'placeCdNm', 'beginDt', 'endDt'],
-    labels: { title: '행사명', themeCdNm: '테마', placeCdNm: '장소유형', beginDt: '시작일', endDt: '종료일' }
+    labels: { title: '행사명', themeCdNm: '테마', placeCdNm: '장소유형', beginDt: '시작일', endDt: '종료일' },
+    tableName: 'festivals',
+    uniqueField: 'title'
   },
   food: {
     title: { ko: '맛집', en: 'Food' },
@@ -39,7 +44,9 @@ const PAGE_CONFIGS = {
     color: '#ff6b35',
     fetchFn: getRestaurants,
     fields: ['restrntNm', 'restrntAddr', 'reprMenu', 'telNo', 'signguNm'],
-    labels: { restrntNm: '식당명', restrntAddr: '주소', reprMenu: '대표메뉴', telNo: '전화', signguNm: '구' }
+    labels: { restrntNm: '식당명', restrntAddr: '주소', reprMenu: '대표메뉴', telNo: '전화', signguNm: '구' },
+    tableName: 'restaurants',
+    uniqueField: 'restrntNm'
   },
   culture: {
     title: { ko: '문화시설', en: 'Culture' },
@@ -47,15 +54,19 @@ const PAGE_CONFIGS = {
     color: '#2196f3',
     fetchFn: getCulturalFacilities,
     fields: ['fcltyNm', 'locplc', 'fcltyKnd', 'operTime'],
-    labels: { fcltyNm: '시설명', locplc: '주소', fcltyKnd: '종류', operTime: '운영시간' }
+    labels: { fcltyNm: '시설명', locplc: '주소', fcltyKnd: '종류', operTime: '운영시간' },
+    tableName: 'cultural_facilities',
+    uniqueField: 'fcltyNm'
   },
   medical: {
     title: { ko: '의료시설', en: 'Medical' },
     icon: FiHeart,
     color: '#e91e63',
     fetchFn: getMedicalFacilities,
-    fields: ['yadmNm', 'addr', 'clCdNm', 'dgsbjtCdNm', 'telno'],
-    labels: { yadmNm: '병원명', addr: '주소', clCdNm: '종류', dgsbjtCdNm: '진료과', telno: '전화' }
+    fields: ['hsptlNm', 'locplc', 'hsptlKnd', 'fondSe', 'telno'],
+    labels: { hsptlNm: '병원명', locplc: '주소', hsptlKnd: '종류', fondSe: '설립구분', telno: '전화' },
+    tableName: 'medical_facilities',
+    uniqueField: 'hsptlNm'
   },
   shopping: {
     title: { ko: '쇼핑', en: 'Shopping' },
@@ -63,15 +74,19 @@ const PAGE_CONFIGS = {
     color: '#4caf50',
     fetchFn: getShoppingPlaces,
     fields: ['shppgNm', 'shppgAddr', 'shppgIntro', 'telNo'],
-    labels: { shppgNm: '상점명', shppgAddr: '주소', shppgIntro: '소개', telNo: '전화' }
+    labels: { shppgNm: '상점명', shppgAddr: '주소', shppgIntro: '소개', telNo: '전화' },
+    tableName: 'shopping_places',
+    uniqueField: 'shppgNm'
   },
   accommodation: {
     title: { ko: '숙박', en: 'Stay' },
     icon: FiHome,
     color: '#795548',
     fetchFn: getTourRooms,
-    fields: ['tourromsNm', 'tourromsAddr', 'tourromsKnd', 'telNo'],
-    labels: { tourromsNm: '숙소명', tourromsAddr: '주소', tourromsKnd: '유형', telNo: '전화' }
+    fields: ['romsNm', 'romsAddr', 'romsScl', 'romsRefadNo'],
+    labels: { romsNm: '숙소명', romsAddr: '주소', romsScl: '유형', romsRefadNo: '전화' },
+    tableName: 'accommodations',
+    uniqueField: 'romsNm'
   },
   parking: {
     title: { ko: '주차장', en: 'Parking' },
@@ -79,7 +94,9 @@ const PAGE_CONFIGS = {
     color: '#607d8b',
     fetchFn: getDaejeonParking,
     fields: ['name', 'addr', 'parkingType', 'totalLot', 'chargeInfo'],
-    labels: { name: '주차장명', addr: '주소', parkingType: '유형', totalLot: '주차면수', chargeInfo: '요금' }
+    labels: { name: '주차장명', addr: '주소', parkingType: '유형', totalLot: '주차면수', chargeInfo: '요금' },
+    tableName: 'parking_lots',
+    uniqueField: 'name'
   }
 }
 
@@ -96,7 +113,8 @@ const AdminPage = () => {
   const [sidebarOpen, setSidebarOpen] = useState(true)
   
   // 대시보드 통계
-  const [stats, setStats] = useState({})
+  const [stats, setStats] = useState({})          // API 데이터 개수
+  const [dbStats, setDbStats] = useState({})      // DB 데이터 개수
   const [statsLoading, setStatsLoading] = useState(false)
   
   // API 호출 통계
@@ -116,9 +134,12 @@ const AdminPage = () => {
   const [tableData, setTableData] = useState([])
   const [tableLoading, setTableLoading] = useState(false)
   const [selectedTable, setSelectedTable] = useState('')
+  
+  // 저장된 아이템 추적
+  const [savedItems, setSavedItems] = useState({})
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
-  const parseDate = (dateStr) => {
+  const parseDate = useCallback((dateStr) => {
     if (!dateStr) return null
     const str = String(dateStr).trim()
     
@@ -144,10 +165,10 @@ const AdminPage = () => {
     // 그 외 Date 파싱 시도
     const parsed = new Date(str)
     return isNaN(parsed.getTime()) ? null : parsed
-  }
+  }, [])
   
   // 통계 로드
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     setStatsLoading(true)
     const newStats = {}
     const today = new Date()
@@ -157,7 +178,7 @@ const AdminPage = () => {
       try {
         // 축제/행사는 진행 중인 것만 카운트
         if (key === 'festival') {
-          const result = await config.fetchFn(1, 200)
+          const result = await config.fetchFn(1, 500)
           if (result.success) {
             const activeEvents = (result.items || []).filter(item => {
               const endDate = parseDate(item.endDt)
@@ -167,9 +188,36 @@ const AdminPage = () => {
           } else {
             newStats[key] = 0
           }
+        } else if (key === 'parking') {
+          // 주차장은 전체 데이터를 가져와서 중복 제거
+          let allItems = []
+          const firstResult = await config.fetchFn(1, 200)
+          if (firstResult.success && firstResult.items?.length > 0) {
+            allItems = [...firstResult.items]
+            const totalCount = firstResult.totalCount || 0
+            
+            if (totalCount > 200) {
+              const totalPages = Math.ceil(totalCount / 200)
+              for (let page = 2; page <= totalPages; page++) {
+                const result = await config.fetchFn(page, 200)
+                if (result.success && result.items?.length > 0) {
+                  allItems = [...allItems, ...result.items]
+                }
+              }
+            }
+          }
+          const uniqueSet = new Set(allItems.map(item => item[config.uniqueField]))
+          newStats[key] = uniqueSet.size
         } else {
-          const result = await config.fetchFn(1, 1)
-          newStats[key] = result.totalCount || 0
+          // 다른 데이터는 한 번에 가져와서 중복 제거 후 개수 계산
+          const result = await config.fetchFn(1, 200)
+          if (result.success && result.items) {
+            const uniqueField = config.uniqueField
+            const uniqueSet = new Set(result.items.map(item => item[uniqueField]))
+            newStats[key] = uniqueSet.size
+          } else {
+            newStats[key] = result.totalCount || 0
+          }
         }
       } catch {
         newStats[key] = 0
@@ -177,28 +225,37 @@ const AdminPage = () => {
     }
     
     setStats(newStats)
+    
+    // DB 데이터 개수 로드
+    try {
+      const dbCounts = await getAllDbCounts()
+      setDbStats(dbCounts)
+    } catch (err) {
+      console.error('DB 개수 로드 실패:', err)
+    }
+    
     setStatsLoading(false)
-  }
+  }, [parseDate])
   
   // API 호출 통계 로드
-  const loadApiStats = () => {
+  const loadApiStats = useCallback(() => {
     const stats = getApiStats()
     setApiCallStats(stats)
     setMostCalledApi(getMostCalledApi())
     setMostVisitedPage(getMostVisitedPage())
-  }
+  }, [])
   
   // 통계 리셋
-  const handleResetStats = () => {
+  const handleResetStats = useCallback(() => {
     if (window.confirm(language === 'ko' ? '오늘의 API 호출 통계를 초기화하시겠습니까?' : 'Reset today\'s API call statistics?')) {
       resetApiStats()
       loadApiStats()
     }
-  }
+  }, [language, loadApiStats])
   
   // 페이지 데이터 로드
   // 축제/행사 필터 (지난 행사 제외)
-  const filterPastEvents = (items) => {
+  const filterPastEvents = useCallback((items) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
@@ -207,60 +264,154 @@ const AdminPage = () => {
       if (!endDate) return true // 종료일이 없으면 표시
       return endDate >= today // 오늘 이후 종료 행사만 표시
     })
-  }
+  }, [parseDate])
   
-  const loadPageData = async (pageKey, page = 1) => {
+  // 페이지 데이터 소스 상태 (api/db/both)
+  const [dataSource, setDataSource] = useState('api')
+  
+  const loadPageData = useCallback(async (pageKey, page = 1, source = 'api') => {
     setPageLoading(true)
     setSelectedPage(pageKey)
     setCurrentPage(page)
+    setDataSource(source)
     
     const config = PAGE_CONFIGS[pageKey]
     try {
-      // 축제/행사의 경우 전체 불러와서 필터링
-      const fetchSize = pageKey === 'festival' ? 500 : itemsPerPage
-      const result = await config.fetchFn(pageKey === 'festival' ? 1 : page, fetchSize)
-      
-      if (result.success) {
-        let items = result.items || []
+      if (source === 'db') {
+        // DB에서만 가져오기
+        const { getDbData } = await import('../services/dbService')
+        const dbResult = await getDbData(pageKey, page, itemsPerPage)
         
-        // 축제/행사는 지난 것 필터링
-        if (pageKey === 'festival') {
-          console.log('축제/행사 원본 개수:', items.length)
-          items = filterPastEvents(items)
-          console.log('필터링 후 개수:', items.length)
-          setPageTotalCount(items.length)
-          // 클라이언트 측 페이지네이션
-          const startIdx = (page - 1) * itemsPerPage
-          items = items.slice(startIdx, startIdx + itemsPerPage)
+        if (dbResult.success) {
+          setPageData(dbResult.items)
+          setPageTotalCount(dbResult.totalCount)
         } else {
-          setPageTotalCount(result.totalCount || 0)
+          setPageData([])
+          setPageTotalCount(0)
+        }
+      } else {
+        // API에서 가져오기 (DB에 저장된 것 제외)
+        
+        // 항상 DB에서 저장된 아이템 목록 fresh하게 가져오기
+        let currentSavedItems = []
+        if (config.tableName) {
+          try {
+            const { data } = await supabase
+              .from(config.tableName)
+              .select(config.uniqueField)
+            
+            if (data && data.length > 0) {
+              currentSavedItems = data.map(item => item[config.uniqueField])
+              setSavedItems(prev => ({ ...prev, [pageKey]: currentSavedItems }))
+            } else {
+              // DB에 데이터가 없으면 빈 배열로 초기화
+              setSavedItems(prev => ({ ...prev, [pageKey]: [] }))
+            }
+          } catch (err) {
+            console.error('저장된 아이템 조회 실패:', err)
+          }
         }
         
-        setPageData(items)
-      } else {
-        setPageData([])
-        setPageTotalCount(0)
+        // 데이터 가져오기
+        let items = []
+        let totalApiCount = 0
+        
+        if (pageKey === 'festival') {
+          // 축제/행사는 전체 불러와서 필터링
+          const result = await config.fetchFn(1, 500)
+          if (result.success) {
+            items = filterPastEvents(result.items || [])
+            totalApiCount = items.length
+          }
+        } else if (pageKey === 'parking') {
+          // 주차장은 전체 페이지를 가져옴
+          const firstResult = await config.fetchFn(1, 200)
+          if (firstResult.success && firstResult.items?.length > 0) {
+            items = [...firstResult.items]
+            const apiTotal = firstResult.totalCount || 0
+            
+            if (apiTotal > 200) {
+              const totalPages = Math.ceil(apiTotal / 200)
+              for (let p = 2; p <= totalPages; p++) {
+                const result = await config.fetchFn(p, 200)
+                if (result.success && result.items?.length > 0) {
+                  items = [...items, ...result.items]
+                }
+              }
+            }
+            totalApiCount = items.length
+          }
+        } else {
+          // 다른 데이터는 200개씩 가져오기
+          const result = await config.fetchFn(1, 200)
+          if (result.success) {
+            items = result.items || []
+            totalApiCount = result.totalCount || items.length
+          }
+        }
+        
+        if (items.length > 0) {
+          
+          // API 데이터 중복 확인 및 제거
+          const uniqueField = config.uniqueField
+          const allNames = items.map(item => item[uniqueField])
+          const uniqueNames = [...new Set(allNames)]
+          if (allNames.length !== uniqueNames.length) {
+            // 중복 제거
+            const uniqueMap = new Map()
+            items.forEach(item => {
+              const key = item[uniqueField]
+              if (key && !uniqueMap.has(key)) {
+                uniqueMap.set(key, item)
+              }
+            })
+            items = Array.from(uniqueMap.values())
+          }
+          
+          // DB에 저장된 항목 제외
+          if (currentSavedItems.length > 0) {
+            items = items.filter(item => !currentSavedItems.includes(item[uniqueField]))
+          }
+          
+          // 클라이언트 측 페이지네이션
+          const startIdx = (page - 1) * itemsPerPage
+          const paginatedItems = items.slice(startIdx, startIdx + itemsPerPage)
+          
+          setPageData(paginatedItems)
+          setPageTotalCount(items.length) // DB에 없는 항목 수
+        } else {
+          setPageData([])
+          setPageTotalCount(0)
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error('데이터 로드 실패:', err)
       setPageData([])
       setPageTotalCount(0)
     }
     
     setPageLoading(false)
-  }
+  }, [filterPastEvents, itemsPerPage, savedItems, supabase])
   
   // 페이지 변경 핸들러
-  const handlePageChange = (page) => {
+  const handlePageChange = useCallback((page) => {
     if (selectedPage && page >= 1) {
-      loadPageData(selectedPage, page)
+      loadPageData(selectedPage, page, dataSource)
     }
-  }
+  }, [selectedPage, loadPageData, dataSource])
+  
+  // 데이터 소스 변경 핸들러
+  const handleDataSourceChange = useCallback((source) => {
+    if (selectedPage) {
+      loadPageData(selectedPage, 1, source)
+    }
+  }, [selectedPage, loadPageData])
   
   // 총 페이지 수 계산
-  const totalPages = Math.ceil(pageTotalCount / itemsPerPage)
+  const totalPages = useMemo(() => Math.ceil(pageTotalCount / itemsPerPage), [pageTotalCount, itemsPerPage])
   
   // Supabase 테이블 데이터 로드
-  const loadTableData = async (tableName) => {
+  const loadTableData = useCallback(async (tableName) => {
     setTableLoading(true)
     setSelectedTable(tableName)
     
@@ -272,7 +423,212 @@ const AdminPage = () => {
       setTableData([])
     }
     setTableLoading(false)
-  }
+  }, [supabase])
+  
+  // 저장된 아이템 로드 (페이지별)
+  const loadSavedItems = useCallback(async (pageKey) => {
+    const config = PAGE_CONFIGS[pageKey]
+    if (!config?.tableName || !config?.uniqueField) return
+    
+    try {
+      const { data, error } = await supabase
+        .from(config.tableName)
+        .select(config.uniqueField)
+      
+      if (error) throw error
+      
+      const savedIds = (data || []).map(item => item[config.uniqueField])
+      setSavedItems(prev => ({ ...prev, [pageKey]: savedIds }))
+    } catch (err) {
+      console.error('저장된 아이템 로드 실패:', err)
+    }
+  }, [supabase])
+  
+  // 개별 아이템 저장
+  const handleSaveItem = useCallback(async (item) => {
+    if (!selectedPage) return
+    
+    const config = PAGE_CONFIGS[selectedPage]
+    if (!config?.tableName) {
+      throw new Error('테이블 설정이 없습니다.')
+    }
+    
+    // 저장할 데이터 구성 - 정의된 필드만 추출
+    const saveData = {}
+    config.fields.forEach(field => {
+      if (item[field] !== undefined) {
+        saveData[field] = item[field]
+      }
+    })
+    
+    // 메타데이터 추가
+    saveData.page_type = selectedPage
+    saveData.saved_at = new Date().toISOString()
+    saveData.saved_by = user?.email || 'admin'
+    saveData.raw_data = item // 전체 데이터를 JSON으로 저장
+    
+    const { error } = await supabase
+      .from(config.tableName)
+      .upsert(saveData, { onConflict: config.uniqueField })
+    
+    if (error) throw error
+    
+    // 저장된 아이템 목록 업데이트
+    const itemId = item[config.uniqueField]
+    setSavedItems(prev => ({
+      ...prev,
+      [selectedPage]: [...(prev[selectedPage] || []), itemId]
+    }))
+  }, [selectedPage, supabase, user])
+  
+  // 전체 저장 상태
+  const [bulkSaving, setBulkSaving] = useState(false)
+  const [bulkSaveProgress, setBulkSaveProgress] = useState({ current: 0, total: 0 })
+  
+  // 전체 저장 함수
+  const handleBulkSave = useCallback(async () => {
+    if (!selectedPage) return
+    
+    const config = PAGE_CONFIGS[selectedPage]
+    if (!config?.tableName) {
+      alert('테이블 설정이 없습니다.')
+      return
+    }
+    
+    setBulkSaving(true)
+    setBulkSaveProgress({ current: 0, total: 0 })
+    
+    try {
+      // 전체 데이터 가져오기
+      let allItems = []
+      
+      if (selectedPage === 'festival') {
+        // 축제/행사는 전체 불러와서 필터링
+        const result = await config.fetchFn(1, 500)
+        if (result.success) {
+          allItems = filterPastEvents(result.items || [])
+        }
+      } else if (selectedPage === 'parking') {
+        // 주차장은 전체 데이터를 가져와야 함 (API totalCount 기준)
+        const firstResult = await config.fetchFn(1, 200)
+        if (firstResult.success && firstResult.items?.length > 0) {
+          allItems = [...firstResult.items]
+          const totalCount = firstResult.totalCount || 0
+          
+          // 나머지 페이지 가져오기
+          if (totalCount > 200) {
+            const totalPages = Math.ceil(totalCount / 200)
+            for (let page = 2; page <= totalPages; page++) {
+              const result = await config.fetchFn(page, 200)
+              if (result.success && result.items?.length > 0) {
+                allItems = [...allItems, ...result.items]
+              }
+            }
+          }
+        }
+      } else {
+        // 다른 데이터는 한 번에 200개씩 가져오기
+        const result = await config.fetchFn(1, 200)
+        if (result.success && result.items?.length > 0) {
+          allItems = result.items
+        }
+      }
+      
+      // 중복 제거 (uniqueField 기준)
+      const originalCount = allItems.length
+      const uniqueMap = new Map()
+      allItems.forEach(item => {
+        const key = item[config.uniqueField]
+        if (key && !uniqueMap.has(key)) {
+          uniqueMap.set(key, item)
+        }
+      })
+      allItems = Array.from(uniqueMap.values())
+      const duplicateCount = originalCount - allItems.length
+      
+      // 확인 메시지 (중복 제거 후)
+      const confirmMessage = language === 'ko'
+        ? `${config.title.ko} 전체 데이터를 저장하시겠습니까?\n\n` +
+          `• 원본 데이터: ${originalCount}개\n` +
+          `• 중복 제거: ${duplicateCount}개\n` +
+          `• 저장될 데이터: ${allItems.length}개\n\n` +
+          `※ 많은 양의 데이터는 시간이 걸릴 수 있습니다.`
+        : `Save all ${config.title.en} data?\n\n` +
+          `• Original: ${originalCount}\n` +
+          `• Duplicates removed: ${duplicateCount}\n` +
+          `• To be saved: ${allItems.length}\n\n` +
+          `Note: This may take time for large datasets.`
+      
+      const confirmed = window.confirm(confirmMessage)
+      if (!confirmed) {
+        setBulkSaving(false)
+        return
+      }
+      
+      setBulkSaveProgress({ current: 0, total: allItems.length })
+      
+      // 배치로 저장 (50개씩)
+      const saveBatchSize = 50
+      let savedCount = 0
+      const newSavedIds = []
+      
+      for (let i = 0; i < allItems.length; i += saveBatchSize) {
+        const batch = allItems.slice(i, i + saveBatchSize)
+        
+        // 정의된 필드만 추출하여 저장 데이터 구성
+        const batchData = batch.map(item => {
+          const saveData = {}
+          config.fields.forEach(field => {
+            if (item[field] !== undefined) {
+              saveData[field] = item[field]
+            }
+          })
+          saveData.page_type = selectedPage
+          saveData.saved_at = new Date().toISOString()
+          saveData.saved_by = user?.email || 'admin'
+          saveData.raw_data = item // 전체 데이터를 JSON으로 저장
+          return saveData
+        })
+        
+        const { error } = await supabase
+          .from(config.tableName)
+          .upsert(batchData, { onConflict: config.uniqueField })
+        
+        if (error) {
+          console.error('배치 저장 실패:', error)
+        } else {
+          batch.forEach(item => {
+            newSavedIds.push(item[config.uniqueField])
+          })
+        }
+        
+        savedCount += batch.length
+        setBulkSaveProgress({ current: savedCount, total: allItems.length })
+      }
+      
+      // 저장된 아이템 목록 업데이트
+      setSavedItems(prev => ({
+        ...prev,
+        [selectedPage]: [...new Set([...(prev[selectedPage] || []), ...newSavedIds])]
+      }))
+      
+      alert(
+        language === 'ko'
+          ? `${savedCount}개 데이터가 저장되었습니다.`
+          : `${savedCount} items have been saved.`
+      )
+    } catch (err) {
+      console.error('전체 저장 실패:', err)
+      alert(
+        language === 'ko'
+          ? '전체 저장 중 오류가 발생했습니다.'
+          : 'An error occurred during bulk save.'
+      )
+    }
+    
+    setBulkSaving(false)
+    setBulkSaveProgress({ current: 0, total: 0 })
+  }, [selectedPage, pageTotalCount, filterPastEvents, supabase, user, language])
   
   // 대시보드 로드
   useEffect(() => {
@@ -280,7 +636,14 @@ const AdminPage = () => {
       loadStats()
       loadApiStats()
     }
-  }, [user, activeSection])
+  }, [user, activeSection, loadStats, loadApiStats])
+  
+  // 페이지 선택 시 저장된 아이템 로드
+  useEffect(() => {
+    if (user && selectedPage && !savedItems[selectedPage]) {
+      loadSavedItems(selectedPage)
+    }
+  }, [user, selectedPage, savedItems, loadSavedItems])
   
   // API 통계 주기적 업데이트
   useEffect(() => {
@@ -288,10 +651,10 @@ const AdminPage = () => {
       const interval = setInterval(loadApiStats, 10000) // 10초마다 갱신
       return () => clearInterval(interval)
     }
-  }, [user, activeSection])
+  }, [user, activeSection, loadApiStats])
   
   // 로그인 처리
-  const handleLogin = async (e) => {
+  const handleLogin = useCallback(async (e) => {
     e.preventDefault()
     setLoginError('')
     setLoginLoading(true)
@@ -302,13 +665,13 @@ const AdminPage = () => {
       setLoginError(language === 'ko' ? '로그인에 실패했습니다.' : 'Login failed.')
     }
     setLoginLoading(false)
-  }
+  }, [email, password, language, login])
   
   // 로그아웃 처리
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     await logout()
     navigate('/')
-  }
+  }, [logout, navigate])
   
   // 로딩 중
   if (loading) {
@@ -487,30 +850,21 @@ const AdminPage = () => {
           {activeSection === 'dashboard' && (
             <div className="dashboard-section">
               <div className="stats-grid">
-                {Object.entries(PAGE_CONFIGS).map(([key, config]) => {
-                  const Icon = config.icon
-                  return (
-                    <div 
-                      key={key} 
-                      className="stat-card clickable"
-                      onClick={() => {
-                        setActiveSection(`page-${key}`)
-                        loadPageData(key)
-                      }}
-                    >
-                      <div className="stat-icon" style={{ background: `${config.color}20`, color: config.color }}>
-                        <Icon />
-                      </div>
-                      <div className="stat-info">
-                        <span className="stat-value">
-                          {statsLoading ? '...' : (stats[key] || 0).toLocaleString()}
-                        </span>
-                        <span className="stat-label">{config.title[language]}</span>
-                      </div>
-                      <FiExternalLink className="stat-link" />
-                    </div>
-                  )
-                })}
+                {Object.entries(PAGE_CONFIGS).map(([key, config]) => (
+                  <StatCard
+                    key={key}
+                    title={config.title[language]}
+                    value={stats[key]}
+                    dbValue={dbStats[key]}
+                    icon={config.icon}
+                    color={config.color}
+                    loading={statsLoading}
+                    onClick={() => {
+                      setActiveSection(`page-${key}`)
+                      loadPageData(key)
+                    }}
+                  />
+                ))}
               </div>
               
               {/* API 호출 통계 섹션 */}
@@ -562,51 +916,12 @@ const AdminPage = () => {
                 </div>
                 
                 {/* Google Charts - API 호출 차트 */}
-                <div className="charts-grid">
-                  <div className="chart-card">
-                    <h4>{language === 'ko' ? 'API 호출 분포' : 'API Call Distribution'}</h4>
-                    <Chart
-                      chartType="PieChart"
-                      data={[
-                        ['API', '호출 수'],
-                        ...Object.entries(API_NAMES).map(([key, name]) => [name, apiCallStats[key] || 0])
-                      ]}
-                      options={{
-                        pieHole: 0.4,
-                        colors: Object.keys(API_NAMES).map(key => PAGE_CONFIGS[key]?.color || '#ccc'),
-                        legend: { position: 'right' },
-                        chartArea: { width: '80%', height: '80%' },
-                        backgroundColor: 'transparent'
-                      }}
-                      width="100%"
-                      height="300px"
-                    />
-                  </div>
-                  
-                  <div className="chart-card">
-                    <h4>{language === 'ko' ? 'API별 호출 횟수' : 'API Calls by Type'}</h4>
-                    <Chart
-                      chartType="ColumnChart"
-                      data={[
-                        ['API', '호출 수', { role: 'style' }],
-                        ...Object.entries(API_NAMES).map(([key, name]) => [
-                          name, 
-                          apiCallStats[key] || 0,
-                          PAGE_CONFIGS[key]?.color || '#1976d2'
-                        ])
-                      ]}
-                      options={{
-                        legend: 'none',
-                        hAxis: { textStyle: { fontSize: 10 } },
-                        vAxis: { title: language === 'ko' ? '호출 수' : 'Calls' },
-                        chartArea: { width: '85%', height: '70%' },
-                        backgroundColor: 'transparent'
-                      }}
-                      width="100%"
-                      height="300px"
-                    />
-                  </div>
-                </div>
+                <ApiStatsChart
+                  apiCallStats={apiCallStats}
+                  apiNames={API_NAMES}
+                  pageConfigs={PAGE_CONFIGS}
+                  language={language}
+                />
               </div>
               
               <div className="dashboard-info">
@@ -634,118 +949,81 @@ const AdminPage = () => {
           {/* 페이지 데이터 관리 */}
           {activeSection.startsWith('page-') && selectedPage && (
             <div className="page-management">
+              {/* 데이터 소스 선택 탭 */}
+              <div className="data-source-tabs">
+                <button 
+                  className={`source-tab ${dataSource === 'api' ? 'active' : ''}`}
+                  onClick={() => handleDataSourceChange('api')}
+                >
+                  <FiCloud /> API {language === 'ko' ? '(미저장)' : '(Unsaved)'}
+                  {dataSource === 'api' && <span className="source-count">({pageTotalCount.toLocaleString()}개)</span>}
+                </button>
+                <button 
+                  className={`source-tab ${dataSource === 'db' ? 'active' : ''}`}
+                  onClick={() => handleDataSourceChange('db')}
+                >
+                  <FiDatabase /> DB {language === 'ko' ? '(저장됨)' : '(Saved)'}
+                  <span className="source-count">({(dbStats[selectedPage] || 0).toLocaleString()}개)</span>
+                </button>
+              </div>
+              
               <div className="page-header">
                 <span className="page-count">
-                  {language === 'ko' ? '총' : 'Total'} <strong>{pageTotalCount.toLocaleString()}</strong> {language === 'ko' ? '개' : 'items'}
+                  {dataSource === 'api' 
+                    ? (language === 'ko' ? '미저장 API 데이터' : 'Unsaved API Data')
+                    : (language === 'ko' ? '저장된 DB 데이터' : 'Saved DB Data')
+                  }: <strong>{pageTotalCount.toLocaleString()}</strong> {language === 'ko' ? '개' : 'items'}
                   {pageTotalCount > 0 && (
                     <span className="page-info">
                       {' '}(페이지 {currentPage}/{totalPages})
                     </span>
                   )}
                 </span>
-                <a href={`/${selectedPage}`} target="_blank" className="view-page-btn">
-                  <FiExternalLink /> {language === 'ko' ? '페이지 보기' : 'View'}
-                </a>
+                <div className="page-header-actions">
+                  {dataSource === 'api' && (
+                    <button 
+                      className="bulk-save-btn"
+                      onClick={handleBulkSave}
+                      disabled={bulkSaving || pageLoading || pageTotalCount === 0}
+                    >
+                      {bulkSaving ? (
+                        <>
+                          <span className="saving-spinner"></span>
+                          {language === 'ko' ? '저장 중...' : 'Saving...'} ({bulkSaveProgress.current}/{bulkSaveProgress.total})
+                        </>
+                      ) : (
+                        <>
+                          <FiDatabase /> {language === 'ko' ? '전체 저장' : 'Save All'}
+                        </>
+                      )}
+                    </button>
+                  )}
+                  <a href={`/${selectedPage}`} target="_blank" className="view-page-btn">
+                    <FiExternalLink /> {language === 'ko' ? '페이지 보기' : 'View'}
+                  </a>
+                </div>
               </div>
               
-              {pageLoading ? (
-                <div className="page-loading">
-                  <div className="loading-spinner"></div>
-                </div>
-              ) : pageData.length > 0 ? (
-                <>
-                  <div className="data-table-container">
-                    <div className="table-wrapper">
-                      <table className="data-table">
-                        <thead>
-                          <tr>
-                            <th>#</th>
-                            {PAGE_CONFIGS[selectedPage].fields.map(field => (
-                              <th key={field}>{PAGE_CONFIGS[selectedPage].labels[field] || field}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {pageData.map((item, idx) => (
-                            <tr key={idx}>
-                              <td>{(currentPage - 1) * itemsPerPage + idx + 1}</td>
-                              {PAGE_CONFIGS[selectedPage].fields.map(field => (
-                                <td key={field} title={item[field] ? String(item[field]) : ''}>
-                                  {item[field] ? String(item[field]).substring(0, 60) : '-'}
-                                  {item[field] && String(item[field]).length > 60 ? '...' : ''}
-                                </td>
-                              ))}
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                  
-                  {/* 페이지네이션 */}
-                  {totalPages > 1 && (
-                    <div className="admin-pagination">
-                      <button 
-                        className="page-btn"
-                        onClick={() => handlePageChange(1)}
-                        disabled={currentPage === 1}
-                      >
-                        처음
-                      </button>
-                      <button 
-                        className="page-btn"
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        disabled={currentPage === 1}
-                      >
-                        이전
-                      </button>
-                      
-                      <div className="page-numbers">
-                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                          let pageNum
-                          if (totalPages <= 5) {
-                            pageNum = i + 1
-                          } else if (currentPage <= 3) {
-                            pageNum = i + 1
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNum = totalPages - 4 + i
-                          } else {
-                            pageNum = currentPage - 2 + i
-                          }
-                          return (
-                            <button
-                              key={pageNum}
-                              className={`page-num ${currentPage === pageNum ? 'active' : ''}`}
-                              onClick={() => handlePageChange(pageNum)}
-                            >
-                              {pageNum}
-                            </button>
-                          )
-                        })}
-                      </div>
-                      
-                      <button 
-                        className="page-btn"
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                      >
-                        다음
-                      </button>
-                      <button 
-                        className="page-btn"
-                        onClick={() => handlePageChange(totalPages)}
-                        disabled={currentPage === totalPages}
-                      >
-                        마지막
-                      </button>
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="no-data">
-                  <FiDatabase size={48} />
-                  <p>{language === 'ko' ? '데이터 없음' : 'No data'}</p>
-                </div>
+              <DataTable
+                data={pageData}
+                fields={PAGE_CONFIGS[selectedPage]?.fields || []}
+                labels={PAGE_CONFIGS[selectedPage]?.labels || {}}
+                currentPage={currentPage}
+                itemsPerPage={itemsPerPage}
+                loading={pageLoading}
+                language={language}
+                showSaveButton={dataSource === 'api'}
+                onSaveItem={handleSaveItem}
+                savedItems={savedItems[selectedPage] || []}
+              />
+              
+              {!pageLoading && pageData.length > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                  language={language}
+                />
               )}
             </div>
           )}
