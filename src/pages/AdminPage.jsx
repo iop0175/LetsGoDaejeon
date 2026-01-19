@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { 
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
-  FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud
+  FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud,
+  FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -11,7 +12,10 @@ import {
   getTourSpots, getFestivals, getRestaurants, getCulturalFacilities,
   getMedicalFacilities, getShoppingPlaces, getTourRooms, getDaejeonParking
 } from '../services/api'
-import { getAllDbCounts } from '../services/dbService'
+import { 
+  getAllDbCounts, getHeroSlides, createHeroSlide, updateHeroSlide, 
+  deleteHeroSlide, deleteDbItem, updateDbItem, getSupabaseUsageStats 
+} from '../services/dbService'
 import { getApiStats, API_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
 import { StatCard, ApiStatsChart, DataTable, Pagination } from '../components/admin'
 import './AdminPage.css'
@@ -137,6 +141,32 @@ const AdminPage = () => {
   
   // 저장된 아이템 추적
   const [savedItems, setSavedItems] = useState({})
+  
+  // Hero 슬라이드 관리
+  const [heroSlides, setHeroSlides] = useState([])
+  const [heroLoading, setHeroLoading] = useState(false)
+  const [editingHero, setEditingHero] = useState(null) // 수정 중인 슬라이드
+  const [heroForm, setHeroForm] = useState({
+    title_ko: '',
+    title_en: '',
+    subtitle_ko: '',
+    subtitle_en: '',
+    description_ko: '',
+    description_en: '',
+    imageUrl: '',
+    link: '/',
+    sort_order: 0,
+    is_active: true
+  })
+  
+  // 데이터 아이템 수정 모달
+  const [editingItem, setEditingItem] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [editSaving, setEditSaving] = useState(false)
+  
+  // Supabase 사용량 통계
+  const [supabaseUsage, setSupabaseUsage] = useState(null)
+  const [usageLoading, setUsageLoading] = useState(false)
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
   const parseDate = useCallback((dateStr) => {
@@ -244,6 +274,208 @@ const AdminPage = () => {
     setMostCalledApi(getMostCalledApi())
     setMostVisitedPage(getMostVisitedPage())
   }, [])
+  
+  // Supabase 사용량 통계 로드
+  const loadSupabaseUsage = useCallback(async () => {
+    setUsageLoading(true)
+    try {
+      const result = await getSupabaseUsageStats()
+      if (result.success) {
+        setSupabaseUsage(result.stats)
+      }
+    } catch (err) {
+      console.error('Supabase 사용량 통계 로드 실패:', err)
+    }
+    setUsageLoading(false)
+  }, [])
+  
+  // Hero 슬라이드 로드
+  const loadHeroSlides = useCallback(async () => {
+    setHeroLoading(true)
+    try {
+      const result = await getHeroSlides()
+      if (result.success) {
+        setHeroSlides(result.items)
+      }
+    } catch (err) {
+      console.error('히어로 슬라이드 로드 실패:', err)
+    }
+    setHeroLoading(false)
+  }, [])
+  
+  // Hero 슬라이드 저장 (추가/수정)
+  const handleSaveHero = useCallback(async () => {
+    if (!heroForm.title_ko || !heroForm.imageUrl) {
+      alert(language === 'ko' ? '제목(한글)과 이미지 URL은 필수입니다.' : 'Title (Korean) and Image URL are required.')
+      return
+    }
+    
+    try {
+      if (editingHero) {
+        // 수정
+        const result = await updateHeroSlide(editingHero.id, heroForm)
+        if (result.success) {
+          alert(language === 'ko' ? '슬라이드가 수정되었습니다.' : 'Slide updated.')
+          setEditingHero(null)
+          loadHeroSlides()
+        } else {
+          alert(result.error || '수정 실패')
+        }
+      } else {
+        // 추가
+        const result = await createHeroSlide(heroForm)
+        if (result.success) {
+          alert(language === 'ko' ? '슬라이드가 추가되었습니다.' : 'Slide added.')
+          loadHeroSlides()
+        } else {
+          alert(result.error || '추가 실패')
+        }
+      }
+      
+      // 폼 초기화
+      setHeroForm({
+        title_ko: '',
+        title_en: '',
+        subtitle_ko: '',
+        subtitle_en: '',
+        description_ko: '',
+        description_en: '',
+        imageUrl: '',
+        link: '/',
+        sort_order: heroSlides.length,
+        is_active: true
+      })
+    } catch (err) {
+      console.error('히어로 슬라이드 저장 실패:', err)
+      alert(language === 'ko' ? '저장 중 오류가 발생했습니다.' : 'Error occurred while saving.')
+    }
+  }, [heroForm, editingHero, language, loadHeroSlides, heroSlides.length])
+  
+  // Hero 슬라이드 삭제
+  const handleDeleteHero = useCallback(async (id) => {
+    if (!window.confirm(language === 'ko' ? '이 슬라이드를 삭제하시겠습니까?' : 'Delete this slide?')) {
+      return
+    }
+    
+    try {
+      const result = await deleteHeroSlide(id)
+      if (result.success) {
+        alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
+        loadHeroSlides()
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      console.error('히어로 슬라이드 삭제 실패:', err)
+    }
+  }, [language, loadHeroSlides])
+  
+  // Hero 슬라이드 수정 시작
+  const handleEditHero = useCallback((slide) => {
+    setEditingHero(slide)
+    setHeroForm({
+      title_ko: slide.title_ko || '',
+      title_en: slide.title_en || '',
+      subtitle_ko: slide.subtitle_ko || '',
+      subtitle_en: slide.subtitle_en || '',
+      description_ko: slide.description_ko || '',
+      description_en: slide.description_en || '',
+      imageUrl: slide.imageUrl || '',
+      link: slide.link || '/',
+      sort_order: slide.sort_order || 0,
+      is_active: slide.is_active !== false
+    })
+  }, [])
+  
+  // Hero 슬라이드 수정 취소
+  const handleCancelEditHero = useCallback(() => {
+    setEditingHero(null)
+    setHeroForm({
+      title_ko: '',
+      title_en: '',
+      subtitle_ko: '',
+      subtitle_en: '',
+      description_ko: '',
+      description_en: '',
+      imageUrl: '',
+      link: '/',
+      sort_order: heroSlides.length,
+      is_active: true
+    })
+  }, [heroSlides.length])
+  
+  // DB 아이템 수정 시작
+  const handleEditItem = useCallback((item) => {
+    setEditingItem(item)
+    const config = PAGE_CONFIGS[selectedPage]
+    if (config) {
+      const form = {}
+      config.fields.forEach(field => {
+        form[field] = item[field] || ''
+      })
+      form._id = item._id || item.id
+      setEditForm(form)
+    }
+  }, [selectedPage])
+  
+  // 데이터 새로고침 트리거
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  
+  // DB 아이템 수정 저장
+  const handleSaveEditItem = useCallback(async () => {
+    if (!editingItem || !selectedPage) return
+    
+    setEditSaving(true)
+    try {
+      const id = editForm._id
+      const updates = { ...editForm }
+      delete updates._id
+      
+      const result = await updateDbItem(selectedPage, id, updates)
+      if (result.success) {
+        alert(language === 'ko' ? '수정되었습니다.' : 'Updated.')
+        setEditingItem(null)
+        setEditForm({})
+        // 데이터 새로고침 트리거
+        setRefreshTrigger(prev => prev + 1)
+        loadStats() // DB 통계도 새로고침
+      } else {
+        alert(result.error || '수정 실패')
+      }
+    } catch (err) {
+      console.error('아이템 수정 실패:', err)
+      alert(language === 'ko' ? '수정 중 오류가 발생했습니다.' : 'Error occurred while updating.')
+    }
+    setEditSaving(false)
+  }, [editingItem, editForm, selectedPage, language, loadStats])
+  
+  // DB 아이템 삭제
+  const handleDeleteItem = useCallback(async (item) => {
+    if (!selectedPage) return
+    
+    const config = PAGE_CONFIGS[selectedPage]
+    const itemName = item[config.uniqueField] || 'this item'
+    
+    if (!window.confirm(language === 'ko' ? `"${itemName}"을(를) 삭제하시겠습니까?` : `Delete "${itemName}"?`)) {
+      return
+    }
+    
+    try {
+      const id = item._id || item.id
+      const result = await deleteDbItem(selectedPage, id)
+      if (result.success) {
+        alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
+        // 데이터 새로고침 트리거
+        setRefreshTrigger(prev => prev + 1)
+        loadStats() // DB 통계도 새로고침
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      console.error('아이템 삭제 실패:', err)
+      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error occurred while deleting.')
+    }
+  }, [selectedPage, language, loadStats])
   
   // 통계 리셋
   const handleResetStats = useCallback(() => {
@@ -392,6 +624,13 @@ const AdminPage = () => {
     
     setPageLoading(false)
   }, [filterPastEvents, itemsPerPage, savedItems, supabase])
+  
+  // refreshTrigger 변경 시 데이터 새로고침
+  useEffect(() => {
+    if (refreshTrigger > 0 && selectedPage) {
+      loadPageData(selectedPage, currentPage, dataSource)
+    }
+  }, [refreshTrigger, selectedPage, currentPage, dataSource, loadPageData])
   
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((page) => {
@@ -635,8 +874,9 @@ const AdminPage = () => {
     if (user && activeSection === 'dashboard') {
       loadStats()
       loadApiStats()
+      loadSupabaseUsage()
     }
-  }, [user, activeSection, loadStats, loadApiStats])
+  }, [user, activeSection, loadStats, loadApiStats, loadSupabaseUsage])
   
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
@@ -771,6 +1011,21 @@ const AdminPage = () => {
           </button>
           
           <div className="nav-section-title">
+            {language === 'ko' ? '콘텐츠 관리' : 'Content'}
+          </div>
+          
+          <button 
+            className={`nav-item ${activeSection === 'hero' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('hero')
+              loadHeroSlides()
+            }}
+          >
+            <FiImage style={{ color: activeSection === 'hero' ? 'white' : '#ff9800' }} />
+            <span>{language === 'ko' ? '히어로 슬라이드' : 'Hero Slides'}</span>
+          </button>
+          
+          <div className="nav-section-title">
             {language === 'ko' ? '페이지 관리' : 'Pages'}
           </div>
           
@@ -834,10 +1089,16 @@ const AdminPage = () => {
           </button>
           <h1>
             {activeSection === 'dashboard' && (language === 'ko' ? '대시보드' : 'Dashboard')}
+            {activeSection === 'hero' && (language === 'ko' ? '히어로 슬라이드 관리' : 'Hero Slides')}
             {activeSection === 'database' && 'Supabase'}
             {activeSection === 'settings' && (language === 'ko' ? '설정' : 'Settings')}
             {activeSection.startsWith('page-') && PAGE_CONFIGS[activeSection.replace('page-', '')]?.title[language]}
           </h1>
+          {activeSection === 'hero' && (
+            <button className="refresh-btn" onClick={loadHeroSlides}>
+              <FiRefreshCw />
+            </button>
+          )}
           {activeSection.startsWith('page-') && (
             <button className="refresh-btn" onClick={() => loadPageData(activeSection.replace('page-', ''))}>
               <FiRefreshCw />
@@ -924,6 +1185,90 @@ const AdminPage = () => {
                 />
               </div>
               
+              {/* Supabase 사용량 통계 섹션 */}
+              <div className="supabase-usage-section">
+                <div className="usage-header">
+                  <h3><FiCloud /> {language === 'ko' ? 'Supabase 사용량' : 'Supabase Usage'}</h3>
+                  <button onClick={loadSupabaseUsage} className="refresh-btn" disabled={usageLoading}>
+                    <FiRefreshCw className={usageLoading ? 'spinning' : ''} />
+                  </button>
+                </div>
+                
+                {usageLoading ? (
+                  <div className="usage-loading">
+                    {language === 'ko' ? '로딩 중...' : 'Loading...'}
+                  </div>
+                ) : supabaseUsage ? (
+                  <>
+                    {/* 총 사용량 요약 */}
+                    <div className="usage-summary">
+                      <div className="usage-card">
+                        <div className="usage-icon"><FiDatabase /></div>
+                        <div className="usage-info">
+                          <span className="usage-label">{language === 'ko' ? '총 데이터 행 수' : 'Total Rows'}</span>
+                          <span className="usage-value">{supabaseUsage.totalRows.toLocaleString()}</span>
+                          <div className="usage-bar-container">
+                            <div 
+                              className="usage-bar" 
+                              style={{ width: `${Math.min(supabaseUsage.usage.rowsPercent, 100)}%` }}
+                            />
+                          </div>
+                          <span className="usage-limit">
+                            / {supabaseUsage.limits.rows.max.toLocaleString()} ({supabaseUsage.usage.rowsPercent.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="usage-card">
+                        <div className="usage-icon"><FiActivity /></div>
+                        <div className="usage-info">
+                          <span className="usage-label">{language === 'ko' ? '예상 저장 용량' : 'Est. Storage'}</span>
+                          <span className="usage-value">{supabaseUsage.estimatedStorageMB.toFixed(2)} MB</span>
+                          <div className="usage-bar-container">
+                            <div 
+                              className="usage-bar storage" 
+                              style={{ width: `${Math.min(supabaseUsage.usage.storagePercent, 100)}%` }}
+                            />
+                          </div>
+                          <span className="usage-limit">
+                            / 500 MB ({supabaseUsage.usage.storagePercent.toFixed(1)}%)
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 테이블별 사용량 */}
+                    <div className="table-usage-list">
+                      <h4>{language === 'ko' ? '테이블별 행 수' : 'Rows by Table'}</h4>
+                      <div className="table-usage-grid">
+                        {Object.entries(supabaseUsage.tables).map(([tableName, info]) => (
+                          <div key={tableName} className="table-usage-item">
+                            <span className="table-name">{tableName}</span>
+                            <span className="table-rows">{info.rows.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    
+                    {/* Free Plan 안내 */}
+                    <div className="free-plan-notice">
+                      <span>ℹ️ </span>
+                      {language === 'ko' 
+                        ? 'Supabase Free Plan: 500MB DB 스토리지, 2GB 대역폭/월' 
+                        : 'Supabase Free Plan: 500MB DB storage, 2GB bandwidth/month'
+                      }
+                      <a href="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf" target="_blank" rel="noopener noreferrer">
+                        <FiExternalLink /> {language === 'ko' ? '대시보드 열기' : 'Open Dashboard'}
+                      </a>
+                    </div>
+                  </>
+                ) : (
+                  <div className="usage-empty">
+                    {language === 'ko' ? '사용량 정보를 불러올 수 없습니다.' : 'Unable to load usage information.'}
+                  </div>
+                )}
+              </div>
+              
               <div className="dashboard-info">
                 <div className="info-card">
                   <h3>👋 {language === 'ko' ? '환영합니다!' : 'Welcome!'}</h3>
@@ -942,6 +1287,186 @@ const AdminPage = () => {
                     </button>
                   </div>
                 </div>
+              </div>
+            </div>
+          )}
+          
+          {/* 히어로 슬라이드 관리 */}
+          {activeSection === 'hero' && (
+            <div className="hero-management">
+              {/* 히어로 슬라이드 추가/수정 폼 */}
+              <div className="hero-form-section">
+                <h3>
+                  {editingHero 
+                    ? (language === 'ko' ? '슬라이드 수정' : 'Edit Slide')
+                    : (language === 'ko' ? '새 슬라이드 추가' : 'Add New Slide')
+                  }
+                </h3>
+                <div className="hero-form">
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '제목 (한글) *' : 'Title (KO) *'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.title_ko}
+                        onChange={(e) => setHeroForm({...heroForm, title_ko: e.target.value})}
+                        placeholder="대전에 오신 것을 환영합니다"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '제목 (영문)' : 'Title (EN)'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.title_en}
+                        onChange={(e) => setHeroForm({...heroForm, title_en: e.target.value})}
+                        placeholder="Welcome to Daejeon"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '부제목 (한글)' : 'Subtitle (KO)'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.subtitle_ko}
+                        onChange={(e) => setHeroForm({...heroForm, subtitle_ko: e.target.value})}
+                        placeholder="과학과 자연이 어우러진 도시"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '부제목 (영문)' : 'Subtitle (EN)'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.subtitle_en}
+                        onChange={(e) => setHeroForm({...heroForm, subtitle_en: e.target.value})}
+                        placeholder="City of Science and Nature"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label>{language === 'ko' ? '설명 (한글)' : 'Description (KO)'}</label>
+                      <textarea 
+                        value={heroForm.description_ko}
+                        onChange={(e) => setHeroForm({...heroForm, description_ko: e.target.value})}
+                        placeholder="대전의 아름다운 관광지를 만나보세요"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label>{language === 'ko' ? '설명 (영문)' : 'Description (EN)'}</label>
+                      <textarea 
+                        value={heroForm.description_en}
+                        onChange={(e) => setHeroForm({...heroForm, description_en: e.target.value})}
+                        placeholder="Discover beautiful attractions in Daejeon"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group full-width">
+                      <label>{language === 'ko' ? '이미지 URL *' : 'Image URL *'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.imageUrl}
+                        onChange={(e) => setHeroForm({...heroForm, imageUrl: e.target.value})}
+                        placeholder="https://example.com/image.jpg"
+                      />
+                    </div>
+                  </div>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '링크' : 'Link'}</label>
+                      <input 
+                        type="text" 
+                        value={heroForm.link}
+                        onChange={(e) => setHeroForm({...heroForm, link: e.target.value})}
+                        placeholder="/travel"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '순서' : 'Order'}</label>
+                      <input 
+                        type="number" 
+                        value={heroForm.sort_order}
+                        onChange={(e) => setHeroForm({...heroForm, sort_order: parseInt(e.target.value) || 0})}
+                      />
+                    </div>
+                    <div className="form-group checkbox-group">
+                      <label>
+                        <input 
+                          type="checkbox" 
+                          checked={heroForm.is_active}
+                          onChange={(e) => setHeroForm({...heroForm, is_active: e.target.checked})}
+                        />
+                        {language === 'ko' ? '활성화' : 'Active'}
+                      </label>
+                    </div>
+                  </div>
+                  
+                  {heroForm.imageUrl && (
+                    <div className="image-preview">
+                      <img src={heroForm.imageUrl} alt="Preview" />
+                    </div>
+                  )}
+                  
+                  <div className="form-actions">
+                    <button className="save-btn" onClick={handleSaveHero}>
+                      <FiSave /> {editingHero ? (language === 'ko' ? '수정' : 'Update') : (language === 'ko' ? '추가' : 'Add')}
+                    </button>
+                    {editingHero && (
+                      <button className="cancel-btn" onClick={handleCancelEditHero}>
+                        <FiXCircle /> {language === 'ko' ? '취소' : 'Cancel'}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+              
+              {/* 히어로 슬라이드 목록 */}
+              <div className="hero-list-section">
+                <h3>{language === 'ko' ? '슬라이드 목록' : 'Slide List'} ({heroSlides.length})</h3>
+                {heroLoading ? (
+                  <div className="hero-loading">
+                    <div className="loading-spinner"></div>
+                  </div>
+                ) : heroSlides.length > 0 ? (
+                  <div className="hero-cards">
+                    {heroSlides.map((slide) => (
+                      <div key={slide.id} className={`hero-card ${!slide.is_active ? 'inactive' : ''}`}>
+                        <div className="hero-card-image">
+                          <img src={slide.imageUrl} alt={slide.title_ko} />
+                          {!slide.is_active && (
+                            <span className="inactive-badge">{language === 'ko' ? '비활성' : 'Inactive'}</span>
+                          )}
+                        </div>
+                        <div className="hero-card-content">
+                          <h4>{slide.title_ko}</h4>
+                          {slide.subtitle_ko && <p className="subtitle">{slide.subtitle_ko}</p>}
+                          <div className="hero-card-meta">
+                            <span>#{slide.sort_order}</span>
+                            <span>{slide.link}</span>
+                          </div>
+                        </div>
+                        <div className="hero-card-actions">
+                          <button className="edit-btn" onClick={() => handleEditHero(slide)}>
+                            <FiEdit2 />
+                          </button>
+                          <button className="delete-btn" onClick={() => handleDeleteHero(slide.id)}>
+                            <FiTrash2 />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="no-data">
+                    <FiImage size={48} />
+                    <p>{language === 'ko' ? '등록된 슬라이드가 없습니다.' : 'No slides registered.'}</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1013,9 +1538,75 @@ const AdminPage = () => {
                 loading={pageLoading}
                 language={language}
                 showSaveButton={dataSource === 'api'}
+                showEditButton={dataSource === 'db' && selectedPage !== 'parking'}
+                showDeleteButton={dataSource === 'db' && selectedPage !== 'parking'}
                 onSaveItem={handleSaveItem}
+                onEditItem={handleEditItem}
+                onDeleteItem={handleDeleteItem}
                 savedItems={savedItems[selectedPage] || []}
               />
+              
+              {/* 수정 모달 */}
+              {editingItem && (
+                <div className="edit-modal-overlay" onClick={() => setEditingItem(null)}>
+                  <div className="edit-modal" onClick={e => e.stopPropagation()}>
+                    <div className="edit-modal-header">
+                      <h3>{language === 'ko' ? '데이터 수정' : 'Edit Data'}</h3>
+                      <button className="close-btn" onClick={() => setEditingItem(null)}>
+                        <FiX />
+                      </button>
+                    </div>
+                    <div className="edit-modal-content">
+                      {PAGE_CONFIGS[selectedPage]?.fields.map(field => (
+                        <div key={field} className="form-group">
+                          <label>{PAGE_CONFIGS[selectedPage]?.labels[field] || field}</label>
+                          {field === 'imageUrl' ? (
+                            <>
+                              <input
+                                type="text"
+                                value={editForm[field] || ''}
+                                onChange={(e) => setEditForm({...editForm, [field]: e.target.value})}
+                                placeholder={`${field} 입력`}
+                              />
+                              {editForm[field] && (
+                                <div className="image-preview-small">
+                                  <img src={editForm[field]} alt="Preview" />
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <input
+                              type="text"
+                              value={editForm[field] || ''}
+                              onChange={(e) => setEditForm({...editForm, [field]: e.target.value})}
+                              placeholder={`${field} 입력`}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="edit-modal-footer">
+                      <button 
+                        className="cancel-btn" 
+                        onClick={() => setEditingItem(null)}
+                        disabled={editSaving}
+                      >
+                        {language === 'ko' ? '취소' : 'Cancel'}
+                      </button>
+                      <button 
+                        className="save-btn" 
+                        onClick={handleSaveEditItem}
+                        disabled={editSaving}
+                      >
+                        {editSaving 
+                          ? (language === 'ko' ? '저장 중...' : 'Saving...') 
+                          : (language === 'ko' ? '저장' : 'Save')
+                        }
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {!pageLoading && pageData.length > 0 && (
                 <Pagination

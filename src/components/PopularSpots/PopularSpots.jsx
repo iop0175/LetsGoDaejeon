@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import TravelCard from '../TravelCard/TravelCard'
 import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getTourSpots, getTourSpotImage } from '../../services/api'
+import { getTourSpotImage } from '../../services/api'
+import { getAllDbData } from '../../services/dbService'
 import './PopularSpots.css'
 
 // 기본 이미지 (이미지 없을 때 사용)
@@ -94,19 +95,21 @@ const PopularSpots = () => {
 
   const fetchSpots = async () => {
     try {
-      const result = await getTourSpots(1, 8)
-      if (result.success && result.items.length > 0) {
-        const formattedSpots = result.items.map((item, idx) => ({
+      // DB에서 가져오기
+      const dbResult = await getAllDbData('travel');
+      if (dbResult.success && dbResult.items.length > 0) {
+        const formattedSpots = dbResult.items.slice(0, 8).map((item, idx) => ({
           id: idx + 1,
           title: { ko: item.tourspotNm, en: item.tourspotNm },
           location: { ko: extractDistrict(item.tourspotAddr), en: extractDistrict(item.tourspotAddr) },
           category: { ko: '관광지', en: 'Attraction' },
-          image: getTourSpotImage(item.tourspotNm),
+          image: item.imageUrl || getTourSpotImage(item.tourspotNm),
           duration: { ko: '1-2시간', en: '1-2 hours' },
           summary: item.tourspotSumm
         }))
         setSpots(formattedSpots)
       } else {
+        // DB에 데이터가 없으면 기본 데이터 사용
         setSpots(defaultSpots)
       }
     } catch (error) {

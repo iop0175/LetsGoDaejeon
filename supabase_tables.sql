@@ -154,3 +154,25 @@ ALTER TABLE medical_facilities ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
 ALTER TABLE shopping_places ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
 ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
 ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
+
+-- ============================================================
+-- 9. 히어로 슬라이드 테이블
+-- ============================================================
+CREATE TABLE IF NOT EXISTS hero_slides (
+  id SERIAL PRIMARY KEY,
+  title_ko TEXT NOT NULL,
+  title_en TEXT,
+  subtitle_ko TEXT,
+  subtitle_en TEXT,
+  description_ko TEXT,
+  description_en TEXT,
+  "imageUrl" TEXT NOT NULL,
+  link TEXT DEFAULT '/',
+  sort_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 히어로 슬라이드 인덱스
+CREATE INDEX IF NOT EXISTS idx_hero_slides_active ON hero_slides(is_active, sort_order);

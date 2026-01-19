@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getRestaurants } from '../../services/api'
+import { getAllDbData } from '../../services/dbService'
 import './FoodSection.css'
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -101,9 +101,10 @@ const FoodSection = () => {
 
   const fetchFoods = async () => {
     try {
-      const result = await getRestaurants(1, 4)
-      if (result.success && result.items.length > 0) {
-        const formattedFoods = result.items.map((item, idx) => ({
+      // DB에서 가져오기
+      const dbResult = await getAllDbData('food');
+      if (dbResult.success && dbResult.items.length > 0) {
+        const formattedFoods = dbResult.items.slice(0, 4).map((item, idx) => ({
           id: idx + 1,
           name: { ko: item.restrntNm, en: item.restrntNm },
           category: { ko: item.rprsFod || '한식', en: item.rprsFod || 'Korean' },
@@ -112,11 +113,12 @@ const FoodSection = () => {
             en: item.restrntSumm || `Enjoy delicious food at ${item.restrntNm}`
           },
           rating: (4 + Math.random() * 0.9).toFixed(1),
-          image: getFoodImage(item.restrntNm, item.rprsFod),
+          image: item.imageUrl || getFoodImage(item.restrntNm, item.rprsFod),
           location: { ko: extractDistrict(item.restrntAddr), en: extractDistrict(item.restrntAddr) }
         }))
         setFoods(formattedFoods)
       } else {
+        // DB에 데이터가 없으면 기본 데이터 사용
         setFoods(defaultFoods)
       }
     } catch (error) {

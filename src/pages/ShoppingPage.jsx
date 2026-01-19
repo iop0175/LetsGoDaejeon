@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getShoppingPlaces } from '../services/api';
+import { getAllDbData } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch } from 'react-icons/fi';
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
 import './ShoppingPage.css';
@@ -60,10 +60,14 @@ const ShoppingPage = () => {
   const fetchAllShops = async () => {
     setLoading(true);
     try {
-      // 전체 데이터를 한 번에 불러옴 (500개)
-      const result = await getShoppingPlaces(1, 500);
-      if (result.success) {
-        setAllShops(result.items);
+      // DB에서 데이터 가져오기
+      const dbResult = await getAllDbData('shopping');
+      
+      if (dbResult.success && dbResult.items.length > 0) {
+        setAllShops(dbResult.items);
+      } else {
+        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
+        setAllShops([]);
       }
     } catch (error) {
       console.error('쇼핑 명소 불러오기 오류:', error);

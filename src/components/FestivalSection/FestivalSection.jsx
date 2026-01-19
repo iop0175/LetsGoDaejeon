@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getDaejeonFestivals } from '../../services/api'
+import { getAllDbData } from '../../services/dbService'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import './FestivalSection.css'
@@ -82,21 +82,22 @@ const FestivalSection = () => {
 
   const fetchFestivals = async () => {
     try {
-      const result = await getDaejeonFestivals(1, 10)
-      if (result.success && result.items.length > 0) {
-        // API 데이터를 컴포넌트 형식으로 변환
-        const formattedFestivals = result.items.map((item, idx) => ({
+      // DB에서 가져오기
+      const dbResult = await getAllDbData('festival');
+      if (dbResult.success && dbResult.items.length > 0) {
+        const formattedFestivals = dbResult.items.slice(0, 10).map((item, idx) => ({
           id: idx + 1,
           title: { ko: item.festvNm, en: item.festvNm },
           period: item.festvPrid || '',
           location: { ko: item.festvPlcNm || item.festvDtlAddr || '', en: item.festvPlcNm || item.festvDtlAddr || '' },
-          image: getFestivalImage(item.festvNm),
+          image: item.imageUrl || getFestivalImage(item.festvNm),
           summary: item.festvSumm,
           host: item.festvHostNm,
           tel: item.refadNo
         }))
         setFestivals(formattedFestivals)
       } else {
+        // DB에 데이터가 없으면 기본 데이터 사용
         setFestivals(defaultFestivals)
       }
     } catch (error) {

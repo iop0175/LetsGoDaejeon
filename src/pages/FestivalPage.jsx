@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getFestivals } from '../services/api'
+import { getAllDbData } from '../services/dbService'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
@@ -102,33 +102,41 @@ const FestivalPage = () => {
     return filteredEvents.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredEvents, currentPage, itemsPerPage])
 
-  // API 데이터 로드 (전체 데이터 한 번에)
+  // DB 데이터 로드
   useEffect(() => {
     const loadEvents = async () => {
       setLoading(true)
       setError(null)
       
-      // 전체 데이터를 한 번에 불러옴 (1000개)
-      const result = await getFestivals(1, 1000)
-      
-      if (result.success) {
-        const formattedEvents = result.items.map((item, index) => ({
-          id: item.eventSeq || index + 1,
-          title: item.title,
-          theme: item.themeCdNm,
-          place: item.placeCdNm,
-          placeDetail: item.placeDetail,
-          target: item.targetCdNm,
-          management: item.managementCdNm,
-          beginDate: item.beginDt,
-          endDate: item.endDt,
-          beginTime: item.beginTm,
-          endTime: item.endTm,
-          isHot: item.hotYn === 'Y',
-          isRecommended: item.recommendationYn === 'Y'
-        }))
-        setAllEvents(formattedEvents)
-      } else {
+      try {
+        // DB에서 데이터 가져오기
+        const dbResult = await getAllDbData('festival')
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          // DB 데이터 사용
+          const formattedEvents = dbResult.items.map((item, index) => ({
+            id: item._id || item.eventSeq || index + 1,
+            title: item.title,
+            theme: item.themeCdNm,
+            place: item.placeCdNm,
+            placeDetail: item.placeDetail,
+            target: item.targetCdNm,
+            management: item.managementCdNm,
+            beginDate: item.beginDt,
+            endDate: item.endDt,
+            beginTime: item.beginTm,
+            endTime: item.endTm,
+            isHot: item.hotYn === 'Y',
+            isRecommended: item.recommendationYn === 'Y',
+            image: item.imageUrl
+          }))
+          setAllEvents(formattedEvents)
+        } else {
+          // DB에 데이터가 없으면 메시지 표시
+          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+        }
+      } catch (err) {
+        console.error('데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       

@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FiFilter, FiMapPin, FiClock, FiLoader, FiX, FiChevronLeft, FiChevronRight, FiCamera, FiPhone, FiExternalLink, FiImage, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getTourSpots, getTourSpotImage, getDaejeonPhotoGallery } from '../services/api'
+import { getTourSpotImage, getDaejeonPhotoGallery } from '../services/api'
+import { getAllDbData } from '../services/dbService'
 import TravelCard from '../components/TravelCard/TravelCard'
 import './TravelPage.css'
 
@@ -165,39 +166,45 @@ const TravelPage = () => {
     )
   }
 
-  // API 데이터 로드 (전체 데이터 한 번에)
+  // DB에서 데이터 로드
   useEffect(() => {
     const loadSpots = async () => {
       setLoading(true)
       setError(null)
       
-      // 전체 데이터를 한 번에 불러옴 (500개)
-      const result = await getTourSpots(1, 500)
-      
-      if (result.success) {
-        // 먼저 기본 데이터로 spots 설정
-        const formattedSpots = result.items.map((item, index) => {
-          const district = extractDistrict(item.tourspotAddr)
-          return {
-            id: index + 1,
-            title: item.tourspotNm,
-            location: district,
-            address: item.tourspotDtlAddr || item.tourspotAddr,
-            summary: item.tourspotSumm,
-            phone: item.refadNo,
-            time: item.mngTime,
-            fee: item.tourUtlzAmt,
-            parking: item.pkgFclt,
-            url: item.urlAddr,
-            image: getTourSpotImage(item.tourspotNm)
-          }
-        })
-        setAllSpots(formattedSpots)
-        setLoading(false)
-      } else {
+      try {
+        // DB에서 데이터 가져오기
+        const dbResult = await getAllDbData('travel')
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          // DB 데이터 사용
+          const formattedSpots = dbResult.items.map((item, index) => {
+            const district = extractDistrict(item.tourspotAddr || item.tourspotDtlAddr)
+            return {
+              id: item._id || index + 1,
+              title: item.tourspotNm,
+              location: district,
+              address: item.tourspotDtlAddr || item.tourspotAddr,
+              summary: item.tourspotSumm,
+              phone: item.refadNo,
+              time: item.mngTime,
+              fee: item.tourUtlzAmt,
+              parking: item.pkgFclt,
+              url: item.urlAddr,
+              image: item.imageUrl || getTourSpotImage(item.tourspotNm)
+            }
+          })
+          setAllSpots(formattedSpots)
+        } else {
+          // DB에 데이터가 없으면 메시지 표시
+          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+        }
+      } catch (err) {
+        console.error('데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
-        setLoading(false)
       }
+      
+      setLoading(false)
     }
 
     loadSpots()

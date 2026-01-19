@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getCulturalFacilities } from '../services/api';
+import { getAllDbData } from '../services/dbService';
 import { FiMapPin, FiPhone, FiClock, FiNavigation } from 'react-icons/fi';
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
 import './CulturePage.css';
@@ -78,10 +78,14 @@ const CulturePage = () => {
   const fetchAllFacilities = async () => {
     setLoading(true);
     try {
-      // 전체 데이터를 한 번에 불러옴 (500개)
-      const result = await getCulturalFacilities(1, 500);
-      if (result.success) {
-        setAllFacilities(result.items);
+      // DB에서 데이터 가져오기
+      const dbResult = await getAllDbData('culture');
+      
+      if (dbResult.success && dbResult.items.length > 0) {
+        setAllFacilities(dbResult.items);
+      } else {
+        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
+        setAllFacilities([]);
       }
     } catch (error) {
       console.error('문화시설 불러오기 오류:', error);

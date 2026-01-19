@@ -1,5 +1,5 @@
 import { memo, useState } from 'react'
-import { FiDatabase, FiSave, FiCheck, FiX } from 'react-icons/fi'
+import { FiDatabase, FiSave, FiCheck, FiX, FiEdit2, FiTrash2 } from 'react-icons/fi'
 
 /**
  * 페이지 데이터 테이블 컴포넌트
@@ -13,7 +13,11 @@ const DataTable = memo(({
   loading,
   language,
   onSaveItem,
+  onEditItem,
+  onDeleteItem,
   showSaveButton = false,
+  showEditButton = false,
+  showDeleteButton = false,
   savedItems = []
 }) => {
   const [savingItems, setSavingItems] = useState({})
@@ -81,6 +85,7 @@ const DataTable = memo(({
                 <th key={field}>{labels[field] || field}</th>
               ))}
               {showSaveButton && <th>{language === 'ko' ? '저장' : 'Save'}</th>}
+              {(showEditButton || showDeleteButton) && <th>{language === 'ko' ? '관리' : 'Actions'}</th>}
             </tr>
           </thead>
           <tbody>
@@ -122,6 +127,28 @@ const DataTable = memo(({
                           title={language === 'ko' ? 'DB에 저장' : 'Save to DB'}
                         >
                           <FiSave />
+                        </button>
+                      )}
+                    </td>
+                  )}
+                  {(showEditButton || showDeleteButton) && (
+                    <td className="action-cell">
+                      {showEditButton && onEditItem && (
+                        <button 
+                          className="edit-item-btn"
+                          onClick={() => onEditItem(item)}
+                          title={language === 'ko' ? '수정' : 'Edit'}
+                        >
+                          <FiEdit2 />
+                        </button>
+                      )}
+                      {showDeleteButton && onDeleteItem && (
+                        <button 
+                          className="delete-item-btn"
+                          onClick={() => onDeleteItem(item)}
+                          title={language === 'ko' ? '삭제' : 'Delete'}
+                        >
+                          <FiTrash2 />
                         </button>
                       )}
                     </td>

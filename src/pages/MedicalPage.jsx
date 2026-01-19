@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getMedicalFacilities } from '../services/api';
+import { getAllDbData } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch } from 'react-icons/fi';
 import { MdLocalHospital, MdLocalPharmacy, MdHealthAndSafety } from 'react-icons/md';
 import './MedicalPage.css';
@@ -76,10 +76,14 @@ const MedicalPage = () => {
   const fetchAllFacilities = async () => {
     setLoading(true);
     try {
-      // 전체 데이터를 한 번에 불러옴 (1000개)
-      const result = await getMedicalFacilities(1, 1000);
-      if (result.success) {
-        setAllFacilities(result.items);
+      // DB에서 데이터 가져오기
+      const dbResult = await getAllDbData('medical');
+      
+      if (dbResult.success && dbResult.items.length > 0) {
+        setAllFacilities(dbResult.items);
+      } else {
+        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
+        setAllFacilities([]);
       }
     } catch (error) {
       console.error('의료기관 불러오기 오류:', error);

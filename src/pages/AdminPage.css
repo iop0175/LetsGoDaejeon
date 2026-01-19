@@ -1257,3 +1257,699 @@
     font-size: 0.85rem;
   }
 }
+
+/* ===== Hero 관리 섹션 ===== */
+.hero-management {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero-form-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.hero-form-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  color: #333;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.hero-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hero-form .form-row {
+  display: flex;
+  gap: 16px;
+}
+
+.hero-form .form-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-form .form-group.full-width {
+  flex: 1 1 100%;
+}
+
+.hero-form .form-group.checkbox-group {
+  flex: 0 0 auto;
+  flex-direction: row;
+  align-items: center;
+}
+
+.hero-form .form-group.checkbox-group label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.hero-form .form-group.checkbox-group input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-form label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.hero-form input,
+.hero-form textarea {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.hero-form input:focus,
+.hero-form textarea:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.hero-form textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.hero-form .image-preview {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 200px;
+}
+
+.hero-form .image-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: cover;
+}
+
+.hero-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.hero-form .save-btn,
+.hero-form .cancel-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-form .save-btn {
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+}
+
+.hero-form .save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.hero-form .cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.hero-form .cancel-btn:hover {
+  background: #e0e0e0;
+}
+
+/* Hero 슬라이드 목록 */
+.hero-list-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.hero-list-section h3 {
+  margin: 0 0 20px 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.hero-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+
+.hero-card {
+  background: #f9f9f9;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #eee;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.hero-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.hero-card.inactive {
+  opacity: 0.6;
+}
+
+.hero-card-image {
+  position: relative;
+  height: 150px;
+  overflow: hidden;
+}
+
+.hero-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-card-image .inactive-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.hero-card-content {
+  padding: 16px;
+}
+
+.hero-card-content h4 {
+  margin: 0 0 6px 0;
+  font-size: 1rem;
+  color: #333;
+}
+
+.hero-card-content .subtitle {
+  margin: 0 0 8px 0;
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.hero-card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+.hero-card-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid #eee;
+  background: white;
+}
+
+.hero-card-actions button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.hero-card-actions .edit-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.hero-card-actions .edit-btn:hover {
+  background: #bbdefb;
+}
+
+.hero-card-actions .delete-btn {
+  background: #ffebee;
+  color: #e53935;
+}
+
+.hero-card-actions .delete-btn:hover {
+  background: #ffcdd2;
+}
+
+.hero-loading {
+  display: flex;
+  justify-content: center;
+  padding: 40px;
+}
+
+/* ===== 데이터 테이블 수정/삭제 버튼 ===== */
+.action-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.edit-item-btn,
+.delete-item-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-item-btn {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.edit-item-btn:hover {
+  background: #bbdefb;
+  transform: scale(1.05);
+}
+
+.delete-item-btn {
+  background: #ffebee;
+  color: #e53935;
+}
+
+.delete-item-btn:hover {
+  background: #ffcdd2;
+  transform: scale(1.05);
+}
+
+/* ===== 수정 모달 ===== */
+.edit-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.edit-modal {
+  background: white;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.edit-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.edit-modal-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #333;
+}
+
+.edit-modal-header .close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 8px;
+  background: #f5f5f5;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-modal-header .close-btn:hover {
+  background: #e0e0e0;
+}
+
+.edit-modal-content {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.edit-modal-content .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edit-modal-content .form-group label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #555;
+}
+
+.edit-modal-content .form-group input {
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.edit-modal-content .form-group input:focus {
+  outline: none;
+  border-color: #1976d2;
+  box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+}
+
+.edit-modal-content .image-preview-small {
+  margin-top: 8px;
+  border-radius: 8px;
+  overflow: hidden;
+  max-height: 100px;
+}
+
+.edit-modal-content .image-preview-small img {
+  width: 100%;
+  height: auto;
+  max-height: 100px;
+  object-fit: cover;
+}
+
+.edit-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid #eee;
+  background: #fafafa;
+}
+
+.edit-modal-footer button {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.edit-modal-footer .cancel-btn {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.edit-modal-footer .cancel-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.edit-modal-footer .save-btn {
+  background: linear-gradient(135deg, #1976d2, #1565c0);
+  color: white;
+}
+
+.edit-modal-footer .save-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+}
+
+.edit-modal-footer button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
+  .hero-form .form-row {
+    flex-direction: column;
+  }
+  
+  .hero-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .edit-modal {
+    max-height: 85vh;
+  }
+}
+
+/* ================================================
+   Supabase 사용량 통계 섹션
+   ================================================ */
+.supabase-usage-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.usage-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.usage-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.usage-header h3 svg {
+  color: #3ECF8E;
+}
+
+.usage-header .refresh-btn {
+  padding: 8px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.usage-header .refresh-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.usage-header .refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.usage-header .refresh-btn svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+.usage-loading {
+  padding: 40px;
+  text-align: center;
+  color: #666;
+}
+
+.usage-empty {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+}
+
+/* 사용량 요약 카드 */
+.usage-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.usage-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.usage-icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #3ECF8E, #2EBF7D);
+  border-radius: 12px;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.usage-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.usage-label {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.usage-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.usage-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 4px 0;
+}
+
+.usage-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3ECF8E, #2EBF7D);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.usage-bar.storage {
+  background: linear-gradient(90deg, #6366f1, #4f46e5);
+}
+
+.usage-limit {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* 테이블별 사용량 */
+.table-usage-list {
+  margin-bottom: 20px;
+}
+
+.table-usage-list h4 {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  color: #475569;
+}
+
+.table-usage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+}
+
+.table-usage-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  border: 1px solid #e2e8f0;
+}
+
+.table-name {
+  color: #475569;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.table-rows {
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* Free Plan 안내 */
+.free-plan-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #fefce8;
+  border: 1px solid #fef08a;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: #854d0e;
+}
+
+.free-plan-notice a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #3ECF8E;
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: auto;
+}
+
+.free-plan-notice a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .usage-summary {
+    grid-template-columns: 1fr;
+  }
+  
+  .table-usage-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .free-plan-notice {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .free-plan-notice a {
+    margin-left: 0;
+    margin-top: 8px;
+  }
+}

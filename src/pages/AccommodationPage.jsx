@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getTourRooms } from '../services/api';
+import { getAllDbData } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch } from 'react-icons/fi';
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
 import './AccommodationPage.css';
@@ -79,10 +79,14 @@ const AccommodationPage = () => {
   const fetchAllRooms = async () => {
     setLoading(true);
     try {
-      // 전체 데이터를 한 번에 불러옴 (500개)
-      const result = await getTourRooms(1, 500);
-      if (result.success) {
-        setAllRooms(result.items);
+      // DB에서 데이터 가져오기
+      const dbResult = await getAllDbData('accommodation');
+      
+      if (dbResult.success && dbResult.items.length > 0) {
+        setAllRooms(dbResult.items);
+      } else {
+        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
+        setAllRooms([]);
       }
     } catch (error) {
       console.error('숙박업소 불러오기 오류:', error);

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getRestaurants } from '../services/api'
+import { getAllDbData } from '../services/dbService'
 import './FoodPage.css'
 
 // 대전시 구 목록
@@ -105,34 +105,42 @@ const FoodPage = () => {
     return filteredRestaurants.slice(startIndex, startIndex + itemsPerPage)
   }, [filteredRestaurants, currentPage, itemsPerPage])
 
-  // API 데이터 로드 (전체 데이터 한 번에)
+  // DB 데이터 로드
   useEffect(() => {
     const loadRestaurants = async () => {
       setLoading(true)
       setError(null)
       
-      // 전체 데이터를 한 번에 불러옴 (500개)
-      const result = await getRestaurants(1, 500)
-      
-      if (result.success) {
-        const formattedRestaurants = result.items.map((item, index) => {
-          const district = extractDistrict(item.restrntAddr)
-          return {
-            id: index + 1,
-            name: item.restrntNm,
-            location: district,
-            address: item.restrntDtlAddr || item.restrntAddr,
-            summary: item.restrntSumm,
-            phone: item.restrntInqrTel,
-            menu: item.rprsFod,
-            hours: item.salsTime,
-            holiday: item.hldyGuid,
-            lat: item.mapLat,
-            lng: item.mapLot
-          }
-        })
-        setAllRestaurants(formattedRestaurants)
-      } else {
+      try {
+        // DB에서 데이터 가져오기
+        const dbResult = await getAllDbData('food')
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          // DB 데이터 사용
+          const formattedRestaurants = dbResult.items.map((item, index) => {
+            const district = extractDistrict(item.restrntAddr)
+            return {
+              id: item._id || index + 1,
+              name: item.restrntNm,
+              location: district,
+              address: item.restrntDtlAddr || item.restrntAddr,
+              summary: item.restrntSumm,
+              phone: item.restrntInqrTel || item.telNo,
+              menu: item.rprsFod || item.reprMenu,
+              hours: item.salsTime,
+              holiday: item.hldyGuid,
+              lat: item.mapLat,
+              lng: item.mapLot,
+              image: item.imageUrl
+            }
+          })
+          setAllRestaurants(formattedRestaurants)
+        } else {
+          // DB에 데이터가 없으면 메시지 표시
+          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+        }
+      } catch (err) {
+        console.error('데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       
