@@ -185,6 +185,69 @@ ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS image_author TEXT;
 ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS image_source TEXT;
 
 -- ============================================================
+-- 마이그레이션: updated_at 컬럼 추가
+-- 데이터 수정 시간을 추적하기 위한 컬럼
+-- ============================================================
+ALTER TABLE travel_spots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE festivals ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE cultural_facilities ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE medical_facilities ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE shopping_places ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+
+-- updated_at 자동 업데이트 함수
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- 각 테이블에 트리거 추가 (행 업데이트 시 updated_at 자동 갱신)
+DROP TRIGGER IF EXISTS update_travel_spots_updated_at ON travel_spots;
+CREATE TRIGGER update_travel_spots_updated_at
+  BEFORE UPDATE ON travel_spots
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_festivals_updated_at ON festivals;
+CREATE TRIGGER update_festivals_updated_at
+  BEFORE UPDATE ON festivals
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_restaurants_updated_at ON restaurants;
+CREATE TRIGGER update_restaurants_updated_at
+  BEFORE UPDATE ON restaurants
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_cultural_facilities_updated_at ON cultural_facilities;
+CREATE TRIGGER update_cultural_facilities_updated_at
+  BEFORE UPDATE ON cultural_facilities
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_medical_facilities_updated_at ON medical_facilities;
+CREATE TRIGGER update_medical_facilities_updated_at
+  BEFORE UPDATE ON medical_facilities
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_shopping_places_updated_at ON shopping_places;
+CREATE TRIGGER update_shopping_places_updated_at
+  BEFORE UPDATE ON shopping_places
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_accommodations_updated_at ON accommodations;
+CREATE TRIGGER update_accommodations_updated_at
+  BEFORE UPDATE ON accommodations
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_parking_lots_updated_at ON parking_lots;
+CREATE TRIGGER update_parking_lots_updated_at
+  BEFORE UPDATE ON parking_lots
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
 -- 9. 히어로 슬라이드 테이블
 -- ============================================================
 CREATE TABLE IF NOT EXISTS hero_slides (
