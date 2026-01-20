@@ -1,6 +1,8 @@
 // 카카오 모빌리티 API 서비스
 // 경로 탐색 및 이동 시간 조회
 
+// 프로덕션에서는 Vercel 프록시 사용, 로컬에서는 직접 API 호출
+const USE_PROXY = import.meta.env.PROD || import.meta.env.VITE_USE_API_PROXY === 'true'
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY
 
 // API 사용량 추적
@@ -74,14 +76,24 @@ export const getKakaoApiStats = () => {
  */
 export const getCoordinatesFromAddress = async (address) => {
   try {
-    const response = await fetch(
-      `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+    // 주소 정규화: 도로명 뒤에 붙어있는 숫자 앞에 공백 추가 (예: 엑스포로85 → 엑스포로 85)
+    const normalizedAddress = address.replace(/([가-힣])(\d)/g, '$1 $2')
+    
+    let response
+    if (USE_PROXY) {
+      // 프로덕션: Vercel 프록시 사용
+      response = await fetch(`/api/kakao?action=address&query=${encodeURIComponent(normalizedAddress)}`)
+    } else {
+      // 로컬 개발: 직접 API 호출
+      response = await fetch(
+        `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(normalizedAddress)}`,
+        {
+          headers: {
+            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+          }
         }
-      }
-    )
+      )
+    }
     
     const data = await response.json()
     trackKakaoApiCall('address_search', !!data.documents?.length)
@@ -91,15 +103,20 @@ export const getCoordinatesFromAddress = async (address) => {
       return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
     }
     
-    // 주소 검색 실패 시 키워드 검색 시도
-    const keywordResponse = await fetch(
-      `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+    // 주소 검색 실패 시 원본 주소로 키워드 검색 시도
+    let keywordResponse
+    if (USE_PROXY) {
+      keywordResponse = await fetch(`/api/kakao?action=keyword&query=${encodeURIComponent(address)}`)
+    } else {
+      keywordResponse = await fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`,
+        {
+          headers: {
+            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+          }
         }
-      }
-    )
+      )
+    }
     
     const keywordData = await keywordResponse.json()
     trackKakaoApiCall('keyword_search', !!keywordData.documents?.length)
@@ -107,6 +124,31 @@ export const getCoordinatesFromAddress = async (address) => {
     if (keywordData.documents && keywordData.documents.length > 0) {
       const { x, y } = keywordData.documents[0]
       return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
+    }
+    
+    // 키워드 검색도 실패 시 "대전" 추가해서 재시도
+    if (!address.includes('대전')) {
+      let daejeonKeywordResponse
+      if (USE_PROXY) {
+        daejeonKeywordResponse = await fetch(`/api/kakao?action=keyword&query=${encodeURIComponent('대전 ' + address)}`)
+      } else {
+        daejeonKeywordResponse = await fetch(
+          `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent('대전 ' + address)}`,
+          {
+            headers: {
+              'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+            }
+          }
+        )
+      }
+      
+      const daejeonKeywordData = await daejeonKeywordResponse.json()
+      trackKakaoApiCall('keyword_search_daejeon', !!daejeonKeywordData.documents?.length)
+      
+      if (daejeonKeywordData.documents && daejeonKeywordData.documents.length > 0) {
+        const { x, y } = daejeonKeywordData.documents[0]
+        return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
+      }
     }
     
     return { success: false, error: 'Address not found' }
@@ -126,14 +168,21 @@ export const getCoordinatesFromAddress = async (address) => {
  */
 export const getCarRoute = async (origin, destination, includePath = false) => {
   try {
-    const response = await fetch(
-      `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}&priority=RECOMMEND`,
-      {
-        headers: {
-          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+    let response
+    if (USE_PROXY) {
+      // 프로덕션: Vercel 프록시 사용
+      response = await fetch(`/api/kakao?action=directions&origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}`)
+    } else {
+      // 로컬 개발: 직접 API 호출
+      response = await fetch(
+        `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}&priority=RECOMMEND`,
+        {
+          headers: {
+            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
+          }
         }
-      }
-    )
+      )
+    }
     
     const data = await response.json()
     trackKakaoApiCall('directions', !!data.routes?.length)
@@ -287,16 +336,25 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
       case 'bus':
       case 'subway':
         // ODsay API 사용
-        console.log(`[경로 탐색] ${transportType} 경로 탐색 시작`, { origin, destination, useOdsay })
         if (useOdsay) {
           try {
             const { getPublicTransitRouteByCoords } = await import('./odsayService.js')
             const searchType = transportType === 'bus' ? 'bus' : transportType === 'subway' ? 'subway' : 'all'
-            console.log(`[ODSay] API 호출 시작 - searchType: ${searchType}`)
             const odsayResult = await getPublicTransitRouteByCoords(origin, destination, searchType)
-            console.log('[ODSay] API 결과:', odsayResult)
             
             if (odsayResult.success) {
+              // 노선이 없는 경우 추정값 사용하지 않고 그대로 반환
+              if (odsayResult.noRoute) {
+                return {
+                  success: true,
+                  duration: 0,
+                  distance: 0,
+                  payment: 0,
+                  routeDetails: [],
+                  noRoute: true,
+                  isEstimate: false
+                }
+              }
               return {
                 success: true,
                 duration: odsayResult.totalTime,
@@ -305,17 +363,35 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
                 routeDetails: odsayResult.routeDetails,
                 busTransitCount: odsayResult.busTransitCount,
                 subwayTransitCount: odsayResult.subwayTransitCount,
+                noRoute: false,
                 isEstimate: false
               }
             } else {
-              console.warn('[ODSay] API 실패 응답:', odsayResult.error)
+              // ODsay API 실패 시 (경로 없음 포함), 버스/지하철 전용 검색은 noRoute 반환
+              return {
+                success: true,
+                duration: 0,
+                distance: 0,
+                payment: 0,
+                routeDetails: [],
+                noRoute: true,
+                isEstimate: false
+              }
             }
           } catch (odsayErr) {
-            console.warn('ODsay API 실패, 추정값 사용:', odsayErr)
+            // 예외 발생 시에도 버스/지하철 전용 검색은 noRoute 반환
+            return {
+              success: true,
+              duration: 0,
+              distance: 0,
+              payment: 0,
+              routeDetails: [],
+              noRoute: true,
+              isEstimate: false
+            }
           }
         }
-        // ODsay 실패 시 추정값 사용
-        console.log('[경로 탐색] ODSay 실패, 추정값 사용')
+        // ODsay 비활성화 시 추정값 사용
         return await getPublicTransportRoute(origin, destination)
         
       case 'walk':

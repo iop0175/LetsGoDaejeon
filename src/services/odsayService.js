@@ -1,10 +1,9 @@
 // ODsay 대중교통 API 서비스
 // 버스, 지하철 경로 탐색
 
+// 프로덕션에서는 Vercel 프록시 사용, 로컬에서는 직접 API 호출
+const USE_PROXY = import.meta.env.PROD || import.meta.env.VITE_USE_API_PROXY === 'true'
 const ODSAY_API_KEY = import.meta.env.VITE_ODSAY_API_KEY
-
-// API 키 확인 로그
-console.log('ODSay API Key 설정 여부:', !!ODSAY_API_KEY)
 
 // API 사용량 추적
 let apiCallCount = 0
@@ -73,138 +72,150 @@ export const getOdsayApiStats = () => {
  * @returns {Promise<Object>} 경로 정보
  */
 export const getPublicTransitRoute = async (startX, startY, endX, endY, searchType = 'all') => {
-  return new Promise((resolve) => {
-    try {
-      // ODsay JSONP 콜백 함수명 (고유하게 생성)
-      const callbackName = `odsayCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      
-      // 콜백 함수 등록
-      window[callbackName] = (data) => {
-        console.log('[ODSay] 콜백 응답 수신:', data)
-        // 콜백 함수 정리
-        delete window[callbackName]
-        const script = document.getElementById(callbackName)
-        if (script) script.remove()
-        
-        if (data.error) {
-          console.error('[ODSay] API 에러 응답:', data.error)
-          trackApiCall('searchPubTransPathT', false)
-          resolve({ 
-            success: false, 
-            error: data.error.msg || '경로를 찾을 수 없습니다',
-            errorCode: data.error.code
-          })
-          return
-        }
-        
-        trackApiCall('searchPubTransPathT', true)
-        
-        if (!data.result || !data.result.path || data.result.path.length === 0) {
-          resolve({ success: false, error: '경로를 찾을 수 없습니다' })
-          return
-        }
-        
-        // 최적 경로 선택 (첫 번째 결과)
-        const bestPath = data.result.path[0]
-        const info = bestPath.info
-        
-        // 경로 상세 정보 파싱
-        const subPaths = bestPath.subPath || []
-        const routeDetails = subPaths.map(sub => {
-          if (sub.trafficType === 1) {
-            // 지하철
-            return {
-              type: 'subway',
-              lineName: sub.lane?.[0]?.name || '지하철',
-              lineColor: sub.lane?.[0]?.subwayColor || '#1a5dc8',
-              startStation: sub.startName,
-              endStation: sub.endName,
-              stationCount: sub.stationCount,
-              sectionTime: sub.sectionTime,
-              distance: sub.distance
-            }
-          } else if (sub.trafficType === 2) {
-            // 버스
-            return {
-              type: 'bus',
-              busNo: sub.lane?.[0]?.busNo || '버스',
-              busType: sub.lane?.[0]?.type || 0,
-              busColor: getBusColor(sub.lane?.[0]?.type),
-              startStation: sub.startName,
-              endStation: sub.endName,
-              stationCount: sub.stationCount,
-              sectionTime: sub.sectionTime,
-              distance: sub.distance
-            }
-          } else if (sub.trafficType === 3) {
-            // 도보
-            return {
-              type: 'walk',
-              sectionTime: sub.sectionTime,
-              distance: sub.distance
-            }
-          }
-          return null
-        }).filter(Boolean)
-        
-        resolve({
-          success: true,
-          totalTime: info.totalTime, // 총 소요 시간 (분)
-          totalDistance: Math.round(info.totalDistance / 1000 * 10) / 10, // 총 거리 (km)
-          payment: info.payment, // 요금
-          busTransitCount: info.busTransitCount, // 버스 환승 횟수
-          subwayTransitCount: info.subwayTransitCount, // 지하철 환승 횟수
-          mapObj: info.mapObj, // 경로 지도 표시용 객체
-          routeDetails, // 상세 경로 정보
-          firstStartStation: info.firstStartStation,
-          lastEndStation: info.lastEndStation
-        })
-      }
-      
-      // ODsay JSONP 파라미터
-      const params = new URLSearchParams({
-        apiKey: ODSAY_API_KEY,
-        SX: startX, // 출발지 경도
-        SY: startY, // 출발지 위도
-        EX: endX,   // 도착지 경도
-        EY: endY,   // 도착지 위도
-        OPT: 0,     // 0: 최단시간
-        SearchType: searchType === 'bus' ? 1 : searchType === 'subway' ? 2 : 0,
-        output: 'json'
-      })
-      
-      // JSONP 스크립트 태그 생성
-      const script = document.createElement('script')
-      script.id = callbackName
-      const apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?${params.toString()}&callback=${callbackName}`
-      script.src = apiUrl
-      console.log('[ODSay] JSONP 요청 URL:', apiUrl.replace(ODSAY_API_KEY, 'API_KEY_HIDDEN'))
-      
-      script.onerror = (error) => {
-        console.error('[ODSay] 스크립트 로드 에러:', error)
-        trackApiCall('searchPubTransPathT', false)
-        delete window[callbackName]
-        script.remove()
-        resolve({ success: false, error: 'API 요청 실패' })
-      }
-      
-      // 타임아웃 설정 (10초)
-      setTimeout(() => {
-        if (window[callbackName]) {
-          delete window[callbackName]
-          script.remove()
-          resolve({ success: false, error: '요청 시간 초과' })
-        }
-      }, 10000)
-      
-      document.head.appendChild(script)
-      
-    } catch (err) {
-      trackApiCall('searchPubTransPathT', false)
-      console.error('대중교통 경로 탐색 실패:', err)
-      resolve({ success: false, error: err.message })
+  try {
+    // API URL 생성
+    const searchPathType = searchType === 'subway' ? 1 : searchType === 'bus' ? 2 : 0
+    
+    let apiUrl
+    if (USE_PROXY) {
+      // 프로덕션: Vercel 프록시 사용 (API 키 숨김)
+      apiUrl = `/api/odsay?action=searchPubTransPathT&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&SearchPathType=${searchPathType}`
+    } else {
+      // 로컬 개발: 직접 API 호출
+      const encodedApiKey = encodeURIComponent(ODSAY_API_KEY)
+      apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?apiKey=${encodedApiKey}&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&OPT=0&SearchType=0&SearchPathType=${searchPathType}&output=json`
     }
-  })
+    
+    const response = await fetch(apiUrl)
+    const data = await response.json()
+    
+    if (data.error) {
+      trackApiCall('searchPubTransPathT', false)
+      const errorMsg = Array.isArray(data.error) 
+        ? data.error[0]?.message 
+        : (data.error.msg || '경로를 찾을 수 없습니다')
+      const errorCode = Array.isArray(data.error) 
+        ? data.error[0]?.code 
+        : data.error.code
+      return { 
+        success: false, 
+        error: errorMsg,
+        errorCode: errorCode
+      }
+    }
+    
+    trackApiCall('searchPubTransPathT', true)
+    
+    if (!data.result || !data.result.path || data.result.path.length === 0) {
+      // 버스 또는 지하철 전용 검색에서 결과가 없으면 "경로 없음"으로 처리
+      if (searchType === 'subway' || searchType === 'bus') {
+        const routeTypeText = searchType === 'subway' ? '지하철' : '버스'
+        return { 
+          success: true, 
+          totalTime: 0,
+          totalDistance: 0,
+          payment: 0,
+          busTransitCount: 0,
+          subwayTransitCount: 0,
+          routeDetails: [],
+          noRoute: true,
+          error: `이용 가능한 ${routeTypeText} 노선이 없습니다`
+        }
+      }
+      return { success: false, error: '경로를 찾을 수 없습니다' }
+    }
+    
+    // 최적 경로 선택 (첫 번째 결과)
+    const bestPath = data.result.path[0]
+    const info = bestPath.info
+    
+    // 경로 상세 정보 파싱
+    const subPaths = bestPath.subPath || []
+    
+    const routeDetails = subPaths.map(sub => {
+      if (sub.trafficType === 1) {
+        // 지하철
+        // 정류장 좌표 목록 추출
+        const stations = sub.passStopList?.stations || []
+        const stationCoords = stations.map(s => ({
+          name: s.stationName,
+          x: s.x,
+          y: s.y
+        }))
+        
+        return {
+          type: 'subway',
+          lineName: sub.lane?.[0]?.name || '지하철',
+          lineColor: sub.lane?.[0]?.subwayColor || '#1a5dc8',
+          startStation: sub.startName,
+          endStation: sub.endName,
+          stationCount: sub.stationCount,
+          sectionTime: sub.sectionTime,
+          distance: sub.distance,
+          startX: sub.startX,
+          startY: sub.startY,
+          endX: sub.endX,
+          endY: sub.endY,
+          stationCoords // 지하철역 좌표 목록
+        }
+      } else if (sub.trafficType === 2) {
+        // 버스
+        // 정류장 좌표 목록 추출
+        const stations = sub.passStopList?.stations || []
+        const stationCoords = stations.map(s => ({
+          name: s.stationName,
+          x: s.x,
+          y: s.y
+        }))
+        
+        return {
+          type: 'bus',
+          busNo: sub.lane?.[0]?.busNo || '버스',
+          busType: sub.lane?.[0]?.type || 0,
+          busColor: getBusColor(sub.lane?.[0]?.type),
+          startStation: sub.startName,
+          endStation: sub.endName,
+          stationCount: sub.stationCount,
+          sectionTime: sub.sectionTime,
+          distance: sub.distance,
+          startX: sub.startX,
+          startY: sub.startY,
+          endX: sub.endX,
+          endY: sub.endY,
+          stationCoords // 버스 정류장 좌표 목록
+        }
+      } else if (sub.trafficType === 3) {
+        // 도보
+        return {
+          type: 'walk',
+          sectionTime: sub.sectionTime,
+          distance: sub.distance,
+          startX: sub.startX,
+          startY: sub.startY,
+          endX: sub.endX,
+          endY: sub.endY
+        }
+      }
+      return null
+    }).filter(Boolean)
+    
+    return {
+      success: true,
+      totalTime: info.totalTime, // 총 소요 시간 (분)
+      totalDistance: Math.round(info.totalDistance / 1000 * 10) / 10, // 총 거리 (km)
+      payment: info.payment, // 요금
+      busTransitCount: info.busTransitCount, // 버스 환승 횟수
+      subwayTransitCount: info.subwayTransitCount, // 지하철 환승 횟수
+      mapObj: info.mapObj, // 경로 지도 표시용 객체
+      routeDetails, // 상세 경로 정보
+      firstStartStation: info.firstStartStation,
+      lastEndStation: info.lastEndStation
+    }
+  } catch (err) {
+    console.error('[ODSay] fetch 에러:', err)
+    trackApiCall('searchPubTransPathT', false)
+    return { success: false, error: err.message }
+  }
 }
 
 /**
@@ -305,12 +316,6 @@ export const searchStation = (stationName, cityCode = '3') => {
  * @returns {Promise<Object>} 경로 정보
  */
 export const getPublicTransitRouteByCoords = async (origin, destination, transportType = 'all') => {
-  console.log('[ODSay] getPublicTransitRouteByCoords 호출됨')
-  console.log('[ODSay] 출발지:', origin)
-  console.log('[ODSay] 도착지:', destination)
-  console.log('[ODSay] 교통 타입:', transportType)
-  console.log('[ODSay] API Key 존재:', !!ODSAY_API_KEY)
-  
   const result = await getPublicTransitRoute(
     origin.lng,  // 출발지 경도
     origin.lat,  // 출발지 위도
@@ -319,7 +324,6 @@ export const getPublicTransitRouteByCoords = async (origin, destination, transpo
     transportType
   )
   
-  console.log('[ODSay] getPublicTransitRoute 결과:', result)
   return result
 }
 

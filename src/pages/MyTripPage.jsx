@@ -438,7 +438,7 @@ const MyTripPage = () => {
         if (day && placeIndex !== -1 && placeIndex < day.places.length - 1) {
           const fromPlace = day.places[placeIndex]
           const toPlace = day.places[placeIndex + 1]
-          fetchRouteInfo(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType)
+          fetchRouteInfo(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType, fromPlace.placeName, toPlace.placeName)
         }
       }
     } catch (err) {
@@ -480,6 +480,11 @@ const MyTripPage = () => {
             duration: result.duration,
             distance: result.distance,
             isEstimate: result.isEstimate,
+            routeDetails: result.routeDetails || [], // 버스/지하철 상세 경로
+            payment: result.payment, // 요금
+            busTransitCount: result.busTransitCount, // 버스 환승 횟수
+            subwayTransitCount: result.subwayTransitCount, // 지하철 환승 횟수
+            noRoute: result.noRoute || false, // 노선 없음 플래그
             loading: false
           }
         }))
@@ -499,7 +504,7 @@ const MyTripPage = () => {
   }
   
   // 이동 시간 조회
-  const fetchRouteInfo = async (placeId, fromAddress, toAddress, transportType) => {
+  const fetchRouteInfo = async (placeId, fromAddress, toAddress, transportType, fromName = null, toName = null) => {
     if (!fromAddress || !toAddress) return
     
     // 로딩 상태 설정
@@ -509,7 +514,15 @@ const MyTripPage = () => {
     }))
     
     try {
-      const result = await getRouteByTransport(fromAddress, toAddress, transportType)
+      // 주소로 경로 조회 시도
+      let result = await getRouteByTransport(fromAddress, toAddress, transportType)
+      
+      // 주소 검색 실패 시 장소명으로 재시도
+      if (!result.success && (fromName || toName)) {
+        const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
+        const toQuery = toName ? `대전 ${toName}` : toAddress
+        result = await getRouteByTransport(fromQuery, toQuery, transportType)
+      }
       
       if (result.success) {
         setRouteInfo(prev => ({
@@ -518,6 +531,11 @@ const MyTripPage = () => {
             duration: result.duration,
             distance: result.distance,
             isEstimate: result.isEstimate,
+            routeDetails: result.routeDetails || [], // 버스/지하철 상세 경로
+            payment: result.payment, // 요금
+            busTransitCount: result.busTransitCount, // 버스 환승 횟수
+            subwayTransitCount: result.subwayTransitCount, // 지하철 환승 횟수
+            noRoute: result.noRoute || false, // 노선 없음 플래그
             loading: false
           }
         }))
@@ -547,7 +565,7 @@ const MyTripPage = () => {
         // 마지막 장소 제외, 이동 방법이 설정된 경우
         if (idx < day.places.length - 1 && place.transportToNext && !routeInfo[place.id]) {
           const nextPlace = day.places[idx + 1]
-          fetchRouteInfo(place.id, place.placeAddress, nextPlace.placeAddress, place.transportToNext)
+          fetchRouteInfo(place.id, place.placeAddress, nextPlace.placeAddress, place.transportToNext, place.placeName, nextPlace.placeName)
         }
       })
     })
@@ -688,7 +706,14 @@ const MyTripPage = () => {
       const has2DayOrLater = placesToShow.some(p => p.dayNumber > 1)
       if (has2DayOrLater && selectedTrip.accommodationAddress) {
         try {
-          const accCoords = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          // 주소로 좌표 검색
+          let accCoords = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          
+          // 주소 검색 실패 시 숙소명 + 대전으로 재시도
+          if (!accCoords.success && selectedTrip.accommodationName) {
+            accCoords = await getCoordinatesFromAddress(`대전 ${selectedTrip.accommodationName}`)
+          }
+          
           if (accCoords.success) {
             const accPosition = new window.kakao.maps.LatLng(accCoords.lat, accCoords.lng)
             bounds.extend(accPosition)
@@ -719,7 +744,14 @@ const MyTripPage = () => {
       
       for (const place of placesToShow) {
         try {
-          const coords = await getCoordinatesFromAddress(place.placeAddress)
+          // 주소로 좌표 검색
+          let coords = await getCoordinatesFromAddress(place.placeAddress)
+          
+          // 주소 검색 실패 시 장소명 + 대전으로 재시도
+          if (!coords.success && place.placeName) {
+            coords = await getCoordinatesFromAddress(`대전 ${place.placeName}`)
+          }
+          
           if (coords.success) {
             const position = new window.kakao.maps.LatLng(coords.lat, coords.lng)
             positions.push(position)
@@ -758,7 +790,14 @@ const MyTripPage = () => {
       let accommodationCoords = null
       if (selectedTrip.accommodationAddress) {
         try {
-          const accResult = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          // 주소로 좌표 검색
+          let accResult = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          
+          // 주소 검색 실패 시 숙소명 + 대전으로 재시도
+          if (!accResult.success && selectedTrip.accommodationName) {
+            accResult = await getCoordinatesFromAddress(`대전 ${selectedTrip.accommodationName}`)
+          }
+          
           if (accResult.success) {
             accommodationCoords = { lat: accResult.lat, lng: accResult.lng }
           }
@@ -778,6 +817,7 @@ const MyTripPage = () => {
         
         // 경로 시작점 결정
         let prevCoords = null
+        let prevPlace = null // 이전 장소 정보 저장
         
         // 2일차 이후이고 숙소가 있으면 숙소에서 시작
         if (Number(dayNum) > 1 && accommodationCoords) {
@@ -789,36 +829,247 @@ const MyTripPage = () => {
           const place = dayPlaceList[i]
           
           try {
-            const coords = await getCoordinatesFromAddress(place.placeAddress)
+            // 주소로 좌표 검색
+            let coords = await getCoordinatesFromAddress(place.placeAddress)
+            
+            // 주소 검색 실패 시 장소명 + 대전으로 재시도
+            if (!coords.success && place.placeName) {
+              coords = await getCoordinatesFromAddress(`대전 ${place.placeName}`)
+            }
+            
             if (coords.success) {
               const currentCoords = { lat: coords.lat, lng: coords.lng }
               
-              // 이전 좌표가 있으면 경로 그리기
+              // 이전 좌표가 있으면 경로 그리기 (이전 장소 → 현재 장소)
               if (prevCoords) {
-                // 실제 도로 경로 가져오기
-                try {
-                  const routeResult = await getCarRoute(
-                    { lat: prevCoords.lat, lng: prevCoords.lng },
-                    { lat: currentCoords.lat, lng: currentCoords.lng },
-                    true // includePath = true로 경로 좌표 포함
-                  )
+                // 이전 장소의 transportToNext와 routeInfo를 사용해야 함
+                const prevRouteInfo = prevPlace ? routeInfo[prevPlace.id] : null
+                const transportType = prevPlace ? prevPlace.transportToNext : null
+                
+                // 버스/지하철 경로가 있는 경우 ODSay 좌표 사용
+                if ((transportType === 'bus' || transportType === 'subway') && 
+                    prevRouteInfo?.routeDetails?.length > 0 && 
+                    !prevRouteInfo.noRoute && 
+                    !prevRouteInfo.isEstimate) {
                   
-                  if (routeResult.success && routeResult.path && routeResult.path.length > 0) {
-                    // 실제 도로 경로로 그리기
-                    const path = routeResult.path.map(p => 
-                      new window.kakao.maps.LatLng(p.lat, p.lng)
+                  const routeDetails = prevRouteInfo.routeDetails
+                  
+                  // 출발지 좌표 (이전 장소)
+                  const startCoord = prevCoords
+                  // 목적지 좌표 (현재 장소)
+                  const endCoord = currentCoords
+                  
+                  // 버스/지하철 경로 그리기
+                  for (let detailIdx = 0; detailIdx < routeDetails.length; detailIdx++) {
+                    const detail = routeDetails[detailIdx]
+                    
+                    // 도보 구간 처리
+                    if (detail.type === 'walk') {
+                      // 도보 시작/끝 좌표 계산
+                      let walkStartCoord = null
+                      let walkEndCoord = null
+                      
+                      if (detailIdx === 0) {
+                        // 첫 번째 도보: 출발지 → 첫 번째 대중교통 정류장
+                        walkStartCoord = { lat: startCoord.lat, lng: startCoord.lng }
+                        const nextDetail = routeDetails[detailIdx + 1]
+                        if (nextDetail?.stationCoords?.[0]) {
+                          walkEndCoord = { lat: nextDetail.stationCoords[0].y, lng: nextDetail.stationCoords[0].x }
+                        } else if (nextDetail?.startY && nextDetail?.startX) {
+                          walkEndCoord = { lat: nextDetail.startY, lng: nextDetail.startX }
+                        }
+                      } else if (detailIdx === routeDetails.length - 1) {
+                        // 마지막 도보: 마지막 대중교통 정류장 → 목적지
+                        const prevDetail = routeDetails[detailIdx - 1]
+                        if (prevDetail?.stationCoords?.length > 0) {
+                          const lastStation = prevDetail.stationCoords[prevDetail.stationCoords.length - 1]
+                          walkStartCoord = { lat: lastStation.y, lng: lastStation.x }
+                        } else if (prevDetail?.endY && prevDetail?.endX) {
+                          walkStartCoord = { lat: prevDetail.endY, lng: prevDetail.endX }
+                        }
+                        walkEndCoord = { lat: endCoord.lat, lng: endCoord.lng }
+                      } else {
+                        // 중간 도보: 이전 대중교통 끝 → 다음 대중교통 시작
+                        const prevDetail = routeDetails[detailIdx - 1]
+                        const nextDetail = routeDetails[detailIdx + 1]
+                        
+                        if (prevDetail?.stationCoords?.length > 0) {
+                          const lastStation = prevDetail.stationCoords[prevDetail.stationCoords.length - 1]
+                          walkStartCoord = { lat: lastStation.y, lng: lastStation.x }
+                        } else if (prevDetail?.endY && prevDetail?.endX) {
+                          walkStartCoord = { lat: prevDetail.endY, lng: prevDetail.endX }
+                        }
+                        
+                        if (nextDetail?.stationCoords?.[0]) {
+                          walkEndCoord = { lat: nextDetail.stationCoords[0].y, lng: nextDetail.stationCoords[0].x }
+                        } else if (nextDetail?.startY && nextDetail?.startX) {
+                          walkEndCoord = { lat: nextDetail.startY, lng: nextDetail.startX }
+                        }
+                      }
+                      
+                      // 좌표가 있으면 도보 경로 그리기
+                      if (walkStartCoord && walkEndCoord) {
+                        const walkPath = [
+                          new window.kakao.maps.LatLng(walkStartCoord.lat, walkStartCoord.lng),
+                          new window.kakao.maps.LatLng(walkEndCoord.lat, walkEndCoord.lng)
+                        ]
+                        
+                        const walkPolyline = new window.kakao.maps.Polyline({
+                          path: walkPath,
+                          strokeWeight: 3,
+                          strokeColor: '#e74c3c', // 빨간색
+                          strokeOpacity: 0.8,
+                          strokeStyle: 'dashed'
+                        })
+                        walkPolyline.setMap(mapRef.current)
+                        polylines.push(walkPolyline)
+                      }
+                    } else if (detail.stationCoords && detail.stationCoords.length > 0) {
+                      // 버스/지하철: 정류장/역 좌표로 경로 그리기
+                      const stationPath = detail.stationCoords.map(s => 
+                        new window.kakao.maps.LatLng(s.y, s.x)
+                      )
+                      
+                      const lineColor = detail.type === 'bus' 
+                        ? (detail.busColor || '#52c41a')
+                        : (detail.lineColor || '#1a5dc8')
+                      
+                      const polyline = new window.kakao.maps.Polyline({
+                        path: stationPath,
+                        strokeWeight: 5,
+                        strokeColor: lineColor,
+                        strokeOpacity: 0.9,
+                        strokeStyle: 'solid'
+                      })
+                      polyline.setMap(mapRef.current)
+                      polylines.push(polyline)
+                      
+                      // 출발 정류장/역 마커
+                      if (detail.startStation && detail.stationCoords[0]) {
+                        const startMarker = new window.kakao.maps.Marker({
+                          position: new window.kakao.maps.LatLng(detail.stationCoords[0].y, detail.stationCoords[0].x),
+                          map: mapRef.current,
+                          image: new window.kakao.maps.MarkerImage(
+                            detail.type === 'bus' 
+                              ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png'
+                              : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+                            new window.kakao.maps.Size(24, 35)
+                          ),
+                          title: `${detail.type === 'bus' ? '승차' : '승차'}: ${detail.startStation}`
+                        })
+                        markersRef.current.push(startMarker)
+                        
+                        // 승차 정류장 인포윈도우
+                        const startInfoWindow = new window.kakao.maps.InfoWindow({
+                          content: `<div style="padding:8px;font-size:12px;min-width:120px;">
+                            <strong style="color:${detail.busColor || '#52c41a'}">${detail.busNo}</strong><br/>
+                            <span>승차: ${detail.startStation}</span><br/>
+                            <small>${detail.stationCount}정거장 (${detail.sectionTime}분)</small>
+                          </div>`
+                        })
+                        window.kakao.maps.event.addListener(startMarker, 'mouseover', () => {
+                          startInfoWindow.open(mapRef.current, startMarker)
+                        })
+                        window.kakao.maps.event.addListener(startMarker, 'mouseout', () => {
+                          startInfoWindow.close()
+                        })
+                      }
+                      
+                      // 도착 정류장/역 마커
+                      const lastIdx = detail.stationCoords.length - 1
+                      if (detail.endStation && detail.stationCoords[lastIdx]) {
+                        const endMarker = new window.kakao.maps.Marker({
+                          position: new window.kakao.maps.LatLng(detail.stationCoords[lastIdx].y, detail.stationCoords[lastIdx].x),
+                          map: mapRef.current,
+                          image: new window.kakao.maps.MarkerImage(
+                            detail.type === 'bus' 
+                              ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png'
+                              : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
+                            new window.kakao.maps.Size(24, 35)
+                          ),
+                          title: `${detail.type === 'bus' ? '하차' : '하차'}: ${detail.endStation}`
+                        })
+                        markersRef.current.push(endMarker)
+                        
+                        // 하차 정류장 인포윈도우
+                        const endInfoWindow = new window.kakao.maps.InfoWindow({
+                          content: `<div style="padding:8px;font-size:12px;min-width:120px;">
+                            <strong style="color:${detail.busColor || '#52c41a'}">${detail.busNo}</strong><br/>
+                            <span>하차: ${detail.endStation}</span>
+                          </div>`
+                        })
+                        window.kakao.maps.event.addListener(endMarker, 'mouseover', () => {
+                          endInfoWindow.open(mapRef.current, endMarker)
+                        })
+                        window.kakao.maps.event.addListener(endMarker, 'mouseout', () => {
+                          endInfoWindow.close()
+                        })
+                      }
+                    } else if (detail.startX && detail.startY && detail.endX && detail.endY && detail.type !== 'walk') {
+                      // 버스/지하철: 정류장 좌표가 없고 시작/끝 좌표만 있는 경우 직선 연결
+                      const sectionPath = [
+                        new window.kakao.maps.LatLng(detail.startY, detail.startX),
+                        new window.kakao.maps.LatLng(detail.endY, detail.endX)
+                      ]
+                      
+                      const lineColor = detail.type === 'bus' 
+                        ? (detail.busColor || '#52c41a')
+                        : (detail.lineColor || '#1a5dc8')
+                      
+                      const polyline = new window.kakao.maps.Polyline({
+                        path: sectionPath,
+                        strokeWeight: 5,
+                        strokeColor: lineColor,
+                        strokeOpacity: 0.9,
+                        strokeStyle: 'solid'
+                      })
+                      polyline.setMap(mapRef.current)
+                      polylines.push(polyline)
+                    }
+                  }
+                } else {
+                  // 기본: 차량 경로 가져오기
+                  try {
+                    const routeResult = await getCarRoute(
+                      { lat: prevCoords.lat, lng: prevCoords.lng },
+                      { lat: currentCoords.lat, lng: currentCoords.lng },
+                      true // includePath = true로 경로 좌표 포함
                     )
                     
-                    const polyline = new window.kakao.maps.Polyline({
-                      path: path,
-                      strokeWeight: 4,
-                      strokeColor: dayColor,
-                      strokeOpacity: 0.8,
-                      strokeStyle: 'solid'
-                    })
-                    polyline.setMap(mapRef.current)
-                    polylines.push(polyline)
-                  } else {
+                    if (routeResult.success && routeResult.path && routeResult.path.length > 0) {
+                      // 실제 도로 경로로 그리기
+                      const path = routeResult.path.map(p => 
+                        new window.kakao.maps.LatLng(p.lat, p.lng)
+                      )
+                      
+                      const polyline = new window.kakao.maps.Polyline({
+                        path: path,
+                        strokeWeight: 4,
+                        strokeColor: dayColor,
+                        strokeOpacity: 0.8,
+                        strokeStyle: 'solid'
+                      })
+                      polyline.setMap(mapRef.current)
+                      polylines.push(polyline)
+                    } else {
+                      // 실패 시 직선으로 연결
+                      const path = [
+                        new window.kakao.maps.LatLng(prevCoords.lat, prevCoords.lng),
+                        new window.kakao.maps.LatLng(currentCoords.lat, currentCoords.lng)
+                      ]
+                      
+                      const polyline = new window.kakao.maps.Polyline({
+                        path: path,
+                        strokeWeight: 4,
+                        strokeColor: dayColor,
+                        strokeOpacity: 0.5,
+                        strokeStyle: 'dashed' // 직선은 점선으로 표시
+                      })
+                      polyline.setMap(mapRef.current)
+                      polylines.push(polyline)
+                    }
+                  } catch (routeErr) {
+                    console.error('경로 조회 실패:', routeErr)
                     // 실패 시 직선으로 연결
                     const path = [
                       new window.kakao.maps.LatLng(prevCoords.lat, prevCoords.lng),
@@ -830,32 +1081,16 @@ const MyTripPage = () => {
                       strokeWeight: 4,
                       strokeColor: dayColor,
                       strokeOpacity: 0.5,
-                      strokeStyle: 'dashed' // 직선은 점선으로 표시
+                      strokeStyle: 'dashed'
                     })
                     polyline.setMap(mapRef.current)
                     polylines.push(polyline)
                   }
-                } catch (routeErr) {
-                  console.error('경로 조회 실패:', routeErr)
-                  // 실패 시 직선으로 연결
-                  const path = [
-                    new window.kakao.maps.LatLng(prevCoords.lat, prevCoords.lng),
-                    new window.kakao.maps.LatLng(currentCoords.lat, currentCoords.lng)
-                  ]
-                  
-                  const polyline = new window.kakao.maps.Polyline({
-                    path: path,
-                    strokeWeight: 4,
-                    strokeColor: dayColor,
-                    strokeOpacity: 0.5,
-                    strokeStyle: 'dashed'
-                  })
-                  polyline.setMap(mapRef.current)
-                  polylines.push(polyline)
                 }
               }
               
               prevCoords = currentCoords
+              prevPlace = place // 이전 장소 정보 업데이트
             }
           } catch (err) {
             console.error('좌표 조회 실패:', place.placeName, err)
@@ -873,7 +1108,7 @@ const MyTripPage = () => {
     }
     
     addMarkersAndRoute()
-  }, [selectedTrip, expandedDays, mapReady])
+  }, [selectedTrip, expandedDays, mapReady, routeInfo, accommodationRouteInfo])
   
   // 장소 근처 주차장 조회 (5km 이내)
   const fetchNearbyParkings = async (placeId, address) => {
@@ -1499,19 +1734,72 @@ const MyTripPage = () => {
                                                   <span className="transport-text">
                                                     {language === 'ko' ? opt.labelKo : opt.labelEn}
                                                   </span>
-                                                  {info?.loading ? (
-                                                    <span className="transport-time loading">...</span>
-                                                  ) : info?.duration ? (
-                                                    <span className="transport-time">
-                                                      {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
-                                                      <small>({info.distance}km)</small>
-                                                      {info.isEstimate && (accommodationTransport[day.id].transport === 'bus' || accommodationTransport[day.id].transport === 'subway') && (
+                                                  {/* 버스/지하철 선택 시 노선이 없으면 "노선 없음"만 표시 */}
+                                                  {(accommodationTransport[day.id]?.transport === 'subway' || accommodationTransport[day.id]?.transport === 'bus') && info?.noRoute ? (
+                                                    <div className="no-route-message">
+                                                      <span>{accommodationTransport[day.id]?.transport === 'subway' 
+                                                        ? (language === 'ko' ? '이용 가능한 지하철 노선이 없습니다' : 'No subway route available')
+                                                        : (language === 'ko' ? '이용 가능한 버스 노선이 없습니다' : 'No bus route available')
+                                                      }</span>
+                                                    </div>
+                                                  ) : (
+                                                    <>
+                                                      {info?.loading ? (
+                                                        <span className="transport-time loading">...</span>
+                                                      ) : info?.duration ? (
+                                                        <span className="transport-time">
+                                                          {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
+                                                          <small>({info.distance}km)</small>
+                                                          {info.payment && !info.isEstimate && (
+                                                            <small className="payment-info">
+                                                              {language === 'ko' ? ` / ${info.payment.toLocaleString()}원` : ` / ₩${info.payment.toLocaleString()}`}
+                                                            </small>
+                                                          )}
+                                                        </span>
+                                                      ) : null}
+                                                      {/* 버스/지하철 상세 경로 표시 */}
+                                                      {info?.routeDetails && info.routeDetails.length > 0 && !info.isEstimate && (
+                                                        <div className="route-details">
+                                                          {info.routeDetails.map((detail, detailIdx) => (
+                                                            <div key={detailIdx} className={`route-detail-item ${detail.type}`}>
+                                                              {detail.type === 'bus' && (
+                                                                <>
+                                                                  <span className="route-badge bus" style={{ backgroundColor: detail.busColor || '#52c41a' }}>
+                                                                    {detail.busNo}
+                                                                  </span>
+                                                                  <span className="route-stations">
+                                                                    {detail.startStation} → {detail.endStation}
+                                                                    <small>({detail.stationCount}{language === 'ko' ? '정거장' : 'stops'})</small>
+                                                                  </span>
+                                                                </>
+                                                              )}
+                                                              {detail.type === 'subway' && (
+                                                                <>
+                                                                  <span className="route-badge subway" style={{ backgroundColor: detail.lineColor || '#1a5dc8' }}>
+                                                                    {detail.lineName}
+                                                                  </span>
+                                                                  <span className="route-stations">
+                                                                    {detail.startStation} → {detail.endStation}
+                                                                    <small>({detail.stationCount}{language === 'ko' ? '역' : 'stations'})</small>
+                                                                  </span>
+                                                                </>
+                                                              )}
+                                                              {detail.type === 'walk' && (
+                                                                <span className="route-walk">
+                                                                  🚶 {language === 'ko' ? '도보' : 'Walk'} {detail.sectionTime}{language === 'ko' ? '분' : 'min'}
+                                                                </span>
+                                                              )}
+                                                            </div>
+                                                          ))}
+                                                        </div>
+                                                      )}
+                                                      {info?.isEstimate && (accommodationTransport[day.id].transport === 'bus' || accommodationTransport[day.id].transport === 'subway') && (
                                                         <small className="estimate-note">
                                                           {language === 'ko' ? ' (예상)' : ' (est.)'}
                                                         </small>
                                                       )}
-                                                    </span>
-                                                  ) : null}
+                                                    </>
+                                                  )}
                                                 </div>
                                               </>
                                             )
@@ -1699,19 +1987,72 @@ const MyTripPage = () => {
                                                       <span className="transport-text">
                                                         {language === 'ko' ? opt.labelKo : opt.labelEn}
                                                       </span>
-                                                      {info?.loading ? (
-                                                        <span className="transport-time loading">...</span>
-                                                      ) : info?.duration ? (
-                                                        <span className="transport-time">
-                                                          {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
-                                                          <small>({info.distance}km)</small>
-                                                          {info.isEstimate && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
+                                                      {/* 버스/지하철 선택 시 노선이 없으면 "노선 없음"만 표시 */}
+                                                      {(place.transportToNext === 'subway' || place.transportToNext === 'bus') && info?.noRoute ? (
+                                                        <div className="no-route-message">
+                                                          <span>{place.transportToNext === 'subway' 
+                                                            ? (language === 'ko' ? '이용 가능한 지하철 노선이 없습니다' : 'No subway route available')
+                                                            : (language === 'ko' ? '이용 가능한 버스 노선이 없습니다' : 'No bus route available')
+                                                          }</span>
+                                                        </div>
+                                                      ) : (
+                                                        <>
+                                                          {info?.loading ? (
+                                                            <span className="transport-time loading">...</span>
+                                                          ) : info?.duration ? (
+                                                            <span className="transport-time">
+                                                              {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
+                                                              <small>({info.distance}km)</small>
+                                                              {info.payment && !info.isEstimate && (
+                                                                <small className="payment-info">
+                                                                  {language === 'ko' ? ` / ${info.payment.toLocaleString()}원` : ` / ₩${info.payment.toLocaleString()}`}
+                                                                </small>
+                                                              )}
+                                                            </span>
+                                                          ) : null}
+                                                          {/* 버스/지하철 상세 경로 표시 */}
+                                                          {info?.routeDetails && info.routeDetails.length > 0 && !info.isEstimate && (
+                                                            <div className="route-details">
+                                                              {info.routeDetails.map((detail, detailIdx) => (
+                                                                <div key={detailIdx} className={`route-detail-item ${detail.type}`}>
+                                                                  {detail.type === 'bus' && (
+                                                                    <>
+                                                                      <span className="route-badge bus" style={{ backgroundColor: detail.busColor || '#52c41a' }}>
+                                                                        {detail.busNo}
+                                                                      </span>
+                                                                      <span className="route-stations">
+                                                                        {detail.startStation} → {detail.endStation}
+                                                                        <small>({detail.stationCount}{language === 'ko' ? '정거장' : 'stops'})</small>
+                                                                      </span>
+                                                                    </>
+                                                                  )}
+                                                                  {detail.type === 'subway' && (
+                                                                    <>
+                                                                      <span className="route-badge subway" style={{ backgroundColor: detail.lineColor || '#1a5dc8' }}>
+                                                                        {detail.lineName}
+                                                                      </span>
+                                                                      <span className="route-stations">
+                                                                        {detail.startStation} → {detail.endStation}
+                                                                        <small>({detail.stationCount}{language === 'ko' ? '역' : 'stations'})</small>
+                                                                      </span>
+                                                                    </>
+                                                                  )}
+                                                                  {detail.type === 'walk' && (
+                                                                    <span className="route-walk">
+                                                                      🚶 {language === 'ko' ? '도보' : 'Walk'} {detail.sectionTime}{language === 'ko' ? '분' : 'min'}
+                                                                    </span>
+                                                                  )}
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          )}
+                                                          {info?.isEstimate && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
                                                             <small className="estimate-note">
-                                                              {language === 'ko' ? ' (예상)' : ' (est.)'}
+                                                              {language === 'ko' ? ' (예상 시간)' : ' (estimated)'}
                                                             </small>
                                                           )}
-                                                        </span>
-                                                      ) : null}
+                                                        </>
+                                                      )}
                                                     </div>
                                                   </>
                                                 )

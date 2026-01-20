@@ -125,7 +125,6 @@ const MapPage = () => {
         if (window.kakao && window.kakao.maps) {
           setMapLoaded(true)
           setMapError(null)
-          console.log('카카오맵 로드 성공 (이벤트)')
         }
       }
 
@@ -150,7 +149,6 @@ const MapPage = () => {
             window.kakao.maps.load(() => {
               setMapLoaded(true)
               setMapError(null)
-              console.log('카카오맵 로드 성공 (폴백)')
             })
           }
         }

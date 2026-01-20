@@ -157,10 +157,9 @@ export const getReliableImageUrl = (url, fallback = DEFAULT_IMAGE) => {
   
   // 문제가 있는 도메인이면 바로 대체 이미지 반환
   if (isProblematicDomain(url)) {
-    // 중복 경고 방지: 같은 URL은 한 번만 경고
+    // 중복 경고 방지: 같은 URL은 한 번만 처리
     if (!warnedUrls.has(url)) {
       warnedUrls.add(url)
-      console.warn(`[이미지] 문제 있는 도메인으로 대체 이미지 사용: ${url.substring(0, 60)}...`)
     }
     return fallback
   }

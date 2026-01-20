@@ -2269,3 +2269,122 @@
   color: #92400e;
   border: 1px solid #f59e0b;
 }
+
+/* ==================== 노선 상세 정보 스타일 ==================== */
+.route-details {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.route-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: white;
+  white-space: nowrap;
+  min-width: 60px;
+  text-align: center;
+}
+
+.route-badge.bus {
+  background: #22c55e;
+}
+
+.route-badge.subway {
+  background: #3b82f6;
+}
+
+.route-stations {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #374151;
+  flex: 1;
+  font-size: 0.8rem;
+}
+
+.route-stations .arrow {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.route-stations .station-count {
+  color: #6b7280;
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.route-walk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #fef9c3;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #92400e;
+}
+
+.route-walk .walk-icon {
+  font-size: 1rem;
+}
+
+.no-route-message {
+  padding: 10px 14px;
+  background: #fee2e2;
+  border-radius: 8px;
+  color: #991b1b;
+  font-size: 0.85rem;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.no-route-message .info-icon {
+  font-size: 1rem;
+}
+
+.payment-info {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: #dbeafe;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1e40af;
+  text-align: center;
+  font-weight: 500;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .route-detail-item {
+    flex-wrap: wrap;
+    padding: 6px 10px;
+  }
+  
+  .route-stations {
+    width: 100%;
+    margin-top: 4px;
+  }
+  
+  .route-badge {
+    font-size: 0.75rem;
+    padding: 3px 8px;
+    min-width: 50px;
+  }
+}

@@ -26,7 +26,6 @@ export const signOut = async () => {
     return { error }
   } catch (err) {
     // 세션이 없는 경우에도 로그아웃 처리
-    console.log('로그아웃 처리됨 (세션 없음)')
     return { error: null }
   }
 }
