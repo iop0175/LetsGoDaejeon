@@ -1,9 +1,4 @@
 {
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "@vercel/edge"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/odsay",
