@@ -380,12 +380,12 @@ const MapPage = () => {
     setMarkers(newMarkers)
     markersRef.current = newMarkers // ref도 동시에 업데이트
 
-    // 지도 범위 조정
-    if (hasValidCoords && newMarkers.length > 0) {
+    // 지도 범위 조정 (선택된 장소가 없을 때만)
+    if (hasValidCoords && newMarkers.length > 0 && !selectedPlace) {
       map.setBounds(bounds)
     }
 
-  }, [map, places])
+  }, [map, places, selectedPlace])
 
   // 마커 아이콘 (타입별 - 로컬 SVG)
   const getMarkerIcon = (type) => {
