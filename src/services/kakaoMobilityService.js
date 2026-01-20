@@ -1,8 +1,6 @@
 // 카카오 모빌리티 API 서비스
 // 경로 탐색 및 이동 시간 조회
 
-// 프로덕션에서는 Vercel 프록시 사용, 로컬에서는 직접 API 호출
-const USE_PROXY = import.meta.env.PROD || import.meta.env.VITE_USE_API_PROXY === 'true'
 const KAKAO_REST_API_KEY = import.meta.env.VITE_KAKAO_REST_API_KEY
 
 // API 사용량 추적
@@ -79,21 +77,15 @@ export const getCoordinatesFromAddress = async (address) => {
     // 주소 정규화: 도로명 뒤에 붙어있는 숫자 앞에 공백 추가 (예: 엑스포로85 → 엑스포로 85)
     const normalizedAddress = address.replace(/([가-힣])(\d)/g, '$1 $2')
     
-    let response
-    if (USE_PROXY) {
-      // 프로덕션: Vercel 프록시 사용
-      response = await fetch(`/api/kakao?action=address&query=${encodeURIComponent(normalizedAddress)}`)
-    } else {
-      // 로컬 개발: 직접 API 호출
-      response = await fetch(
-        `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(normalizedAddress)}`,
-        {
-          headers: {
-            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
-          }
+    // 직접 API 호출
+    const response = await fetch(
+      `https://dapi.kakao.com/v2/local/search/address.json?query=${encodeURIComponent(normalizedAddress)}`,
+      {
+        headers: {
+          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
         }
-      )
-    }
+      }
+    )
     
     const data = await response.json()
     trackKakaoApiCall('address_search', !!data.documents?.length)
@@ -104,19 +96,14 @@ export const getCoordinatesFromAddress = async (address) => {
     }
     
     // 주소 검색 실패 시 원본 주소로 키워드 검색 시도
-    let keywordResponse
-    if (USE_PROXY) {
-      keywordResponse = await fetch(`/api/kakao?action=keyword&query=${encodeURIComponent(address)}`)
-    } else {
-      keywordResponse = await fetch(
-        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`,
-        {
-          headers: {
-            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
-          }
+    const keywordResponse = await fetch(
+      `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`,
+      {
+        headers: {
+          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
         }
-      )
-    }
+      }
+    )
     
     const keywordData = await keywordResponse.json()
     trackKakaoApiCall('keyword_search', !!keywordData.documents?.length)
@@ -128,19 +115,14 @@ export const getCoordinatesFromAddress = async (address) => {
     
     // 키워드 검색도 실패 시 "대전" 추가해서 재시도
     if (!address.includes('대전')) {
-      let daejeonKeywordResponse
-      if (USE_PROXY) {
-        daejeonKeywordResponse = await fetch(`/api/kakao?action=keyword&query=${encodeURIComponent('대전 ' + address)}`)
-      } else {
-        daejeonKeywordResponse = await fetch(
-          `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent('대전 ' + address)}`,
-          {
-            headers: {
-              'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
-            }
+      const daejeonKeywordResponse = await fetch(
+        `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent('대전 ' + address)}`,
+        {
+          headers: {
+            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
           }
-        )
-      }
+        }
+      )
       
       const daejeonKeywordData = await daejeonKeywordResponse.json()
       trackKakaoApiCall('keyword_search_daejeon', !!daejeonKeywordData.documents?.length)
@@ -168,21 +150,15 @@ export const getCoordinatesFromAddress = async (address) => {
  */
 export const getCarRoute = async (origin, destination, includePath = false) => {
   try {
-    let response
-    if (USE_PROXY) {
-      // 프로덕션: Vercel 프록시 사용
-      response = await fetch(`/api/kakao?action=directions&origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}`)
-    } else {
-      // 로컬 개발: 직접 API 호출
-      response = await fetch(
-        `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}&priority=RECOMMEND`,
-        {
-          headers: {
-            'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
-          }
+    // 직접 API 호출
+    const response = await fetch(
+      `https://apis-navi.kakaomobility.com/v1/directions?origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}&priority=RECOMMEND`,
+      {
+        headers: {
+          'Authorization': `KakaoAK ${KAKAO_REST_API_KEY}`
         }
-      )
-    }
+      }
+    )
     
     const data = await response.json()
     trackKakaoApiCall('directions', !!data.routes?.length)

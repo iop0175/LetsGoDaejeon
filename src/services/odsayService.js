@@ -1,8 +1,6 @@
 // ODsay 대중교통 API 서비스
 // 버스, 지하철 경로 탐색
 
-// 프로덕션에서는 Vercel 프록시 사용, 로컬에서는 직접 API 호출
-const USE_PROXY = import.meta.env.PROD || import.meta.env.VITE_USE_API_PROXY === 'true'
 const ODSAY_API_KEY = import.meta.env.VITE_ODSAY_API_KEY
 
 // API 사용량 추적
@@ -76,15 +74,9 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
     // API URL 생성
     const searchPathType = searchType === 'subway' ? 1 : searchType === 'bus' ? 2 : 0
     
-    let apiUrl
-    if (USE_PROXY) {
-      // 프로덕션: Vercel 프록시 사용 (API 키 숨김)
-      apiUrl = `/api/odsay?action=searchPubTransPathT&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&SearchPathType=${searchPathType}`
-    } else {
-      // 로컬 개발: 직접 API 호출
-      const encodedApiKey = encodeURIComponent(ODSAY_API_KEY)
-      apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?apiKey=${encodedApiKey}&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&OPT=0&SearchType=0&SearchPathType=${searchPathType}&output=json`
-    }
+    // 직접 API 호출
+    const encodedApiKey = encodeURIComponent(ODSAY_API_KEY)
+    const apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?apiKey=${encodedApiKey}&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&OPT=0&SearchType=0&SearchPathType=${searchPathType}&output=json`
     
     const response = await fetch(apiUrl)
     const data = await response.json()
