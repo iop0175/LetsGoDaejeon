@@ -1,7 +1,8 @@
 // ODsay 대중교통 API 서비스
 // 버스, 지하철 경로 탐색
 
-const ODSAY_API_KEY = import.meta.env.VITE_ODSAY_API_KEY
+// Cloudflare Workers API 프록시 URL
+const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
 
 // API 사용량 추적
 let apiCallCount = 0
@@ -74,9 +75,8 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
     // API URL 생성
     const searchPathType = searchType === 'subway' ? 1 : searchType === 'bus' ? 2 : 0
     
-    // 직접 API 호출
-    const encodedApiKey = encodeURIComponent(ODSAY_API_KEY)
-    const apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?apiKey=${encodedApiKey}&SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&OPT=0&SearchType=0&SearchPathType=${searchPathType}&output=json`
+    // Cloudflare Workers 프록시를 통한 API 호출 (API 키 보호)
+    const apiUrl = `${WORKERS_API_URL}/api/odsay/searchPubTransPathT?SX=${startX}&SY=${startY}&EX=${endX}&EY=${endY}&OPT=0&SearchType=0&SearchPathType=${searchPathType}&output=json`
     
     const response = await fetch(apiUrl)
     const data = await response.json()

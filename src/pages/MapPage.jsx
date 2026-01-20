@@ -34,6 +34,8 @@ const MapPage = () => {
   
   // 마커 참조 (최신 마커에 접근하기 위해)
   const markersRef = useRef([])
+  // 선택된 장소 참조 (setBounds 실행 방지용)
+  const selectedPlaceRef = useRef(null)
 
   // 카카오맵 API 키 (환경변수에서 로드)
   const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
@@ -95,10 +97,12 @@ const MapPage = () => {
   // 구/동 필터 변경 시 리셋
   useEffect(() => {
     setDongFilter('all')
+    selectedPlaceRef.current = null
     setSelectedPlace(null)
   }, [districtFilter])
 
   useEffect(() => {
+    selectedPlaceRef.current = null
     setSelectedPlace(null)
   }, [dongFilter])
 
@@ -106,6 +110,7 @@ const MapPage = () => {
   useEffect(() => {
     setDistrictFilter('all')
     setDongFilter('all')
+    selectedPlaceRef.current = null
   }, [activeTab])
 
   // 카카오맵 SDK 로드
@@ -380,12 +385,12 @@ const MapPage = () => {
     setMarkers(newMarkers)
     markersRef.current = newMarkers // ref도 동시에 업데이트
 
-    // 지도 범위 조정 (선택된 장소가 없을 때만)
-    if (hasValidCoords && newMarkers.length > 0 && !selectedPlace) {
+    // 지도 범위 조정 (선택된 장소가 없을 때만 - ref 사용으로 확실히 체크)
+    if (hasValidCoords && newMarkers.length > 0 && !selectedPlaceRef.current) {
       map.setBounds(bounds)
     }
 
-  }, [map, places, selectedPlace])
+  }, [map, places])
 
   // 마커 아이콘 (타입별 - 로컬 SVG)
   const getMarkerIcon = (type) => {
@@ -399,6 +404,8 @@ const MapPage = () => {
 
   // 장소 선택 (목록에서 클릭 시)
   const handlePlaceClick = (place) => {
+    // ref도 동시에 업데이트 (setBounds 방지용)
+    selectedPlaceRef.current = place
     setSelectedPlace(place)
     
     if (map && place.lat && place.lng) {
@@ -407,24 +414,27 @@ const MapPage = () => {
       // 해당 마커 찾기 (ref 사용으로 최신 마커 참조)
       const targetMarker = markersRef.current.find(m => m.placeId === place.id)
       
-      if (targetMarker && infowindow) {
-        // 인포윈도우 내용 설정
-        const infoContent = `
-          <div style="padding: 10px; min-width: 200px; max-width: 280px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333;">${place.name}</h4>
-            ${place.address ? `<p style="margin: 0; font-size: 12px; color: #666; line-height: 1.4;">${place.address}</p>` : ''}
-            ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🍽️ ${place.menu}</p>` : ''}
-            ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🚗 ${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
-            ${place.parkingType ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #4f46e5; font-weight: 500;">${place.parkingType}</p>` : ''}
-          </div>
-        `
-        infowindow.setContent(infoContent)
-        infowindow.open(map, targetMarker)
-      }
-      
-      // 지도 이동 및 줌
-      map.panTo(position)
-      map.setLevel(4)
+      // 약간의 지연 후 지도 이동 (다른 지도 조작과 충돌 방지)
+      setTimeout(() => {
+        if (targetMarker && infowindow) {
+          // 인포윈도우 내용 설정
+          const infoContent = `
+            <div style="padding: 10px; min-width: 200px; max-width: 280px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333;">${place.name}</h4>
+              ${place.address ? `<p style="margin: 0; font-size: 12px; color: #666; line-height: 1.4;">${place.address}</p>` : ''}
+              ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🍽️ ${place.menu}</p>` : ''}
+              ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🚗 ${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
+              ${place.parkingType ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #4f46e5; font-weight: 500;">${place.parkingType}</p>` : ''}
+            </div>
+          `
+          infowindow.setContent(infoContent)
+          infowindow.open(map, targetMarker)
+        }
+        
+        // 지도 이동 및 줌
+        map.setLevel(4)
+        map.panTo(position)
+      }, 50)
     }
   }
 
@@ -449,38 +459,47 @@ const MapPage = () => {
             {tab.label}
           </button>
         ))}
-        
-        {/* 구/동 필터 */}
-        <div className="map-filters">
-          <select 
-            className="map-filter-select"
-            value={districtFilter}
-            onChange={(e) => setDistrictFilter(e.target.value)}
-          >
+      </div>
+      
+      {/* 구/동 필터 버튼 */}
+      <div className="map-filter-section">
+        <div className="filter-group">
+          <span className="filter-label">{language === 'ko' ? '지역' : 'District'}</span>
+          <div className="filter-buttons">
             {DISTRICTS.map(district => (
-              <option key={district.id} value={district.id}>
+              <button
+                key={district.id}
+                className={`filter-btn ${districtFilter === district.id ? 'active' : ''}`}
+                onClick={() => setDistrictFilter(district.id)}
+              >
                 {language === 'ko' ? district.ko : district.en}
-              </option>
+              </button>
             ))}
-          </select>
-          
-          {districtFilter !== 'all' && availableDongs.length > 0 && (
-            <select 
-              className="map-filter-select dong-select"
-              value={dongFilter}
-              onChange={(e) => setDongFilter(e.target.value)}
-            >
-              <option value="all">
-                {language === 'ko' ? '전체 동' : 'All Areas'}
-              </option>
-              {availableDongs.map(dong => (
-                <option key={dong} value={dong}>
-                  {dong}
-                </option>
-              ))}
-            </select>
-          )}
+          </div>
         </div>
+        
+        {districtFilter !== 'all' && availableDongs.length > 0 && (
+          <div className="filter-group dong-group">
+            <span className="filter-label">{language === 'ko' ? '동' : 'Area'}</span>
+            <div className="filter-buttons">
+              <button
+                className={`filter-btn ${dongFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setDongFilter('all')}
+              >
+                {language === 'ko' ? '전체' : 'All'}
+              </button>
+              {availableDongs.map(dong => (
+                <button
+                  key={dong}
+                  className={`filter-btn ${dongFilter === dong ? 'active' : ''}`}
+                  onClick={() => setDongFilter(dong)}
+                >
+                  {dong}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="map-container">

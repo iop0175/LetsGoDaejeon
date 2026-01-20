@@ -160,12 +160,13 @@
 .shopping-card {
   background: var(--card-bg, white);
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px;
   display: flex;
-  gap: 20px;
+  flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
   border: 1px solid var(--border-color, #f0f0f0);
+  overflow: hidden;
 }
 
 .shopping-card:hover {
@@ -173,9 +174,16 @@
   box-shadow: 0 8px 30px rgba(233, 30, 99, 0.15);
 }
 
-.shopping-card-icon {
-  width: 60px;
-  height: 60px;
+.shopping-card-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.shopping-icon {
+  width: 50px;
+  height: 50px;
   background: linear-gradient(135deg, #E91E63 0%, #F06292 100%);
   border-radius: 12px;
   display: flex;
@@ -184,34 +192,41 @@
   flex-shrink: 0;
 }
 
-.shopping-card-icon svg {
-  font-size: 28px;
+.shopping-icon svg {
+  font-size: 24px;
   color: white;
 }
 
-.shopping-card-content {
+.shopping-title {
   flex: 1;
+  min-width: 0;
 }
 
-.shopping-card-content h3 {
+.shopping-title h3 {
   font-size: 1.1rem;
   color: var(--text-primary, #222);
-  margin-bottom: 8px;
-  line-height: 1.4;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.shop-type {
+.shop-time {
   display: inline-block;
-  padding: 4px 10px;
+  padding: 2px 8px;
   background: rgba(233, 30, 99, 0.1);
   color: #E91E63;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  margin-bottom: 12px;
+  border-radius: 10px;
+  font-size: 0.75rem;
 }
 
 .shop-info {
-  margin-top: 12px;
+  flex: 1;
+  padding: 12px 0;
+  border-top: 1px solid var(--border-color, #f0f0f0);
+  border-bottom: 1px solid var(--border-color, #f0f0f0);
+  margin-bottom: 12px;
 }
 
 .shop-info .info-item {
@@ -221,6 +236,10 @@
   margin-bottom: 8px;
   font-size: 0.9rem;
   color: var(--text-secondary, #666);
+}
+
+.shop-info .info-item:last-child {
+  margin-bottom: 0;
 }
 
 .shop-info .info-item svg {
@@ -252,21 +271,21 @@
 .shopping-card .navigate-btn {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 8px 16px;
+  padding: 10px 16px;
   background: #E91E63;
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   font-size: 0.9rem;
-  margin-top: 16px;
   transition: all 0.3s ease;
+  width: 100%;
 }
 
 .shopping-card .navigate-btn:hover {
   background: #C2185B;
-  transform: translateX(4px);
 }
 
 .shopping-page .loading,

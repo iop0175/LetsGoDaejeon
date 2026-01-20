@@ -41,28 +41,59 @@
   font-size: 1.25rem;
 }
 
-/* 필터 */
-.map-filters {
+/* 필터 섹션 */
+.map-filter-section {
+  background: var(--bg-primary, white);
+  border-bottom: 1px solid var(--border-color, #e5e7eb);
+  padding: 0.75rem 1rem;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-group.dong-group {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e5e7eb;
+}
+
+.filter-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #374151;
+  min-width: 40px;
+}
+
+.filter-buttons {
   display: flex;
   gap: 0.5rem;
-  margin-left: auto;
-  padding-right: 1rem;
+  flex-wrap: wrap;
 }
 
-.map-filter-select {
-  padding: 0.5rem 1rem;
+.filter-btn {
+  padding: 0.4rem 0.75rem;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 20px;
   background: white;
+  font-size: 0.85rem;
+  color: #6b7280;
   cursor: pointer;
-  outline: none;
-  transition: border-color 0.2s;
+  transition: all 0.2s ease;
 }
 
-.map-filter-select:hover,
-.map-filter-select:focus {
+.filter-btn:hover {
   border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: white;
 }
 
 /* 컨테이너 */

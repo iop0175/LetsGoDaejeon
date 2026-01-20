@@ -122,6 +122,10 @@
   font-weight: 600;
   color: var(--text-primary);
   margin-bottom: 12px;
+  /* 제목 줄넘김 방지 및 말줄임표 */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .festival-info {

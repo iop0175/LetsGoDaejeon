@@ -240,51 +240,53 @@ const ShoppingPage = () => {
           <div className="shopping-grid">
             {paginatedShops.map((shop, index) => (
               <div key={index} className="shopping-card">
-                <div className="shopping-card-icon">
-                  {getIcon(shop.shppgNm)}
-                </div>
-                <div className="shopping-card-content">
-                  <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
-                  {shop.salsTime && (
-                    <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
-                  )}
-                  
-                  <div className="shop-info">
-                    {shop.shppgAddr && (
-                      <div className="info-item">
-                        <FiMapPin />
-                        <span>{shop.shppgAddr}</span>
-                      </div>
-                    )}
-                    {shop.shppgInqrTel && (
-                      <div className="info-item">
-                        <FiPhone />
-                        <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
-                      </div>
-                    )}
-                    {shop.shppgIntrd && (
-                      <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
-                    )}
-                    {shop.shppgHmpgUrl && (
-                      <a 
-                        href={shop.shppgHmpgUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="homepage-link"
-                      >
-                        {language === 'ko' ? '홈페이지' : 'Website'}
-                      </a>
+                <div className="shopping-card-header">
+                  <div className="shopping-icon">
+                    {getIcon(shop.shppgNm)}
+                  </div>
+                  <div className="shopping-title">
+                    <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
+                    {shop.salsTime && (
+                      <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
                     )}
                   </div>
-
-                  <button 
-                    className="navigate-btn"
-                    onClick={() => handleNavigate(shop)}
-                  >
-                    <FiNavigation />
-                    {t.navigate}
-                  </button>
                 </div>
+                  
+                <div className="shop-info">
+                  {shop.shppgAddr && (
+                    <div className="info-item">
+                      <FiMapPin />
+                      <span>{shop.shppgAddr}</span>
+                    </div>
+                  )}
+                  {shop.shppgInqrTel && (
+                    <div className="info-item">
+                      <FiPhone />
+                      <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
+                    </div>
+                  )}
+                  {shop.shppgIntrd && (
+                    <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
+                  )}
+                  {shop.shppgHmpgUrl && (
+                    <a 
+                      href={shop.shppgHmpgUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="homepage-link"
+                    >
+                      {language === 'ko' ? '홈페이지' : 'Website'}
+                    </a>
+                  )}
+                </div>
+
+                <button 
+                  className="navigate-btn"
+                  onClick={() => handleNavigate(shop)}
+                >
+                  <FiNavigation />
+                  {t.navigate}
+                </button>
               </div>
             ))}
           </div>

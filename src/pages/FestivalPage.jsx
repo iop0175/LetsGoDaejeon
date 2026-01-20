@@ -93,8 +93,35 @@ const FestivalPage = () => {
       data = data.filter(event => event.place === placeFilter)
     }
     
+    // 현재 날짜 기준 가까운 순으로 정렬
+    const todayNum = parseInt(today.replace(/-/g, ''))
+    data = [...data].sort((a, b) => {
+      // 시작일 기준 정렬
+      const aBegin = a.beginDate ? parseInt(a.beginDate.replace(/-/g, '')) : 99999999
+      const bBegin = b.beginDate ? parseInt(b.beginDate.replace(/-/g, '')) : 99999999
+      
+      // 이미 시작된 행사 (시작일 <= 오늘) vs 아직 시작 안 한 행사 구분
+      const aStarted = aBegin <= todayNum
+      const bStarted = bBegin <= todayNum
+      
+      // 1. 진행 중인 행사 (시작됨) 우선
+      if (aStarted && !bStarted) return -1
+      if (!aStarted && bStarted) return 1
+      
+      // 2. 같은 그룹 내에서는 시작일 가까운 순
+      if (!aStarted && !bStarted) {
+        // 둘 다 아직 안 시작한 경우: 시작일 빠른 순
+        return aBegin - bBegin
+      }
+      
+      // 3. 둘 다 진행 중인 경우: 종료일 빠른 순 (곧 끝나는 것 먼저)
+      const aEnd = a.endDate ? parseInt(a.endDate.replace(/-/g, '')) : 99999999
+      const bEnd = b.endDate ? parseInt(b.endDate.replace(/-/g, '')) : 99999999
+      return aEnd - bEnd
+    })
+    
     return data
-  }, [activeEvents, themeFilter, placeFilter])
+  }, [activeEvents, themeFilter, placeFilter, today])
 
   // 현재 페이지에 해당하는 데이터
   const paginatedEvents = useMemo(() => {

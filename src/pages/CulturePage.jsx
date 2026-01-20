@@ -261,47 +261,46 @@ const CulturePage = () => {
           <div className="culture-grid">
             {paginatedFacilities.map((facility, index) => (
               <div key={index} className="culture-card">
-                <div className="culture-card-icon">
-                  {getIcon(facility.fcltyKnd)}
-                </div>
-                <div className="culture-card-content">
-                  <h3>{facility.fcltyNm || '문화시설'}</h3>
-                  {facility.fcltyKnd && (
-                    <span className="facility-type">{facility.fcltyKnd}</span>
-                  )}
-                  {facility.fcltySe && (
-                    <span className="facility-category">{facility.fcltySe}</span>
-                  )}
-                  
-                  <div className="facility-info">
-                    {facility.locplc && (
-                      <div className="info-item">
-                        <FiMapPin />
-                        <span>{facility.signgu} {facility.locplc}</span>
-                      </div>
-                    )}
-                    {facility.telno && (
-                      <div className="info-item">
-                        <FiPhone />
-                        <span>{facility.telno}</span>
-                      </div>
-                    )}
-                    {facility.seatCo && facility.seatCo !== '-' && (
-                      <div className="info-item">
-                        <FiClock />
-                        <span>{language === 'ko' ? '좌석수: ' : 'Seats: '}{facility.seatCo}</span>
-                      </div>
+                <div className="culture-card-header">
+                  <div className="culture-icon">
+                    {getIcon(facility.fcltyKnd)}
+                  </div>
+                  <div className="culture-title">
+                    <h3>{facility.fcltyNm || '문화시설'}</h3>
+                    {facility.fcltyKnd && (
+                      <span className="facility-type">{facility.fcltyKnd}</span>
                     )}
                   </div>
-
-                  <button 
-                    className="navigate-btn"
-                    onClick={() => handleNavigate(facility)}
-                  >
-                    <FiNavigation />
-                    {t.navigate}
-                  </button>
                 </div>
+                
+                <div className="facility-info">
+                  {facility.locplc && (
+                    <div className="info-item">
+                      <FiMapPin />
+                      <span>{facility.signgu} {facility.locplc}</span>
+                    </div>
+                  )}
+                  {facility.telno && (
+                    <div className="info-item">
+                      <FiPhone />
+                      <span>{facility.telno}</span>
+                    </div>
+                  )}
+                  {facility.seatCo && facility.seatCo !== '-' && (
+                    <div className="info-item">
+                      <FiClock />
+                      <span>{language === 'ko' ? '좌석수: ' : 'Seats: '}{facility.seatCo}</span>
+                    </div>
+                  )}
+                </div>
+
+                <button 
+                  className="navigate-btn"
+                  onClick={() => handleNavigate(facility)}
+                >
+                  <FiNavigation />
+                  {t.navigate}
+                </button>
               </div>
             ))}
           </div>

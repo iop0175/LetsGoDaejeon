@@ -24,7 +24,7 @@ import { getDaejeonParking } from '../services/api'
 import './MyTripPage.css'
 
 const MyTripPage = () => {
-  const { isDarkMode } = useTheme()
+  const { isDark } = useTheme()
   const { language } = useLanguage()
   const { user, loginWithKakao, loading: authLoading } = useAuth()
   
@@ -1270,7 +1270,7 @@ const MyTripPage = () => {
   // 인증 로딩 중
   if (authLoading) {
     return (
-      <div className={`my-trip-page ${isDarkMode ? 'dark-theme' : ''}`}>
+      <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="trip-login-required">
           <div className="auth-loading">
             <div className="loading-spinner"></div>
@@ -1284,7 +1284,7 @@ const MyTripPage = () => {
   // 로그인 필요
   if (!user) {
     return (
-      <div className={`my-trip-page ${isDarkMode ? 'dark-theme' : ''}`}>
+      <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="trip-login-required">
           <FiMap className="login-icon" />
           <h2>{language === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h2>
@@ -1301,7 +1301,7 @@ const MyTripPage = () => {
   }
   
   return (
-    <div className={`my-trip-page ${isDarkMode ? 'dark-theme' : ''}`}>
+    <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
       <div className="trip-container">
         {/* 헤더 */}
         <header className="trip-header">

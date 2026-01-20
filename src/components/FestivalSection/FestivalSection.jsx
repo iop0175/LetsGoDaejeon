@@ -85,16 +85,40 @@ const FestivalSection = () => {
       // DB에서 가져오기
       const dbResult = await getAllDbData('festival');
       if (dbResult.success && dbResult.items.length > 0) {
-        const formattedFestivals = dbResult.items.slice(0, 10).map((item, idx) => ({
-          id: idx + 1,
-          title: { ko: item.festvNm, en: item.festvNm },
-          period: item.festvPrid || '',
-          location: { ko: item.festvPlcNm || item.festvDtlAddr || '', en: item.festvPlcNm || item.festvDtlAddr || '' },
-          image: item.imageUrl || getFestivalImage(item.festvNm),
-          summary: item.festvSumm,
-          host: item.festvHostNm,
-          tel: item.refadNo
-        }))
+        // 현재 날짜 기준으로 종료되지 않은 축제만 필터링
+        const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
+        const activeItems = dbResult.items.filter(item => {
+          if (!item.endDt) return true
+          const endDate = item.endDt.replace(/-/g, '')
+          return endDate >= today
+        })
+        
+        // 시작일 가까운 순으로 정렬
+        const sortedItems = activeItems.sort((a, b) => {
+          const aBegin = a.beginDt ? parseInt(a.beginDt.replace(/-/g, '')) : 99999999
+          const bBegin = b.beginDt ? parseInt(b.beginDt.replace(/-/g, '')) : 99999999
+          return aBegin - bBegin
+        })
+        
+        const formattedFestivals = sortedItems.slice(0, 10).map((item, idx) => {
+          // 기간 포맷팅 (beginDt ~ endDt)
+          const formatPeriod = () => {
+            if (!item.beginDt) return ''
+            const begin = item.beginDt.replace(/-/g, '.')
+            const end = item.endDt ? item.endDt.replace(/-/g, '.') : ''
+            return end ? `${begin} - ${end}` : begin
+          }
+          
+          return {
+            id: idx + 1,
+            title: { ko: item.title, en: item.title },
+            period: formatPeriod(),
+            location: { ko: item.placeCdNm || item.placeDetail || '', en: item.placeCdNm || item.placeDetail || '' },
+            image: item.imageUrl || getFestivalImage(item.title),
+            summary: item.raw_data?.eventSumm || '',
+            theme: item.themeCdNm
+          }
+        })
         setFestivals(formattedFestivals)
       } else {
         // DB에 데이터가 없으면 기본 데이터 사용
