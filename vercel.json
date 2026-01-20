@@ -1,14 +1,6 @@
 {
   "rewrites": [
     {
-      "source": "/api/odsay",
-      "destination": "/api/odsay/route.js"
-    },
-    {
-      "source": "/api/kakao",
-      "destination": "/api/kakao/route.js"
-    },
-    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
