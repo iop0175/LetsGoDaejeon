@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { FiMapPin, FiList, FiX, FiNavigation, FiPhone, FiClock, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
@@ -31,6 +31,9 @@ const MapPage = () => {
   // 필터 상태
   const [districtFilter, setDistrictFilter] = useState('all')
   const [dongFilter, setDongFilter] = useState('all')
+  
+  // 마커 참조 (최신 마커에 접근하기 위해)
+  const markersRef = useRef([])
 
   // 카카오맵 API 키 (환경변수에서 로드)
   const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
@@ -296,8 +299,8 @@ const MapPage = () => {
   useEffect(() => {
     if (!map || !places.length) return
 
-    // 기존 마커 제거
-    markers.forEach(marker => marker.setMap(null))
+    // 기존 마커 제거 (ref 사용)
+    markersRef.current.forEach(marker => marker.setMap(null))
     
     // 기존 인포윈도우 닫기
     if (infowindow) {
@@ -375,6 +378,7 @@ const MapPage = () => {
     })
 
     setMarkers(newMarkers)
+    markersRef.current = newMarkers // ref도 동시에 업데이트
 
     // 지도 범위 조정
     if (hasValidCoords && newMarkers.length > 0) {
@@ -400,8 +404,8 @@ const MapPage = () => {
     if (map && place.lat && place.lng) {
       const position = new window.kakao.maps.LatLng(place.lat, place.lng)
       
-      // 해당 마커 찾기
-      const targetMarker = markers.find(m => m.placeId === place.id)
+      // 해당 마커 찾기 (ref 사용으로 최신 마커 참조)
+      const targetMarker = markersRef.current.find(m => m.placeId === place.id)
       
       if (targetMarker && infowindow) {
         // 인포윈도우 내용 설정
