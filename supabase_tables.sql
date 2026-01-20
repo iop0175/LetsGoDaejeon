@@ -156,6 +156,35 @@ ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
 ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS "imageUrl" TEXT;
 
 -- ============================================================
+-- 마이그레이션: 이미지 출처 정보 컬럼 추가
+-- image_author: 사진 원작자/촬영자
+-- image_source: 이미지를 가져온 출처 (URL, 사이트명 등)
+-- ============================================================
+ALTER TABLE travel_spots ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE travel_spots ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE festivals ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE festivals ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE restaurants ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE cultural_facilities ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE cultural_facilities ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE medical_facilities ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE medical_facilities ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE shopping_places ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE shopping_places ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE accommodations ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE parking_lots ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+-- ============================================================
 -- 9. 히어로 슬라이드 테이블
 -- ============================================================
 CREATE TABLE IF NOT EXISTS hero_slides (
@@ -167,6 +196,8 @@ CREATE TABLE IF NOT EXISTS hero_slides (
   description_ko TEXT,
   description_en TEXT,
   "imageUrl" TEXT NOT NULL,
+  image_author TEXT,
+  image_source TEXT,
   link TEXT DEFAULT '/',
   sort_order INTEGER DEFAULT 0,
   is_active BOOLEAN DEFAULT true,
@@ -176,6 +207,10 @@ CREATE TABLE IF NOT EXISTS hero_slides (
 
 -- 히어로 슬라이드 인덱스
 CREATE INDEX IF NOT EXISTS idx_hero_slides_active ON hero_slides(is_active, sort_order);
+
+-- 히어로 슬라이드 이미지 출처 컬럼 마이그레이션
+ALTER TABLE hero_slides ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE hero_slides ADD COLUMN IF NOT EXISTS image_source TEXT;
 
 -- ============================================================
 -- 10. 페이지 방문 통계 테이블
@@ -256,6 +291,8 @@ CREATE TABLE IF NOT EXISTS trip_places (
   place_address TEXT,
   place_description TEXT,
   place_image TEXT,
+  image_author TEXT,
+  image_source TEXT,
   order_index INTEGER DEFAULT 0,
   visit_time TIME,
   memo TEXT,
@@ -266,6 +303,10 @@ CREATE TABLE IF NOT EXISTS trip_places (
 -- 여행 장소 인덱스
 CREATE INDEX IF NOT EXISTS idx_trip_places_day ON trip_places(day_id);
 CREATE INDEX IF NOT EXISTS idx_trip_places_order ON trip_places(day_id, order_index);
+
+-- 여행 장소 이미지 출처 컬럼 마이그레이션
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS image_author TEXT;
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS image_source TEXT;
 
 -- ============================================================
 -- 15. 여행 계획 RLS 정책 (Row Level Security)
