@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../context/ThemeContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
+import { getReliableImageUrl } from '../utils/imageUtils'
 import { 
   getUserTripPlans, createTripPlan, updateTripPlan, deleteTripPlan,
   addTripDay, updateTripDay, deleteTripDay,
@@ -25,7 +26,7 @@ import './MyTripPage.css'
 const MyTripPage = () => {
   const { isDarkMode } = useTheme()
   const { language } = useLanguage()
-  const { user } = useAuth()
+  const { user, loginWithKakao, loading: authLoading } = useAuth()
   
   // 여행 계획 목록
   const [tripPlans, setTripPlans] = useState([])
@@ -1020,6 +1021,30 @@ const MyTripPage = () => {
     const end = new Date(trip.endDate)
     return Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1
   }
+
+  // 카카오 로그인 핸들러
+  const handleKakaoLogin = async () => {
+    try {
+      await loginWithKakao()
+    } catch (err) {
+      console.error('카카오 로그인 실패:', err)
+      alert(language === 'ko' ? '로그인에 실패했습니다. 다시 시도해주세요.' : 'Login failed. Please try again.')
+    }
+  }
+  
+  // 인증 로딩 중
+  if (authLoading) {
+    return (
+      <div className={`my-trip-page ${isDarkMode ? 'dark-theme' : ''}`}>
+        <div className="trip-login-required">
+          <div className="auth-loading">
+            <div className="loading-spinner"></div>
+            <p>{language === 'ko' ? '로그인 확인 중...' : 'Checking login status...'}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
   
   // 로그인 필요
   if (!user) {
@@ -1028,10 +1053,13 @@ const MyTripPage = () => {
         <div className="trip-login-required">
           <FiMap className="login-icon" />
           <h2>{language === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h2>
-          <p>{language === 'ko' ? '나만의 여행 계획을 만들려면 로그인해주세요' : 'Please login to create your trip plans'}</p>
-          <Link to="/admin" className="login-link">
-            {language === 'ko' ? '로그인하기' : 'Login'}
-          </Link>
+          <p>{language === 'ko' ? '나만의 여행 계획을 만들려면 카카오 계정으로 로그인해주세요' : 'Please login with Kakao to create your trip plans'}</p>
+          <button className="kakao-login-btn" onClick={handleKakaoLogin}>
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+              <path d="M12 3C6.477 3 2 6.463 2 10.71c0 2.754 1.826 5.168 4.568 6.528-.16.57-.622 2.234-.714 2.584-.112.43.158.424.332.308.137-.09 2.173-1.474 3.056-2.074.254.038.515.058.78.072h-.02c.332.02.665.03 1 .03 5.523 0 10-3.463 10-7.448S17.523 3 12 3z"/>
+            </svg>
+            {language === 'ko' ? '카카오로 시작하기' : 'Continue with Kakao'}
+          </button>
         </div>
       </div>
     )
@@ -1534,7 +1562,7 @@ const MyTripPage = () => {
                                   {place.placeImage && (
                                     <div 
                                       className="place-image"
-                                      style={{ backgroundImage: `url(${place.placeImage})` }}
+                                      style={{ backgroundImage: `url(${getReliableImageUrl(place.placeImage)})` }}
                                     />
                                   )}
                                   <div className="place-info">

@@ -9,11 +9,29 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- 카카오맵 SDK -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=1955386d457c60136d1e1d8209d658f7&libraries=services"></script>
+    <!-- 카카오맵 SDK preconnect로 빠른 연결 -->
+    <link rel="preconnect" href="https://dapi.kakao.com">
+    <link rel="preconnect" href="https://t1.daumcdn.net">
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    <!-- 카카오맵 SDK: 비동기 로딩으로 parser-blocking 방지 -->
+    <script>
+      (function() {
+        var kakaoScript = document.createElement('script');
+        kakaoScript.src = 'https://dapi.kakao.com/v2/maps/sdk.js?appkey=1955386d457c60136d1e1d8209d658f7&autoload=false&libraries=services';
+        kakaoScript.async = true;
+        kakaoScript.onload = function() {
+          if (window.kakao && window.kakao.maps) {
+            window.kakao.maps.load(function() {
+              console.log('카카오맵 SDK 로드 완료');
+              window.dispatchEvent(new Event('kakaoMapLoaded'));
+            });
+          }
+        };
+        document.head.appendChild(kakaoScript);
+      })();
+    </script>
   </body>
 </html>

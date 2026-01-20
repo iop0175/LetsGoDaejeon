@@ -3,6 +3,9 @@
 
 const ODSAY_API_KEY = import.meta.env.VITE_ODSAY_API_KEY
 
+// API 키 확인 로그
+console.log('ODSay API Key 설정 여부:', !!ODSAY_API_KEY)
+
 // API 사용량 추적
 let apiCallCount = 0
 const apiCallHistory = []
@@ -77,12 +80,14 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
       
       // 콜백 함수 등록
       window[callbackName] = (data) => {
+        console.log('[ODSay] 콜백 응답 수신:', data)
         // 콜백 함수 정리
         delete window[callbackName]
         const script = document.getElementById(callbackName)
         if (script) script.remove()
         
         if (data.error) {
+          console.error('[ODSay] API 에러 응답:', data.error)
           trackApiCall('searchPubTransPathT', false)
           resolve({ 
             success: false, 
@@ -171,8 +176,12 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
       // JSONP 스크립트 태그 생성
       const script = document.createElement('script')
       script.id = callbackName
-      script.src = `https://api.odsay.com/v1/api/searchPubTransPathT?${params.toString()}&callback=${callbackName}`
-      script.onerror = () => {
+      const apiUrl = `https://api.odsay.com/v1/api/searchPubTransPathT?${params.toString()}&callback=${callbackName}`
+      script.src = apiUrl
+      console.log('[ODSay] JSONP 요청 URL:', apiUrl.replace(ODSAY_API_KEY, 'API_KEY_HIDDEN'))
+      
+      script.onerror = (error) => {
+        console.error('[ODSay] 스크립트 로드 에러:', error)
         trackApiCall('searchPubTransPathT', false)
         delete window[callbackName]
         script.remove()
@@ -296,13 +305,22 @@ export const searchStation = (stationName, cityCode = '3') => {
  * @returns {Promise<Object>} 경로 정보
  */
 export const getPublicTransitRouteByCoords = async (origin, destination, transportType = 'all') => {
-  return await getPublicTransitRoute(
+  console.log('[ODSay] getPublicTransitRouteByCoords 호출됨')
+  console.log('[ODSay] 출발지:', origin)
+  console.log('[ODSay] 도착지:', destination)
+  console.log('[ODSay] 교통 타입:', transportType)
+  console.log('[ODSay] API Key 존재:', !!ODSAY_API_KEY)
+  
+  const result = await getPublicTransitRoute(
     origin.lng,  // 출발지 경도
     origin.lat,  // 출발지 위도
     destination.lng, // 도착지 경도
     destination.lat, // 도착지 위도
     transportType
   )
+  
+  console.log('[ODSay] getPublicTransitRoute 결과:', result)
+  return result
 }
 
 /**

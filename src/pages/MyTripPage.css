@@ -66,6 +66,62 @@
   box-shadow: 0 8px 20px rgba(2, 132, 199, 0.3);
 }
 
+/* 카카오 로그인 버튼 */
+.trip-login-required .kakao-login-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 32px;
+  background: #FEE500;
+  color: #191919;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 200px;
+}
+
+.trip-login-required .kakao-login-btn:hover {
+  background: #f5dc00;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(254, 229, 0, 0.4);
+}
+
+.trip-login-required .kakao-login-btn svg {
+  flex-shrink: 0;
+}
+
+/* 인증 로딩 */
+.auth-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.auth-loading .loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e0e0e0;
+  border-top-color: #0284c7;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.auth-loading p {
+  color: #64748b;
+  margin: 0;
+}
+
 /* 헤더 */
 .trip-header {
   display: flex;

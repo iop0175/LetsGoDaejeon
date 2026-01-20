@@ -4,6 +4,7 @@ import { Autoplay, Pagination, EffectFade } from 'swiper/modules'
 import { FiArrowRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getHeroSlides } from '../../services/dbService'
+import { getReliableImageUrl } from '../../utils/imageUtils'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
@@ -98,7 +99,7 @@ const HeroSection = () => {
           <SwiperSlide key={slide.id}>
             <div 
               className="hero-slide"
-              style={{ backgroundImage: `url(${slide.imageUrl})` }}
+              style={{ backgroundImage: `url(${getReliableImageUrl(slide.imageUrl)})` }}
             >
               <div className="hero-overlay" />
               <div className="hero-content">

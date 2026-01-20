@@ -287,11 +287,14 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
       case 'bus':
       case 'subway':
         // ODsay API 사용
+        console.log(`[경로 탐색] ${transportType} 경로 탐색 시작`, { origin, destination, useOdsay })
         if (useOdsay) {
           try {
             const { getPublicTransitRouteByCoords } = await import('./odsayService.js')
             const searchType = transportType === 'bus' ? 'bus' : transportType === 'subway' ? 'subway' : 'all'
+            console.log(`[ODSay] API 호출 시작 - searchType: ${searchType}`)
             const odsayResult = await getPublicTransitRouteByCoords(origin, destination, searchType)
+            console.log('[ODSay] API 결과:', odsayResult)
             
             if (odsayResult.success) {
               return {
@@ -304,12 +307,15 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
                 subwayTransitCount: odsayResult.subwayTransitCount,
                 isEstimate: false
               }
+            } else {
+              console.warn('[ODSay] API 실패 응답:', odsayResult.error)
             }
           } catch (odsayErr) {
             console.warn('ODsay API 실패, 추정값 사용:', odsayErr)
           }
         }
         // ODsay 실패 시 추정값 사용
+        console.log('[경로 탐색] ODSay 실패, 추정값 사용')
         return await getPublicTransportRoute(origin, destination)
         
       case 'walk':

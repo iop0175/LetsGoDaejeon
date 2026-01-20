@@ -109,7 +109,7 @@ const MapPage = () => {
   useEffect(() => {
     const loadKakaoMap = () => {
       // 이미 로드되어 있으면 바로 사용
-      if (window.kakao && window.kakao.maps) {
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
         setMapLoaded(true)
         setMapError(null)
         return
@@ -120,25 +120,51 @@ const MapPage = () => {
         return
       }
 
-      const script = document.createElement('script')
-      script.src = `//dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`
-      script.async = true
-      
-      script.onload = () => {
+      // index.html에서 이미 로딩 중인 경우 이벤트 리스너로 대기
+      const handleKakaoLoaded = () => {
         if (window.kakao && window.kakao.maps) {
-          window.kakao.maps.load(() => {
-            setMapLoaded(true)
-            setMapError(null)
-            console.log('카카오맵 로드 성공')
-          })
+          setMapLoaded(true)
+          setMapError(null)
+          console.log('카카오맵 로드 성공 (이벤트)')
         }
       }
-      
-      script.onerror = () => {
-        setMapError('카카오맵 스크립트 로드 실패. 도메인이 등록되었는지 확인해주세요.')
+
+      window.addEventListener('kakaoMapLoaded', handleKakaoLoaded)
+
+      // 이미 로드된 경우 바로 확인
+      if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
+        setMapLoaded(true)
+        setMapError(null)
+        return
       }
-      
-      document.head.appendChild(script)
+
+      // 폴백: 스크립트가 아직 로드되지 않은 경우 직접 로드
+      const existingScript = document.querySelector('script[src*="dapi.kakao.com"]')
+      if (!existingScript) {
+        const script = document.createElement('script')
+        script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_MAP_KEY}&autoload=false&libraries=services`
+        script.async = true
+        
+        script.onload = () => {
+          if (window.kakao && window.kakao.maps) {
+            window.kakao.maps.load(() => {
+              setMapLoaded(true)
+              setMapError(null)
+              console.log('카카오맵 로드 성공 (폴백)')
+            })
+          }
+        }
+        
+        script.onerror = () => {
+          setMapError('카카오맵 스크립트 로드 실패. 도메인이 등록되었는지 확인해주세요.')
+        }
+        
+        document.head.appendChild(script)
+      }
+
+      return () => {
+        window.removeEventListener('kakaoMapLoaded', handleKakaoLoaded)
+      }
     }
 
     loadKakaoMap()

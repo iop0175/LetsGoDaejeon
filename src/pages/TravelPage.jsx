@@ -3,6 +3,7 @@ import { FiFilter, FiMapPin, FiClock, FiLoader, FiX, FiChevronLeft, FiChevronRig
 import { useLanguage } from '../context/LanguageContext'
 import { getTourSpotImage, getDaejeonPhotoGallery } from '../services/api'
 import { getAllDbData } from '../services/dbService'
+import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
 import TravelCard from '../components/TravelCard/TravelCard'
 import './TravelPage.css'
 
@@ -414,11 +415,9 @@ const TravelPage = () => {
                 <>
                   <div className="gallery-main">
                     <img 
-                      src={photoGallery[currentPhotoIndex]?.imageUrl}
+                      src={getReliableImageUrl(photoGallery[currentPhotoIndex]?.imageUrl)}
                       alt={photoGallery[currentPhotoIndex]?.title}
-                      onError={(e) => {
-                        e.target.src = '/images/no-image.svg'
-                      }}
+                      onError={handleImageError}
                     />
                     
                     {photoGallery.length > 1 && (
@@ -452,11 +451,9 @@ const TravelPage = () => {
                           onClick={() => setCurrentPhotoIndex(index)}
                         >
                           <img 
-                            src={photo.imageUrl} 
+                            src={getReliableImageUrl(photo.imageUrl)} 
                             alt={`${photo.title} ${index + 1}`}
-                            onError={(e) => {
-                              e.target.src = '/images/no-image.svg'
-                            }}
+                            onError={handleImageError}
                           />
                         </div>
                       ))}
