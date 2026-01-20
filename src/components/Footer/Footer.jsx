@@ -73,10 +73,11 @@ const Footer = memo(() => {
           </div>
           <div className="footer-copyright">
             <p>{t.footer.copyright}</p>
+            <p className="footer-data-source">{t.footer.dataSource}</p>
             <div className="footer-legal">
-              <a href="#">{t.footer.privacy}</a>
-              <a href="#">{t.footer.terms}</a>
-              <a href="#">{t.footer.copyrightPolicy}</a>
+              <Link to="/privacy">{t.footer.privacy}</Link>
+              <Link to="/terms">{t.footer.terms}</Link>
+              <Link to="/copyright">{t.footer.copyrightPolicy}</Link>
             </div>
           </div>
         </div>

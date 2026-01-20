@@ -100,7 +100,8 @@ export const translations = {
       privacy: '개인정보처리방침',
       terms: '이용약관',
       copyrightPolicy: '저작권정책',
-      tourHotline: '관광안내 1577-3025'
+      tourHotline: '관광안내 1577-3025',
+      dataSource: '본 사이트의 관광정보는 대전광역시 공공데이터포털, 한국관광공사 Tour API에서 제공받은 정보입니다.'
     },
 
     // 공통
@@ -250,7 +251,8 @@ export const translations = {
       privacy: 'Privacy Policy',
       terms: 'Terms of Use',
       copyrightPolicy: 'Copyright Policy',
-      tourHotline: 'Tour Hotline 1577-3025'
+      tourHotline: 'Tour Hotline 1577-3025',
+      dataSource: 'Tourism data provided by Daejeon Metropolitan City Open Data Portal and Korea Tourism Organization Tour API.'
     },
 
     // Common

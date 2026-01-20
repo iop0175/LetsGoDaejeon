@@ -2391,3 +2391,318 @@
     justify-content: center;
   }
 }
+
+/* ================================================
+   외부 API 사용량 통계 섹션 (카카오, ODsay)
+   ================================================ */
+.external-api-stats-section {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.api-stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.api-stats-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #1a1a2e;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.api-stats-header h3 svg {
+  color: #6366f1;
+}
+
+.api-stats-header .refresh-btn {
+  padding: 8px;
+  border: none;
+  background: #f0f0f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.api-stats-header .refresh-btn:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.api-stats-header .refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.api-stats-header .refresh-btn svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* API 통계 그리드 */
+.api-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+/* API 카드 */
+.api-stat-card {
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+}
+
+.api-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.api-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  font-size: 1.2rem;
+  color: white;
+}
+
+.api-icon.kakao {
+  background: linear-gradient(135deg, #ffe600, #ffcd00);
+  color: #3c1e1e;
+}
+
+.api-icon.odsay {
+  background: linear-gradient(135deg, #00a8e8, #0077b6);
+}
+
+.api-card-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.api-card-body {
+  padding: 16px 20px;
+}
+
+.api-card-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: #94a3b8;
+}
+
+.api-stat-card .stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.api-stat-card .stat-row.highlight {
+  padding: 12px;
+  margin: 8px -12px;
+  background: rgba(99, 102, 241, 0.05);
+  border-radius: 8px;
+}
+
+.api-stat-card .stat-row.small {
+  padding: 4px 0;
+  font-size: 0.85rem;
+}
+
+.api-stat-card .stat-label {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.api-stat-card .api-stat-value {
+  font-weight: 600;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.api-stat-card .api-stat-value.warning {
+  color: #f59e0b;
+}
+
+.api-stat-card .api-stat-value.success {
+  color: #10b981;
+}
+
+.api-stat-card .api-stat-value svg {
+  font-size: 1rem;
+}
+
+/* 사용량 바 */
+.usage-bar-wrapper {
+  width: 100%;
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 12px 0;
+}
+
+.api-stat-card .usage-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.api-stat-card .usage-bar.normal {
+  background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.api-stat-card .usage-bar.warning {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.api-stat-card .usage-bar.critical {
+  background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+/* 엔드포인트 통계 */
+.endpoint-stats {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.endpoint-title {
+  display: block;
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.endpoint-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 0.8rem;
+}
+
+.endpoint-row span:first-child {
+  color: #64748b;
+  font-family: 'SF Mono', 'Consolas', monospace;
+}
+
+.endpoint-row span:last-child {
+  font-weight: 500;
+  color: #475569;
+}
+
+/* API 카드 푸터 */
+.api-card-footer {
+  padding: 12px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+}
+
+.api-card-footer a {
+  color: #6366f1;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.api-card-footer a:hover {
+  text-decoration: underline;
+}
+
+/* API 통계 안내 */
+.api-stats-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f1f5f9;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.api-stats-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* 다크 테마 */
+.dark-theme .external-api-stats-section {
+  background: #1e293b;
+}
+
+.dark-theme .api-stats-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .api-stat-card {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-color: #334155;
+}
+
+.dark-theme .api-card-header {
+  border-color: #334155;
+}
+
+.dark-theme .api-card-header h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .stat-label {
+  color: #94a3b8;
+}
+
+.dark-theme .api-stat-card .api-stat-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .usage-bar-wrapper {
+  background: #334155;
+}
+
+.dark-theme .endpoint-stats {
+  border-color: #334155;
+}
+
+.dark-theme .endpoint-row span:first-child {
+  color: #94a3b8;
+}
+
+.dark-theme .endpoint-row span:last-child {
+  color: #cbd5e1;
+}
+
+.dark-theme .api-card-footer {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-theme .api-stats-notice {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+@media (max-width: 768px) {
+  .api-stats-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -320,9 +320,15 @@ CREATE TABLE IF NOT EXISTS trip_plans (
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   description TEXT,
+  accommodation_name TEXT,
+  accommodation_address TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- 숙소 정보 컬럼 추가 (기존 테이블에 실행)
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS accommodation_name TEXT;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS accommodation_address TEXT;
 
 -- 여행 계획 인덱스
 CREATE INDEX IF NOT EXISTS idx_trip_plans_user ON trip_plans(user_id);
@@ -370,6 +376,9 @@ CREATE INDEX IF NOT EXISTS idx_trip_places_order ON trip_places(day_id, order_in
 -- 여행 장소 이미지 출처 컬럼 마이그레이션
 ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS image_author TEXT;
 ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS image_source TEXT;
+
+-- 여행 장소 이동 방법 컬럼 마이그레이션
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS transport_to_next TEXT;
 
 -- ============================================================
 -- 15. 여행 계획 RLS 정책 (Row Level Security)

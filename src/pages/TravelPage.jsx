@@ -191,7 +191,9 @@ const TravelPage = () => {
               fee: item.tourUtlzAmt,
               parking: item.pkgFclt,
               url: item.urlAddr,
-              image: item.imageUrl || getTourSpotImage(item.tourspotNm)
+              image: item.imageUrl || getTourSpotImage(item.tourspotNm),
+              image_author: item.image_author,
+              image_source: item.image_source
             }
           })
           setAllSpots(formattedSpots)
@@ -284,10 +286,10 @@ const TravelPage = () => {
                           e.target.src = '/images/no-image.svg'
                         }}
                       />
-                      {spot.photographer && (
+                      {(spot.image_author || spot.photographer) && (
                         <div className="spot-photographer">
                           <FiCamera />
-                          <span>{spot.photographer}</span>
+                          <span>{spot.image_author || spot.photographer}</span>
                         </div>
                       )}
                       <div className="spot-image-overlay">
@@ -537,11 +539,42 @@ const TravelPage = () => {
               {/* 사진 출처 안내 */}
               <div className="photo-credit">
                 <FiCamera />
-                <span>
-                  {language === 'ko' 
-                    ? '사진 제공: 한국관광공사 / 대전사진누리' 
-                    : 'Photos by: Korea Tourism Organization / Daejeon Photo'}
-                </span>
+                <div className="photo-credit-content">
+                  {selectedSpot.image_author || selectedSpot.image_source ? (
+                    <>
+                      {selectedSpot.image_author && (
+                        <span className="credit-author">
+                          {language === 'ko' ? '사진: ' : 'Photo by: '}{selectedSpot.image_author}
+                        </span>
+                      )}
+                      {selectedSpot.image_author && selectedSpot.image_source && <span className="credit-divider">|</span>}
+                      {selectedSpot.image_source && (
+                        <span className="credit-source">
+                          {language === 'ko' ? '출처: ' : 'Source: '}
+                          {selectedSpot.image_source.startsWith('http') ? (
+                            <a 
+                              href={selectedSpot.image_source} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="source-link"
+                              title={selectedSpot.image_source}
+                            >
+                              {selectedSpot.image_source}
+                            </a>
+                          ) : (
+                            <span className="source-text">{selectedSpot.image_source}</span>
+                          )}
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span>
+                      {language === 'ko' 
+                        ? '사진 제공: 한국관광공사 / 대전사진누리' 
+                        : 'Photos by: Korea Tourism Organization / Daejeon Photo'}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           </div>

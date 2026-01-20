@@ -20,6 +20,7 @@ const Header = memo(() => {
     { path: '/festival', label: t.nav.festival },
     { path: '/food', label: t.nav.food },
     { path: '/map', label: t.nav.map },
+    { path: '/my-trip', label: language === 'ko' ? '나의 여행' : 'My Trip' },
   ]
 
   const moreMenuItems = [
@@ -28,7 +29,6 @@ const Header = memo(() => {
     { path: '/medical', label: t.nav.medical },
     { path: '/shopping', label: t.nav.shopping },
     { path: '/accommodation', label: t.nav.accommodation },
-    { path: '/my-trip', label: language === 'ko' ? '나의 여행' : 'My Trip' },
   ]
 
   useEffect(() => {

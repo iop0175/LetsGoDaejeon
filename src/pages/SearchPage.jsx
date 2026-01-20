@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react'
 import { useSearchParams, Link } from 'react-router-dom'
 import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX, FiTrendingUp } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getTourSpots, getRestaurants, getFestivals } from '../services/api'
-import { recordSearchQuery, getPopularSearchQueries } from '../services/dbService'
+import { recordSearchQuery, getPopularSearchQueries, getAllDbData } from '../services/dbService'
 import './SearchPage.css'
 
 const SearchPage = () => {
@@ -54,9 +53,9 @@ const SearchPage = () => {
     
     try {
       const [tourResult, restaurantResult, eventResult] = await Promise.all([
-        getTourSpots(1, 100),
-        getRestaurants(1, 100),
-        getFestivals(1, 100)
+        getAllDbData('travel'),
+        getAllDbData('food'),
+        getAllDbData('festival')
       ])
       
       const sq = searchQuery.toLowerCase()
@@ -75,7 +74,7 @@ const SearchPage = () => {
         const filtered = restaurantResult.items.filter(item =>
           item.restrntNm?.toLowerCase().includes(sq) ||
           item.restrntSumm?.toLowerCase().includes(sq) ||
-          item.rprsFod?.toLowerCase().includes(sq) ||
+          item.reprMenu?.toLowerCase().includes(sq) ||
           item.restrntAddr?.toLowerCase().includes(sq)
         )
         setRestaurants(filtered)
@@ -86,7 +85,7 @@ const SearchPage = () => {
         const filtered = eventResult.items.filter(item =>
           item.title?.toLowerCase().includes(sq) ||
           item.placeCdNm?.toLowerCase().includes(sq) ||
-          item.placeDetail?.toLowerCase().includes(sq)
+          item.themeCdNm?.toLowerCase().includes(sq)
         )
         setEvents(filtered)
         setEventTotal(filtered.length)
@@ -111,11 +110,11 @@ const SearchPage = () => {
     recordSearchQuery(query)
     
     try {
-      // 모든 API를 병렬로 호출
+      // DB에서 데이터 가져오기
       const [tourResult, restaurantResult, eventResult] = await Promise.all([
-        getTourSpots(1, 100),
-        getRestaurants(1, 100),
-        getFestivals(1, 100)
+        getAllDbData('travel'),
+        getAllDbData('food'),
+        getAllDbData('festival')
       ])
       
       const searchQuery = query.toLowerCase()
@@ -136,7 +135,7 @@ const SearchPage = () => {
         const filtered = restaurantResult.items.filter(item =>
           item.restrntNm?.toLowerCase().includes(searchQuery) ||
           item.restrntSumm?.toLowerCase().includes(searchQuery) ||
-          item.rprsFod?.toLowerCase().includes(searchQuery) ||
+          item.reprMenu?.toLowerCase().includes(searchQuery) ||
           item.restrntAddr?.toLowerCase().includes(searchQuery)
         )
         setRestaurants(filtered)
@@ -148,7 +147,7 @@ const SearchPage = () => {
         const filtered = eventResult.items.filter(item =>
           item.title?.toLowerCase().includes(searchQuery) ||
           item.placeCdNm?.toLowerCase().includes(searchQuery) ||
-          item.placeDetail?.toLowerCase().includes(searchQuery)
+          item.themeCdNm?.toLowerCase().includes(searchQuery)
         )
         setEvents(filtered)
         setEventTotal(filtered.length)

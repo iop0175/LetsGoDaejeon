@@ -111,9 +111,17 @@ export const getDbData = async (pageType, page = 1, pageSize = 20) => {
     if (error) throw error
     
     // raw_data가 있으면 그것을 반환, 없으면 원본 데이터 반환
+    // imageUrl, image_author, image_source는 테이블 컬럼에서 가져옴
     const items = (data || []).map(item => {
       if (item.raw_data && typeof item.raw_data === 'object') {
-        return { ...item.raw_data, _id: item.id, _saved_at: item.saved_at }
+        return { 
+          ...item.raw_data, 
+          _id: item.id, 
+          _saved_at: item.saved_at,
+          imageUrl: item.imageUrl || item.raw_data?.imageUrl,
+          image_author: item.image_author || item.raw_data?.image_author,
+          image_source: item.image_source || item.raw_data?.image_source
+        }
       }
       return item
     })
@@ -150,9 +158,17 @@ export const getAllDbData = async (pageType, limit = 1000) => {
     if (error) throw error
     
     // raw_data가 있으면 그것을 반환, 없으면 원본 데이터 반환
+    // imageUrl, image_author, image_source는 테이블 컬럼에서 가져옴
     const items = (data || []).map(item => {
       if (item.raw_data && typeof item.raw_data === 'object') {
-        return { ...item.raw_data, _id: item.id, _saved_at: item.saved_at }
+        return { 
+          ...item.raw_data, 
+          _id: item.id, 
+          _saved_at: item.saved_at,
+          imageUrl: item.imageUrl || item.raw_data?.imageUrl,
+          image_author: item.image_author || item.raw_data?.image_author,
+          image_source: item.image_source || item.raw_data?.image_source
+        }
       }
       return item
     })
@@ -224,8 +240,8 @@ export const updateDbItem = async (pageType, id, updates) => {
   }
   
   try {
-    // updated_at 필드 추가
-    const updateData = { ...updates, updated_at: new Date().toISOString() }
+    // updates 데이터만 사용 (updated_at은 테이블에 컬럼이 있을 경우 트리거로 자동 업데이트)
+    const updateData = { ...updates }
     
     const { error } = await supabase
       .from(config.tableName)

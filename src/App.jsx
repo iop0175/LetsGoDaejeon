@@ -15,6 +15,9 @@ import ShoppingPage from './pages/ShoppingPage'
 import AccommodationPage from './pages/AccommodationPage'
 import AdminPage from './pages/AdminPage'
 import MyTripPage from './pages/MyTripPage'
+import PrivacyPage from './pages/PrivacyPage'
+import TermsPage from './pages/TermsPage'
+import CopyrightPage from './pages/CopyrightPage'
 import { recordPageVisitDB } from './services/dbService'
 import './styles/App.css'
 
@@ -67,6 +70,9 @@ function App() {
           <Route path="/accommodation" element={<AccommodationPage />} />
           <Route path="/my-trip" element={<MyTripPage />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/copyright" element={<CopyrightPage />} />
         </Routes>
       </main>
       {!isAdminPage && <Footer />}

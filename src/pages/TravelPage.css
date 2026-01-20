@@ -680,6 +680,74 @@
 
 .photo-credit svg {
   font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.photo-credit-content {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.credit-author {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.credit-divider {
+  flex-shrink: 0;
+  color: var(--text-tertiary, #999);
+}
+
+.credit-source {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  cursor: pointer;
+  transition: all 0.2s;
+  overflow: hidden;
+}
+
+.source-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+  color: var(--primary-color, #007bff);
+  transition: color 0.2s;
+}
+
+.source-link {
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+  color: var(--primary-color, #007bff);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.source-link:hover {
+  color: var(--primary-hover, #0056b3);
+  text-decoration: underline;
+}
+
+.credit-source:hover .source-text {
+  color: var(--primary-hover, #0056b3);
+  text-decoration: underline;
+}
+
+/* 클릭 시 전체 URL 표시 */
+.credit-source.expanded .source-text {
+  white-space: normal;
+  word-break: break-all;
+  overflow: visible;
+  max-width: none;
 }
 
 /* 다크모드 */

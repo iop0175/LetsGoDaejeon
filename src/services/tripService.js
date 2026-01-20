@@ -33,6 +33,8 @@ export const getUserTripPlans = async (userId) => {
       startDate: plan.start_date,
       endDate: plan.end_date,
       description: plan.description,
+      accommodationName: plan.accommodation_name,
+      accommodationAddress: plan.accommodation_address,
       createdAt: plan.created_at,
       days: plan.trip_days?.map(day => ({
         id: day.id,
@@ -49,7 +51,8 @@ export const getUserTripPlans = async (userId) => {
           placeImage: place.place_image,
           orderIndex: place.order_index,
           visitTime: place.visit_time,
-          memo: place.memo
+          memo: place.memo,
+          transportToNext: place.transport_to_next
         })) || []
       })) || []
     }))
@@ -130,14 +133,18 @@ export const updateTripPlan = async (planId, updates) => {
       return { success: false, error: 'Plan not found' }
     }
     
+    // 업데이트할 필드만 추출
+    const updateData = {}
+    if (updates.title !== undefined) updateData.title = updates.title
+    if (updates.startDate !== undefined) updateData.start_date = updates.startDate
+    if (updates.endDate !== undefined) updateData.end_date = updates.endDate
+    if (updates.description !== undefined) updateData.description = updates.description
+    if (updates.accommodationName !== undefined) updateData.accommodation_name = updates.accommodationName
+    if (updates.accommodationAddress !== undefined) updateData.accommodation_address = updates.accommodationAddress
+    
     const { data, error } = await supabase
       .from('trip_plans')
-      .update({
-        title: updates.title,
-        start_date: updates.startDate,
-        end_date: updates.endDate,
-        description: updates.description
-      })
+      .update(updateData)
       .eq('id', planId)
       .select()
       .single()
@@ -391,18 +398,21 @@ export const updateTripPlace = async (placeId, updates) => {
       return { success: false, error: 'Place not found' }
     }
     
+    // 업데이트할 필드만 포함하는 객체 생성
+    const updateData = {}
+    if (updates.placeType !== undefined) updateData.place_type = updates.placeType
+    if (updates.placeName !== undefined) updateData.place_name = updates.placeName
+    if (updates.placeAddress !== undefined) updateData.place_address = updates.placeAddress
+    if (updates.placeDescription !== undefined) updateData.place_description = updates.placeDescription
+    if (updates.placeImage !== undefined) updateData.place_image = updates.placeImage
+    if (updates.orderIndex !== undefined) updateData.order_index = updates.orderIndex
+    if (updates.visitTime !== undefined) updateData.visit_time = updates.visitTime
+    if (updates.memo !== undefined) updateData.memo = updates.memo
+    if (updates.transportToNext !== undefined) updateData.transport_to_next = updates.transportToNext
+    
     const { data, error } = await supabase
       .from('trip_places')
-      .update({
-        place_type: updates.placeType,
-        place_name: updates.placeName,
-        place_address: updates.placeAddress,
-        place_description: updates.placeDescription,
-        place_image: updates.placeImage,
-        order_index: updates.orderIndex,
-        visit_time: updates.visitTime,
-        memo: updates.memo
-      })
+      .update(updateData)
       .eq('id', placeId)
       .select()
       .single()

@@ -20,7 +20,7 @@ import {
   getPageVisitStatsByPeriod
 } from '../services/dbService'
 import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
-import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats } from '../components/admin'
+import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
 
 // 페이지 관리 설정
@@ -1273,6 +1273,9 @@ const AdminPage = () => {
                 language={language}
                 dashboardUrl="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf"
               />
+              
+              {/* 외부 API 사용량 통계 섹션 (카카오, ODsay) */}
+              <ExternalApiStats language={language} />
               
               {/* 페이지 방문 통계 섹션 (DB) */}
               <div className="dashboard-section visit-stats-section">

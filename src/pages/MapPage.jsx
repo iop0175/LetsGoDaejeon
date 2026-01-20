@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FiMapPin, FiList, FiX, FiNavigation, FiPhone, FiClock, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getTourSpots, getRestaurants, getDaejeonParking } from '../services/api'
+import { getDaejeonParking } from '../services/api'
+import { getAllDbData } from '../services/dbService'
 import './MapPage.css'
 
 // 대전시 구 목록
@@ -177,7 +178,7 @@ const MapPage = () => {
       let result
       switch (activeTab) {
         case 'tour':
-          result = await getTourSpots(1, 100) // 더 많은 데이터
+          result = await getAllDbData('travel')
           if (result.success) {
             const tourPlaces = result.items.map(item => ({
               id: item.tourspotNm,
@@ -219,14 +220,14 @@ const MapPage = () => {
           }
           break
         case 'food':
-          result = await getRestaurants(1, 100) // 더 많은 데이터
+          result = await getAllDbData('food')
           if (result.success) {
             setAllPlaces(result.items.map(item => ({
               id: item.restrntNm,
               name: item.restrntNm,
               address: item.restrntAddr,
               summary: item.restrntSumm,
-              menu: item.rprsFod,
+              menu: item.reprMenu,
               hours: item.salsTime,
               type: 'food',
               lat: parseCoord(item.mapLat),
@@ -235,7 +236,7 @@ const MapPage = () => {
           }
           break
         case 'parking':
-          result = await getDaejeonParking(1, 1000) // 전체 주차장 데이터
+          result = await getDaejeonParking(1, 1000)
           if (result.success) {
             setAllPlaces(result.items.map(item => ({
               id: item.parkingId || item.name,
