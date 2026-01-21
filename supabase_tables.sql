@@ -488,6 +488,18 @@ CREATE POLICY "Users can manage their trip days"
     )
   );
 
+-- 게시된 여행의 trip_days는 모든 사용자가 읽을 수 있음
+DROP POLICY IF EXISTS "Anyone can read published trip_days" ON trip_days;
+CREATE POLICY "Anyone can read published trip_days"
+  ON trip_days FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM trip_plans 
+      WHERE trip_plans.id = trip_days.plan_id 
+      AND trip_plans.is_published = true
+    )
+  );
+
 -- trip_places RLS
 ALTER TABLE trip_places ENABLE ROW LEVEL SECURITY;
 
@@ -499,6 +511,19 @@ CREATE POLICY "Users can manage their trip places"
       JOIN trip_plans ON trip_plans.id = trip_days.plan_id
       WHERE trip_days.id = trip_places.day_id 
       AND trip_plans.user_id = auth.uid()
+    )
+  );
+
+-- 게시된 여행의 trip_places는 모든 사용자가 읽을 수 있음
+DROP POLICY IF EXISTS "Anyone can read published trip_places" ON trip_places;
+CREATE POLICY "Anyone can read published trip_places"
+  ON trip_places FOR SELECT
+  USING (
+    EXISTS (
+      SELECT 1 FROM trip_days 
+      JOIN trip_plans ON trip_plans.id = trip_days.plan_id
+      WHERE trip_days.id = trip_places.day_id 
+      AND trip_plans.is_published = true
     )
   );
 
