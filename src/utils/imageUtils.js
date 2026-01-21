@@ -166,3 +166,15 @@ export const getReliableImageUrl = (url, fallback = DEFAULT_IMAGE) => {
   
   return toSecureUrl(url)
 }
+
+/**
+ * HTML 특수문자를 이스케이프하여 XSS 공격 방지
+ * @param {string} text - 이스케이프할 텍스트
+ * @returns {string} 이스케이프된 텍스트
+ */
+export const escapeHtml = (text) => {
+  if (!text) return ''
+  const div = document.createElement('div')
+  div.textContent = text
+  return div.innerHTML
+}

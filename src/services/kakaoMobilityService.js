@@ -1,6 +1,8 @@
 // 카카오 모빌리티 API 서비스
 // 경로 탐색 및 이동 시간 조회
 
+import { getRouteFromCache, saveRouteToCache, getCoordinateFromCache, saveCoordinateToCache } from './dbService.js'
+
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
 
@@ -68,61 +70,219 @@ export const getKakaoApiStats = () => {
   }
 }
 
+// 대전 지역 범위 체크 (위도: 36.19~36.51, 경도: 127.25~127.55)
+const isDaejeonArea = (lat, lng) => {
+  return lat >= 36.19 && lat <= 36.51 && lng >= 127.25 && lng <= 127.55
+}
+
 /**
  * 주소를 좌표로 변환 (Geocoding)
  * @param {string} address - 검색할 주소
  * @returns {Promise<{success: boolean, lat?: number, lng?: number}>}
  */
 export const getCoordinatesFromAddress = async (address) => {
+  
   try {
-    // 주소 정규화: 도로명 뒤에 붙어있는 숫자 앞에 공백 추가 (예: 엑스포로85 → 엑스포로 85)
-    const normalizedAddress = address.replace(/([가-힣])(\d)/g, '$1 $2')
-    
-    // Workers 프록시를 통한 API 호출 (API 키 보호)
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/kakao/v2/local/search/address.json?query=${encodeURIComponent(normalizedAddress)}`
-    )
-    
-    const data = await response.json()
-    trackKakaoApiCall('address_search', !!data.documents?.length)
-    
-    if (data.documents && data.documents.length > 0) {
-      const { x, y } = data.documents[0]
-      return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
-    }
-    
-    // 주소 검색 실패 시 원본 주소로 키워드 검색 시도
-    const keywordResponse = await fetch(
-      `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent(address)}`
-    )
-    
-    const keywordData = await keywordResponse.json()
-    trackKakaoApiCall('keyword_search', !!keywordData.documents?.length)
-    
-    if (keywordData.documents && keywordData.documents.length > 0) {
-      const { x, y } = keywordData.documents[0]
-      return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
-    }
-    
-    // 키워드 검색도 실패 시 "대전" 추가해서 재시도
-    if (!address.includes('대전')) {
-      const daejeonKeywordResponse = await fetch(
-        `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent('대전 ' + address)}`
-      )
-      
-      const daejeonKeywordData = await daejeonKeywordResponse.json()
-      trackKakaoApiCall('keyword_search_daejeon', !!daejeonKeywordData.documents?.length)
-      
-      if (daejeonKeywordData.documents && daejeonKeywordData.documents.length > 0) {
-        const { x, y } = daejeonKeywordData.documents[0]
-        return { success: true, lng: parseFloat(x), lat: parseFloat(y) }
+    // ===== 캐시 확인 =====
+    const cachedCoord = await getCoordinateFromCache(address)
+    if (cachedCoord && cachedCoord.fromCache) {
+      console.log(`[좌표 캐시 히트] ${address}`)
+      return {
+        success: true,
+        lat: cachedCoord.lat,
+        lng: cachedCoord.lng,
+        fromCache: true
       }
+    }
+    
+    console.log(`[좌표 API 호출] ${address}`)
+    
+    // 도로명 숫자 분리 정규화 (예: 엑스포로85 → 엑스포로 85)
+    const normalizeRoad = (str) => str.replace(/([가-힣])(\d)/g, '$1 $2').trim()
+    
+    // 괄호 내용 제거 (예: 카이스트(KAIST) → 카이스트)
+    const removeParentheses = (str) => str.replace(/\(.*?\)/g, '').trim()
+    
+    // 대전 지역인지 확인하고 결과 반환하는 헬퍼
+    const returnIfDaejeon = (lat, lng) => {
+      if (isDaejeonArea(lat, lng)) {
+        return { success: true, lng, lat }
+      }
+      return null
+    }
+    
+    // 검색어에서 핵심 키워드 추출
+    const extractKeywords = (str) => {
+      return removeParentheses(str)
+        .replace(/대전(광역시)?|유성구|서구|중구|동구|대덕구|\d+/g, '')
+        .trim()
+    }
+    
+    // 키워드 검색 결과에서 가장 관련성 높은 결과 찾기
+    const findBestMatch = (documents, searchKeyword) => {
+      const keywords = extractKeywords(searchKeyword).toLowerCase()
+      const keywordParts = keywords.split(' ').filter(kw => kw.length > 1)
+      
+      // 점수 계산 함수
+      const getScore = (doc) => {
+        const placeName = removeParentheses(doc.place_name).toLowerCase()
+        const inDaejeon = isDaejeonArea(parseFloat(doc.y), parseFloat(doc.x))
+        
+        let score = 0
+        
+        // 대전 지역: +100점
+        if (inDaejeon) score += 100
+        
+        // 검색어 전체 포함: +50점
+        const matchCount = keywordParts.filter(kw => placeName.includes(kw)).length
+        score += matchCount * 50
+        
+        // 완전 일치 (가장 높은 우선순위): +200점
+        if (placeName === keywords) {
+          score += 200
+        }
+        // 장소명이 검색어로 시작: +150점 (카이스트 -> KAIST)
+        else if (placeName.startsWith(keywords)) {
+          score += 150
+        }
+        // 장소명에 검색어 포함: +50점 (카이스트홀딩스는 여기)
+        else if (placeName.includes(keywords)) {
+          score += 50
+        }
+        
+        // 장소명 길이가 짧을수록 높은 점수 (간결한 이름 선호)
+        // 최대 50점, 글자수 * 5점 감점
+        const lengthPenalty = Math.min(50, placeName.length * 3)
+        score += (50 - lengthPenalty)
+        
+        return score
+      }
+      
+      // 점수 기준 정렬
+      const sortedDocs = [...documents].sort((a, b) => getScore(b) - getScore(a))
+      
+      return sortedDocs[0]
+    }
+    
+    // 주소/키워드 검색 실행 헬퍼
+    const searchAddress = async (query) => {
+      const response = await fetch(
+        `${WORKERS_API_URL}/api/kakao/v2/local/search/address.json?query=${encodeURIComponent(query)}`
+      )
+      const data = await response.json()
+      trackKakaoApiCall('address_search', !!data.documents?.length)
+      return data.documents || []
+    }
+    
+    const searchKeyword = async (query) => {
+      const response = await fetch(
+        `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&x=127.385&y=36.351&radius=20000`
+      )
+      const data = await response.json()
+      trackKakaoApiCall('keyword_search', !!data.documents?.length)
+      return data.documents || []
+    }
+    
+    // ============================================================
+    // 검색 순서:
+    // 1. 주소 검색 (원본)
+    // 2. 키워드 검색 (원본)
+    // 3. 괄호 제거 후 검색 (괄호가 있으면)
+    // 4. "대전" 추가 후 검색
+    // ============================================================
+    
+    const normalizedAddress = normalizeRoad(address)
+    const hasParentheses = /\(.*?\)/.test(address)
+    const withoutParentheses = hasParentheses ? normalizeRoad(removeParentheses(address)) : null
+    const withDaejeon = !address.includes('대전') ? `대전 ${normalizeRoad(removeParentheses(address))}` : null
+    
+    // 결과를 캐시에 저장하고 반환하는 헬퍼
+    const returnWithCache = (lat, lng) => {
+      // 캐시 저장 (비동기, 결과 대기하지 않음)
+      saveCoordinateToCache(address, lat, lng).then(saved => {
+        if (saved) console.log(`[좌표 캐시 저장] ${address}`)
+      }).catch(err => console.warn('[좌표 캐시 저장 실패]', err))
+      
+      return { success: true, lat, lng }
+    }
+    
+    // 1단계: 주소 검색 (원본)
+    const addressDocs = await searchAddress(normalizedAddress)
+    if (addressDocs.length > 0) {
+      const { x, y } = addressDocs[0]
+      const lat = parseFloat(y), lng = parseFloat(x)
+      if (isDaejeonArea(lat, lng)) {
+        return returnWithCache(lat, lng)
+      }
+    }
+    
+    // 2단계: 키워드 검색 (원본)
+    const keywordDocs = await searchKeyword(normalizedAddress)
+    if (keywordDocs.length > 0) {
+      const best = findBestMatch(keywordDocs, normalizedAddress)
+      const lat = parseFloat(best.y), lng = parseFloat(best.x)
+      if (isDaejeonArea(lat, lng)) {
+        return returnWithCache(lat, lng)
+      }
+    }
+    
+    // 3단계: 괄호 제거 후 검색 (괄호가 있으면)
+    if (withoutParentheses && withoutParentheses !== normalizedAddress) {
+      // 주소 검색
+      const noParen_addressDocs = await searchAddress(withoutParentheses)
+      if (noParen_addressDocs.length > 0) {
+        const { x, y } = noParen_addressDocs[0]
+        const lat = parseFloat(y), lng = parseFloat(x)
+        if (isDaejeonArea(lat, lng)) {
+          return returnWithCache(lat, lng)
+        }
+      }
+      
+      // 키워드 검색
+      const noParen_keywordDocs = await searchKeyword(withoutParentheses)
+      if (noParen_keywordDocs.length > 0) {
+        const best = findBestMatch(noParen_keywordDocs, withoutParentheses)
+        const lat = parseFloat(best.y), lng = parseFloat(best.x)
+        if (isDaejeonArea(lat, lng)) {
+          return returnWithCache(lat, lng)
+        }
+      }
+    }
+    
+    // 4단계: "대전" 추가 후 검색
+    if (withDaejeon) {
+      // 주소 검색
+      const daejeon_addressDocs = await searchAddress(withDaejeon)
+      if (daejeon_addressDocs.length > 0) {
+        const { x, y } = daejeon_addressDocs[0]
+        const lat = parseFloat(y), lng = parseFloat(x)
+        if (isDaejeonArea(lat, lng)) {
+          return returnWithCache(lat, lng)
+        }
+      }
+      
+      // 키워드 검색
+      const daejeon_keywordDocs = await searchKeyword(withDaejeon)
+      if (daejeon_keywordDocs.length > 0) {
+        const best = findBestMatch(daejeon_keywordDocs, withDaejeon)
+        const lat = parseFloat(best.y), lng = parseFloat(best.x)
+        if (isDaejeonArea(lat, lng)) {
+          return returnWithCache(lat, lng)
+        }
+      }
+    }
+    
+    // 최종 실패 - 대전 외 결과라도 반환 (캐시에도 저장)
+    if (keywordDocs.length > 0) {
+      const best = findBestMatch(keywordDocs, normalizedAddress)
+      const lat = parseFloat(best.y), lng = parseFloat(best.x)
+      return returnWithCache(lat, lng)
     }
     
     return { success: false, error: 'Address not found' }
   } catch (err) {
     trackKakaoApiCall('geocoding', false)
-    console.error('좌표 변환 실패:', err)
+    console.error('❌ [좌표 변환 실패]:', err)
     return { success: false, error: err.message }
   }
 }
@@ -266,29 +426,95 @@ export const getBicycleRoute = async (origin, destination) => {
  * @param {string} toAddress - 도착지 주소
  * @param {string} transportType - 이동 방법 (walk, car, bus, subway, taxi, bicycle)
  * @param {boolean} useOdsay - ODsay API 사용 여부 (버스/지하철)
+ * @param {Object} fromCoords - 출발지 좌표 {lat, lng} (선택, 주소 검색 대신 사용)
+ * @param {Object} toCoords - 도착지 좌표 {lat, lng} (선택, 주소 검색 대신 사용)
  * @returns {Promise<{success: boolean, duration?: number, distance?: number, isEstimate?: boolean, routeDetails?: Array}>}
  */
-export const getRouteByTransport = async (fromAddress, toAddress, transportType, useOdsay = true) => {
+export const getRouteByTransport = async (fromAddress, toAddress, transportType, useOdsay = true, fromCoords = null, toCoords = null) => {
   try {
-    // 1. 주소 → 좌표 변환
-    const originResult = await getCoordinatesFromAddress(fromAddress)
-    if (!originResult.success) {
-      return { success: false, error: `출발지 주소를 찾을 수 없습니다: ${fromAddress}` }
+    // 1. 좌표 결정 (전달된 좌표가 있으면 사용, 없으면 주소 검색)
+    let origin = null, destination = null
+    let originFailed = false, destFailed = false
+    
+    if (fromCoords && fromCoords.lat && fromCoords.lng) {
+      origin = fromCoords
+    } else {
+      const originResult = await getCoordinatesFromAddress(fromAddress)
+      if (originResult.success) {
+        origin = { lat: originResult.lat, lng: originResult.lng }
+      } else {
+        originFailed = true
+      }
     }
     
-    const destResult = await getCoordinatesFromAddress(toAddress)
-    if (!destResult.success) {
-      return { success: false, error: `도착지 주소를 찾을 수 없습니다: ${toAddress}` }
+    if (toCoords && toCoords.lat && toCoords.lng) {
+      destination = toCoords
+    } else {
+      const destResult = await getCoordinatesFromAddress(toAddress)
+      if (destResult.success) {
+        destination = { lat: destResult.lat, lng: destResult.lng }
+      } else {
+        destFailed = true
+      }
     }
     
-    const origin = { lat: originResult.lat, lng: originResult.lng }
-    const destination = { lat: destResult.lat, lng: destResult.lng }
+    // 둘 다 실패한 경우에만 에러 반환
+    // 부분 실패 시 성공한 좌표는 유지하고, 호출자가 재시도할 수 있도록 정보 전달
+    if (originFailed && destFailed) {
+      return { 
+        success: false, 
+        error: `출발지와 도착지 주소를 찾을 수 없습니다`,
+        originFailed: true,
+        destFailed: true
+      }
+    }
+    if (originFailed) {
+      return { 
+        success: false, 
+        error: `출발지 주소를 찾을 수 없습니다: ${fromAddress}`,
+        originFailed: true,
+        destFailed: false,
+        resolvedDestCoords: destination // 성공한 도착지 좌표 전달
+      }
+    }
+    if (destFailed) {
+      return { 
+        success: false, 
+        error: `도착지 주소를 찾을 수 없습니다: ${toAddress}`,
+        originFailed: false,
+        destFailed: true,
+        resolvedOriginCoords: origin // 성공한 출발지 좌표 전달
+      }
+    }
+    
+    // ===== 캐시 확인 =====
+    const cachedRoute = await getRouteFromCache(origin, destination, transportType)
+    if (cachedRoute && cachedRoute.fromCache) {
+      console.log(`[캐시 히트] ${transportType} 경로: ${fromAddress} → ${toAddress}`)
+      return {
+        success: true,
+        duration: cachedRoute.duration,
+        distance: cachedRoute.distance,
+        payment: cachedRoute.payment,
+        routeDetails: cachedRoute.routeDetails || [],
+        allRoutes: cachedRoute.allRoutes || [],
+        path: cachedRoute.path,
+        noRoute: cachedRoute.noRoute || false,
+        isEstimate: cachedRoute.isEstimate || false,
+        fromCache: true
+      }
+    }
+    
+    // ===== 캐시 미스: API 호출 =====
+    console.log(`[API 호출] ${transportType} 경로: ${fromAddress} → ${toAddress}`)
     
     // 2. 이동 방법에 따른 경로 탐색
+    let result = null
     switch (transportType) {
       case 'car':
       case 'taxi':
-        return await getCarRoute(origin, destination)
+        result = await getCarRoute(origin, destination)
+        break
         
       case 'bus':
       case 'subway':
@@ -300,66 +526,99 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
             const odsayResult = await getPublicTransitRouteByCoords(origin, destination, searchType)
             
             if (odsayResult.success) {
-              // 노선이 없는 경우 추정값 사용하지 않고 그대로 반환
+              // 노선이 없는 경우
               if (odsayResult.noRoute) {
-                return {
+                result = {
                   success: true,
                   duration: 0,
                   distance: 0,
                   payment: 0,
                   routeDetails: [],
+                  allRoutes: [],
                   noRoute: true,
                   isEstimate: false
                 }
-              }
-              return {
-                success: true,
-                duration: odsayResult.totalTime,
-                distance: odsayResult.totalDistance,
-                payment: odsayResult.payment,
-                routeDetails: odsayResult.routeDetails,
-                busTransitCount: odsayResult.busTransitCount,
-                subwayTransitCount: odsayResult.subwayTransitCount,
-                noRoute: false,
-                isEstimate: false
+              } else {
+                result = {
+                  success: true,
+                  duration: odsayResult.totalTime,
+                  distance: odsayResult.totalDistance,
+                  payment: odsayResult.payment,
+                  routeDetails: odsayResult.routeDetails,
+                  allRoutes: odsayResult.allRoutes || [], // 모든 경로 옵션
+                  busTransitCount: odsayResult.busTransitCount,
+                  subwayTransitCount: odsayResult.subwayTransitCount,
+                  noRoute: false,
+                  isEstimate: false
+                }
               }
             } else {
               // ODsay API 실패 시 (경로 없음 포함), 버스/지하철 전용 검색은 noRoute 반환
-              return {
+              result = {
                 success: true,
                 duration: 0,
                 distance: 0,
                 payment: 0,
                 routeDetails: [],
+                allRoutes: [],
                 noRoute: true,
                 isEstimate: false
               }
             }
           } catch (odsayErr) {
             // 예외 발생 시에도 버스/지하철 전용 검색은 noRoute 반환
-            return {
+            result = {
               success: true,
               duration: 0,
               distance: 0,
               payment: 0,
               routeDetails: [],
+              allRoutes: [],
               noRoute: true,
               isEstimate: false
             }
           }
+        } else {
+          // ODsay 비활성화 시 추정값 사용
+          result = await getPublicTransportRoute(origin, destination)
         }
-        // ODsay 비활성화 시 추정값 사용
-        return await getPublicTransportRoute(origin, destination)
+        break
         
       case 'walk':
-        return await getWalkingRoute(origin, destination)
+        result = await getWalkingRoute(origin, destination)
+        break
         
       case 'bicycle':
-        return await getBicycleRoute(origin, destination)
+        result = await getBicycleRoute(origin, destination)
+        break
         
       default:
-        return await getCarRoute(origin, destination)
+        result = await getCarRoute(origin, destination)
+        break
     }
+    
+    // ===== 결과를 캐시에 저장 =====
+    if (result && result.success) {
+      // 캐시 저장 (비동기, 결과 대기하지 않음)
+      saveRouteToCache(origin, destination, transportType, {
+        duration: result.duration,
+        distance: result.distance,
+        payment: result.payment,
+        routeDetails: result.routeDetails,
+        allRoutes: result.allRoutes,
+        path: result.path,
+        isEstimate: result.isEstimate,
+        noRoute: result.noRoute
+      }).then(saved => {
+        if (saved) {
+          console.log(`[캐시 저장] ${transportType} 경로 저장 완료`)
+        }
+      }).catch(err => {
+        console.warn('[캐시 저장 실패]', err)
+      })
+    }
+    
+    return result
   } catch (err) {
     console.error('경로 탐색 실패:', err)
     return { success: false, error: err.message }

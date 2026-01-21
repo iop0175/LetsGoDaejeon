@@ -12,7 +12,7 @@ import {
 import { useTheme } from '../context/ThemeContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { getReliableImageUrl } from '../utils/imageUtils'
+import { getReliableImageUrl, escapeHtml } from '../utils/imageUtils'
 import { 
   getUserTripPlans, createTripPlan, updateTripPlan, deleteTripPlan,
   addTripDay, updateTripDay, deleteTripDay,
@@ -23,10 +23,54 @@ import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getC
 import { getDaejeonParking } from '../services/api'
 import './MyTripPage.css'
 
+// Polyline 좌표를 두꺼운 Polygon으로 변환하는 함수 (클릭 영역 확대용)
+const createRoutePolygon = (pathCoords, width = 0.002) => {
+  if (!pathCoords || pathCoords.length < 2) return null
+  
+  const polygonPath = []
+  const reversePath = []
+  
+  for (let i = 0; i < pathCoords.length - 1; i++) {
+    const p1 = pathCoords[i]
+    const p2 = pathCoords[i + 1]
+    
+    // 방향 벡터 계산
+    const dx = p2.getLng() - p1.getLng()
+    const dy = p2.getLat() - p1.getLat()
+    const length = Math.sqrt(dx * dx + dy * dy)
+    
+    if (length === 0) continue
+    
+    // 수직 벡터 (왼쪽)
+    const nx = -dy / length * width
+    const ny = dx / length * width
+    
+    // 왼쪽/오른쪽 점 추가
+    polygonPath.push(new window.kakao.maps.LatLng(p1.getLat() + ny, p1.getLng() + nx))
+    reversePath.unshift(new window.kakao.maps.LatLng(p1.getLat() - ny, p1.getLng() - nx))
+    
+    // 마지막 점 처리
+    if (i === pathCoords.length - 2) {
+      polygonPath.push(new window.kakao.maps.LatLng(p2.getLat() + ny, p2.getLng() + nx))
+      reversePath.unshift(new window.kakao.maps.LatLng(p2.getLat() - ny, p2.getLng() - nx))
+    }
+  }
+  
+  // 폴리곤 경로: 왼쪽 → 오른쪽 역순으로 연결
+  return [...polygonPath, ...reversePath]
+}
+
 const MyTripPage = () => {
   const { isDark } = useTheme()
   const { language } = useLanguage()
   const { user, loginWithKakao, loading: authLoading } = useAuth()
+  
+  // 각 일차별 색상 (마커, 경로, 탭 모두 동일하게 사용)
+  const dayColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
+  // 1일차: 파란색, 2일차: 초록색, 3일차: 주황색, 4일차: 빨간색, 5일차: 보라색, 6일차: 핑크색
+  
+  // 일차 번호로 색상 가져오기
+  const getDayColor = (dayNumber) => dayColors[(dayNumber - 1) % dayColors.length]
   
   // 여행 계획 목록
   const [tripPlans, setTripPlans] = useState([])
@@ -62,10 +106,15 @@ const MyTripPage = () => {
   // 이동 시간 정보 저장
   const [routeInfo, setRouteInfo] = useState({}) // { "placeId": { duration, distance, loading } }
   
+  // 장소 좌표 캐시 (마커 찍을 때 저장, 경로 검색 시 재사용)
+  const [placeCoordinates, setPlaceCoordinates] = useState({}) // { "placeId": { lat, lng } }
+  const [accommodationCoordinates, setAccommodationCoordinates] = useState(null) // { lat, lng }
+  
   // 주차장 정보 저장
   const [nearbyParkings, setNearbyParkings] = useState({}) // { "placeId": { parkings: [], loading } }
   const [allParkings, setAllParkings] = useState([]) // 전체 주차장 데이터 캐시
   const [expandedParking, setExpandedParking] = useState(null) // 펼쳐진 주차장 목록의 placeId
+  const [highlightedRoute, setHighlightedRoute] = useState(null) // 클릭된 경로 { placeId, dayId, type: 'place' | 'accommodation' }
   
   // 드래그 앤 드롭 상태
   const [draggedPlace, setDraggedPlace] = useState(null) // 드래그 중인 장소 { dayId, placeId, index }
@@ -99,6 +148,56 @@ const MyTripPage = () => {
     }
   }, [accommodationTransport])
   
+  // 하이라이트된 경로가 변경되면 3초 후 자동으로 해제
+  useEffect(() => {
+    if (highlightedRoute) {
+      const timer = setTimeout(() => {
+        setHighlightedRoute(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightedRoute])
+  
+  // 하이라이트된 경로의 폴리라인 스타일 변경
+  useEffect(() => {
+    // 모든 폴리라인 원래 스타일로 복원
+    Object.entries(routePolylinesRef.current).forEach(([key, polylines]) => {
+      if (Array.isArray(polylines)) {
+        polylines.forEach(polyline => {
+          if (polyline && typeof polyline.setOptions === 'function') {
+            // 원래 스타일로 복원 (도보는 3, 버스/지하철은 5, 차량은 4)
+            const currentOptions = polyline.getOptions ? polyline.getOptions() : {}
+            const strokeStyle = currentOptions.strokeStyle || 'solid'
+            const baseWeight = strokeStyle === 'dashed' ? 3 : (currentOptions.strokeWeight > 4 ? 5 : 4)
+            polyline.setOptions({
+              strokeWeight: baseWeight,
+              strokeOpacity: strokeStyle === 'dashed' ? 0.8 : 0.9
+            })
+          }
+        })
+      }
+    })
+    
+    // 하이라이트된 경로가 있으면 해당 폴리라인 강조
+    if (highlightedRoute) {
+      const routeKey = highlightedRoute.type === 'accommodation' 
+        ? `acc_${highlightedRoute.dayId}` 
+        : highlightedRoute.placeId
+      
+      const polylines = routePolylinesRef.current[routeKey]
+      if (Array.isArray(polylines)) {
+        polylines.forEach(polyline => {
+          if (polyline && typeof polyline.setOptions === 'function') {
+            polyline.setOptions({
+              strokeWeight: 8,
+              strokeOpacity: 1.0
+            })
+          }
+        })
+      }
+    }
+  }, [highlightedRoute])
+  
   // 지도 관련 상태
   const [showMap, setShowMap] = useState(true) // 지도 패널 표시 여부
   const [mapExpanded, setMapExpanded] = useState(false) // 지도 확대 여부
@@ -107,6 +206,7 @@ const MyTripPage = () => {
   const mapRef = useRef(null)
   const markersRef = useRef([])
   const polylineRef = useRef(null)
+  const routePolylinesRef = useRef({}) // 경로별 폴리라인 참조 { placeId: polyline, `acc_${dayId}`: polyline }
   
   // 이동 방법 옵션
   const transportOptions = [
@@ -432,18 +532,43 @@ const MyTripPage = () => {
           )
         }))
         
-        // 이동 시간 조회
+        // 이동 시간 조회 (저장된 좌표 사용)
         const day = selectedTrip?.days?.find(d => d.id === dayId)
         const placeIndex = day?.places?.findIndex(p => p.id === placeId)
         if (day && placeIndex !== -1 && placeIndex < day.places.length - 1) {
           const fromPlace = day.places[placeIndex]
           const toPlace = day.places[placeIndex + 1]
-          fetchRouteInfo(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType, fromPlace.placeName, toPlace.placeName)
+          const fromCoords = placeCoordinates[fromPlace.id] || null
+          const toCoords = placeCoordinates[toPlace.id] || null
+          fetchRouteInfo(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType, fromPlace.placeName, toPlace.placeName, fromCoords, toCoords)
         }
       }
     } catch (err) {
       console.error('이동 방법 업데이트 실패:', err)
     }
+  }
+  
+  // 버스/대중교통 경로 선택 (여러 노선 중 하나 선택)
+  const handleSelectRoute = (placeId, routeIndex) => {
+    setRouteInfo(prev => {
+      const info = prev[placeId]
+      if (!info || !info.allRoutes || !info.allRoutes[routeIndex]) return prev
+      
+      const selectedRoute = info.allRoutes[routeIndex]
+      return {
+        ...prev,
+        [placeId]: {
+          ...info,
+          duration: selectedRoute.totalTime,
+          distance: selectedRoute.totalDistance,
+          payment: selectedRoute.payment,
+          routeDetails: selectedRoute.routeDetails,
+          busTransitCount: selectedRoute.busTransitCount,
+          subwayTransitCount: selectedRoute.subwayTransitCount,
+          selectedRouteIndex: routeIndex
+        }
+      }
+    })
   }
   
   // 숙소에서 첫 번째 장소까지의 교통수단 업데이트 (2일차+)
@@ -453,16 +578,18 @@ const MyTripPage = () => {
       [dayId]: { transport: transportType }
     }))
     
-    // 이동 시간 조회
+    // 이동 시간 조회 (저장된 좌표 사용)
     const day = selectedTrip?.days?.find(d => d.id === dayId)
     if (day && day.places?.length > 0 && selectedTrip.accommodationAddress) {
       const firstPlace = day.places[0]
-      fetchAccommodationRouteInfo(dayId, selectedTrip.accommodationAddress, firstPlace.placeAddress, transportType)
+      const fromCoords = accommodationCoordinates || null
+      const toCoords = placeCoordinates[firstPlace.id] || null
+      fetchAccommodationRouteInfo(dayId, selectedTrip.accommodationAddress, firstPlace.placeAddress, transportType, fromCoords, toCoords)
     }
   }
   
-  // 숙소에서 첫 번째 장소까지 이동 시간 조회
-  const fetchAccommodationRouteInfo = async (dayId, fromAddress, toAddress, transportType) => {
+  // 숙소에서 첫 번째 장소까지 이동 시간 조회 (좌표가 있으면 직접 사용)
+  const fetchAccommodationRouteInfo = async (dayId, fromAddress, toAddress, transportType, fromCoords = null, toCoords = null) => {
     if (!fromAddress || !toAddress) return
     
     setAccommodationRouteInfo(prev => ({
@@ -471,7 +598,7 @@ const MyTripPage = () => {
     }))
     
     try {
-      const result = await getRouteByTransport(fromAddress, toAddress, transportType)
+      const result = await getRouteByTransport(fromAddress, toAddress, transportType, true, fromCoords, toCoords)
       
       if (result.success) {
         setAccommodationRouteInfo(prev => ({
@@ -503,8 +630,8 @@ const MyTripPage = () => {
     }
   }
   
-  // 이동 시간 조회
-  const fetchRouteInfo = async (placeId, fromAddress, toAddress, transportType, fromName = null, toName = null) => {
+  // 이동 시간 조회 (좌표가 있으면 직접 사용)
+  const fetchRouteInfo = async (placeId, fromAddress, toAddress, transportType, fromName = null, toName = null, fromCoords = null, toCoords = null) => {
     if (!fromAddress || !toAddress) return
     
     // 로딩 상태 설정
@@ -514,14 +641,31 @@ const MyTripPage = () => {
     }))
     
     try {
-      // 주소로 경로 조회 시도
-      let result = await getRouteByTransport(fromAddress, toAddress, transportType)
+      // 좌표가 있으면 직접 전달, 없으면 주소 검색
+      let result = await getRouteByTransport(fromAddress, toAddress, transportType, true, fromCoords, toCoords)
       
-      // 주소 검색 실패 시 장소명으로 재시도
+      // 부분 실패 시 실패한 쪽만 장소명으로 재시도 (성공한 좌표는 유지)
       if (!result.success && (fromName || toName)) {
-        const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
-        const toQuery = toName ? `대전 ${toName}` : toAddress
-        result = await getRouteByTransport(fromQuery, toQuery, transportType)
+        // 출발지만 실패한 경우
+        if (result.originFailed && !result.destFailed) {
+          const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
+          // 성공한 도착지 좌표는 유지
+          const resolvedToCoords = result.resolvedDestCoords || toCoords
+          result = await getRouteByTransport(fromQuery, toAddress, transportType, true, null, resolvedToCoords)
+        }
+        // 도착지만 실패한 경우
+        else if (!result.originFailed && result.destFailed) {
+          const toQuery = toName ? `대전 ${toName}` : toAddress
+          // 성공한 출발지 좌표는 유지
+          const resolvedFromCoords = result.resolvedOriginCoords || fromCoords
+          result = await getRouteByTransport(fromAddress, toQuery, transportType, true, resolvedFromCoords, null)
+        }
+        // 둘 다 실패한 경우 - 장소명으로 재시도
+        else if (result.originFailed && result.destFailed) {
+          const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
+          const toQuery = toName ? `대전 ${toName}` : toAddress
+          result = await getRouteByTransport(fromQuery, toQuery, transportType)
+        }
       }
       
       if (result.success) {
@@ -532,6 +676,8 @@ const MyTripPage = () => {
             distance: result.distance,
             isEstimate: result.isEstimate,
             routeDetails: result.routeDetails || [], // 버스/지하철 상세 경로
+            allRoutes: result.allRoutes || [], // 모든 경로 옵션 (버스 노선 선택용)
+            selectedRouteIndex: 0, // 선택된 경로 인덱스 (기본: 첫 번째)
             payment: result.payment, // 요금
             busTransitCount: result.busTransitCount, // 버스 환승 횟수
             subwayTransitCount: result.subwayTransitCount, // 지하철 환승 횟수
@@ -565,11 +711,13 @@ const MyTripPage = () => {
         // 마지막 장소 제외, 이동 방법이 설정된 경우
         if (idx < day.places.length - 1 && place.transportToNext && !routeInfo[place.id]) {
           const nextPlace = day.places[idx + 1]
-          fetchRouteInfo(place.id, place.placeAddress, nextPlace.placeAddress, place.transportToNext, place.placeName, nextPlace.placeName)
+          const fromCoords = placeCoordinates[place.id] || null
+          const toCoords = placeCoordinates[nextPlace.id] || null
+          fetchRouteInfo(place.id, place.placeAddress, nextPlace.placeAddress, place.transportToNext, place.placeName, nextPlace.placeName, fromCoords, toCoords)
         }
       })
     })
-  }, [selectedTrip?.days])
+  }, [selectedTrip?.days, placeCoordinates])
   
   // 숙소에서 첫 번째 장소까지 이동 시간 자동 조회 (여행 선택 또는 숙소 설정 변경 시)
   useEffect(() => {
@@ -581,16 +729,20 @@ const MyTripPage = () => {
         const firstPlace = day.places[0]
         // 이미 조회된 경우 스킵
         if (!accommodationRouteInfo[day.id] || accommodationRouteInfo[day.id].error) {
+          const fromCoords = accommodationCoordinates || null
+          const toCoords = placeCoordinates[firstPlace.id] || null
           fetchAccommodationRouteInfo(
             day.id, 
             selectedTrip.accommodationAddress, 
             firstPlace.placeAddress, 
-            accommodationTransport[day.id].transport
+            accommodationTransport[day.id].transport,
+            fromCoords,
+            toCoords
           )
         }
       }
     })
-  }, [selectedTrip, accommodationTransport])
+  }, [selectedTrip, accommodationTransport, accommodationCoordinates, placeCoordinates])
   
   // 전체 주차장 데이터 로드 (최초 1회)
   useEffect(() => {
@@ -642,7 +794,13 @@ const MyTripPage = () => {
     // cleanup
     return () => {
       setMapReady(false)
-      markersRef.current.forEach(marker => marker.setMap(null))
+      markersRef.current.forEach(marker => {
+        if (marker.type === 'overlay') {
+          marker.overlay.setMap(null)
+        } else {
+          marker.setMap(null)
+        }
+      })
       markersRef.current = []
       if (polylineRef.current) {
         // polylineRef가 배열인 경우 처리
@@ -660,8 +818,17 @@ const MyTripPage = () => {
   useEffect(() => {
     if (!mapRef.current || !selectedTrip || !mapReady) return
     
+    // 비동기 작업 취소 플래그
+    let isCancelled = false
+    
     // 기존 마커 제거
-    markersRef.current.forEach(marker => marker.setMap(null))
+    markersRef.current.forEach(marker => {
+      if (marker.type === 'overlay') {
+        marker.overlay.setMap(null)
+      } else {
+        marker.setMap(null)
+      }
+    })
     markersRef.current = []
     
     // 기존 경로선 제거
@@ -698,25 +865,67 @@ const MyTripPage = () => {
     
     // 장소들의 좌표를 조회하고 마커 추가
     const addMarkersAndRoute = async () => {
+      // 비동기 작업 중 취소되었는지 확인하는 헬퍼 함수
+      const checkCancelled = () => {
+        if (isCancelled) return true
+        return false
+      }
+      
       const bounds = new window.kakao.maps.LatLngBounds()
       const positions = []
-      const colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7', '#DDA0DD']
+      // 각 일차별 마커 색상 - 컴포넌트 상단의 dayColors 사용
+      
+      // 이동수단별 경로 색상 오프셋 (일차별 색상에서 변형)
+      // 도보: 회색 계열로 어둡게, 버스/지하철/자동차: 일차별 색상 유지
+      const transportColorModifiers = {
+        walk: { useGray: true, opacity: 0.7 },    // 도보: 회색 계열
+        bus: { darken: 0, opacity: 0.9 },         // 버스: 기본
+        subway: { darken: -20, opacity: 0.9 },    // 지하철: 약간 밝게
+        car: { darken: 20, opacity: 0.9 }         // 자동차: 약간 어둡게
+      }
+      
+      // 색상 조절 함수 (밝기 조절)
+      const adjustColor = (hexColor, amount) => {
+        const hex = hexColor.replace('#', '')
+        const r = Math.max(0, Math.min(255, parseInt(hex.slice(0, 2), 16) + amount))
+        const g = Math.max(0, Math.min(255, parseInt(hex.slice(2, 4), 16) + amount))
+        const b = Math.max(0, Math.min(255, parseInt(hex.slice(4, 6), 16) + amount))
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`
+      }
+      
+      // 일차와 이동수단에 따른 경로 색상 계산
+      const getRouteColor = (dayNumber, transportType) => {
+        const baseColor = getDayColor(dayNumber)
+        const modifier = transportColorModifiers[transportType] || transportColorModifiers.car
+        
+        if (modifier.useGray) {
+          return '#6B7280' // 도보는 회색으로 통일
+        }
+        
+        return adjustColor(baseColor, modifier.darken || 0)
+      }
       
       // 숙소 마커 추가 (2일차 이후가 펼쳐진 경우)
       const has2DayOrLater = placesToShow.some(p => p.dayNumber > 1)
       if (has2DayOrLater && selectedTrip.accommodationAddress) {
+        if (checkCancelled()) return // 취소 확인
         try {
           // 주소로 좌표 검색
           let accCoords = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          if (checkCancelled()) return // 비동기 후 취소 확인
           
           // 주소 검색 실패 시 숙소명 + 대전으로 재시도
           if (!accCoords.success && selectedTrip.accommodationName) {
             accCoords = await getCoordinatesFromAddress(`대전 ${selectedTrip.accommodationName}`)
+            if (checkCancelled()) return // 비동기 후 취소 확인
           }
           
           if (accCoords.success) {
             const accPosition = new window.kakao.maps.LatLng(accCoords.lat, accCoords.lng)
             bounds.extend(accPosition)
+            
+            // 숙소 좌표 캐시에 저장
+            setAccommodationCoordinates({ lat: accCoords.lat, lng: accCoords.lng })
             
             // 숙소 마커 생성 (집 아이콘)
             const accMarkerContent = document.createElement('div')
@@ -725,7 +934,7 @@ const MyTripPage = () => {
               <div class="marker-pin accommodation-pin">
                 <span class="marker-icon">🏨</span>
               </div>
-              <div class="marker-label accommodation-label">${selectedTrip.accommodationName}</div>
+              <div class="marker-label accommodation-label">${escapeHtml(selectedTrip.accommodationName)}</div>
             `
             
             const accOverlay = new window.kakao.maps.CustomOverlay({
@@ -743,13 +952,16 @@ const MyTripPage = () => {
       }
       
       for (const place of placesToShow) {
+        if (checkCancelled()) return // 각 장소 마커 처리 전 취소 확인
         try {
           // 주소로 좌표 검색
           let coords = await getCoordinatesFromAddress(place.placeAddress)
+          if (checkCancelled()) return // 비동기 후 취소 확인
           
           // 주소 검색 실패 시 장소명 + 대전으로 재시도
           if (!coords.success && place.placeName) {
             coords = await getCoordinatesFromAddress(`대전 ${place.placeName}`)
+            if (checkCancelled()) return // 비동기 후 취소 확인
           }
           
           if (coords.success) {
@@ -757,15 +969,21 @@ const MyTripPage = () => {
             positions.push(position)
             bounds.extend(position)
             
-            // 커스텀 마커 생성
-            const markerColor = colors[(place.dayNumber - 1) % colors.length]
+            // 좌표 캐시에 저장 (경로 검색 시 재사용)
+            setPlaceCoordinates(prev => ({
+              ...prev,
+              [place.id]: { lat: coords.lat, lng: coords.lng }
+            }))
+            
+            // 커스텀 마커 생성 (dayColors 사용)
+            const markerColor = getDayColor(place.dayNumber)
             const markerContent = document.createElement('div')
             markerContent.className = 'custom-map-marker'
             markerContent.innerHTML = `
               <div class="marker-pin" style="background-color: ${markerColor}">
                 <span class="marker-number">${place.orderInDay}</span>
               </div>
-              <div class="marker-label">${place.placeName}</div>
+              <div class="marker-label">${escapeHtml(place.placeName)}</div>
             `
             
             const customOverlay = new window.kakao.maps.CustomOverlay({
@@ -786,16 +1004,22 @@ const MyTripPage = () => {
       // 실제 도로 경로를 가져와서 그림
       const polylines = []
       
+      // routePolylinesRef 초기화 (탭 클릭 시 경로 하이라이트에 사용)
+      routePolylinesRef.current = {}
+      
       // 숙소 좌표 조회 (2일차 이후 사용)
       let accommodationCoords = null
       if (selectedTrip.accommodationAddress) {
+        if (checkCancelled()) return // 취소 확인
         try {
           // 주소로 좌표 검색
           let accResult = await getCoordinatesFromAddress(selectedTrip.accommodationAddress)
+          if (checkCancelled()) return // 비동기 후 취소 확인
           
           // 주소 검색 실패 시 숙소명 + 대전으로 재시도
           if (!accResult.success && selectedTrip.accommodationName) {
             accResult = await getCoordinatesFromAddress(`대전 ${selectedTrip.accommodationName}`)
+            if (checkCancelled()) return // 비동기 후 취소 확인
           }
           
           if (accResult.success) {
@@ -810,31 +1034,41 @@ const MyTripPage = () => {
       const sortedDays = Object.keys(dayPlaces).sort((a, b) => Number(a) - Number(b))
       
       for (const dayNum of sortedDays) {
+        if (checkCancelled()) return // 각 일차 처리 전 취소 확인
         const dayPlaceList = dayPlaces[dayNum]
         if (!dayPlaceList || dayPlaceList.length === 0) continue
         
-        const dayColor = colors[(Number(dayNum) - 1) % colors.length]
+        const dayColor = getDayColor(Number(dayNum))
+        
+        // 현재 일차의 dayId 찾기 (숙소 경로 정보에 사용)
+        const currentDayData = selectedTrip.days?.find(d => d.dayNumber === Number(dayNum))
+        const currentDayId = currentDayData?.id
         
         // 경로 시작점 결정
         let prevCoords = null
         let prevPlace = null // 이전 장소 정보 저장
+        let isFromAccommodation = false // 숙소에서 시작하는지 여부
         
         // 2일차 이후이고 숙소가 있으면 숙소에서 시작
         if (Number(dayNum) > 1 && accommodationCoords) {
           prevCoords = accommodationCoords
+          isFromAccommodation = true // 첫 번째 장소까지는 숙소에서 시작
         }
         
         // 일정 내 장소들 순회하며 실제 도로 경로 그리기
         for (let i = 0; i < dayPlaceList.length; i++) {
+          if (checkCancelled()) return // 각 장소 처리 전 취소 확인
           const place = dayPlaceList[i]
           
           try {
             // 주소로 좌표 검색
             let coords = await getCoordinatesFromAddress(place.placeAddress)
+            if (checkCancelled()) return // 비동기 후 취소 확인
             
             // 주소 검색 실패 시 장소명 + 대전으로 재시도
             if (!coords.success && place.placeName) {
               coords = await getCoordinatesFromAddress(`대전 ${place.placeName}`)
+              if (checkCancelled()) return // 비동기 후 취소 확인
             }
             
             if (coords.success) {
@@ -842,9 +1076,28 @@ const MyTripPage = () => {
               
               // 이전 좌표가 있으면 경로 그리기 (이전 장소 → 현재 장소)
               if (prevCoords) {
-                // 이전 장소의 transportToNext와 routeInfo를 사용해야 함
-                const prevRouteInfo = prevPlace ? routeInfo[prevPlace.id] : null
-                const transportType = prevPlace ? prevPlace.transportToNext : null
+                // 숙소에서 시작하는 경우 accommodationRouteInfo와 accommodationTransport 사용
+                // 그 외에는 이전 장소의 transportToNext와 routeInfo 사용
+                let prevRouteInfo, transportType
+                
+                if (isFromAccommodation && currentDayId) {
+                  // 숙소 → 첫 번째 장소
+                  prevRouteInfo = accommodationRouteInfo[currentDayId] || null
+                  transportType = accommodationTransport[currentDayId]?.transport || null
+                } else {
+                  // 장소 → 장소
+                  prevRouteInfo = prevPlace ? routeInfo[prevPlace.id] : null
+                  transportType = prevPlace ? prevPlace.transportToNext : null
+                }
+                
+                // 버스/지하철 경로가 로딩 중인 경우 경로 그리기 스킵 (로딩 완료 후 다시 그려짐)
+                if ((transportType === 'bus' || transportType === 'subway') && prevRouteInfo?.loading) {
+                  // 로딩 중이면 경로 그리기 스킵
+                  prevCoords = currentCoords
+                  prevPlace = place
+                  isFromAccommodation = false // 다음은 장소에서 시작
+                  continue
+                }
                 
                 // 버스/지하철 경로가 있는 경우 ODSay 좌표 사용
                 if ((transportType === 'bus' || transportType === 'subway') && 
@@ -914,15 +1167,114 @@ const MyTripPage = () => {
                           new window.kakao.maps.LatLng(walkEndCoord.lat, walkEndCoord.lng)
                         ]
                         
+                        // 경로 키 생성 (탭에서 클릭 시 하이라이트에 사용)
+                        const routeKey = isFromAccommodation ? `acc_${currentDayId}` : (prevPlace?.id || null)
+                        
+                        // 실제 보이는 도보 경로 (점선, 일차별 색상 + 투명도)
                         const walkPolyline = new window.kakao.maps.Polyline({
                           path: walkPath,
                           strokeWeight: 3,
-                          strokeColor: '#e74c3c', // 빨간색
-                          strokeOpacity: 0.8,
+                          strokeColor: dayColor, // 일차별 색상 적용
+                          strokeOpacity: 0.6, // 도보는 투명도 높여 구분
                           strokeStyle: 'dashed'
                         })
                         walkPolyline.setMap(mapRef.current)
                         polylines.push(walkPolyline)
+                        
+                        // 경로 키가 있으면 routePolylinesRef에 저장
+                        if (routeKey) {
+                          if (!routePolylinesRef.current[routeKey]) {
+                            routePolylinesRef.current[routeKey] = []
+                          }
+                          routePolylinesRef.current[routeKey].push(walkPolyline)
+                        }
+                        
+                        // 클릭/호버 감지용 폴리곤 생성
+                        const walkPolygonPath = createRoutePolygon(walkPath, 0.002)
+                        let walkClickPolygon = null
+                        if (walkPolygonPath) {
+                          walkClickPolygon = new window.kakao.maps.Polygon({
+                            path: walkPolygonPath,
+                            strokeWeight: 0,
+                            strokeOpacity: 0,
+                            fillColor: '#6B7280', // 도보 폴리곤: 회색
+                            fillOpacity: 0.01
+                          })
+                          walkClickPolygon.setMap(mapRef.current)
+                          polylines.push(walkClickPolygon) // 폴리곤도 정리 대상에 추가
+                          
+                          // 호버 효과: 마우스 올리면 경로 강조
+                          window.kakao.maps.event.addListener(walkClickPolygon, 'mouseover', function() {
+                            walkPolyline.setOptions({
+                              strokeWeight: 6,
+                              strokeOpacity: 1.0
+                            })
+                          })
+                          window.kakao.maps.event.addListener(walkClickPolygon, 'mouseout', function() {
+                            walkPolyline.setOptions({
+                              strokeWeight: 3,
+                              strokeOpacity: 0.8
+                            })
+                          })
+                        }
+                        
+                        // 도보 경로 클릭 정보 표시
+                        const walkInfoBox = new window.kakao.maps.CustomOverlay({
+                          content: `<div class="route-overlay" style="
+                            background: white;
+                            padding: 12px 16px;
+                            border-radius: 10px;
+                            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                            font-size: 13px;
+                            min-width: 150px;
+                            border-left: 4px solid #6B7280;
+                            z-index: 9999;
+                          ">
+                            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                              <div style="display:flex;align-items:center;gap:6px;color:#6B7280;font-weight:600;">
+                                🚶 도보 이동
+                              </div>
+                              <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
+                            </div>
+                            <div style="color:#666;">
+                              약 ${detail.sectionTime || 5}분
+                            </div>
+                          </div>`,
+                          position: new window.kakao.maps.LatLng(
+                            (walkStartCoord.lat + walkEndCoord.lat) / 2,
+                            (walkStartCoord.lng + walkEndCoord.lng) / 2
+                          ),
+                          yAnchor: 1.2,
+                          zIndex: 9999
+                        })
+                        
+                        // 폴리곤 클릭 이벤트로 토글
+                        let walkInfoVisible = false
+                        const currentWalkMap = mapRef.current
+                        // 클릭 시 하이라이트를 위한 정보 캡처
+                        const walkCapturedPlaceId = isFromAccommodation ? null : (prevPlace?.id || null)
+                        const walkCapturedDayId = currentDayId
+                        const walkCapturedIsAccommodation = isFromAccommodation
+                        
+                        if (walkClickPolygon) {
+                          window.kakao.maps.event.addListener(walkClickPolygon, 'click', function(mouseEvent) {
+                            // 해당 이동수단 섹션 하이라이트
+                            setHighlightedRoute({
+                              placeId: walkCapturedPlaceId,
+                              dayId: walkCapturedDayId,
+                              type: walkCapturedIsAccommodation ? 'accommodation' : 'place'
+                            })
+                            
+                            if (walkInfoVisible) {
+                              walkInfoBox.setMap(null)
+                            } else {
+                              walkInfoBox.setPosition(mouseEvent.latLng)
+                              walkInfoBox.setMap(currentWalkMap)
+                            }
+                            walkInfoVisible = !walkInfoVisible
+                          })
+                        }
+                        markersRef.current.push({ type: 'overlay', overlay: walkInfoBox })
                       }
                     } else if (detail.stationCoords && detail.stationCoords.length > 0) {
                       // 버스/지하철: 정류장/역 좌표로 경로 그리기
@@ -930,10 +1282,15 @@ const MyTripPage = () => {
                         new window.kakao.maps.LatLng(s.y, s.x)
                       )
                       
-                      const lineColor = detail.type === 'bus' 
-                        ? (detail.busColor || '#52c41a')
-                        : (detail.lineColor || '#1a5dc8')
+                      // 일차별 색상 적용 (버스/지하철 고유 색상 대신)
+                      const lineColor = dayColor
                       
+                      const lastIdx = detail.stationCoords.length - 1
+                      
+                      // 경로 키 생성 (탭에서 클릭 시 하이라이트에 사용)
+                      const transitRouteKey = isFromAccommodation ? `acc_${currentDayId}` : (prevPlace?.id || null)
+                      
+                      // 실제 보이는 경로 라인
                       const polyline = new window.kakao.maps.Polyline({
                         path: stationPath,
                         strokeWeight: 5,
@@ -944,67 +1301,115 @@ const MyTripPage = () => {
                       polyline.setMap(mapRef.current)
                       polylines.push(polyline)
                       
-                      // 출발 정류장/역 마커
-                      if (detail.startStation && detail.stationCoords[0]) {
-                        const startMarker = new window.kakao.maps.Marker({
-                          position: new window.kakao.maps.LatLng(detail.stationCoords[0].y, detail.stationCoords[0].x),
-                          map: mapRef.current,
-                          image: new window.kakao.maps.MarkerImage(
-                            detail.type === 'bus' 
-                              ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png'
-                              : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-                            new window.kakao.maps.Size(24, 35)
-                          ),
-                          title: `${detail.type === 'bus' ? '승차' : '승차'}: ${detail.startStation}`
+                      // 경로 키가 있으면 routePolylinesRef에 저장
+                      if (transitRouteKey) {
+                        if (!routePolylinesRef.current[transitRouteKey]) {
+                          routePolylinesRef.current[transitRouteKey] = []
+                        }
+                        routePolylinesRef.current[transitRouteKey].push(polyline)
+                      }
+                      
+                      // 클릭/호버 감지용 폴리곤 생성
+                      const busPolygonPath = createRoutePolygon(stationPath, 0.002)
+                      let busClickPolygon = null
+                      if (busPolygonPath) {
+                        busClickPolygon = new window.kakao.maps.Polygon({
+                          path: busPolygonPath,
+                          strokeWeight: 0,
+                          strokeOpacity: 0,
+                          fillColor: lineColor,
+                          fillOpacity: 0.01
                         })
-                        markersRef.current.push(startMarker)
+                        busClickPolygon.setMap(mapRef.current)
+                        polylines.push(busClickPolygon) // 폴리곤도 정리 대상에 추가
                         
-                        // 승차 정류장 인포윈도우
-                        const startInfoWindow = new window.kakao.maps.InfoWindow({
-                          content: `<div style="padding:8px;font-size:12px;min-width:120px;">
-                            <strong style="color:${detail.busColor || '#52c41a'}">${detail.busNo}</strong><br/>
-                            <span>승차: ${detail.startStation}</span><br/>
-                            <small>${detail.stationCount}정거장 (${detail.sectionTime}분)</small>
-                          </div>`
+                        // 호버 효과: 마우스 올리면 경로 강조
+                        window.kakao.maps.event.addListener(busClickPolygon, 'mouseover', function() {
+                          polyline.setOptions({
+                            strokeWeight: 8,
+                            strokeOpacity: 1.0
+                          })
                         })
-                        window.kakao.maps.event.addListener(startMarker, 'mouseover', () => {
-                          startInfoWindow.open(mapRef.current, startMarker)
-                        })
-                        window.kakao.maps.event.addListener(startMarker, 'mouseout', () => {
-                          startInfoWindow.close()
+                        window.kakao.maps.event.addListener(busClickPolygon, 'mouseout', function() {
+                          polyline.setOptions({
+                            strokeWeight: 5,
+                            strokeOpacity: 0.9
+                          })
                         })
                       }
                       
-                      // 도착 정류장/역 마커
-                      const lastIdx = detail.stationCoords.length - 1
-                      if (detail.endStation && detail.stationCoords[lastIdx]) {
-                        const endMarker = new window.kakao.maps.Marker({
-                          position: new window.kakao.maps.LatLng(detail.stationCoords[lastIdx].y, detail.stationCoords[lastIdx].x),
-                          map: mapRef.current,
-                          image: new window.kakao.maps.MarkerImage(
-                            detail.type === 'bus' 
-                              ? 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png'
-                              : 'https://t1.daumcdn.net/localimg/localimages/07/mapapidoc/markerStar.png',
-                            new window.kakao.maps.Size(24, 35)
-                          ),
-                          title: `${detail.type === 'bus' ? '하차' : '하차'}: ${detail.endStation}`
-                        })
-                        markersRef.current.push(endMarker)
-                        
-                        // 하차 정류장 인포윈도우
-                        const endInfoWindow = new window.kakao.maps.InfoWindow({
-                          content: `<div style="padding:8px;font-size:12px;min-width:120px;">
-                            <strong style="color:${detail.busColor || '#52c41a'}">${detail.busNo}</strong><br/>
-                            <span>하차: ${detail.endStation}</span>
-                          </div>`
-                        })
-                        window.kakao.maps.event.addListener(endMarker, 'mouseover', () => {
-                          endInfoWindow.open(mapRef.current, endMarker)
-                        })
-                        window.kakao.maps.event.addListener(endMarker, 'mouseout', () => {
-                          endInfoWindow.close()
+                      // 경로 정보 텍스트박스 (폴리곤 클릭 시 표시)
+                      const routeInfoBox = new window.kakao.maps.CustomOverlay({
+                        content: `<div class="route-overlay" style="
+                          background: white;
+                          padding: 14px 18px;
+                          border-radius: 12px;
+                          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                          font-size: 13px;
+                          min-width: 200px;
+                          border-left: 4px solid ${lineColor};
+                          z-index: 9999;
+                        ">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                              <span style="
+                                background:${lineColor};
+                                color:white;
+                                padding:3px 10px;
+                                border-radius:5px;
+                                font-weight:600;
+                                font-size:13px;
+                              ">${escapeHtml(detail.busNo || '')}</span>
+                              <span style="color:#666;font-size:12px;">${detail.type === 'bus' ? '버스' : '지하철'}</span>
+                            </div>
+                            <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
+                          </div>
+                          <div style="color:#333;line-height:1.6;">
+                            <div>🚏 승차: ${escapeHtml(detail.startStation || '')}</div>
+                            <div>🚏 하차: ${escapeHtml(detail.endStation || '')}</div>
+                          </div>
+                          <div style="color:#888;font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid #eee;">
+                            📍 ${detail.stationCount}정거장 · ⏱ ${detail.sectionTime}분
+                          </div>
+                        </div>`,
+                        position: new window.kakao.maps.LatLng(
+                          (detail.stationCoords[0].y + detail.stationCoords[lastIdx].y) / 2,
+                          (detail.stationCoords[0].x + detail.stationCoords[lastIdx].x) / 2
+                        ),
+                        yAnchor: 1.2,
+                        zIndex: 9999
+                      })
+                      
+                      // 폴리곤 클릭으로 토글
+                      let busInfoVisible = false
+                      const currentMap = mapRef.current // 클로저 문제 방지
+                      // 클릭 시 하이라이트를 위한 정보 캡처
+                      const capturedPlaceId = isFromAccommodation ? null : (prevPlace?.id || null)
+                      const capturedDayId = currentDayId
+                      const capturedIsAccommodation = isFromAccommodation
+                      
+                      if (busClickPolygon) {
+                        window.kakao.maps.event.addListener(busClickPolygon, 'click', function(mouseEvent) {
+                          // 해당 이동수단 섹션 하이라이트
+                          setHighlightedRoute({
+                            placeId: capturedPlaceId,
+                            dayId: capturedDayId,
+                            type: capturedIsAccommodation ? 'accommodation' : 'place'
+                          })
+                          
+                          if (busInfoVisible) {
+                            routeInfoBox.setMap(null)
+                          } else {
+                            // 클릭한 위치에 정보박스 표시
+                            routeInfoBox.setPosition(mouseEvent.latLng)
+                            routeInfoBox.setMap(currentMap)
+                          }
+                          busInfoVisible = !busInfoVisible
                         })
                       }
+                      
+                      // 정보박스를 ref에 저장하여 나중에 정리
+                      markersRef.current.push({ type: 'overlay', overlay: routeInfoBox })
                     } else if (detail.startX && detail.startY && detail.endX && detail.endY && detail.type !== 'walk') {
                       // 버스/지하철: 정류장 좌표가 없고 시작/끝 좌표만 있는 경우 직선 연결
                       const sectionPath = [
@@ -1035,6 +1440,28 @@ const MyTripPage = () => {
                       { lat: currentCoords.lat, lng: currentCoords.lng },
                       true // includePath = true로 경로 좌표 포함
                     )
+                    if (checkCancelled()) return // 비동기 후 취소 확인
+                    
+                    // 이동 정보 (있으면 사용)
+                    const duration = prevRouteInfo?.duration || routeResult.duration || 0
+                    const distance = prevRouteInfo?.distance || routeResult.distance || 0
+                    // 숙소에서 시작하는 경우 출발지 이름을 숙소명으로 설정
+                    const fromName = isFromAccommodation 
+                      ? (selectedTrip.accommodationName || '숙소') 
+                      : (prevPlace?.placeName || '출발지')
+                    const toName = place.placeName || '도착지'
+                    
+                    // 선택된 이동수단 가져오기
+                    const selectedTransport = transportType || 'car'
+                    const transportIcons = { car: '🚗', bus: '🚌', subway: '🚇', walk: '🚶' }
+                    const transportLabels = { car: '자동차', bus: '버스', subway: '지하철', walk: '도보' }
+                    const transportIcon = transportIcons[selectedTransport] || '🚗'
+                    const transportLabel = transportLabels[selectedTransport] || '자동차'
+                    // 일차별 + 이동수단별 경로 색상 적용
+                    const routeColor = getRouteColor(Number(dayNum), selectedTransport)
+                    
+                    // 경로 키 생성 (탭에서 클릭 시 하이라이트에 사용)
+                    const carRouteKey = isFromAccommodation ? `acc_${currentDayId}` : (prevPlace?.id || null)
                     
                     if (routeResult.success && routeResult.path && routeResult.path.length > 0) {
                       // 실제 도로 경로로 그리기
@@ -1042,15 +1469,117 @@ const MyTripPage = () => {
                         new window.kakao.maps.LatLng(p.lat, p.lng)
                       )
                       
+                      // 실제 보이는 경로 라인
                       const polyline = new window.kakao.maps.Polyline({
                         path: path,
                         strokeWeight: 4,
-                        strokeColor: dayColor,
+                        strokeColor: routeColor,
                         strokeOpacity: 0.8,
                         strokeStyle: 'solid'
                       })
                       polyline.setMap(mapRef.current)
                       polylines.push(polyline)
+                      
+                      // 경로 키가 있으면 routePolylinesRef에 저장
+                      if (carRouteKey) {
+                        if (!routePolylinesRef.current[carRouteKey]) {
+                          routePolylinesRef.current[carRouteKey] = []
+                        }
+                        routePolylinesRef.current[carRouteKey].push(polyline)
+                      }
+                      
+                      // 클릭/호버 감지용 폴리곤 생성
+                      const carPolygonPath = createRoutePolygon(path, 0.002)
+                      let carClickPolygon = null
+                      if (carPolygonPath) {
+                        carClickPolygon = new window.kakao.maps.Polygon({
+                          path: carPolygonPath,
+                          strokeWeight: 0,
+                          strokeOpacity: 0,
+                          fillColor: routeColor,
+                          fillOpacity: 0.01
+                        })
+                        carClickPolygon.setMap(mapRef.current)
+                        polylines.push(carClickPolygon) // 폴리곤도 정리 대상에 추가
+                        
+                        // 호버 효과: 마우스 올리면 경로 강조
+                        window.kakao.maps.event.addListener(carClickPolygon, 'mouseover', function() {
+                          polyline.setOptions({
+                            strokeWeight: 7,
+                            strokeOpacity: 1.0
+                          })
+                        })
+                        window.kakao.maps.event.addListener(carClickPolygon, 'mouseout', function() {
+                          polyline.setOptions({
+                            strokeWeight: 4,
+                            strokeOpacity: 0.8
+                          })
+                        })
+                      }
+                      
+                      // 경로 클릭 정보 (선택된 이동수단에 맞춰 표시)
+                      const midIdx = Math.floor(path.length / 2)
+                      const carInfoBox = new window.kakao.maps.CustomOverlay({
+                        content: `<div class="route-overlay" style="
+                          background: white;
+                          padding: 14px 18px;
+                          border-radius: 12px;
+                          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                          font-size: 13px;
+                          min-width: 180px;
+                          border-left: 4px solid ${routeColor};
+                          z-index: 9999;
+                          position: relative;
+                        ">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                            <div style="display:flex;align-items:center;gap:6px;color:${routeColor};font-weight:600;">
+                              ${transportIcon} ${transportLabel} 이동
+                            </div>
+                            <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
+                          </div>
+                          <div style="color:#333;font-size:12px;line-height:1.6;">
+                            <div>📍 ${escapeHtml(fromName)}</div>
+                            <div style="color:#888;padding-left:8px;">↓</div>
+                            <div>📍 ${escapeHtml(toName)}</div>
+                          </div>
+                          <div style="color:#666;margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:12px;">
+                            ${duration > 0 ? `⏱ 약 ${duration}분` : ''}${duration > 0 && distance > 0 ? ' · ' : ''}${distance > 0 ? `📏 ${(distance/1000).toFixed(1)}km` : ''}
+                          </div>
+                        </div>`,
+                        position: routeResult.path[midIdx] 
+                          ? new window.kakao.maps.LatLng(routeResult.path[midIdx].lat, routeResult.path[midIdx].lng)
+                          : new window.kakao.maps.LatLng((prevCoords.lat + currentCoords.lat) / 2, (prevCoords.lng + currentCoords.lng) / 2),
+                        yAnchor: 1.2,
+                        zIndex: 9999
+                      })
+                      
+                      // 폴리곤 클릭으로 토글
+                      let carInfoVisible = false
+                      const currentCarMap = mapRef.current
+                      // 클릭 시 하이라이트를 위한 정보 캡처
+                      const carCapturedPlaceId = isFromAccommodation ? null : (prevPlace?.id || null)
+                      const carCapturedDayId = currentDayId
+                      const carCapturedIsAccommodation = isFromAccommodation
+                      
+                      if (carClickPolygon) {
+                        window.kakao.maps.event.addListener(carClickPolygon, 'click', function(mouseEvent) {
+                          // 해당 이동수단 섹션 하이라이트
+                          setHighlightedRoute({
+                            placeId: carCapturedPlaceId,
+                            dayId: carCapturedDayId,
+                            type: carCapturedIsAccommodation ? 'accommodation' : 'place'
+                          })
+                          
+                          if (carInfoVisible) {
+                            carInfoBox.setMap(null)
+                          } else {
+                            carInfoBox.setPosition(mouseEvent.latLng)
+                            carInfoBox.setMap(currentCarMap)
+                          }
+                          carInfoVisible = !carInfoVisible
+                        })
+                      }
+                      markersRef.current.push({ type: 'overlay', overlay: carInfoBox })
                     } else {
                       // 실패 시 직선으로 연결
                       const path = [
@@ -1058,39 +1587,238 @@ const MyTripPage = () => {
                         new window.kakao.maps.LatLng(currentCoords.lat, currentCoords.lng)
                       ]
                       
+                      // 실제 보이는 점선
                       const polyline = new window.kakao.maps.Polyline({
                         path: path,
                         strokeWeight: 4,
-                        strokeColor: dayColor,
+                        strokeColor: routeColor,
                         strokeOpacity: 0.5,
-                        strokeStyle: 'dashed' // 직선은 점선으로 표시
+                        strokeStyle: 'dashed'
                       })
                       polyline.setMap(mapRef.current)
                       polylines.push(polyline)
+                      
+                      // 경로 키가 있으면 routePolylinesRef에 저장
+                      if (carRouteKey) {
+                        if (!routePolylinesRef.current[carRouteKey]) {
+                          routePolylinesRef.current[carRouteKey] = []
+                        }
+                        routePolylinesRef.current[carRouteKey].push(polyline)
+                      }
+                      
+                      // 클릭/호버 감지용 폴리곤
+                      const fallbackPolygonPath = createRoutePolygon(path, 0.002)
+                      let fallbackClickPolygon = null
+                      if (fallbackPolygonPath) {
+                        fallbackClickPolygon = new window.kakao.maps.Polygon({
+                          path: fallbackPolygonPath,
+                          strokeWeight: 0,
+                          strokeOpacity: 0,
+                          fillColor: routeColor,
+                          fillOpacity: 0.01
+                        })
+                        fallbackClickPolygon.setMap(mapRef.current)
+                        polylines.push(fallbackClickPolygon) // 폴리곤도 정리 대상에 추가
+                        
+                        // 호버 효과
+                        window.kakao.maps.event.addListener(fallbackClickPolygon, 'mouseover', function() {
+                          polyline.setOptions({
+                            strokeWeight: 7,
+                            strokeOpacity: 0.8
+                          })
+                        })
+                        window.kakao.maps.event.addListener(fallbackClickPolygon, 'mouseout', function() {
+                          polyline.setOptions({
+                            strokeWeight: 4,
+                            strokeOpacity: 0.5
+                          })
+                        })
+                      }
+                      
+                      // 직선 경로 클릭 정보
+                      const lineInfoBox = new window.kakao.maps.CustomOverlay({
+                        content: `<div class="route-overlay" style="
+                          background: white;
+                          padding: 14px 18px;
+                          border-radius: 12px;
+                          box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                          font-size: 13px;
+                          min-width: 160px;
+                          border-left: 4px solid ${routeColor};
+                          z-index: 9999;
+                        ">
+                          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                            <div style="color:${routeColor};font-weight:600;">
+                              ${transportIcon} ${transportLabel} 이동
+                            </div>
+                            <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
+                          </div>
+                          <div style="color:#333;font-size:12px;">
+                            ${escapeHtml(fromName)} → ${escapeHtml(toName)}
+                          </div>
+                        </div>`,
+                        position: new window.kakao.maps.LatLng(
+                          (prevCoords.lat + currentCoords.lat) / 2,
+                          (prevCoords.lng + currentCoords.lng) / 2
+                        ),
+                        yAnchor: 1.2,
+                        zIndex: 9999
+                      })
+                      
+                      // 폴리곤 클릭으로 토글
+                      let lineInfoVisible = false
+                      const currentFallbackMap = mapRef.current
+                      // 클릭 시 하이라이트를 위한 정보 캡처
+                      const fallbackCapturedPlaceId = isFromAccommodation ? null : (prevPlace?.id || null)
+                      const fallbackCapturedDayId = currentDayId
+                      const fallbackCapturedIsAccommodation = isFromAccommodation
+                      
+                      if (fallbackClickPolygon) {
+                        window.kakao.maps.event.addListener(fallbackClickPolygon, 'click', function(mouseEvent) {
+                          // 해당 이동수단 섹션 하이라이트
+                          setHighlightedRoute({
+                            placeId: fallbackCapturedPlaceId,
+                            dayId: fallbackCapturedDayId,
+                            type: fallbackCapturedIsAccommodation ? 'accommodation' : 'place'
+                          })
+                          
+                          if (lineInfoVisible) {
+                            lineInfoBox.setMap(null)
+                          } else {
+                            lineInfoBox.setPosition(mouseEvent.latLng)
+                            lineInfoBox.setMap(currentFallbackMap)
+                          }
+                          lineInfoVisible = !lineInfoVisible
+                        })
+                      }
+                      markersRef.current.push({ type: 'overlay', overlay: lineInfoBox })
                     }
                   } catch (routeErr) {
                     console.error('경로 조회 실패:', routeErr)
                     // 실패 시 직선으로 연결
+                    // 숙소에서 시작하는 경우 출발지 이름을 숙소명으로 설정
+                    const fromName = isFromAccommodation 
+                      ? (selectedTrip.accommodationName || '숙소') 
+                      : (prevPlace?.placeName || '출발지')
+                    const toName = place.placeName || '도착지'
+                    
+                    // 이동수단 정보
+                    const errorTransport = transportType || 'car'
+                    const errorTransportIcons = { car: '🚗', bus: '🚌', subway: '🚇', walk: '🚶' }
+                    const errorTransportLabels = { car: '자동차', bus: '버스', subway: '지하철', walk: '도보' }
+                    const errorIcon = errorTransportIcons[errorTransport] || '🚗'
+                    const errorLabel = errorTransportLabels[errorTransport] || '자동차'
+                    const errorColor = getRouteColor(Number(dayNum), errorTransport)
+                    
                     const path = [
                       new window.kakao.maps.LatLng(prevCoords.lat, prevCoords.lng),
                       new window.kakao.maps.LatLng(currentCoords.lat, currentCoords.lng)
                     ]
                     
+                    // 실제 보이는 점선
                     const polyline = new window.kakao.maps.Polyline({
                       path: path,
                       strokeWeight: 4,
-                      strokeColor: dayColor,
+                      strokeColor: errorColor,
                       strokeOpacity: 0.5,
                       strokeStyle: 'dashed'
                     })
                     polyline.setMap(mapRef.current)
                     polylines.push(polyline)
+                    
+                    // 클릭/호버 감지용 폴리곤
+                    const errorPolygonPath = createRoutePolygon(path, 0.002)
+                    let errorClickPolygon = null
+                    if (errorPolygonPath) {
+                      errorClickPolygon = new window.kakao.maps.Polygon({
+                        path: errorPolygonPath,
+                        strokeWeight: 0,
+                        strokeOpacity: 0,
+                        fillColor: errorColor,
+                        fillOpacity: 0.01
+                      })
+                      errorClickPolygon.setMap(mapRef.current)
+                      polylines.push(errorClickPolygon) // 폴리곤도 정리 대상에 추가
+                      
+                      // 호버 효과
+                      window.kakao.maps.event.addListener(errorClickPolygon, 'mouseover', function() {
+                        polyline.setOptions({
+                          strokeWeight: 7,
+                          strokeOpacity: 0.8
+                        })
+                      })
+                      window.kakao.maps.event.addListener(errorClickPolygon, 'mouseout', function() {
+                        polyline.setOptions({
+                          strokeWeight: 4,
+                          strokeOpacity: 0.5
+                        })
+                      })
+                    }
+                    
+                    // 직선 경로 클릭 정보
+                    const errorInfoBox = new window.kakao.maps.CustomOverlay({
+                      content: `<div class="route-overlay" style="
+                        background: white;
+                        padding: 14px 18px;
+                        border-radius: 12px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+                        font-size: 13px;
+                        min-width: 160px;
+                        border-left: 4px solid ${errorColor};
+                        z-index: 9999;
+                      ">
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                          <div style="color:${errorColor};font-weight:600;">
+                            ${errorIcon} ${errorLabel} 이동
+                          </div>
+                          <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
+                        </div>
+                        <div style="color:#333;font-size:12px;">
+                          ${escapeHtml(fromName)} → ${escapeHtml(toName)}
+                        </div>
+                      </div>`,
+                      position: new window.kakao.maps.LatLng(
+                        (prevCoords.lat + currentCoords.lat) / 2,
+                        (prevCoords.lng + currentCoords.lng) / 2
+                      ),
+                      yAnchor: 1.2,
+                      zIndex: 9999
+                    })
+                    
+                    // 폴리곤 클릭으로 토글
+                    let errorInfoVisible = false
+                    const currentErrorMap = mapRef.current
+                    // 클릭 시 하이라이트를 위한 정보 캡처
+                    const errorCapturedPlaceId = isFromAccommodation ? null : (prevPlace?.id || null)
+                    const errorCapturedDayId = currentDayId
+                    const errorCapturedIsAccommodation = isFromAccommodation
+                    
+                    if (errorClickPolygon) {
+                      window.kakao.maps.event.addListener(errorClickPolygon, 'click', function(mouseEvent) {
+                        // 해당 이동수단 섹션 하이라이트
+                        setHighlightedRoute({
+                          placeId: errorCapturedPlaceId,
+                          dayId: errorCapturedDayId,
+                          type: errorCapturedIsAccommodation ? 'accommodation' : 'place'
+                        })
+                        
+                        if (errorInfoVisible) {
+                          errorInfoBox.setMap(null)
+                        } else {
+                          errorInfoBox.setPosition(mouseEvent.latLng)
+                          errorInfoBox.setMap(currentErrorMap)
+                        }
+                        errorInfoVisible = !errorInfoVisible
+                      })
+                    }
+                    markersRef.current.push({ type: 'overlay', overlay: errorInfoBox })
                   }
                 }
               }
               
               prevCoords = currentCoords
               prevPlace = place // 이전 장소 정보 업데이트
+              isFromAccommodation = false // 첫 번째 장소 이후는 장소에서 시작
             }
           } catch (err) {
             console.error('좌표 조회 실패:', place.placeName, err)
@@ -1099,16 +1827,23 @@ const MyTripPage = () => {
       }
       
       // 기존 polylineRef 대신 polylines 배열 사용
-      polylineRef.current = polylines
-      
-      // 모든 마커가 보이도록 지도 범위 조정
-      if (positions.length > 0) {
-        mapRef.current.setBounds(bounds)
+      if (!isCancelled) {
+        polylineRef.current = polylines
+        
+        // 모든 마커가 보이도록 지도 범위 조정
+        if (positions.length > 0) {
+          mapRef.current.setBounds(bounds)
+        }
       }
     }
     
     addMarkersAndRoute()
-  }, [selectedTrip, expandedDays, mapReady, routeInfo, accommodationRouteInfo])
+    
+    // cleanup 함수 - 다음 effect 실행 또는 언마운트 시 호출
+    return () => {
+      isCancelled = true
+    }
+  }, [selectedTrip, expandedDays, mapReady, routeInfo, accommodationRouteInfo, accommodationTransport])
   
   // 장소 근처 주차장 조회 (5km 이내)
   const fetchNearbyParkings = async (placeId, address) => {
@@ -1199,12 +1934,29 @@ const MyTripPage = () => {
       return
     }
     
+    // 이동 전 경로에 영향받는 장소들의 ID 수집
+    const day = selectedTrip?.days?.find(d => d.id === dayId)
+    const affectedPlaceIds = new Set()
+    
+    if (day && day.places) {
+      // 영향받는 인덱스 범위 계산 (source와 target 사이 + 인접 장소)
+      const minIdx = Math.max(0, Math.min(sourceIndex, targetIndex) - 1)
+      const maxIdx = Math.min(day.places.length - 1, Math.max(sourceIndex, targetIndex))
+      
+      // 영향받는 범위의 모든 장소 ID 수집
+      for (let i = minIdx; i <= maxIdx; i++) {
+        if (day.places[i]) {
+          affectedPlaceIds.add(day.places[i].id)
+        }
+      }
+    }
+    
     // 로컬 상태 업데이트
     setSelectedTrip(prev => {
-      const newDays = prev.days.map(day => {
-        if (day.id !== dayId) return day
+      const newDays = prev.days.map(d => {
+        if (d.id !== dayId) return d
         
-        const newPlaces = [...day.places]
+        const newPlaces = [...d.places]
         const [movedPlace] = newPlaces.splice(sourceIndex, 1)
         newPlaces.splice(targetIndex, 0, movedPlace)
         
@@ -1214,14 +1966,33 @@ const MyTripPage = () => {
           orderIndex: idx
         }))
         
-        return { ...day, places: updatedPlaces }
+        return { ...d, places: updatedPlaces }
       })
       
       return { ...prev, days: newDays }
     })
     
+    // 영향받는 경로 정보만 삭제 (나머지는 유지)
+    setRouteInfo(prev => {
+      const newRouteInfo = { ...prev }
+      affectedPlaceIds.forEach(id => {
+        delete newRouteInfo[id]
+      })
+      return newRouteInfo
+    })
+    
+    // 2일차 이상에서 첫 번째 장소가 변경된 경우 숙소 경로도 재계산
+    const targetDay = selectedTrip?.days?.find(d => d.id === dayId)
+    if (targetDay && targetDay.dayNumber > 1 && (sourceIndex === 0 || targetIndex === 0)) {
+      // 첫 번째 장소가 변경되면 숙소 → 첫 번째 장소 경로 재계산 필요
+      setAccommodationRouteInfo(prev => {
+        const newInfo = { ...prev }
+        delete newInfo[dayId]
+        return newInfo
+      })
+    }
+    
     // DB 업데이트 (각 장소의 orderIndex 변경)
-    const day = selectedTrip?.days?.find(d => d.id === dayId)
     if (day) {
       const newPlaces = [...day.places]
       const [movedPlace] = newPlaces.splice(sourceIndex, 1)
@@ -1683,7 +2454,7 @@ const MyTripPage = () => {
                             
                             {/* 숙소에서 첫 번째 장소까지 교통수단 (장소가 있을 때만) */}
                             {day.places?.length > 0 && (
-                              <div className="transport-connector">
+                              <div className={`transport-connector ${highlightedRoute?.type === 'accommodation' && highlightedRoute?.dayId === day.id ? 'highlighted' : ''}`}>
                                 {editingAccommodationTransport === day.id ? (
                                   <div className="transport-selector">
                                     <span className="transport-label">
@@ -1717,7 +2488,15 @@ const MyTripPage = () => {
                                 ) : (
                                   <div 
                                     className="transport-display"
-                                    onClick={() => setEditingAccommodationTransport(day.id)}
+                                    onClick={() => {
+                                      // 지도에서 해당 경로 하이라이트
+                                      setHighlightedRoute({
+                                        placeId: null,
+                                        dayId: day.id,
+                                        type: 'accommodation'
+                                      })
+                                    }}
+                                    style={{ cursor: 'pointer' }}
                                   >
                                     <div className="transport-line" />
                                     <div className="transport-icon-wrapper">
@@ -1764,7 +2543,7 @@ const MyTripPage = () => {
                                                             <div key={detailIdx} className={`route-detail-item ${detail.type}`}>
                                                               {detail.type === 'bus' && (
                                                                 <>
-                                                                  <span className="route-badge bus" style={{ backgroundColor: detail.busColor || '#52c41a' }}>
+                                                                  <span className="route-badge bus" style={{ backgroundColor: getDayColor(day.dayNumber) }}>
                                                                     {detail.busNo}
                                                                   </span>
                                                                   <span className="route-stations">
@@ -1775,7 +2554,7 @@ const MyTripPage = () => {
                                                               )}
                                                               {detail.type === 'subway' && (
                                                                 <>
-                                                                  <span className="route-badge subway" style={{ backgroundColor: detail.lineColor || '#1a5dc8' }}>
+                                                                  <span className="route-badge subway" style={{ backgroundColor: getDayColor(day.dayNumber) }}>
                                                                     {detail.lineName}
                                                                   </span>
                                                                   <span className="route-stations">
@@ -1801,6 +2580,17 @@ const MyTripPage = () => {
                                                     </>
                                                   )}
                                                 </div>
+                                                {/* 편집 버튼 */}
+                                                <button
+                                                  className="transport-change-btn"
+                                                  onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    setEditingAccommodationTransport(day.id)
+                                                  }}
+                                                  title={language === 'ko' ? '이동수단 변경' : 'Change transport'}
+                                                >
+                                                  <FiEdit2 />
+                                                </button>
                                               </>
                                             )
                                           }
@@ -1808,8 +2598,14 @@ const MyTripPage = () => {
                                         })()
                                       ) : (
                                         <>
-                                          <FiPlus className="transport-add" />
-                                          <span className="transport-hint">
+                                          <FiPlus className="transport-add" onClick={(e) => {
+                                            e.stopPropagation()
+                                            setEditingAccommodationTransport(day.id)
+                                          }} />
+                                          <span className="transport-hint" onClick={(e) => {
+                                            e.stopPropagation()
+                                            setEditingAccommodationTransport(day.id)
+                                          }}>
                                             {language === 'ko' ? '이동 방법 추가' : 'Add transport'}
                                           </span>
                                         </>
@@ -1936,7 +2732,7 @@ const MyTripPage = () => {
                                 
                                 {/* 이동 방법 표시 (마지막 장소 제외) */}
                                 {idx < day.places.length - 1 && (
-                                  <div className="transport-connector">
+                                  <div className={`transport-connector ${highlightedRoute?.type === 'place' && highlightedRoute?.placeId === place.id ? 'highlighted' : ''}`}>
                                     {editingTransport?.dayId === day.id && editingTransport?.afterPlaceIndex === idx ? (
                                       <div className="transport-selector">
                                         <span className="transport-label">
@@ -1970,10 +2766,24 @@ const MyTripPage = () => {
                                     ) : (
                                       <div 
                                         className="transport-display"
-                                        onClick={() => setEditingTransport({ dayId: day.id, afterPlaceIndex: idx })}
+                                        onClick={() => {
+                                          // 지도에서 해당 경로 하이라이트
+                                          setHighlightedRoute({
+                                            placeId: place.id,
+                                            dayId: day.id,
+                                            type: 'place'
+                                          })
+                                        }}
+                                        style={{ cursor: 'pointer' }}
                                       >
                                         <div className="transport-line" />
-                                        <div className="transport-icon-wrapper">
+                                        <div 
+                                          className="transport-icon-wrapper"
+                                          onClick={!place.transportToNext ? (e) => {
+                                            e.stopPropagation()
+                                            setEditingTransport({ dayId: day.id, afterPlaceIndex: idx })
+                                          } : undefined}
+                                        >
                                           {place.transportToNext ? (
                                             (() => {
                                               const opt = transportOptions.find(o => o.id === place.transportToNext)
@@ -2017,18 +2827,34 @@ const MyTripPage = () => {
                                                                 <div key={detailIdx} className={`route-detail-item ${detail.type}`}>
                                                                   {detail.type === 'bus' && (
                                                                     <>
-                                                                      <span className="route-badge bus" style={{ backgroundColor: detail.busColor || '#52c41a' }}>
+                                                                      <span className="route-badge bus" style={{ backgroundColor: getDayColor(day.dayNumber) }}>
                                                                         {detail.busNo}
                                                                       </span>
                                                                       <span className="route-stations">
                                                                         {detail.startStation} → {detail.endStation}
                                                                         <small>({detail.stationCount}{language === 'ko' ? '정거장' : 'stops'})</small>
                                                                       </span>
+                                                                      {/* 같은 구간에서 이용 가능한 다른 버스들 표시 */}
+                                                                      {detail.availableBuses && detail.availableBuses.length > 1 && (
+                                                                        <span className="available-buses">
+                                                                          <small>
+                                                                            {language === 'ko' ? '또는 ' : 'or '}
+                                                                            {detail.availableBuses.slice(1, 4).map((bus, i) => (
+                                                                              <span key={i} className="alt-bus" style={{ backgroundColor: getDayColor(day.dayNumber), opacity: 0.7 }}>
+                                                                                {bus.busNo}
+                                                                              </span>
+                                                                            ))}
+                                                                            {detail.availableBuses.length > 4 && 
+                                                                              <span className="more-buses">+{detail.availableBuses.length - 4}</span>
+                                                                            }
+                                                                          </small>
+                                                                        </span>
+                                                                      )}
                                                                     </>
                                                                   )}
                                                                   {detail.type === 'subway' && (
                                                                     <>
-                                                                      <span className="route-badge subway" style={{ backgroundColor: detail.lineColor || '#1a5dc8' }}>
+                                                                      <span className="route-badge subway" style={{ backgroundColor: getDayColor(day.dayNumber) }}>
                                                                         {detail.lineName}
                                                                       </span>
                                                                       <span className="route-stations">
@@ -2046,6 +2872,33 @@ const MyTripPage = () => {
                                                               ))}
                                                             </div>
                                                           )}
+                                                          {/* 다른 경로 옵션 표시 (버스/지하철만) */}
+                                                          {info?.allRoutes && info.allRoutes.length > 1 && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
+                                                            <div className="route-alternatives">
+                                                              <div className="route-alternatives-header">
+                                                                <small>{language === 'ko' ? '다른 경로' : 'Other routes'} ({info.allRoutes.length - 1})</small>
+                                                              </div>
+                                                              <div className="route-alternatives-list">
+                                                                {info.allRoutes.slice(0, 5).map((route, routeIdx) => (
+                                                                  routeIdx !== (info.selectedRouteIndex || 0) && (
+                                                                    <button
+                                                                      key={routeIdx}
+                                                                      className="route-alternative-item"
+                                                                      onClick={(e) => {
+                                                                        e.stopPropagation()
+                                                                        handleSelectRoute(place.id, routeIdx)
+                                                                      }}
+                                                                    >
+                                                                      <span className="route-alt-time">{route.totalTime}분</span>
+                                                                      <span className="route-alt-summary">
+                                                                        {route.busSummary || route.subwaySummary || '-'}
+                                                                      </span>
+                                                                    </button>
+                                                                  )
+                                                                ))}
+                                                              </div>
+                                                            </div>
+                                                          )}
                                                           {info?.isEstimate && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
                                                             <small className="estimate-note">
                                                               {language === 'ko' ? ' (예상 시간)' : ' (estimated)'}
@@ -2054,6 +2907,17 @@ const MyTripPage = () => {
                                                         </>
                                                       )}
                                                     </div>
+                                                    {/* 바꾸기 버튼 */}
+                                                    <button 
+                                                      className="transport-change-btn"
+                                                      onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setEditingTransport({ dayId: day.id, afterPlaceIndex: idx })
+                                                      }}
+                                                      title={language === 'ko' ? '이동수단 바꾸기' : 'Change transport'}
+                                                    >
+                                                      <FiEdit2 />
+                                                    </button>
                                                   </>
                                                 )
                                               }

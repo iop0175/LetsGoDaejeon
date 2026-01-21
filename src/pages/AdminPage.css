@@ -63,6 +63,9 @@
 
 .form-group {
   margin-bottom: 20px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 12px;
 }
 
 .form-group label {
@@ -156,6 +159,14 @@
   position: fixed;
   height: 100vh;
   z-index: 100;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.admin-sidebar::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
 .admin-sidebar.closed {
@@ -197,6 +208,16 @@
   flex: 1;
   padding: 16px 12px;
   overflow-y: auto;
+}
+
+.sidebar-nav .nav-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 16px 16px 8px;
+  margin-top: 8px;
 }
 
 .sidebar-nav .nav-item {
@@ -330,6 +351,9 @@
   grid-template-columns: repeat(4, 1fr);
   gap: 24px;
   margin-bottom: 32px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 16px;
 }
 
 .stat-card {
@@ -492,6 +516,10 @@
   flex-direction: column;
   gap: 12px;
   margin-bottom: 24px;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 16px;
+
 }
 
 .api-call-item {
@@ -535,6 +563,13 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 24px;
+}
+
+.charts-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: #64748b;
+  font-size: 0.95rem;
 }
 
 .chart-card {
@@ -708,6 +743,18 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
 
+.setting-item {
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 12px;
+
+  margin-bottom: 16px;
+}
+
+.setting-item:last-child {
+  margin-bottom: 0;
+}
+
 .setting-item h3 {
   font-size: 1.1rem;
   margin-bottom: 16px;
@@ -721,74 +768,6 @@
 
 .setting-item p strong {
   color: #333;
-}
-
-/* 다크 모드 */
-[data-theme="dark"] .admin-page {
-  background: #0f0f23;
-}
-
-[data-theme="dark"] .admin-login-card,
-[data-theme="dark"] .stat-card,
-[data-theme="dark"] .info-card,
-[data-theme="dark"] .table-selector,
-[data-theme="dark"] .data-table-container,
-[data-theme="dark"] .coming-soon,
-[data-theme="dark"] .settings-content,
-[data-theme="dark"] .table-loading,
-[data-theme="dark"] .no-table-selected,
-[data-theme="dark"] .no-data {
-  background: #1a1a2e;
-}
-
-[data-theme="dark"] .login-header h1,
-[data-theme="dark"] .admin-header h1,
-[data-theme="dark"] .stat-value,
-[data-theme="dark"] .info-card h3,
-[data-theme="dark"] .table-selector h3,
-[data-theme="dark"] .data-table-container h3,
-[data-theme="dark"] .section-header h2,
-[data-theme="dark"] .setting-item h3 {
-  color: #ffffff;
-}
-
-[data-theme="dark"] .login-header p,
-[data-theme="dark"] .stat-label,
-[data-theme="dark"] .info-card p,
-[data-theme="dark"] .data-table td,
-[data-theme="dark"] .setting-item p,
-[data-theme="dark"] .coming-soon p {
-  color: #a0a0a0;
-}
-
-[data-theme="dark"] .form-group input {
-  background: #2a2a40;
-  border-color: #3a3a50;
-  color: white;
-}
-
-[data-theme="dark"] .admin-header {
-  background: #1a1a2e;
-  border-bottom-color: #2a2a40;
-}
-
-[data-theme="dark"] .table-btn {
-  background: #2a2a40;
-  border-color: #3a3a50;
-  color: #e0e0e0;
-}
-
-[data-theme="dark"] .data-table th {
-  background: #2a2a40;
-  color: #e0e0e0;
-}
-
-[data-theme="dark"] .data-table td {
-  border-bottom-color: #2a2a40;
-}
-
-[data-theme="dark"] .data-table tr:hover td {
-  background: #2a2a40;
 }
 
 /* 클릭 가능한 stat card */
@@ -955,6 +934,47 @@
 .admin-pagination .page-num.active {
   background: #1976d2;
   border-color: #1976d2;
+  color: white;
+}
+
+/* Admin 페이지네이션 다크모드 */
+.dark-theme .admin-pagination {
+  background: #0f172a;
+  border-top-color: #334155;
+}
+
+.dark-theme .admin-pagination .page-btn {
+  background: #1e293b;
+
+  color: #e2e8f0;
+}
+
+.dark-theme .admin-pagination .page-btn:hover:not(:disabled) {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #1e3a5f;
+}
+
+.dark-theme .admin-pagination .page-btn:disabled {
+  opacity: 0.4;
+  color: #64748b;
+}
+
+.dark-theme .admin-pagination .page-num {
+  background: #1e293b;
+
+  color: #e2e8f0;
+}
+
+.dark-theme .admin-pagination .page-num:hover {
+  border-color: #3b82f6;
+  color: #3b82f6;
+  background: #1e3a5f;
+}
+
+.dark-theme .admin-pagination .page-num.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: white;
 }
 
@@ -1266,9 +1286,10 @@
 }
 
 .hero-form-section {
-  background: white;
-  border-radius: 12px;
+  background: #f8fafc;
+  border-radius: 16px;
   padding: 24px;
+
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -1810,7 +1831,7 @@
   padding: 20px;
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+
 }
 
 .usage-icon {
@@ -1893,7 +1914,7 @@
   background: #f8fafc;
   border-radius: 8px;
   font-size: 0.875rem;
-  border: 1px solid #e2e8f0;
+
 }
 
 .table-name {
@@ -2018,6 +2039,10 @@
 /* 방문 차트 */
 .visit-chart-container {
   margin-bottom: 24px;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+
 }
 
 .visit-chart-header {
@@ -2115,6 +2140,10 @@
 /* 오늘의 방문 */
 .today-visits-container {
   margin-bottom: 20px;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+
 }
 
 .today-visits-container h4 {
@@ -2241,6 +2270,10 @@
 /* 인기 검색어 목록 */
 .popular-searches-container {
   margin-bottom: 24px;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+
 }
 
 .popular-searches-container h4,
@@ -2261,8 +2294,9 @@
   align-items: center;
   gap: 12px;
   padding: 12px 16px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  background: white;
   border-radius: 10px;
+
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -2296,6 +2330,10 @@
 /* 오늘의 검색어 */
 .today-searches-container {
   margin-bottom: 20px;
+  padding: 24px;
+  background: #f8fafc;
+  border-radius: 16px;
+
 }
 
 .today-searches-list {
@@ -2457,7 +2495,7 @@
 .api-stat-card {
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border-radius: 12px;
-  border: 1px solid #e2e8f0;
+
   overflow: hidden;
 }
 
@@ -2656,11 +2694,11 @@
 
 .dark-theme .api-stat-card {
   background: linear-gradient(135deg, #1e293b, #0f172a);
-  border-color: #334155;
+
 }
 
 .dark-theme .api-card-header {
-  border-color: #334155;
+
 }
 
 .dark-theme .api-card-header h4 {
@@ -2680,7 +2718,7 @@
 }
 
 .dark-theme .endpoint-stats {
-  border-color: #334155;
+
 }
 
 .dark-theme .endpoint-row span:first-child {
@@ -2693,12 +2731,1467 @@
 
 .dark-theme .api-card-footer {
   background: #0f172a;
-  border-color: #334155;
+
 }
 
 .dark-theme .api-stats-notice {
   background: #0f172a;
   color: #94a3b8;
+}
+
+/* ============================================
+   다크모드 기본 스타일
+   ============================================ */
+
+.dark-theme.admin-page {
+  background: #0f172a;
+}
+
+.dark-theme .admin-loading {
+  color: #e2e8f0;
+}
+
+.dark-theme .admin-login-card {
+  background: #1e293b;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .login-header h1 {
+  color: #f1f5f9;
+}
+
+.dark-theme .login-header p {
+  color: #94a3b8;
+}
+
+.dark-theme .form-group {
+  background: #0f172a;
+}
+
+.dark-theme .form-group label {
+  color: #e2e8f0;
+}
+
+.dark-theme .form-group input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .form-group input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.dark-theme .login-error {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+.dark-theme .admin-sidebar {
+  background: #0f172a;
+  border-right: 1px solid #1e293b;
+}
+
+.dark-theme .sidebar-header {
+  border-bottom-color: #1e293b;
+}
+
+.dark-theme .nav-btn {
+  color: #94a3b8;
+}
+
+.dark-theme .nav-btn:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-theme .nav-btn.active {
+  background: #1e293b;
+  color: #3b82f6;
+}
+
+.dark-theme .admin-main {
+  background: #0f172a;
+}
+
+.dark-theme .admin-header {
+  background: #1e293b;
+  border-bottom-color: #334155;
+}
+
+.dark-theme .page-title {
+  color: #f1f5f9;
+}
+
+.dark-theme .page-subtitle {
+  color: #94a3b8;
+}
+
+.dark-theme .admin-content {
+  background: #0f172a;
+}
+
+/* 대시보드 카드 */
+.dark-theme .stat-card {
+  background: #1e293b;
+
+}
+
+.dark-theme .stat-card .stat-label {
+  color: #94a3b8;
+}
+
+.dark-theme .stat-card .stat-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .stat-card .stat-sublabel {
+  color: #64748b;
+}
+
+/* 데이터 테이블 */
+.dark-theme .data-table {
+  background: #1e293b;
+}
+
+.dark-theme .data-table th {
+  background: #0f172a;
+  color: #e2e8f0;
+
+}
+
+.dark-theme .data-table td {
+  color: #cbd5e1;
+
+}
+
+.dark-theme .data-table tr:hover td {
+  background: #1e293b;
+}
+
+/* 차트 및 통계 섹션 */
+.dark-theme .stats-section,
+.dark-theme .chart-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .stats-section h3,
+.dark-theme .chart-section h3 {
+  color: #f1f5f9;
+}
+
+/* 히어로 슬라이드 관리 */
+.dark-theme .hero-card {
+  background: #1e293b;
+  border-color: #475569;
+}
+
+.dark-theme .hero-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .hero-card .hero-title {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card .hero-subtitle {
+  color: #94a3b8;
+}
+
+.dark-theme .hero-card-content h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card-content .subtitle {
+  color: #94a3b8;
+}
+
+.dark-theme .hero-card-meta {
+  color: #64748b;
+}
+
+.dark-theme .hero-card-actions {
+  background: #0f172a;
+  border-top-color: #334155;
+}
+
+.dark-theme .hero-card-actions .edit-btn {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+.dark-theme .hero-card-actions .edit-btn:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.dark-theme .hero-card-actions .delete-btn {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+.dark-theme .hero-card-actions .delete-btn:hover {
+  background: #991b1b;
+  color: white;
+}
+
+/* 폼 요소 */
+.dark-theme .admin-input,
+.dark-theme .admin-textarea,
+.dark-theme .admin-select {
+  background: #0f172a;
+
+  color: #f1f5f9;
+}
+
+.dark-theme .admin-input:focus,
+.dark-theme .admin-textarea:focus,
+.dark-theme .admin-select:focus {
+  border-color: #3b82f6;
+}
+
+/* 버튼 */
+.dark-theme .btn-secondary {
+  background: #334155;
+  color: #f1f5f9;
+  border-color: #475569;
+}
+
+.dark-theme .btn-secondary:hover {
+  background: #475569;
+}
+
+/* 모달 */
+.dark-theme .modal-overlay {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.dark-theme .modal-content {
+  background: #1e293b;
+}
+
+.dark-theme .modal-header {
+  border-bottom-color: #334155;
+}
+
+.dark-theme .modal-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .modal-footer {
+  border-top-color: #334155;
+}
+
+/* 페이지네이션 */
+.dark-theme .pagination {
+  background: #1e293b;
+}
+
+.dark-theme .pagination-btn {
+  background: #0f172a;
+
+  color: #94a3b8;
+}
+
+.dark-theme .pagination-btn:hover:not(:disabled) {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .pagination-btn.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* Supabase 사용량 */
+.dark-theme .supabase-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .supabase-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .supabase-stat-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .supabase-stat-card .stat-label {
+  color: #94a3b8;
+}
+
+.dark-theme .supabase-stat-card .stat-value {
+  color: #f1f5f9;
+}
+
+/* 페이지 방문 통계 */
+.dark-theme .visit-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .visit-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .visit-stat-item {
+  background: #0f172a;
+
+}
+
+.dark-theme .visit-stat-item .page-name {
+  color: #e2e8f0;
+}
+
+.dark-theme .visit-stat-item .visit-count {
+  color: #94a3b8;
+}
+
+/* 검색 통계 */
+.dark-theme .search-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .search-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .search-item {
+  background: #0f172a;
+
+}
+
+.dark-theme .search-item .search-query {
+  color: #e2e8f0;
+}
+
+.dark-theme .search-item .search-count {
+  color: #94a3b8;
+}
+
+/* 섹션 헤더 */
+.dark-theme .section-header {
+  border-bottom-color: #334155;
+}
+
+.dark-theme .section-header h3 {
+  color: #f1f5f9;
+}
+
+/* 탭 */
+.dark-theme .tab-btn {
+  color: #94a3b8;
+  border-color: transparent;
+}
+
+.dark-theme .tab-btn:hover {
+  color: #f1f5f9;
+}
+
+.dark-theme .tab-btn.active {
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+/* 백 버튼 */
+.dark-theme .back-btn {
+  color: #94a3b8;
+}
+
+.dark-theme .back-btn:hover {
+  background: #1e293b;
+  color: #3b82f6;
+}
+
+/* ============================================
+   추가 다크모드 스타일 - 누락된 섹션들
+   ============================================ */
+
+/* Admin Header 글자색 */
+.dark-theme .admin-header h1 {
+  color: #f1f5f9;
+}
+
+.dark-theme .admin-header .header-actions button {
+  color: #94a3b8;
+}
+
+.dark-theme .admin-header .header-actions button:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+/* API Stats Section */
+.dark-theme .api-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .api-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .api-stats-section .chart-container {
+  background: #0f172a;
+
+}
+
+.dark-theme .api-stat-item {
+  background: #0f172a;
+
+}
+
+.dark-theme .api-stat-item .stat-name {
+  color: #e2e8f0;
+}
+
+.dark-theme .api-stat-item .stat-count {
+  color: #94a3b8;
+}
+
+/* Supabase Usage Section */
+.dark-theme .supabase-usage-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .supabase-usage-section h3,
+.dark-theme .supabase-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .usage-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .usage-card .usage-label {
+  color: #94a3b8;
+}
+
+.dark-theme .usage-card .usage-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .usage-card .usage-limit {
+  color: #64748b;
+}
+
+/* Visit Stats Section */
+.dark-theme .visit-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .visit-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .visit-stat-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .visit-stat-card .page-name {
+  color: #e2e8f0;
+}
+
+.dark-theme .visit-stat-card .visit-count {
+  color: #94a3b8;
+}
+
+.dark-theme .visit-chart-container {
+  background: #0f172a;
+
+}
+
+/* Dashboard Section */
+.dark-theme .dashboard-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .dashboard-section h3,
+.dark-theme .section-title {
+  color: #f1f5f9;
+}
+
+.dark-theme .dashboard-card {
+  background: #0f172a;
+
+}
+
+/* Hero Form Section */
+.dark-theme .hero-form-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .hero-form-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-form {
+  background: #0f172a;
+
+}
+
+.dark-theme .hero-form label {
+  color: #e2e8f0;
+}
+
+.dark-theme .hero-form input,
+.dark-theme .hero-form textarea,
+.dark-theme .hero-form select {
+  background: #1e293b;
+
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-form input:focus,
+.dark-theme .hero-form textarea:focus,
+.dark-theme .hero-form select:focus {
+  border-color: #3b82f6;
+}
+
+.dark-theme .hero-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .hero-card .hero-info h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card .hero-info p {
+  color: #94a3b8;
+}
+
+/* Page Management */
+.dark-theme .page-management {
+  background: #1e293b;
+
+}
+
+.dark-theme .page-management h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .page-tabs {
+  background: #0f172a;
+
+}
+
+.dark-theme .page-tab {
+  color: #94a3b8;
+  background: transparent;
+}
+
+.dark-theme .page-tab:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-theme .page-tab.active {
+  background: #1e293b;
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.dark-theme .data-list {
+  background: #0f172a;
+
+}
+
+.dark-theme .data-item {
+  background: #1e293b;
+
+}
+
+.dark-theme .data-item:hover {
+  background: #334155;
+}
+
+.dark-theme .data-item .item-title {
+  color: #f1f5f9;
+}
+
+.dark-theme .data-item .item-desc {
+  color: #94a3b8;
+}
+
+/* Settings Content */
+.dark-theme .settings-content {
+  background: #1e293b;
+
+}
+
+.dark-theme .settings-content h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .setting-item {
+  background: #0f172a;
+
+}
+
+.dark-theme .setting-item h4 {
+  color: #e2e8f0;
+}
+
+.dark-theme .setting-item p {
+  color: #94a3b8;
+}
+
+.dark-theme .setting-item input,
+.dark-theme .setting-item select {
+  background: #1e293b;
+
+  color: #f1f5f9;
+}
+
+/* Database Section */
+.dark-theme .database-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .database-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .table-selector {
+  background: #0f172a;
+
+}
+
+.dark-theme .table-selector h4 {
+  color: #e2e8f0;
+}
+
+.dark-theme .table-btn {
+  background: #1e293b;
+
+  color: #94a3b8;
+}
+
+.dark-theme .table-btn:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .table-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.dark-theme .data-table-container {
+  background: #0f172a;
+
+}
+
+.dark-theme .data-table-container h4 {
+  color: #e2e8f0;
+}
+
+/* 검색 입력 */
+.dark-theme .search-input,
+.dark-theme .filter-input {
+  background: #1e293b;
+
+  color: #f1f5f9;
+}
+
+.dark-theme .search-input::placeholder,
+.dark-theme .filter-input::placeholder {
+  color: #64748b;
+}
+
+/* Info Cards */
+.dark-theme .info-card {
+  background: #1e293b;
+
+}
+
+.dark-theme .info-card h3,
+.dark-theme .info-card h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .info-card p {
+  color: #94a3b8;
+}
+
+/* Coming Soon / No Data */
+.dark-theme .coming-soon,
+.dark-theme .no-data,
+.dark-theme .no-table-selected,
+.dark-theme .table-loading {
+  background: #1e293b;
+  color: #94a3b8;
+}
+
+/* 리프레시 버튼 */
+.dark-theme .refresh-btn {
+  background: #334155;
+  color: #94a3b8;
+  border-color: #475569;
+}
+
+.dark-theme .refresh-btn:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+/* 섹션 헤더 */
+.dark-theme .section-header {
+  border-bottom-color: #334155;
+}
+
+.dark-theme .section-header h2,
+.dark-theme .section-header h3 {
+  color: #f1f5f9;
+}
+
+/* 액션 버튼들 */
+.dark-theme .action-btn {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .action-btn:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+.dark-theme .action-btn.delete {
+  color: #f87171;
+}
+
+.dark-theme .action-btn.delete:hover {
+  background: #450a0a;
+  color: #fca5a5;
+}
+
+/* 토글 스위치 */
+.dark-theme .toggle-label {
+  color: #e2e8f0;
+}
+
+/* 배지 */
+.dark-theme .badge {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .badge.success {
+  background: #065f46;
+  color: #6ee7b7;
+}
+
+.dark-theme .badge.warning {
+  background: #78350f;
+  color: #fcd34d;
+}
+
+.dark-theme .badge.error {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* ============================================
+   추가 다크모드 - page-header, hero-list, chart 등
+   ============================================ */
+
+/* Page Header */
+.dark-theme .page-header {
+  background: #0f172a;
+  border-bottom-color: #334155;
+}
+
+.dark-theme .page-header h2,
+.dark-theme .page-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .page-count {
+  color: #94a3b8;
+}
+
+.dark-theme .page-count strong {
+  color: #3b82f6;
+}
+
+.dark-theme .page-header-actions button {
+  background: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+.dark-theme .page-header-actions button:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+/* Hero List Section */
+.dark-theme .hero-list-section {
+  background: #1e293b;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .hero-list-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .hero-card:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .hero-card-content {
+  background: #0f172a;
+}
+
+.dark-theme .hero-card-content h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card-content p {
+  color: #94a3b8;
+}
+
+.dark-theme .hero-card-meta {
+  color: #64748b;
+}
+
+.dark-theme .hero-card-actions button {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .hero-card-actions button:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+.dark-theme .hero-card-actions button.delete:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* API Bar Container */
+.dark-theme .api-bar-container {
+  background: #334155;
+}
+
+.dark-theme .api-call-item .api-name {
+  color: #e2e8f0;
+}
+
+.dark-theme .api-call-item .api-count {
+  color: #3b82f6;
+}
+
+/* Chart Card */
+.dark-theme .chart-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .chart-card h4 {
+  color: #e2e8f0;
+}
+
+.dark-theme .charts-grid {
+  background: transparent;
+}
+
+.dark-theme .charts-empty {
+  color: #94a3b8;
+}
+
+/* Visit Stats - 페이지 방문 통계 추가 스타일 */
+.dark-theme .visit-stats-header {
+  color: #f1f5f9;
+}
+
+.dark-theme .visit-stats-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .period-filter-tabs {
+  background: #0f172a;
+
+}
+
+.dark-theme .period-tab {
+  color: #94a3b8;
+  background: transparent;
+}
+
+.dark-theme .period-tab:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-theme .period-tab.active {
+  background: #3b82f6;
+  color: white;
+}
+
+.dark-theme .visit-chart-header {
+  border-bottom-color: #334155;
+}
+
+.dark-theme .visit-chart-header h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .visit-chart-container h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .visit-list {
+  background: #0f172a;
+
+}
+
+.dark-theme .visit-item {
+  background: #1e293b;
+
+}
+
+.dark-theme .visit-item:hover {
+  background: #334155;
+}
+
+.dark-theme .visit-item .page-label {
+  color: #e2e8f0;
+}
+
+.dark-theme .visit-item .visit-count {
+  color: #3b82f6;
+}
+
+.dark-theme .visit-item .visit-bar {
+  background: #334155;
+}
+
+.dark-theme .visit-item .visit-bar-fill {
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+}
+
+/* 차트 레전드 */
+.dark-theme .chart-legend {
+  color: #94a3b8;
+}
+
+.dark-theme .chart-tooltip {
+  background: #1e293b;
+  color: #f1f5f9;
+
+}
+
+/* 총 방문수 카드 */
+.dark-theme .total-visits-card {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+}
+
+.dark-theme .today-visits-card {
+  background: linear-gradient(135deg, #065f46, #10b981);
+}
+
+/* 검색 통계 */
+.dark-theme .search-stats-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .search-keyword-list {
+  background: #0f172a;
+
+}
+
+.dark-theme .search-keyword-item {
+  background: #1e293b;
+
+}
+
+.dark-theme .search-keyword-item:hover {
+  background: #334155;
+}
+
+.dark-theme .search-keyword-item .keyword {
+  color: #e2e8f0;
+}
+
+.dark-theme .search-keyword-item .count {
+  color: #3b82f6;
+}
+
+/* ============================================
+   AdminPage 전체 다크모드 - 완전한 스타일
+   ============================================ */
+
+/* 사이드바 */
+.dark-theme .sidebar-footer {
+  background: #0f172a;
+  border-top-color: #1e293b;
+}
+
+.dark-theme .user-info {
+  color: #94a3b8;
+}
+
+.dark-theme .user-email {
+  color: #e2e8f0;
+}
+
+.dark-theme .logout-btn {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.dark-theme .logout-btn:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+.dark-theme .nav-section-title {
+  color: #64748b;
+}
+
+.dark-theme .nav-item {
+  color: #94a3b8;
+}
+
+.dark-theme .nav-item:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-theme .nav-item.active {
+  background: #3b82f6;
+  color: white;
+}
+
+/* 모바일 메뉴 버튼 */
+.dark-theme .mobile-menu-btn {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.dark-theme .mobile-menu-btn:hover {
+  background: #475569;
+}
+
+/* 통계 그리드 */
+.dark-theme .stats-grid {
+  background: #0f172a;
+}
+
+/* 상단 통계 카드 (최다 API, 최다 페이지) */
+.dark-theme .top-stats {
+  background: transparent;
+}
+
+.dark-theme .top-stat-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .top-stat-card .top-label {
+  color: #94a3b8;
+}
+
+.dark-theme .top-stat-card .top-value {
+  color: #e2e8f0;
+}
+
+.dark-theme .top-stat-card .top-value.empty {
+  color: #64748b;
+}
+
+.dark-theme .top-stat-card .top-value strong {
+  color: #3b82f6;
+}
+
+/* API 호출 목록 */
+.dark-theme .api-call-list {
+  background: #0f172a;
+
+}
+
+.dark-theme .api-call-item {
+  border-bottom-color: #334155;
+}
+
+/* API 통계 헤더 */
+.dark-theme .api-stats-header h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .reset-stats-btn {
+  background: #334155;
+  color: #94a3b8;
+  border-color: #475569;
+}
+
+.dark-theme .reset-stats-btn:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+/* 방문 통계 카드 (summary) */
+.dark-theme .visit-stats-summary {
+  background: transparent;
+}
+
+.dark-theme .visit-stat-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .visit-stat-card .visit-label {
+  color: #94a3b8;
+}
+
+.dark-theme .visit-stat-card .visit-value {
+  color: #e2e8f0;
+}
+
+.dark-theme .visit-stat-card .visit-value.empty {
+  color: #64748b;
+}
+
+.dark-theme .visit-stat-card .visit-value strong {
+  color: #3b82f6;
+}
+
+/* 방문 바 차트 */
+.dark-theme .visit-bar-chart {
+  background: #0f172a;
+
+}
+
+.dark-theme .visit-bar-item {
+  border-bottom-color: #334155;
+}
+
+.dark-theme .visit-bar-item .visit-page-name {
+  color: #e2e8f0;
+}
+
+.dark-theme .visit-bar-item .visit-count {
+  color: #3b82f6;
+}
+
+.dark-theme .visit-bar-item .visit-bar-container {
+  background: #334155;
+}
+
+/* 오늘 방문 */
+.dark-theme .today-visits-container {
+  background: #0f172a;
+
+}
+
+.dark-theme .today-visits-container h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .today-visits-grid {
+  background: transparent;
+}
+
+.dark-theme .today-visit-card {
+  background: #1e293b;
+
+}
+
+.dark-theme .today-visit-card .today-page-name {
+  color: #94a3b8;
+}
+
+.dark-theme .today-visit-card .today-visit-count {
+  color: #f1f5f9;
+}
+
+/* 검색 통계 섹션 */
+.dark-theme .search-stats-section {
+  background: #1e293b;
+
+}
+
+.dark-theme .search-stats-section h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .search-stats-summary {
+  background: transparent;
+}
+
+.dark-theme .search-stat-card {
+  background: #0f172a;
+
+}
+
+.dark-theme .search-stat-card .search-label {
+  color: #94a3b8;
+}
+
+.dark-theme .search-stat-card .search-value {
+  color: #e2e8f0;
+}
+
+.dark-theme .search-stat-card .search-value.empty {
+  color: #64748b;
+}
+
+.dark-theme .search-stat-card .search-value strong {
+  color: #3b82f6;
+}
+
+/* 인기 검색어 */
+.dark-theme .popular-searches-container {
+  background: #0f172a;
+
+}
+
+.dark-theme .popular-searches-container h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .popular-searches-list {
+  background: transparent;
+}
+
+.dark-theme .popular-search-item {
+  background: #1e293b;
+
+}
+
+.dark-theme .popular-search-item:hover {
+  background: #334155;
+}
+
+.dark-theme .popular-search-item .search-rank {
+  color: #3b82f6;
+}
+
+.dark-theme .popular-search-item .search-query {
+  color: #e2e8f0;
+}
+
+.dark-theme .popular-search-item .search-count {
+  color: #94a3b8;
+}
+
+/* 오늘 검색어 */
+.dark-theme .today-searches-container {
+  background: #0f172a;
+
+}
+
+.dark-theme .today-searches-container h4 {
+  color: #f1f5f9;
+}
+
+.dark-theme .today-searches-list {
+  background: transparent;
+}
+
+.dark-theme .today-search-tag {
+  background: #334155;
+  border-color: #475569;
+}
+
+.dark-theme .today-search-tag .tag-rank {
+  color: #3b82f6;
+}
+
+.dark-theme .today-search-tag .tag-query {
+  color: #e2e8f0;
+}
+
+.dark-theme .today-search-tag .tag-count {
+  color: #94a3b8;
+}
+
+/* No Data 텍스트 */
+.dark-theme .no-data-text {
+  color: #64748b;
+}
+
+/* 데이터 소스 탭 */
+.dark-theme .data-source-tabs {
+  background: #0f172a;
+
+}
+
+.dark-theme .source-tab {
+  background: transparent;
+  color: #94a3b8;
+  border-color: transparent;
+}
+
+.dark-theme .source-tab:hover {
+  background: #1e293b;
+  color: #f1f5f9;
+}
+
+.dark-theme .source-tab.active {
+  background: #1e293b;
+  color: #3b82f6;
+  border-color: #3b82f6;
+}
+
+.dark-theme .source-tab .source-count {
+  color: #64748b;
+}
+
+/* 벌크 저장 버튼 */
+.dark-theme .bulk-save-btn {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.dark-theme .bulk-save-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.dark-theme .bulk-save-btn:disabled {
+  background: #334155;
+  color: #64748b;
+}
+
+/* 퀵 링크 */
+.dark-theme .quick-links {
+  background: transparent;
+}
+
+.dark-theme .quick-link {
+  background: #334155;
+  color: #e2e8f0;
+  border-color: #475569;
+}
+
+.dark-theme .quick-link:hover {
+  background: #475569;
+  color: #f1f5f9;
+}
+
+/* Supabase 링크 */
+.dark-theme .supabase-link {
+  color: #3b82f6;
+}
+
+.dark-theme .supabase-link:hover {
+  color: #60a5fa;
+}
+
+/* 테이블 wrapper */
+.dark-theme .table-wrapper {
+  background: #0f172a;
+
+}
+
+/* 섹션들 */
+.dark-theme .users-section,
+.dark-theme .places-section,
+.dark-theme .events-section,
+.dark-theme .settings-section {
+  background: transparent;
+}
+
+/* Hero 관리 */
+.dark-theme .hero-management {
+  background: transparent;
+}
+
+.dark-theme .hero-loading {
+  color: #94a3b8;
+}
+
+.dark-theme .inactive-badge {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* 이미지 프리뷰 */
+.dark-theme .image-preview {
+  background: #0f172a;
+
+}
+
+/* 폼 액션 버튼 */
+.dark-theme .form-actions {
+  background: transparent;
+}
+
+.dark-theme .save-btn {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.dark-theme .save-btn:hover {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+}
+
+.dark-theme .cancel-btn {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.dark-theme .cancel-btn:hover {
+  background: #475569;
+}
+
+/* Hero 카드 버튼 */
+.dark-theme .edit-btn {
+  background: #334155;
+  color: #3b82f6;
+}
+
+.dark-theme .edit-btn:hover {
+  background: #3b82f6;
+  color: white;
+}
+
+.dark-theme .delete-btn {
+  background: #334155;
+  color: #f87171;
+}
+
+.dark-theme .delete-btn:hover {
+  background: #7f1d1d;
+  color: #fca5a5;
+}
+
+/* 페이지 로딩 */
+.dark-theme .page-loading {
+  color: #94a3b8;
+}
+
+/* 스피너 */
+.dark-theme .saving-spinner {
+  border-color: #475569;
+  border-top-color: #3b82f6;
+}
+
+/* 로딩 아이콘 */
+.dark-theme .loading-icon {
+  color: #3b82f6;
 }
 
 @media (max-width: 768px) {

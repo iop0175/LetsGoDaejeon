@@ -1134,6 +1134,34 @@
 .transport-connector {
   padding: 8px 0;
   margin-left: 20px;
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+/* 경로 클릭 시 하이라이트 스타일 */
+.transport-connector.highlighted {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+  border-left: 3px solid #3B82F6;
+  padding-left: 12px;
+  margin-left: 17px;
+  animation: highlight-pulse 1.5s ease-in-out;
+}
+
+@keyframes highlight-pulse {
+  0% {
+    background: rgba(59, 130, 246, 0.3);
+  }
+  50% {
+    background: rgba(59, 130, 246, 0.15);
+  }
+  100% {
+    background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+  }
+}
+
+.dark-theme .transport-connector.highlighted {
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.25), rgba(59, 130, 246, 0.1));
+  border-left-color: #60A5FA;
 }
 
 .transport-display {
@@ -1192,6 +1220,50 @@
   border-color: #38bdf8;
   background: #0c4a6e;
   color: #38bdf8;
+}
+
+/* 이동수단 바꾸기 버튼 */
+.transport-change-btn {
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: none;
+  background: #f1f5f9;
+  color: #64748b;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  transition: all 0.2s ease;
+  opacity: 0;
+}
+
+.transport-icon-wrapper {
+  position: relative;
+}
+
+.transport-icon-wrapper:hover .transport-change-btn {
+  opacity: 1;
+}
+
+.transport-change-btn:hover {
+  background: #0284c7;
+  color: white;
+}
+
+.dark-theme .transport-change-btn {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .transport-change-btn:hover {
+  background: #38bdf8;
+  color: #0f172a;
 }
 
 .transport-icon {
@@ -2387,4 +2459,112 @@
     padding: 3px 8px;
     min-width: 50px;
   }
+}
+
+/* ==================== 버스 노선 선택 스타일 ==================== */
+/* 같은 구간에서 이용 가능한 다른 버스들 */
+.available-buses {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.available-buses small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #64748b;
+}
+
+.alt-bus {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 10px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: white;
+}
+
+.more-buses {
+  color: #94a3b8;
+  font-size: 0.65rem;
+  margin-left: 2px;
+}
+
+/* 다른 경로 옵션 */
+.route-alternatives {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.dark-theme .route-alternatives {
+  border-top-color: #334155;
+}
+
+.route-alternatives-header {
+  margin-bottom: 8px;
+}
+
+.route-alternatives-header small {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.route-alternatives-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.route-alternative-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8rem;
+  text-align: left;
+}
+
+.dark-theme .route-alternative-item {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+.route-alternative-item:hover {
+  background: #e0f2fe;
+  border-color: #0284c7;
+}
+
+.dark-theme .route-alternative-item:hover {
+  background: #0c4a6e;
+  border-color: #38bdf8;
+}
+
+.route-alt-time {
+  font-weight: 600;
+  color: #0284c7;
+  min-width: 50px;
+}
+
+.dark-theme .route-alt-time {
+  color: #38bdf8;
+}
+
+.route-alt-summary {
+  color: #64748b;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dark-theme .route-alt-summary {
+  color: #94a3b8;
 }

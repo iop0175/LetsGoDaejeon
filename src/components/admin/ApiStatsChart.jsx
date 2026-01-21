@@ -1,5 +1,6 @@
 import { memo } from 'react'
 import { Chart } from 'react-google-charts'
+import { useTheme } from '../../context/ThemeContext'
 
 /**
  * API 호출 통계 차트 컴포넌트
@@ -10,6 +11,12 @@ const ApiStatsChart = memo(({
   pageConfigs, 
   language 
 }) => {
+  const { isDark } = useTheme()
+  
+  // 다크 모드 차트 색상 설정
+  const textColor = isDark ? '#e2e8f0' : '#333'
+  const legendTextColor = isDark ? '#94a3b8' : '#666'
+  
   // 데이터가 없으면 표시하지 않음
   const totalCalls = Object.values(apiCallStats).reduce((a, b) => a + (typeof b === 'number' ? b : 0), 0)
   
@@ -35,9 +42,13 @@ const ApiStatsChart = memo(({
           options={{
             pieHole: 0.4,
             colors: Object.keys(apiNames).map(key => pageConfigs[key]?.color || '#ccc'),
-            legend: { position: 'right' },
+            legend: { 
+              position: 'right',
+              textStyle: { color: legendTextColor, fontSize: 12 }
+            },
             chartArea: { width: '80%', height: '80%' },
-            backgroundColor: 'transparent'
+            backgroundColor: 'transparent',
+            pieSliceTextStyle: { color: '#fff' }
           }}
           width="100%"
           height="300px"
@@ -59,8 +70,14 @@ const ApiStatsChart = memo(({
           ]}
           options={{
             legend: 'none',
-            hAxis: { textStyle: { fontSize: 10 } },
-            vAxis: { title: language === 'ko' ? '호출 수' : 'Calls' },
+            hAxis: { 
+              textStyle: { color: textColor, fontSize: 10 }
+            },
+            vAxis: { 
+              title: language === 'ko' ? '호출 수' : 'Calls',
+              titleTextStyle: { color: textColor },
+              textStyle: { color: textColor }
+            },
             chartArea: { width: '85%', height: '70%' },
             backgroundColor: 'transparent'
           }}

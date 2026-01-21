@@ -111,95 +111,129 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
           subwayTransitCount: 0,
           routeDetails: [],
           noRoute: true,
+          allRoutes: [],
           error: `이용 가능한 ${routeTypeText} 노선이 없습니다`
         }
       }
       return { success: false, error: '경로를 찾을 수 없습니다' }
     }
     
-    // 최적 경로 선택 (첫 번째 결과)
+    // 경로 상세 정보 파싱 헬퍼 함수
+    const parseRouteDetails = (subPaths) => {
+      return subPaths.map(sub => {
+        if (sub.trafficType === 1) {
+          // 지하철
+          const stations = sub.passStopList?.stations || []
+          const stationCoords = stations.map(s => ({
+            name: s.stationName,
+            x: s.x,
+            y: s.y
+          }))
+          
+          return {
+            type: 'subway',
+            lineName: sub.lane?.[0]?.name || '지하철',
+            lineColor: sub.lane?.[0]?.subwayColor || '#1a5dc8',
+            startStation: sub.startName,
+            endStation: sub.endName,
+            stationCount: sub.stationCount,
+            sectionTime: sub.sectionTime,
+            distance: sub.distance,
+            startX: sub.startX,
+            startY: sub.startY,
+            endX: sub.endX,
+            endY: sub.endY,
+            stationCoords
+          }
+        } else if (sub.trafficType === 2) {
+          // 버스
+          const stations = sub.passStopList?.stations || []
+          const stationCoords = stations.map(s => ({
+            name: s.stationName,
+            x: s.x,
+            y: s.y
+          }))
+          
+          // 같은 구간에서 이용 가능한 버스들 (sub.lane에 여러 버스가 있을 수 있음)
+          const availableBuses = (sub.lane || []).map(bus => ({
+            busNo: bus.busNo || '버스',
+            busType: bus.type || 0,
+            busColor: getBusColor(bus.type),
+            busId: bus.busID
+          }))
+          
+          return {
+            type: 'bus',
+            busNo: sub.lane?.[0]?.busNo || '버스',
+            busType: sub.lane?.[0]?.type || 0,
+            busColor: getBusColor(sub.lane?.[0]?.type),
+            startStation: sub.startName,
+            endStation: sub.endName,
+            stationCount: sub.stationCount,
+            sectionTime: sub.sectionTime,
+            distance: sub.distance,
+            startX: sub.startX,
+            startY: sub.startY,
+            endX: sub.endX,
+            endY: sub.endY,
+            stationCoords,
+            availableBuses // 이용 가능한 모든 버스 노선
+          }
+        } else if (sub.trafficType === 3) {
+          // 도보
+          return {
+            type: 'walk',
+            sectionTime: sub.sectionTime,
+            distance: sub.distance,
+            startX: sub.startX,
+            startY: sub.startY,
+            endX: sub.endX,
+            endY: sub.endY
+          }
+        }
+        return null
+      }).filter(Boolean)
+    }
+    
+    // 최적 경로 (첫 번째 결과)
     const bestPath = data.result.path[0]
     const info = bestPath.info
+    const routeDetails = parseRouteDetails(bestPath.subPath || [])
     
-    // 경로 상세 정보 파싱
-    const subPaths = bestPath.subPath || []
-    
-    const routeDetails = subPaths.map(sub => {
-      if (sub.trafficType === 1) {
-        // 지하철
-        // 정류장 좌표 목록 추출
-        const stations = sub.passStopList?.stations || []
-        const stationCoords = stations.map(s => ({
-          name: s.stationName,
-          x: s.x,
-          y: s.y
-        }))
-        
-        return {
-          type: 'subway',
-          lineName: sub.lane?.[0]?.name || '지하철',
-          lineColor: sub.lane?.[0]?.subwayColor || '#1a5dc8',
-          startStation: sub.startName,
-          endStation: sub.endName,
-          stationCount: sub.stationCount,
-          sectionTime: sub.sectionTime,
-          distance: sub.distance,
-          startX: sub.startX,
-          startY: sub.startY,
-          endX: sub.endX,
-          endY: sub.endY,
-          stationCoords // 지하철역 좌표 목록
-        }
-      } else if (sub.trafficType === 2) {
-        // 버스
-        // 정류장 좌표 목록 추출
-        const stations = sub.passStopList?.stations || []
-        const stationCoords = stations.map(s => ({
-          name: s.stationName,
-          x: s.x,
-          y: s.y
-        }))
-        
-        return {
-          type: 'bus',
-          busNo: sub.lane?.[0]?.busNo || '버스',
-          busType: sub.lane?.[0]?.type || 0,
-          busColor: getBusColor(sub.lane?.[0]?.type),
-          startStation: sub.startName,
-          endStation: sub.endName,
-          stationCount: sub.stationCount,
-          sectionTime: sub.sectionTime,
-          distance: sub.distance,
-          startX: sub.startX,
-          startY: sub.startY,
-          endX: sub.endX,
-          endY: sub.endY,
-          stationCoords // 버스 정류장 좌표 목록
-        }
-      } else if (sub.trafficType === 3) {
-        // 도보
-        return {
-          type: 'walk',
-          sectionTime: sub.sectionTime,
-          distance: sub.distance,
-          startX: sub.startX,
-          startY: sub.startY,
-          endX: sub.endX,
-          endY: sub.endY
-        }
+    // 모든 경로 파싱 (버스 노선 선택을 위해)
+    const allRoutes = data.result.path.map((path, index) => {
+      const pathInfo = path.info
+      const pathDetails = parseRouteDetails(path.subPath || [])
+      return {
+        index,
+        totalTime: pathInfo.totalTime,
+        totalDistance: Math.round(pathInfo.totalDistance / 1000 * 10) / 10,
+        payment: pathInfo.payment,
+        busTransitCount: pathInfo.busTransitCount,
+        subwayTransitCount: pathInfo.subwayTransitCount,
+        routeDetails: pathDetails,
+        // 버스 노선 요약 (빠른 비교를 위해)
+        busSummary: pathDetails
+          .filter(d => d.type === 'bus')
+          .map(d => d.busNo)
+          .join(' → '),
+        subwaySummary: pathDetails
+          .filter(d => d.type === 'subway')
+          .map(d => d.lineName)
+          .join(' → ')
       }
-      return null
-    }).filter(Boolean)
+    })
     
     return {
       success: true,
-      totalTime: info.totalTime, // 총 소요 시간 (분)
-      totalDistance: Math.round(info.totalDistance / 1000 * 10) / 10, // 총 거리 (km)
-      payment: info.payment, // 요금
-      busTransitCount: info.busTransitCount, // 버스 환승 횟수
-      subwayTransitCount: info.subwayTransitCount, // 지하철 환승 횟수
-      mapObj: info.mapObj, // 경로 지도 표시용 객체
-      routeDetails, // 상세 경로 정보
+      totalTime: info.totalTime,
+      totalDistance: Math.round(info.totalDistance / 1000 * 10) / 10,
+      payment: info.payment,
+      busTransitCount: info.busTransitCount,
+      subwayTransitCount: info.subwayTransitCount,
+      mapObj: info.mapObj,
+      routeDetails,
+      allRoutes, // 모든 경로 옵션
       firstStartStation: info.firstStartStation,
       lastEndStation: info.lastEndStation
     }

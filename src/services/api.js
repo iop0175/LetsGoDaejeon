@@ -4,10 +4,9 @@ import { recordApiCall } from '../utils/apiStats';
 
 const API_KEY = import.meta.env.VITE_API_KEY;
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apis.data.go.kr/6300000/openapi2022';
-const EVENT_BASE_URL = 'https://apis.data.go.kr/6300000/eventDataService';
 
 // 한국관광공사 포토갤러리 API
-const KTO_PHOTO_API_KEY = import.meta.env.VITE_KTO_PHOTO_API_KEY || '0d31e44bb6b3d803f3eaef12d0d9f9bcfe9b5b0c8aae46a605e8402867ebef59';
+const KTO_PHOTO_API_KEY = import.meta.env.VITE_KTO_PHOTO_API_KEY;
 const KTO_PHOTO_BASE_URL = 'https://apis.data.go.kr/B551011/PhotoGalleryService1';
 
 // 기본 이미지 (이미지 없을 때 사용)

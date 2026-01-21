@@ -7,7 +7,7 @@ import './PolicyPage.css'
 
 const TermsPage = () => {
   const { language } = useLanguage()
-  const { isDarkMode } = useTheme()
+  const { isDark } = useTheme()
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -137,7 +137,7 @@ provided by To Daejeon, as well as the rights, obligations, and responsibilities
   const t = content[language] || content.ko
 
   return (
-    <div className={`policy-page ${isDarkMode ? 'dark-theme' : ''}`}>
+    <div className={`policy-page ${isDark ? 'dark-theme' : ''}`}>
       <div className="policy-container">
         <Link to="/" className="back-link">
           <FiArrowLeft />

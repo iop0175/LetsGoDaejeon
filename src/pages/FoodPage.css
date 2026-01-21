@@ -114,26 +114,26 @@
 }
 
 /* 다크 모드 */
-[data-theme="dark"] .location-filters {
+.dark-theme .location-filters {
   background: var(--card-bg);
   border-color: var(--border-color);
 }
 
-[data-theme="dark"] .district-btn,
-[data-theme="dark"] .dong-btn {
+.dark-theme .district-btn,
+.dark-theme .dong-btn {
   background: var(--card-bg);
   border-color: var(--border-color);
   color: var(--text-primary);
 }
 
-[data-theme="dark"] .district-btn:hover,
-[data-theme="dark"] .dong-btn:hover {
+.dark-theme .district-btn:hover,
+.dark-theme .dong-btn:hover {
   border-color: #ffab91;
   color: #ffab91;
 }
 
-[data-theme="dark"] .district-btn.active,
-[data-theme="dark"] .dong-btn.active {
+.dark-theme .district-btn.active,
+.dark-theme .dong-btn.active {
   background: var(--secondary-color);
   color: white;
   border-color: var(--secondary-color);

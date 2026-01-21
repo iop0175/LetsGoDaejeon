@@ -117,20 +117,66 @@ CREATE TABLE IF NOT EXISTS parking_lots (
   raw_data JSONB
 );
 
--- RLS (Row Level Security) 활성화 (선택사항)
--- ALTER TABLE travel_spots ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE festivals ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE cultural_facilities ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE medical_facilities ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE shopping_places ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE accommodations ENABLE ROW LEVEL SECURITY;
--- ALTER TABLE parking_lots ENABLE ROW LEVEL SECURITY;
+-- ============================================================
+-- RLS (Row Level Security) 설정 - 공개 데이터 테이블
+-- 이 테이블들은 모든 사용자가 읽을 수 있어야 함
+-- ============================================================
 
--- 인증된 사용자만 CRUD 가능한 정책 (선택사항)
--- CREATE POLICY "Enable all for authenticated users" ON travel_spots
---   FOR ALL TO authenticated USING (true) WITH CHECK (true);
--- (다른 테이블에도 동일하게 적용)
+-- travel_spots RLS
+ALTER TABLE travel_spots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read travel_spots" ON travel_spots FOR SELECT USING (true);
+CREATE POLICY "Service role can insert travel_spots" ON travel_spots FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update travel_spots" ON travel_spots FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete travel_spots" ON travel_spots FOR DELETE USING (true);
+
+-- festivals RLS
+ALTER TABLE festivals ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read festivals" ON festivals FOR SELECT USING (true);
+CREATE POLICY "Service role can insert festivals" ON festivals FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update festivals" ON festivals FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete festivals" ON festivals FOR DELETE USING (true);
+
+-- restaurants RLS
+ALTER TABLE restaurants ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read restaurants" ON restaurants FOR SELECT USING (true);
+CREATE POLICY "Service role can insert restaurants" ON restaurants FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update restaurants" ON restaurants FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete restaurants" ON restaurants FOR DELETE USING (true);
+
+-- cultural_facilities RLS
+ALTER TABLE cultural_facilities ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read cultural_facilities" ON cultural_facilities FOR SELECT USING (true);
+CREATE POLICY "Service role can insert cultural_facilities" ON cultural_facilities FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update cultural_facilities" ON cultural_facilities FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete cultural_facilities" ON cultural_facilities FOR DELETE USING (true);
+
+-- medical_facilities RLS
+ALTER TABLE medical_facilities ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read medical_facilities" ON medical_facilities FOR SELECT USING (true);
+CREATE POLICY "Service role can insert medical_facilities" ON medical_facilities FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update medical_facilities" ON medical_facilities FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete medical_facilities" ON medical_facilities FOR DELETE USING (true);
+
+-- shopping_places RLS
+ALTER TABLE shopping_places ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read shopping_places" ON shopping_places FOR SELECT USING (true);
+CREATE POLICY "Service role can insert shopping_places" ON shopping_places FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update shopping_places" ON shopping_places FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete shopping_places" ON shopping_places FOR DELETE USING (true);
+
+-- accommodations RLS
+ALTER TABLE accommodations ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read accommodations" ON accommodations FOR SELECT USING (true);
+CREATE POLICY "Service role can insert accommodations" ON accommodations FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update accommodations" ON accommodations FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete accommodations" ON accommodations FOR DELETE USING (true);
+
+-- parking_lots RLS
+ALTER TABLE parking_lots ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read parking_lots" ON parking_lots FOR SELECT USING (true);
+CREATE POLICY "Service role can insert parking_lots" ON parking_lots FOR INSERT WITH CHECK (true);
+CREATE POLICY "Service role can update parking_lots" ON parking_lots FOR UPDATE USING (true);
+CREATE POLICY "Service role can delete parking_lots" ON parking_lots FOR DELETE USING (true);
 
 -- 인덱스 생성 (검색 성능 향상)
 CREATE INDEX IF NOT EXISTS idx_travel_spots_name ON travel_spots("tourspotNm");
@@ -275,6 +321,11 @@ CREATE INDEX IF NOT EXISTS idx_hero_slides_active ON hero_slides(is_active, sort
 ALTER TABLE hero_slides ADD COLUMN IF NOT EXISTS image_author TEXT;
 ALTER TABLE hero_slides ADD COLUMN IF NOT EXISTS image_source TEXT;
 
+-- hero_slides RLS
+ALTER TABLE hero_slides ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read hero_slides" ON hero_slides FOR SELECT USING (true);
+CREATE POLICY "Service role can manage hero_slides" ON hero_slides FOR ALL USING (true) WITH CHECK (true);
+
 -- ============================================================
 -- 10. 페이지 방문 통계 테이블
 -- ============================================================
@@ -291,6 +342,12 @@ CREATE TABLE IF NOT EXISTS page_visits (
 -- 페이지 방문 통계 인덱스
 CREATE INDEX IF NOT EXISTS idx_page_visits_date ON page_visits(visit_date DESC);
 CREATE INDEX IF NOT EXISTS idx_page_visits_page ON page_visits(page_name, visit_date);
+
+-- page_visits RLS (익명 사용자도 방문 기록 추가 가능)
+ALTER TABLE page_visits ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read page_visits" ON page_visits FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert page_visits" ON page_visits FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update page_visits" ON page_visits FOR UPDATE USING (true);
 
 -- ============================================================
 -- 11. 검색 기록 테이블
@@ -309,6 +366,12 @@ CREATE TABLE IF NOT EXISTS search_logs (
 CREATE INDEX IF NOT EXISTS idx_search_logs_date ON search_logs(search_date DESC);
 CREATE INDEX IF NOT EXISTS idx_search_logs_query ON search_logs(search_query, search_date);
 CREATE INDEX IF NOT EXISTS idx_search_logs_count ON search_logs(search_count DESC);
+
+-- search_logs RLS (익명 사용자도 검색 기록 추가 가능)
+ALTER TABLE search_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read search_logs" ON search_logs FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert search_logs" ON search_logs FOR INSERT WITH CHECK (true);
+CREATE POLICY "Anyone can update search_logs" ON search_logs FOR UPDATE USING (true);
 
 -- ============================================================
 -- 12. 여행 계획 테이블 (Trip Plans)
@@ -428,3 +491,128 @@ CREATE POLICY "Users can manage their trip places"
       AND trip_plans.user_id = auth.uid()
     )
   );
+
+-- ============================================================
+-- 16. 경로 캐시 테이블 (Route Cache)
+-- API 호출을 최소화하기 위해 경로 정보를 캐싱
+-- ============================================================
+CREATE TABLE IF NOT EXISTS route_cache (
+  id SERIAL PRIMARY KEY,
+  -- 출발지/도착지 좌표 (소수점 4자리까지 반올림하여 근사 매칭)
+  origin_lat DECIMAL(8, 4) NOT NULL,
+  origin_lng DECIMAL(9, 4) NOT NULL,
+  dest_lat DECIMAL(8, 4) NOT NULL,
+  dest_lng DECIMAL(9, 4) NOT NULL,
+  -- 이동수단 (car, bus, subway, walk)
+  transport_type TEXT NOT NULL,
+  -- 경로 정보
+  duration INTEGER, -- 소요시간 (분)
+  distance INTEGER, -- 거리 (미터)
+  payment INTEGER, -- 요금 (원)
+  -- 상세 경로 데이터 (JSON)
+  route_details JSONB, -- 버스/지하철 상세 정보 [{type, busNo, startStation, endStation, ...}]
+  all_routes JSONB, -- 모든 경로 옵션 [{totalTime, busSummary, subwaySummary, routeDetails, ...}]
+  path_data JSONB, -- 자동차 경로 좌표 [{lat, lng}, ...]
+  -- 상태
+  is_estimate BOOLEAN DEFAULT false, -- 예상 시간인지 여부
+  no_route BOOLEAN DEFAULT false, -- 노선 없음 여부
+  -- 메타데이터
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  hit_count INTEGER DEFAULT 1, -- 조회 횟수 (인기 경로 파악)
+  -- 복합 유니크 인덱스를 위한 제약
+  UNIQUE(origin_lat, origin_lng, dest_lat, dest_lng, transport_type)
+);
+
+-- 경로 캐시 인덱스
+CREATE INDEX IF NOT EXISTS idx_route_cache_coords ON route_cache(origin_lat, origin_lng, dest_lat, dest_lng);
+CREATE INDEX IF NOT EXISTS idx_route_cache_transport ON route_cache(transport_type);
+CREATE INDEX IF NOT EXISTS idx_route_cache_updated ON route_cache(updated_at);
+
+-- 경로 캐시 updated_at 트리거
+DROP TRIGGER IF EXISTS update_route_cache_updated_at ON route_cache;
+CREATE TRIGGER update_route_cache_updated_at
+  BEFORE UPDATE ON route_cache
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- 오래된 캐시 삭제 함수 (30일 이상 미사용)
+CREATE OR REPLACE FUNCTION cleanup_old_route_cache()
+RETURNS INTEGER AS $$
+DECLARE
+  deleted_count INTEGER;
+BEGIN
+  DELETE FROM route_cache
+  WHERE updated_at < NOW() - INTERVAL '30 days';
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql;
+
+-- ============================================================
+-- 17. 좌표 캐시 테이블 (Coordinate Cache)
+-- 주소 → 좌표 변환 결과를 캐싱하여 API 호출 최소화
+-- ============================================================
+CREATE TABLE IF NOT EXISTS coordinate_cache (
+  id SERIAL PRIMARY KEY,
+  -- 검색 주소 (정규화된 형태로 저장)
+  address TEXT UNIQUE NOT NULL,
+  -- 좌표
+  lat DECIMAL(10, 7) NOT NULL,
+  lng DECIMAL(10, 7) NOT NULL,
+  -- 장소명 (있는 경우)
+  place_name TEXT,
+  -- 메타데이터
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  hit_count INTEGER DEFAULT 1
+);
+
+-- 좌표 캐시 인덱스
+CREATE INDEX IF NOT EXISTS idx_coordinate_cache_address ON coordinate_cache(address);
+
+-- 좌표 캐시 updated_at 트리거
+DROP TRIGGER IF EXISTS update_coordinate_cache_updated_at ON coordinate_cache;
+CREATE TRIGGER update_coordinate_cache_updated_at
+  BEFORE UPDATE ON coordinate_cache
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
+-- 18. 캐시 테이블 RLS 정책 (Row Level Security)
+-- 경로 캐시와 좌표 캐시는 모든 사용자가 읽고 쓸 수 있어야 함
+-- ============================================================
+
+-- route_cache RLS 활성화 및 정책
+ALTER TABLE route_cache ENABLE ROW LEVEL SECURITY;
+
+-- 모든 사용자(익명 포함)가 읽을 수 있음
+CREATE POLICY "Anyone can read route cache"
+  ON route_cache FOR SELECT
+  USING (true);
+
+-- 모든 사용자(익명 포함)가 삽입할 수 있음
+CREATE POLICY "Anyone can insert route cache"
+  ON route_cache FOR INSERT
+  WITH CHECK (true);
+
+-- 모든 사용자(익명 포함)가 업데이트할 수 있음 (hit_count 등)
+CREATE POLICY "Anyone can update route cache"
+  ON route_cache FOR UPDATE
+  USING (true);
+
+-- coordinate_cache RLS 활성화 및 정책
+ALTER TABLE coordinate_cache ENABLE ROW LEVEL SECURITY;
+
+-- 모든 사용자(익명 포함)가 읽을 수 있음
+CREATE POLICY "Anyone can read coordinate cache"
+  ON coordinate_cache FOR SELECT
+  USING (true);
+
+-- 모든 사용자(익명 포함)가 삽입할 수 있음
+CREATE POLICY "Anyone can insert coordinate cache"
+  ON coordinate_cache FOR INSERT
+  WITH CHECK (true);
+
+-- 모든 사용자(익명 포함)가 업데이트할 수 있음 (hit_count 등)
+CREATE POLICY "Anyone can update coordinate cache"
+  ON coordinate_cache FOR UPDATE
+  USING (true);

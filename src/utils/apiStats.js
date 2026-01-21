@@ -30,7 +30,8 @@ const initStats = () => ({
     accommodation: 0,
     parking: 0,
     map: 0,
-    search: 0
+    search: 0,
+    'my-trip': 0
   }
 })
 
@@ -105,7 +106,8 @@ export const PAGE_NAMES = {
   accommodation: '숙박',
   parking: '주차장',
   map: '지도',
-  search: '검색'
+  search: '검색',
+  'my-trip': '나의여행'
 }
 
 // 가장 많이 호출된 API 찾기

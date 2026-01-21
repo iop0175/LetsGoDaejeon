@@ -8,6 +8,7 @@ import {
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
+import { useTheme } from '../context/ThemeContext'
 import { 
   getTourSpots, getFestivals, getRestaurants, getCulturalFacilities,
   getMedicalFacilities, getShoppingPlaces, getTourRooms, getDaejeonParking
@@ -110,6 +111,7 @@ const PAGE_CONFIGS = {
 const AdminPage = () => {
   const { user, loading, login, logout, supabase } = useAuth()
   const { language } = useLanguage()
+  const { isDark } = useTheme()
   const navigate = useNavigate()
   
   const [email, setEmail] = useState('')
@@ -996,7 +998,7 @@ const AdminPage = () => {
   // 로딩 중
   if (loading) {
     return (
-      <div className="admin-page">
+      <div className={`admin-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="admin-loading">
           <div className="loading-spinner"></div>
           <p>{language === 'ko' ? '로딩 중...' : 'Loading...'}</p>
@@ -1008,7 +1010,7 @@ const AdminPage = () => {
   // 로그인 안 됨
   if (!user) {
     return (
-      <div className="admin-page">
+      <div className={`admin-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="admin-login-container">
           <div className="admin-login-card">
             <div className="login-header">
@@ -1068,7 +1070,7 @@ const AdminPage = () => {
   
   // 관리자 대시보드
   return (
-    <div className="admin-page">
+    <div className={`admin-page ${isDark ? 'dark-theme' : ''}`}>
       {/* 사이드바 */}
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">

@@ -856,5 +856,302 @@ export const getSearchStats = async () => {
   }
 }
 
-export { TABLE_CONFIGS }
+// ============================================================
+// 경로 캐시 관련 함수
+// API 호출을 최소화하기 위해 경로 정보를 DB에 캐싱
+// ============================================================
 
+/**
+ * 좌표를 소수점 4자리로 반올림 (약 11m 오차 허용)
+ */
+const roundCoord = (coord) => Math.round(coord * 10000) / 10000
+
+/**
+ * 캐시에서 경로 정보 조회
+ * @param {Object} origin - 출발지 { lat, lng }
+ * @param {Object} dest - 도착지 { lat, lng }
+ * @param {string} transportType - 이동수단 (car, bus, subway, walk)
+ * @returns {Promise<Object|null>} 캐시된 경로 정보 또는 null
+ */
+export const getRouteFromCache = async (origin, dest, transportType) => {
+  try {
+    const originLat = roundCoord(origin.lat)
+    const originLng = roundCoord(origin.lng)
+    const destLat = roundCoord(dest.lat)
+    const destLng = roundCoord(dest.lng)
+    
+    const { data, error } = await supabase
+      .from('route_cache')
+      .select('*')
+      .eq('origin_lat', originLat)
+      .eq('origin_lng', originLng)
+      .eq('dest_lat', destLat)
+      .eq('dest_lng', destLng)
+      .eq('transport_type', transportType)
+      .maybeSingle() // single() 대신 maybeSingle() 사용 - 결과가 없어도 에러 발생하지 않음
+    
+    if (error) {
+      console.error('경로 캐시 조회 오류:', error)
+      return null
+    }
+    
+    // 캐시 히트 - hit_count 증가
+    if (data) {
+      supabase
+        .from('route_cache')
+        .update({ hit_count: (data.hit_count || 0) + 1 })
+        .eq('id', data.id)
+        .then(() => {})
+        .catch(err => console.warn('캐시 hit_count 업데이트 실패:', err))
+      
+      return {
+        success: true,
+        fromCache: true,
+        duration: data.duration,
+        distance: data.distance,
+        payment: data.payment,
+        routeDetails: data.route_details,
+        allRoutes: data.all_routes,
+        path: data.path_data,
+        isEstimate: data.is_estimate,
+        noRoute: data.no_route
+      }
+    }
+    
+    return null
+  } catch (err) {
+    console.error('경로 캐시 조회 실패:', err)
+    return null
+  }
+}
+
+/**
+ * 경로 정보를 캐시에 저장
+ * @param {Object} origin - 출발지 { lat, lng }
+ * @param {Object} dest - 도착지 { lat, lng }
+ * @param {string} transportType - 이동수단
+ * @param {Object} routeData - 저장할 경로 데이터
+ * @returns {Promise<boolean>} 저장 성공 여부
+ */
+export const saveRouteToCache = async (origin, dest, transportType, routeData) => {
+  try {
+    const originLat = roundCoord(origin.lat)
+    const originLng = roundCoord(origin.lng)
+    const destLat = roundCoord(dest.lat)
+    const destLng = roundCoord(dest.lng)
+    
+    const cacheEntry = {
+      origin_lat: originLat,
+      origin_lng: originLng,
+      dest_lat: destLat,
+      dest_lng: destLng,
+      transport_type: transportType,
+      duration: routeData.duration ? Math.round(routeData.duration) : null,
+      distance: routeData.distance ? Math.round(routeData.distance) : null, // 소수점 반올림
+      payment: routeData.payment ? Math.round(routeData.payment) : null,
+      route_details: routeData.routeDetails || null,
+      all_routes: routeData.allRoutes || null,
+      path_data: routeData.path || null,
+      is_estimate: routeData.isEstimate || false,
+      no_route: routeData.noRoute || false
+    }
+    
+    // upsert: 있으면 업데이트, 없으면 삽입
+    const { error } = await supabase
+      .from('route_cache')
+      .upsert(cacheEntry, {
+        onConflict: 'origin_lat,origin_lng,dest_lat,dest_lng,transport_type'
+      })
+    
+    if (error) {
+      console.error('경로 캐시 저장 오류:', error)
+      return false
+    }
+    
+    return true
+  } catch (err) {
+    console.error('경로 캐시 저장 실패:', err)
+    return false
+  }
+}
+
+/**
+ * 특정 경로의 캐시 삭제 (경로 정보 갱신 시)
+ * @param {Object} origin - 출발지 { lat, lng }
+ * @param {Object} dest - 도착지 { lat, lng }
+ * @param {string} transportType - 이동수단 (선택, 없으면 모든 이동수단)
+ * @returns {Promise<boolean>} 삭제 성공 여부
+ */
+export const deleteRouteCache = async (origin, dest, transportType = null) => {
+  try {
+    const originLat = roundCoord(origin.lat)
+    const originLng = roundCoord(origin.lng)
+    const destLat = roundCoord(dest.lat)
+    const destLng = roundCoord(dest.lng)
+    
+    let query = supabase
+      .from('route_cache')
+      .delete()
+      .eq('origin_lat', originLat)
+      .eq('origin_lng', originLng)
+      .eq('dest_lat', destLat)
+      .eq('dest_lng', destLng)
+    
+    if (transportType) {
+      query = query.eq('transport_type', transportType)
+    }
+    
+    const { error } = await query
+    
+    if (error) {
+      console.error('경로 캐시 삭제 오류:', error)
+      return false
+    }
+    
+    return true
+  } catch (err) {
+    console.error('경로 캐시 삭제 실패:', err)
+    return false
+  }
+}
+
+/**
+ * 캐시 통계 조회
+ * @returns {Promise<Object>} { totalCached, hitCount, oldestCache }
+ */
+export const getRouteCacheStats = async () => {
+  try {
+    // 전체 캐시 수
+    const { count: totalCached, error: countError } = await supabase
+      .from('route_cache')
+      .select('*', { count: 'exact', head: true })
+    
+    if (countError) throw countError
+    
+    // 총 히트 수
+    const { data: hitData, error: hitError } = await supabase
+      .from('route_cache')
+      .select('hit_count')
+    
+    if (hitError) throw hitError
+    
+    const totalHits = hitData.reduce((sum, item) => sum + (item.hit_count || 0), 0)
+    
+    // 가장 오래된 캐시
+    const { data: oldestData, error: oldestError } = await supabase
+      .from('route_cache')
+      .select('created_at')
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .single()
+    
+    return {
+      success: true,
+      totalCached: totalCached || 0,
+      totalHits,
+      oldestCache: oldestData?.created_at || null
+    }
+  } catch (err) {
+    console.error('캐시 통계 조회 실패:', err)
+    return { success: false, totalCached: 0, totalHits: 0, oldestCache: null }
+  }
+}
+
+// ============================================================
+// 좌표 캐시 관련 함수
+// 주소 → 좌표 변환 결과를 DB에 캐싱
+// ============================================================
+
+/**
+ * 주소를 정규화 (캐시 키로 사용)
+ */
+const normalizeAddress = (address) => {
+  return address
+    .trim()
+    .replace(/\s+/g, ' ') // 여러 공백을 하나로
+    .toLowerCase()
+}
+
+/**
+ * 캐시에서 좌표 정보 조회
+ * @param {string} address - 검색할 주소
+ * @returns {Promise<Object|null>} 캐시된 좌표 정보 또는 null
+ */
+export const getCoordinateFromCache = async (address) => {
+  try {
+    const normalizedAddr = normalizeAddress(address)
+    
+    const { data, error } = await supabase
+      .from('coordinate_cache')
+      .select('*')
+      .eq('address', normalizedAddr)
+      .maybeSingle()
+    
+    if (error) {
+      console.error('좌표 캐시 조회 오류:', error)
+      return null
+    }
+    
+    if (data) {
+      // 캐시 히트 - hit_count 증가 (비동기)
+      supabase
+        .from('coordinate_cache')
+        .update({ hit_count: (data.hit_count || 0) + 1 })
+        .eq('id', data.id)
+        .then(() => {})
+        .catch(err => console.warn('좌표 캐시 hit_count 업데이트 실패:', err))
+      
+      return {
+        success: true,
+        fromCache: true,
+        lat: parseFloat(data.lat),
+        lng: parseFloat(data.lng),
+        placeName: data.place_name
+      }
+    }
+    
+    return null
+  } catch (err) {
+    console.error('좌표 캐시 조회 실패:', err)
+    return null
+  }
+}
+
+/**
+ * 좌표 정보를 캐시에 저장
+ * @param {string} address - 검색 주소
+ * @param {number} lat - 위도
+ * @param {number} lng - 경도
+ * @param {string} placeName - 장소명 (선택)
+ * @returns {Promise<boolean>} 저장 성공 여부
+ */
+export const saveCoordinateToCache = async (address, lat, lng, placeName = null) => {
+  try {
+    const normalizedAddr = normalizeAddress(address)
+    
+    const cacheEntry = {
+      address: normalizedAddr,
+      lat,
+      lng,
+      place_name: placeName
+    }
+    
+    const { error } = await supabase
+      .from('coordinate_cache')
+      .upsert(cacheEntry, {
+        onConflict: 'address'
+      })
+    
+    if (error) {
+      console.error('좌표 캐시 저장 오류:', error)
+      return false
+    }
+    
+    return true
+  } catch (err) {
+    console.error('좌표 캐시 저장 실패:', err)
+    return false
+  }
+}
+
+export { TABLE_CONFIGS }

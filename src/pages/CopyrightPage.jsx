@@ -7,7 +7,7 @@ import './PolicyPage.css'
 
 const CopyrightPage = () => {
   const { language } = useLanguage()
-  const { isDarkMode } = useTheme()
+  const { isDark } = useTheme()
 
   useEffect(() => {
     window.scrollTo(0, 0)
@@ -191,7 +191,7 @@ We will take prompt action upon receiving a valid copyright infringement report.
   const t = content[language] || content.ko
 
   return (
-    <div className={`policy-page ${isDarkMode ? 'dark-theme' : ''}`}>
+    <div className={`policy-page ${isDark ? 'dark-theme' : ''}`}>
       <div className="policy-container">
         <Link to="/" className="back-link">
           <FiArrowLeft />
