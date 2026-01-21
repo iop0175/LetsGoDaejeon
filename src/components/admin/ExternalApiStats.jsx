@@ -1,24 +1,35 @@
 import { memo, useState, useEffect } from 'react'
-import { FiActivity, FiRefreshCw, FiTrendingUp, FiAlertCircle, FiCheckCircle } from 'react-icons/fi'
+import { FiActivity, FiRefreshCw, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiDatabase, FiCloud, FiZap } from 'react-icons/fi'
 import { FaMap, FaBus } from 'react-icons/fa'
 import { getKakaoApiStats } from '../../services/kakaoMobilityService'
 import { getOdsayApiStats } from '../../services/odsayService'
+import { getTodayApiStats, getApiCallSummary, getApiStatsByPeriod, API_TYPES } from '../../services/dbService'
 
 /**
  * 외부 API 사용량 통계 컴포넌트 (카카오, ODsay)
+ * DB 기반 통계 + 로컬 메모리 통계 모두 표시
  */
 const ExternalApiStats = memo(({ language = 'ko' }) => {
   const [kakaoStats, setKakaoStats] = useState(null)
   const [odsayStats, setOdsayStats] = useState(null)
+  const [dbStats, setDbStats] = useState(null)
+  const [dbSummary, setDbSummary] = useState(null)
   const [loading, setLoading] = useState(false)
   
-  const loadStats = () => {
+  const loadStats = async () => {
     setLoading(true)
     try {
+      // 로컬 메모리 통계
       const kakao = getKakaoApiStats()
       const odsay = getOdsayApiStats()
       setKakaoStats(kakao)
       setOdsayStats(odsay)
+      
+      // DB 기반 통계
+      const todayStats = await getTodayApiStats()
+      const summary = await getApiCallSummary()
+      setDbStats(todayStats)
+      setDbSummary(summary)
     } catch (err) {
       console.error('API 통계 로드 실패:', err)
     }
@@ -49,6 +60,100 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
           <FiRefreshCw className={loading ? 'spinning' : ''} />
         </button>
       </div>
+      
+      {/* DB 기반 통계 요약 */}
+      {dbSummary?.success && (
+        <div className="db-stats-summary">
+          <div className="db-summary-card">
+            <FiCloud className="summary-icon" />
+            <div className="summary-content">
+              <span className="summary-label">{language === 'ko' ? '오늘 총 호출' : "Today's Total"}</span>
+              <span className="summary-value">{dbSummary.today?.totalCalls || 0}</span>
+            </div>
+          </div>
+          <div className="db-summary-card">
+            <FiDatabase className="summary-icon cache" />
+            <div className="summary-content">
+              <span className="summary-label">{language === 'ko' ? '캐시 히트' : 'Cache Hits'}</span>
+              <span className="summary-value">{dbSummary.today?.cacheHits || 0}</span>
+            </div>
+          </div>
+          <div className="db-summary-card">
+            <FiZap className="summary-icon actual" />
+            <div className="summary-content">
+              <span className="summary-label">{language === 'ko' ? '실제 API 호출' : 'Actual API Calls'}</span>
+              <span className="summary-value highlight">{dbSummary.today?.actualApiCalls || 0}</span>
+            </div>
+          </div>
+          <div className="db-summary-card">
+            <FiTrendingUp className="summary-icon rate" />
+            <div className="summary-content">
+              <span className="summary-label">{language === 'ko' ? '캐시 히트율' : 'Cache Hit Rate'}</span>
+              <span className={`summary-value ${(dbSummary.today?.cacheHitRate || 0) >= 50 ? 'success' : ''}`}>
+                {dbSummary.today?.cacheHitRate || 0}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 7일간 통계 */}
+      {dbSummary?.success && dbSummary.week && (
+        <div className="week-stats-bar">
+          <span className="week-label">📊 {language === 'ko' ? '최근 7일' : 'Last 7 Days'}:</span>
+          <span className="week-stat">{language === 'ko' ? '총' : 'Total'} <strong>{dbSummary.week.totalCalls}</strong></span>
+          <span className="week-stat">{language === 'ko' ? '캐시' : 'Cache'} <strong>{dbSummary.week.cacheHits}</strong></span>
+          <span className="week-stat">{language === 'ko' ? '실제' : 'Actual'} <strong>{dbSummary.week.actualApiCalls}</strong></span>
+          <span className="week-stat">{language === 'ko' ? '히트율' : 'Hit'} <strong>{dbSummary.week.cacheHitRate}%</strong></span>
+        </div>
+      )}
+      
+      {/* API별 상세 통계 (DB) */}
+      {dbStats?.success && Object.keys(dbStats.stats).length > 0 && (
+        <div className="db-api-details">
+          <h4><FiDatabase /> {language === 'ko' ? 'API별 오늘 통계 (DB)' : "Today's Stats by API (DB)"}</h4>
+          <div className="api-details-grid">
+            {Object.entries(dbStats.stats).map(([apiType, stat]) => (
+              <div key={apiType} className={`api-detail-card ${apiType.replace('_', '-')}`}>
+                <div className="api-detail-header">
+                  <span className="api-type-name">
+                    {apiType === 'kakao_geocoding' && '🗺️ Kakao 좌표'}
+                    {apiType === 'kakao_route' && '🚗 Kakao 경로'}
+                    {apiType === 'odsay_transit' && '🚌 ODsay 대중교통'}
+                    {apiType === 'tour_api' && '🏛️ 관광 API'}
+                    {apiType === 'kto_photo' && '📸 사진 API'}
+                    {!['kakao_geocoding', 'kakao_route', 'odsay_transit', 'tour_api', 'kto_photo'].includes(apiType) && apiType}
+                  </span>
+                </div>
+                <div className="api-detail-stats">
+                  <div className="detail-stat">
+                    <span className="detail-label">{language === 'ko' ? '총' : 'Total'}</span>
+                    <span className="detail-value">{stat.total}</span>
+                  </div>
+                  <div className="detail-stat">
+                    <span className="detail-label">{language === 'ko' ? '성공' : 'Success'}</span>
+                    <span className="detail-value success">{stat.success}</span>
+                  </div>
+                  <div className="detail-stat">
+                    <span className="detail-label">{language === 'ko' ? '실패' : 'Fail'}</span>
+                    <span className={`detail-value ${stat.fail > 0 ? 'fail' : ''}`}>{stat.fail}</span>
+                  </div>
+                  <div className="detail-stat">
+                    <span className="detail-label">{language === 'ko' ? '캐시' : 'Cache'}</span>
+                    <span className="detail-value cache">{stat.cacheHits}</span>
+                  </div>
+                  {stat.avgTime && (
+                    <div className="detail-stat">
+                      <span className="detail-label">{language === 'ko' ? '평균' : 'Avg'}</span>
+                      <span className="detail-value">{stat.avgTime}ms</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="api-stats-grid">
         {/* 카카오 API 통계 */}

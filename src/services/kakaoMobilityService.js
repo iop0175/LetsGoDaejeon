@@ -1,7 +1,7 @@
 // 카카오 모빌리티 API 서비스
 // 경로 탐색 및 이동 시간 조회
 
-import { getRouteFromCache, saveRouteToCache, getCoordinateFromCache, saveCoordinateToCache } from './dbService.js'
+import { getRouteFromCache, saveRouteToCache, getCoordinateFromCache, saveCoordinateToCache, recordApiCall, API_TYPES } from './dbService.js'
 
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
@@ -10,11 +10,17 @@ const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
 let kakaoApiCallCount = 0
 const kakaoApiCallHistory = []
 
+// 현재 페이지 이름 (외부에서 설정)
+let currentPageName = null
+export const setCurrentPage = (pageName) => { currentPageName = pageName }
+
 /**
- * API 호출 카운터 증가 및 기록
+ * API 호출 카운터 증가 및 기록 (로컬 + DB)
  */
-const trackKakaoApiCall = (endpoint, success = true) => {
+const trackKakaoApiCall = (endpoint, success = true, startTime = null, params = null, fromCache = false) => {
   kakaoApiCallCount++
+  const responseTime = startTime ? Date.now() - startTime : null
+  
   kakaoApiCallHistory.push({
     timestamp: new Date().toISOString(),
     endpoint,
@@ -25,6 +31,21 @@ const trackKakaoApiCall = (endpoint, success = true) => {
   if (kakaoApiCallHistory.length > 1000) {
     kakaoApiCallHistory.shift()
   }
+  
+  // DB에 로그 기록 (비동기, 논블로킹)
+  const apiType = endpoint.includes('address') || endpoint.includes('keyword') 
+    ? API_TYPES.KAKAO_GEOCODING 
+    : API_TYPES.KAKAO_ROUTE
+    
+  recordApiCall({
+    apiType,
+    endpoint,
+    requestParams: params,
+    responseStatus: success ? 'success' : 'fail',
+    pageName: currentPageName,
+    responseTimeMs: responseTime,
+    fromCache
+  })
 }
 
 /**
@@ -166,20 +187,22 @@ export const getCoordinatesFromAddress = async (address) => {
     
     // 주소/키워드 검색 실행 헬퍼
     const searchAddress = async (query) => {
+      const startTime = Date.now()
       const response = await fetch(
         `${WORKERS_API_URL}/api/kakao/v2/local/search/address.json?query=${encodeURIComponent(query)}`
       )
       const data = await response.json()
-      trackKakaoApiCall('address_search', !!data.documents?.length)
+      trackKakaoApiCall('address_search', !!data.documents?.length, startTime, { query })
       return data.documents || []
     }
     
     const searchKeyword = async (query) => {
+      const startTime = Date.now()
       const response = await fetch(
         `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&x=127.385&y=36.351&radius=20000`
       )
       const data = await response.json()
-      trackKakaoApiCall('keyword_search', !!data.documents?.length)
+      trackKakaoApiCall('keyword_search', !!data.documents?.length, startTime, { query })
       return data.documents || []
     }
     
@@ -296,13 +319,14 @@ export const getCoordinatesFromAddress = async (address) => {
  */
 export const getCarRoute = async (origin, destination, includePath = false) => {
   try {
+    const startTime = Date.now()
     // Workers 프록시를 통한 API 호출 (API 키 보호)
     const response = await fetch(
       `${WORKERS_API_URL}/api/kakao/mobility/v1/directions?origin=${origin.lng},${origin.lat}&destination=${destination.lng},${destination.lat}&priority=RECOMMEND`
     )
     
     const data = await response.json()
-    trackKakaoApiCall('directions', !!data.routes?.length)
+    trackKakaoApiCall('directions', !!data.routes?.length, startTime, { origin, destination })
     
     if (data.routes && data.routes.length > 0) {
       const route = data.routes[0]

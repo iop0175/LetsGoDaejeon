@@ -1154,4 +1154,321 @@ export const saveCoordinateToCache = async (address, lat, lng, placeName = null)
   }
 }
 
+// ============================================================
+// API 호출 로그 관련 함수
+// 모든 외부 API 호출을 기록하고 통계 제공
+// ============================================================
+
+/**
+ * 세션 ID 생성 또는 가져오기 (익명 사용자 추적용)
+ */
+const getSessionId = () => {
+  let sessionId = sessionStorage.getItem('api_session_id')
+  if (!sessionId) {
+    sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+    sessionStorage.setItem('api_session_id', sessionId)
+  }
+  return sessionId
+}
+
+/**
+ * 현재 사용자 ID 가져오기 (로그인한 경우)
+ */
+const getCurrentUserId = () => {
+  const session = supabase.auth.getSession()
+  return session?.data?.session?.user?.id || null
+}
+
+/**
+ * API 호출 로그 기록
+ * @param {Object} logData - 로그 데이터
+ * @param {string} logData.apiType - API 종류 (kakao_geocoding, kakao_route, odsay_transit, tour_api, kto_photo)
+ * @param {string} logData.endpoint - 호출 엔드포인트
+ * @param {Object} logData.requestParams - 요청 파라미터
+ * @param {string} logData.responseStatus - 응답 상태 (success, fail, error)
+ * @param {number} logData.responseCode - HTTP 상태 코드
+ * @param {string} logData.responseMessage - 에러 메시지 (실패 시)
+ * @param {string} logData.pageName - 호출 페이지
+ * @param {number} logData.responseTimeMs - 응답 시간 (ms)
+ * @param {boolean} logData.fromCache - 캐시 히트 여부
+ * @returns {Promise<boolean>} 저장 성공 여부
+ */
+export const recordApiCall = async (logData) => {
+  try {
+    const entry = {
+      api_type: logData.apiType,
+      endpoint: logData.endpoint || null,
+      request_params: logData.requestParams || null,
+      response_status: logData.responseStatus || 'success',
+      response_code: logData.responseCode || null,
+      response_message: logData.responseMessage || null,
+      user_id: await getCurrentUserIdAsync(),
+      session_id: getSessionId(),
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : null,
+      page_name: logData.pageName || null,
+      response_time_ms: logData.responseTimeMs || null,
+      from_cache: logData.fromCache || false
+    }
+    
+    // 비동기로 저장 (UI 블로킹 방지)
+    supabase
+      .from('api_call_logs')
+      .insert(entry)
+      .then(({ error }) => {
+        if (error) console.warn('API 로그 저장 실패:', error.message)
+      })
+    
+    // 일별 통계도 업데이트
+    updateApiDailyStat(logData.apiType, logData.responseStatus === 'success', logData.fromCache, logData.responseTimeMs)
+    
+    return true
+  } catch (err) {
+    console.warn('API 로그 기록 실패:', err)
+    return false
+  }
+}
+
+/**
+ * 현재 사용자 ID 비동기 가져오기
+ */
+const getCurrentUserIdAsync = async () => {
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data?.session?.user?.id || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * 일별 API 통계 업데이트
+ * @param {string} apiType - API 종류
+ * @param {boolean} isSuccess - 성공 여부
+ * @param {boolean} fromCache - 캐시 히트 여부
+ * @param {number} responseTimeMs - 응답 시간
+ */
+const updateApiDailyStat = async (apiType, isSuccess, fromCache, responseTimeMs) => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    // 기존 통계 조회
+    const { data: existing } = await supabase
+      .from('api_daily_stats')
+      .select('*')
+      .eq('stat_date', today)
+      .eq('api_type', apiType)
+      .maybeSingle()
+    
+    if (existing) {
+      // 기존 통계 업데이트
+      const updates = {
+        total_calls: (existing.total_calls || 0) + 1,
+        success_calls: (existing.success_calls || 0) + (isSuccess ? 1 : 0),
+        fail_calls: (existing.fail_calls || 0) + (isSuccess ? 0 : 1),
+        cache_hits: (existing.cache_hits || 0) + (fromCache ? 1 : 0)
+      }
+      
+      // 응답 시간 통계 업데이트
+      if (responseTimeMs && !fromCache) {
+        const totalPrevious = (existing.avg_response_time_ms || 0) * ((existing.total_calls || 1) - (existing.cache_hits || 0))
+        const newTotal = totalPrevious + responseTimeMs
+        const newCount = (existing.total_calls || 0) - (existing.cache_hits || 0) + 1
+        updates.avg_response_time_ms = Math.round(newTotal / newCount)
+        updates.max_response_time_ms = Math.max(existing.max_response_time_ms || 0, responseTimeMs)
+      }
+      
+      await supabase
+        .from('api_daily_stats')
+        .update(updates)
+        .eq('id', existing.id)
+    } else {
+      // 새 통계 생성
+      await supabase
+        .from('api_daily_stats')
+        .insert({
+          stat_date: today,
+          api_type: apiType,
+          total_calls: 1,
+          success_calls: isSuccess ? 1 : 0,
+          fail_calls: isSuccess ? 0 : 1,
+          cache_hits: fromCache ? 1 : 0,
+          avg_response_time_ms: fromCache ? null : responseTimeMs,
+          max_response_time_ms: fromCache ? null : responseTimeMs
+        })
+    }
+  } catch (err) {
+    console.warn('일별 통계 업데이트 실패:', err)
+  }
+}
+
+/**
+ * 오늘의 API 호출 통계 조회
+ * @returns {Promise<Object>} { success, stats: { apiType: { total, success, fail, cacheHits, avgTime } } }
+ */
+export const getTodayApiStats = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    
+    const { data, error } = await supabase
+      .from('api_daily_stats')
+      .select('*')
+      .eq('stat_date', today)
+    
+    if (error) throw error
+    
+    const stats = {}
+    let totalCalls = 0
+    let totalCacheHits = 0
+    
+    data.forEach(item => {
+      stats[item.api_type] = {
+        total: item.total_calls,
+        success: item.success_calls,
+        fail: item.fail_calls,
+        cacheHits: item.cache_hits,
+        avgTime: item.avg_response_time_ms,
+        maxTime: item.max_response_time_ms
+      }
+      totalCalls += item.total_calls
+      totalCacheHits += item.cache_hits
+    })
+    
+    return {
+      success: true,
+      stats,
+      summary: {
+        totalCalls,
+        totalCacheHits,
+        cacheHitRate: totalCalls > 0 ? Math.round((totalCacheHits / totalCalls) * 100) : 0
+      }
+    }
+  } catch (err) {
+    console.error('오늘 API 통계 조회 실패:', err)
+    return { success: false, stats: {}, summary: { totalCalls: 0, totalCacheHits: 0, cacheHitRate: 0 } }
+  }
+}
+
+/**
+ * 최근 N일간 API 호출 통계 조회
+ * @param {number} days - 조회 일수 (기본 7일)
+ * @returns {Promise<Object>} { success, data: [{ date, apiType, total, ... }] }
+ */
+export const getApiStatsByPeriod = async (days = 7) => {
+  try {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    
+    const { data, error } = await supabase
+      .from('api_daily_stats')
+      .select('*')
+      .gte('stat_date', startDate.toISOString().split('T')[0])
+      .order('stat_date', { ascending: false })
+    
+    if (error) throw error
+    
+    return { success: true, data }
+  } catch (err) {
+    console.error('기간별 API 통계 조회 실패:', err)
+    return { success: false, data: [] }
+  }
+}
+
+/**
+ * 최근 API 호출 로그 조회 (상세)
+ * @param {number} limit - 조회 개수 (기본 100)
+ * @param {string} apiType - API 종류 필터 (선택)
+ * @returns {Promise<Object>} { success, logs: [...] }
+ */
+export const getRecentApiLogs = async (limit = 100, apiType = null) => {
+  try {
+    let query = supabase
+      .from('api_call_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    
+    if (apiType) {
+      query = query.eq('api_type', apiType)
+    }
+    
+    const { data, error } = await query
+    
+    if (error) throw error
+    
+    return { success: true, logs: data }
+  } catch (err) {
+    console.error('API 로그 조회 실패:', err)
+    return { success: false, logs: [] }
+  }
+}
+
+/**
+ * API 호출 통계 요약 (대시보드용)
+ * @returns {Promise<Object>} 종합 통계
+ */
+export const getApiCallSummary = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0]
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+    
+    // 오늘 통계
+    const { data: todayData } = await supabase
+      .from('api_daily_stats')
+      .select('total_calls, cache_hits')
+      .eq('stat_date', today)
+    
+    const todayTotal = todayData?.reduce((sum, d) => sum + (d.total_calls || 0), 0) || 0
+    const todayCacheHits = todayData?.reduce((sum, d) => sum + (d.cache_hits || 0), 0) || 0
+    
+    // 7일 통계
+    const { data: weekData } = await supabase
+      .from('api_daily_stats')
+      .select('total_calls, cache_hits')
+      .gte('stat_date', sevenDaysAgo.toISOString().split('T')[0])
+    
+    const weekTotal = weekData?.reduce((sum, d) => sum + (d.total_calls || 0), 0) || 0
+    const weekCacheHits = weekData?.reduce((sum, d) => sum + (d.cache_hits || 0), 0) || 0
+    
+    // 가장 많이 호출된 API
+    const { data: topApi } = await supabase
+      .from('api_daily_stats')
+      .select('api_type, total_calls')
+      .eq('stat_date', today)
+      .order('total_calls', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    
+    return {
+      success: true,
+      today: {
+        totalCalls: todayTotal,
+        cacheHits: todayCacheHits,
+        cacheHitRate: todayTotal > 0 ? Math.round((todayCacheHits / todayTotal) * 100) : 0,
+        actualApiCalls: todayTotal - todayCacheHits
+      },
+      week: {
+        totalCalls: weekTotal,
+        cacheHits: weekCacheHits,
+        cacheHitRate: weekTotal > 0 ? Math.round((weekCacheHits / weekTotal) * 100) : 0,
+        actualApiCalls: weekTotal - weekCacheHits
+      },
+      topApi: topApi?.api_type || null
+    }
+  } catch (err) {
+    console.error('API 통계 요약 조회 실패:', err)
+    return { success: false }
+  }
+}
+
+// API 종류 상수
+export const API_TYPES = {
+  KAKAO_GEOCODING: 'kakao_geocoding',
+  KAKAO_ROUTE: 'kakao_route',
+  ODSAY_TRANSIT: 'odsay_transit',
+  TOUR_API: 'tour_api',
+  KTO_PHOTO: 'kto_photo'
+}
+
 export { TABLE_CONFIGS }
+

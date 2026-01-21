@@ -1,6 +1,8 @@
 // ODsay 대중교통 API 서비스
 // 버스, 지하철 경로 탐색
 
+import { recordApiCall, API_TYPES } from './dbService.js'
+
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
 
@@ -8,11 +10,17 @@ const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
 let apiCallCount = 0
 const apiCallHistory = []
 
+// 현재 페이지 이름 (외부에서 설정)
+let currentPageName = null
+export const setCurrentPage = (pageName) => { currentPageName = pageName }
+
 /**
- * API 호출 카운터 증가 및 기록
+ * API 호출 카운터 증가 및 기록 (로컬 + DB)
  */
-const trackApiCall = (endpoint, success = true) => {
+const trackApiCall = (endpoint, success = true, startTime = null, params = null, fromCache = false) => {
   apiCallCount++
+  const responseTime = startTime ? Date.now() - startTime : null
+  
   apiCallHistory.push({
     timestamp: new Date().toISOString(),
     endpoint,
@@ -23,6 +31,17 @@ const trackApiCall = (endpoint, success = true) => {
   if (apiCallHistory.length > 1000) {
     apiCallHistory.shift()
   }
+  
+  // DB에 로그 기록 (비동기, 논블로킹)
+  recordApiCall({
+    apiType: API_TYPES.ODSAY_TRANSIT,
+    endpoint,
+    requestParams: params,
+    responseStatus: success ? 'success' : 'fail',
+    pageName: currentPageName,
+    responseTimeMs: responseTime,
+    fromCache
+  })
 }
 
 /**
@@ -72,6 +91,7 @@ export const getOdsayApiStats = () => {
  */
 export const getPublicTransitRoute = async (startX, startY, endX, endY, searchType = 'all') => {
   try {
+    const startTime = Date.now()
     // API URL 생성
     const searchPathType = searchType === 'subway' ? 1 : searchType === 'bus' ? 2 : 0
     
@@ -82,7 +102,7 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
     const data = await response.json()
     
     if (data.error) {
-      trackApiCall('searchPubTransPathT', false)
+      trackApiCall('searchPubTransPathT', false, startTime, { startX, startY, endX, endY, searchType })
       const errorMsg = Array.isArray(data.error) 
         ? data.error[0]?.message 
         : (data.error.msg || '경로를 찾을 수 없습니다')
@@ -96,7 +116,7 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
       }
     }
     
-    trackApiCall('searchPubTransPathT', true)
+    trackApiCall('searchPubTransPathT', true, startTime, { startX, startY, endX, endY, searchType })
     
     if (!data.result || !data.result.path || data.result.path.length === 0) {
       // 버스 또는 지하철 전용 검색에서 결과가 없으면 "경로 없음"으로 처리

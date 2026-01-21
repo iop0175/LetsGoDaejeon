@@ -2683,6 +2683,193 @@
   margin-top: 2px;
 }
 
+/* DB 기반 통계 요약 */
+.db-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border-radius: 12px;
+  border: 1px solid #bae6fd;
+}
+
+.db-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.db-summary-card .summary-icon {
+  font-size: 1.5rem;
+  color: #0ea5e9;
+  flex-shrink: 0;
+}
+
+.db-summary-card .summary-icon.cache {
+  color: #10b981;
+}
+
+.db-summary-card .summary-icon.actual {
+  color: #f59e0b;
+}
+
+.db-summary-card .summary-icon.rate {
+  color: #8b5cf6;
+}
+
+.db-summary-card .summary-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.db-summary-card .summary-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin-bottom: 2px;
+}
+
+.db-summary-card .summary-value {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.db-summary-card .summary-value.highlight {
+  color: #f59e0b;
+}
+
+.db-summary-card .summary-value.success {
+  color: #10b981;
+}
+
+/* 7일간 통계 바 */
+.week-stats-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+}
+
+.week-stats-bar .week-label {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.week-stats-bar .week-stat {
+  color: #475569;
+}
+
+.week-stats-bar .week-stat strong {
+  color: #1e293b;
+  margin-left: 4px;
+}
+
+/* DB API별 상세 통계 */
+.db-api-details {
+  margin-bottom: 20px;
+}
+
+.db-api-details h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  color: #475569;
+  margin: 0 0 12px 0;
+}
+
+.api-details-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.api-detail-card {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+.api-detail-card.kakao-geocoding,
+.api-detail-card.kakao-route {
+  border-left: 3px solid #ffe600;
+}
+
+.api-detail-card.odsay-transit {
+  border-left: 3px solid #00a8e8;
+}
+
+.api-detail-card.tour-api {
+  border-left: 3px solid #10b981;
+}
+
+.api-detail-card.kto-photo {
+  border-left: 3px solid #f59e0b;
+}
+
+.api-detail-header {
+  margin-bottom: 8px;
+}
+
+.api-detail-header .api-type-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.api-detail-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.api-detail-stats .detail-stat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 50px;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.api-detail-stats .detail-label {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.api-detail-stats .detail-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.api-detail-stats .detail-value.success {
+  color: #10b981;
+}
+
+.api-detail-stats .detail-value.fail {
+  color: #ef4444;
+}
+
+.api-detail-stats .detail-value.cache {
+  color: #8b5cf6;
+}
+
 /* 다크 테마 */
 .dark-theme .external-api-stats-section {
   background: #1e293b;
@@ -2737,6 +2924,66 @@
 .dark-theme .api-stats-notice {
   background: #0f172a;
   color: #94a3b8;
+}
+
+/* 다크 테마: DB 통계 */
+.dark-theme .db-stats-summary {
+  background: linear-gradient(135deg, #1e293b, #0f172a);
+  border-color: #334155;
+}
+
+.dark-theme .db-summary-card {
+  background: #334155;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .db-summary-card .summary-label {
+  color: #94a3b8;
+}
+
+.dark-theme .db-summary-card .summary-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .week-stats-bar {
+  background: #0f172a;
+}
+
+.dark-theme .week-stats-bar .week-label {
+  color: #94a3b8;
+}
+
+.dark-theme .week-stats-bar .week-stat {
+  color: #cbd5e1;
+}
+
+.dark-theme .week-stats-bar .week-stat strong {
+  color: #f1f5f9;
+}
+
+.dark-theme .db-api-details h4 {
+  color: #94a3b8;
+}
+
+.dark-theme .api-detail-card {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+.dark-theme .api-detail-header .api-type-name {
+  color: #f1f5f9;
+}
+
+.dark-theme .api-detail-stats .detail-stat {
+  background: #334155;
+}
+
+.dark-theme .api-detail-stats .detail-label {
+  color: #64748b;
+}
+
+.dark-theme .api-detail-stats .detail-value {
+  color: #f1f5f9;
 }
 
 /* ============================================
