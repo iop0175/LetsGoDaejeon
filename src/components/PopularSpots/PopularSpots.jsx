@@ -113,7 +113,7 @@ const PopularSpots = () => {
         setSpots(defaultSpots)
       }
     } catch (error) {
-      console.error('관광지 데이터 로딩 실패:', error)
+
       setSpots(defaultSpots)
     } finally {
       setLoading(false)

@@ -31,7 +31,7 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
       setDbStats(todayStats)
       setDbSummary(summary)
     } catch (err) {
-      console.error('API 통계 로드 실패:', err)
+
     }
     setLoading(false)
   }
@@ -163,74 +163,86 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
             <h4>Kakao Maps API</h4>
           </div>
           
-          {kakaoStats ? (
-            <div className="api-card-body">
-              <div className="stat-row">
-                <span className="stat-label">
-                  {language === 'ko' ? '오늘 호출' : 'Today Calls'}
-                </span>
-                <span className="api-stat-value">{kakaoStats.todayCalls.toLocaleString()}</span>
-              </div>
+          <div className="api-card-body">
+            {/* DB 기반 통계 (오늘) */}
+            {(() => {
+              const kakaoGeocoding = dbStats?.stats?.['kakao_geocoding'] || { total: 0, success: 0, fail: 0, cacheHits: 0, avgTime: 0 }
+              const kakaoRoute = dbStats?.stats?.['kakao_route'] || { total: 0, success: 0, fail: 0, cacheHits: 0, avgTime: 0 }
+              const totalCalls = kakaoGeocoding.total + kakaoRoute.total
+              const totalSuccess = kakaoGeocoding.success + kakaoRoute.success
+              const totalFail = kakaoGeocoding.fail + kakaoRoute.fail
+              const totalCache = kakaoGeocoding.cacheHits + kakaoRoute.cacheHits
+              const successRate = totalCalls > 0 ? Math.round((totalSuccess / totalCalls) * 100) : 100
+              const dailyLimit = kakaoStats?.dailyLimit || 300000
               
-              <div className="stat-row">
-                <span className="stat-label">
-                  {language === 'ko' ? '일일 한도' : 'Daily Limit'}
-                </span>
-                <span className="api-stat-value">{kakaoStats.dailyLimit.toLocaleString()}</span>
-              </div>
-              
-              <div className="usage-bar-wrapper">
-                <div 
-                  className={`usage-bar ${getUsageLevel((kakaoStats.todayCalls / kakaoStats.dailyLimit) * 100)}`}
-                  style={{ width: `${Math.min((kakaoStats.todayCalls / kakaoStats.dailyLimit) * 100, 100)}%` }}
-                />
-              </div>
-              
-              <div className="stat-row highlight">
-                <span className="stat-label">
-                  {language === 'ko' ? '남은 호출' : 'Remaining'}
-                </span>
-                <span className={`api-stat-value ${kakaoStats.remainingToday < 10000 ? 'warning' : ''}`}>
-                  {kakaoStats.remainingToday.toLocaleString()}
-                </span>
-              </div>
-              
-              <div className="stat-row small">
-                <span className="stat-label">
-                  {language === 'ko' ? '최근 1시간' : 'Last Hour'}
-                </span>
-                <span className="api-stat-value">{kakaoStats.lastHourCalls}</span>
-              </div>
-              
-              <div className="stat-row small">
-                <span className="stat-label">
-                  {language === 'ko' ? '성공률' : 'Success Rate'}
-                </span>
-                <span className={`api-stat-value ${kakaoStats.successRate < 90 ? 'warning' : 'success'}`}>
-                  {kakaoStats.successRate >= 90 ? <FiCheckCircle /> : <FiAlertCircle />}
-                  {kakaoStats.successRate}%
-                </span>
-              </div>
-              
-              {kakaoStats.endpointStats && Object.keys(kakaoStats.endpointStats).length > 0 && (
-                <div className="endpoint-stats">
-                  <span className="endpoint-title">
-                    {language === 'ko' ? '엔드포인트별' : 'By Endpoint'}
-                  </span>
-                  {Object.entries(kakaoStats.endpointStats).map(([endpoint, count]) => (
-                    <div key={endpoint} className="endpoint-row">
-                      <span>{endpoint}</span>
-                      <span>{count}</span>
+              return (
+                <>
+                  <div className="stat-row">
+                    <span className="stat-label">
+                      <FiDatabase style={{ marginRight: '4px', fontSize: '12px' }} />
+                      {language === 'ko' ? '오늘 호출 (DB)' : 'Today Calls (DB)'}
+                    </span>
+                    <span className="api-stat-value">{totalCalls.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="stat-row">
+                    <span className="stat-label">
+                      {language === 'ko' ? '일일 한도' : 'Daily Limit'}
+                    </span>
+                    <span className="api-stat-value">{dailyLimit.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="usage-bar-wrapper">
+                    <div 
+                      className={`usage-bar ${getUsageLevel((totalCalls / dailyLimit) * 100)}`}
+                      style={{ width: `${Math.min((totalCalls / dailyLimit) * 100, 100)}%` }}
+                    />
+                  </div>
+                  
+                  <div className="stat-row highlight">
+                    <span className="stat-label">
+                      {language === 'ko' ? '남은 호출' : 'Remaining'}
+                    </span>
+                    <span className={`api-stat-value ${(dailyLimit - totalCalls) < 10000 ? 'warning' : ''}`}>
+                      {(dailyLimit - totalCalls).toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  <div className="stat-row small">
+                    <span className="stat-label">
+                      {language === 'ko' ? '캐시 히트' : 'Cache Hits'}
+                    </span>
+                    <span className="api-stat-value cache-value">{totalCache.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="stat-row small">
+                    <span className="stat-label">
+                      {language === 'ko' ? '성공률' : 'Success Rate'}
+                    </span>
+                    <span className={`api-stat-value ${successRate < 90 ? 'warning' : 'success'}`}>
+                      {successRate >= 90 ? <FiCheckCircle /> : <FiAlertCircle />}
+                      {successRate}%
+                    </span>
+                  </div>
+                  
+                  {/* 엔드포인트별 상세 */}
+                  <div className="endpoint-stats">
+                    <span className="endpoint-title">
+                      {language === 'ko' ? '엔드포인트별' : 'By Endpoint'}
+                    </span>
+                    <div className="endpoint-row">
+                      <span>🗺️ {language === 'ko' ? '좌표검색' : 'Geocoding'}</span>
+                      <span>{kakaoGeocoding.total}</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="api-card-empty">
-              {language === 'ko' ? '데이터 없음' : 'No data'}
-            </div>
-          )}
+                    <div className="endpoint-row">
+                      <span>🚗 {language === 'ko' ? '경로검색' : 'Route'}</span>
+                      <span>{kakaoRoute.total}</span>
+                    </div>
+                  </div>
+                </>
+              )
+            })()}
+          </div>
           
           <div className="api-card-footer">
             <a href="https://developers.kakao.com/console/app" target="_blank" rel="noopener noreferrer">
@@ -246,60 +258,78 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
             <h4>ODsay API</h4>
           </div>
           
-          {odsayStats ? (
-            <div className="api-card-body">
-              <div className="stat-row">
-                <span className="stat-label">
-                  {language === 'ko' ? '오늘 호출' : 'Today Calls'}
-                </span>
-                <span className="api-stat-value">{odsayStats.todayCalls.toLocaleString()}</span>
-              </div>
+          <div className="api-card-body">
+            {/* DB 기반 통계 (오늘) */}
+            {(() => {
+              const odsayTransit = dbStats?.stats?.['odsay_transit'] || { total: 0, success: 0, fail: 0, cacheHits: 0, avgTime: 0 }
+              const totalCalls = odsayTransit.total
+              const totalSuccess = odsayTransit.success
+              const totalCache = odsayTransit.cacheHits
+              const successRate = totalCalls > 0 ? Math.round((totalSuccess / totalCalls) * 100) : 100
+              const dailyLimit = odsayStats?.dailyLimit || 1000
               
-              <div className="stat-row">
-                <span className="stat-label">
-                  {language === 'ko' ? '일일 한도' : 'Daily Limit'}
-                </span>
-                <span className="api-stat-value">{odsayStats.dailyLimit.toLocaleString()}</span>
-              </div>
-              
-              <div className="usage-bar-wrapper">
-                <div 
-                  className={`usage-bar ${getUsageLevel((odsayStats.todayCalls / odsayStats.dailyLimit) * 100)}`}
-                  style={{ width: `${Math.min((odsayStats.todayCalls / odsayStats.dailyLimit) * 100, 100)}%` }}
-                />
-              </div>
-              
-              <div className="stat-row highlight">
-                <span className="stat-label">
-                  {language === 'ko' ? '남은 호출' : 'Remaining'}
-                </span>
-                <span className={`api-stat-value ${odsayStats.remainingToday < 100 ? 'warning' : ''}`}>
-                  {odsayStats.remainingToday.toLocaleString()}
-                </span>
-              </div>
-              
-              <div className="stat-row small">
-                <span className="stat-label">
-                  {language === 'ko' ? '최근 1시간' : 'Last Hour'}
-                </span>
-                <span className="api-stat-value">{odsayStats.lastHourCalls}</span>
-              </div>
-              
-              <div className="stat-row small">
-                <span className="stat-label">
-                  {language === 'ko' ? '성공률' : 'Success Rate'}
-                </span>
-                <span className={`api-stat-value ${odsayStats.successRate < 90 ? 'warning' : 'success'}`}>
-                  {odsayStats.successRate >= 90 ? <FiCheckCircle /> : <FiAlertCircle />}
-                  {odsayStats.successRate}%
-                </span>
-              </div>
-            </div>
-          ) : (
-            <div className="api-card-empty">
-              {language === 'ko' ? '데이터 없음' : 'No data'}
-            </div>
-          )}
+              return (
+                <>
+                  <div className="stat-row">
+                    <span className="stat-label">
+                      <FiDatabase style={{ marginRight: '4px', fontSize: '12px' }} />
+                      {language === 'ko' ? '오늘 호출 (DB)' : 'Today Calls (DB)'}
+                    </span>
+                    <span className="api-stat-value">{totalCalls.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="stat-row">
+                    <span className="stat-label">
+                      {language === 'ko' ? '일일 한도' : 'Daily Limit'}
+                    </span>
+                    <span className="api-stat-value">{dailyLimit.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="usage-bar-wrapper">
+                    <div 
+                      className={`usage-bar ${getUsageLevel((totalCalls / dailyLimit) * 100)}`}
+                      style={{ width: `${Math.min((totalCalls / dailyLimit) * 100, 100)}%` }}
+                    />
+                  </div>
+                  
+                  <div className="stat-row highlight">
+                    <span className="stat-label">
+                      {language === 'ko' ? '남은 호출' : 'Remaining'}
+                    </span>
+                    <span className={`api-stat-value ${(dailyLimit - totalCalls) < 100 ? 'warning' : ''}`}>
+                      {(dailyLimit - totalCalls).toLocaleString()}
+                    </span>
+                  </div>
+                  
+                  <div className="stat-row small">
+                    <span className="stat-label">
+                      {language === 'ko' ? '캐시 히트' : 'Cache Hits'}
+                    </span>
+                    <span className="api-stat-value cache-value">{totalCache.toLocaleString()}</span>
+                  </div>
+                  
+                  <div className="stat-row small">
+                    <span className="stat-label">
+                      {language === 'ko' ? '성공률' : 'Success Rate'}
+                    </span>
+                    <span className={`api-stat-value ${successRate < 90 ? 'warning' : 'success'}`}>
+                      {successRate >= 90 ? <FiCheckCircle /> : <FiAlertCircle />}
+                      {successRate}%
+                    </span>
+                  </div>
+                  
+                  {odsayTransit.avgTime > 0 && (
+                    <div className="stat-row small">
+                      <span className="stat-label">
+                        {language === 'ko' ? '평균 응답시간' : 'Avg Response'}
+                      </span>
+                      <span className="api-stat-value">{odsayTransit.avgTime}ms</span>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
+          </div>
           
           <div className="api-card-footer">
             <a href="https://lab.odsay.com/mypage" target="_blank" rel="noopener noreferrer">

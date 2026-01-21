@@ -35,7 +35,7 @@ const SearchPage = () => {
           setPopularSearches(result.items)
         }
       } catch (err) {
-        console.error('인기 검색어 로드 실패:', err)
+
       }
     }
     loadPopularSearches()
@@ -91,7 +91,7 @@ const SearchPage = () => {
         setEventTotal(filtered.length)
       }
     } catch (error) {
-      console.error('Search error:', error)
+
     }
     
     setLoading(false)
@@ -154,7 +154,7 @@ const SearchPage = () => {
       }
       
     } catch (error) {
-      console.error('Search error:', error)
+
     }
     
     setLoading(false)

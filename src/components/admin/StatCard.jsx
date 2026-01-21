@@ -9,9 +9,10 @@ import { FiExternalLink, FiCloud, FiDatabase } from 'react-icons/fi'
  * @param {Component} icon - 아이콘 컴포넌트
  * @param {string} color - 테마 색상
  * @param {boolean} loading - 로딩 상태
+ * @param {boolean} apiNotLoaded - API 조회 전 여부
  * @param {Function} onClick - 클릭 핸들러
  */
-const StatCard = memo(({ title, value, dbValue, icon: Icon, color, loading, onClick }) => (
+const StatCard = memo(({ title, value, dbValue, icon: Icon, color, loading, apiNotLoaded, onClick }) => (
   <div 
     className={`stat-card ${onClick ? 'clickable' : ''}`}
     onClick={onClick}
@@ -25,8 +26,8 @@ const StatCard = memo(({ title, value, dbValue, icon: Icon, color, loading, onCl
         <div className="stat-row api">
           <FiCloud className="stat-type-icon" />
           <span className="stat-type-label">API</span>
-          <span className="stat-value">
-            {loading ? '...' : (value || 0).toLocaleString()}
+          <span className={`stat-value ${apiNotLoaded ? 'not-loaded' : ''}`}>
+            {loading ? '...' : apiNotLoaded ? '-' : (value || 0).toLocaleString()}
           </span>
         </div>
         <div className="stat-row db">

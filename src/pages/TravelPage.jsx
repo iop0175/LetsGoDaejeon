@@ -135,7 +135,7 @@ const TravelPage = () => {
         }])
       }
     } catch (error) {
-      console.error('사진 갤러리 로드 오류:', error)
+
       setPhotoGallery([{
         imageUrl: spot.image,
         title: spot.title,
@@ -203,7 +203,7 @@ const TravelPage = () => {
           setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
         }
       } catch (err) {
-        console.error('데이터 로드 실패:', err)
+
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       

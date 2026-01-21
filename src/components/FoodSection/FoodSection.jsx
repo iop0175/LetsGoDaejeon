@@ -122,7 +122,7 @@ const FoodSection = () => {
         setFoods(defaultFoods)
       }
     } catch (error) {
-      console.error('맛집 데이터 로딩 실패:', error)
+
       setFoods(defaultFoods)
     }
     setLoading(false)

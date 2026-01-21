@@ -62,7 +62,7 @@ const HeroSection = () => {
           setSlides(defaultSlides)
         }
       } catch (err) {
-        console.error('히어로 슬라이드 로딩 실패:', err)
+
         setSlides(defaultSlides)
       }
       setLoading(false)

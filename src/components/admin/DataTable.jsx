@@ -39,7 +39,7 @@ const DataTable = memo(({
         })
       }, 2000)
     } catch (error) {
-      console.error('저장 실패:', error)
+
       setSavingItems(prev => ({ ...prev, [itemKey]: 'error' }))
       setTimeout(() => {
         setSavingItems(prev => {

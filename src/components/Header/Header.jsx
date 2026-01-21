@@ -56,7 +56,7 @@ const Header = memo(() => {
     try {
       await loginWithKakao()
     } catch (err) {
-      console.error('카카오 로그인 실패:', err)
+
     }
   }
 
@@ -65,7 +65,7 @@ const Header = memo(() => {
       await logout()
       setIsUserMenuOpen(false)
     } catch (err) {
-      console.error('로그아웃 실패:', err)
+
     }
   }
 

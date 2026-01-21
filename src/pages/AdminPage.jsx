@@ -217,7 +217,20 @@ const AdminPage = () => {
     return isNaN(parsed.getTime()) ? null : parsed
   }, [])
   
-  // 통계 로드
+  // API 데이터 통계 로드 여부
+  const [apiStatsLoaded, setApiStatsLoaded] = useState(false)
+  
+  // DB 통계만 로드 (대시보드 진입 시 자동 호출)
+  const loadDbStats = useCallback(async () => {
+    try {
+      const dbCounts = await getAllDbCounts()
+      setDbStats(dbCounts)
+    } catch (err) {
+
+    }
+  }, [])
+  
+  // API 통계 로드 (버튼 클릭 시 호출)
   const loadStats = useCallback(async () => {
     setStatsLoading(true)
     const newStats = {}
@@ -275,17 +288,13 @@ const AdminPage = () => {
     }
     
     setStats(newStats)
+    setApiStatsLoaded(true)
     
-    // DB 데이터 개수 로드
-    try {
-      const dbCounts = await getAllDbCounts()
-      setDbStats(dbCounts)
-    } catch (err) {
-      console.error('DB 개수 로드 실패:', err)
-    }
+    // DB 데이터 개수도 함께 로드
+    await loadDbStats()
     
     setStatsLoading(false)
-  }, [parseDate])
+  }, [parseDate, loadDbStats])
   
   // API 호출 통계 로드
   const loadApiStats = useCallback(() => {
@@ -304,7 +313,7 @@ const AdminPage = () => {
         setSupabaseUsage(result.stats)
       }
     } catch (err) {
-      console.error('Supabase 사용량 통계 로드 실패:', err)
+
     }
     setUsageLoading(false)
   }, [])
@@ -331,7 +340,7 @@ const AdminPage = () => {
         setMostVisitedPageDB(mostVisited)
       }
     } catch (err) {
-      console.error('페이지 방문 통계 로드 실패:', err)
+
     }
     setVisitStatsLoading(false)
   }, [])
@@ -358,7 +367,7 @@ const AdminPage = () => {
         setSearchStats(stats)
       }
     } catch (err) {
-      console.error('검색 통계 로드 실패:', err)
+
     }
     setSearchStatsLoading(false)
   }, [])
@@ -372,7 +381,7 @@ const AdminPage = () => {
         setHeroSlides(result.items)
       }
     } catch (err) {
-      console.error('히어로 슬라이드 로드 실패:', err)
+
     }
     setHeroLoading(false)
   }, [])
@@ -422,7 +431,7 @@ const AdminPage = () => {
         is_active: true
       })
     } catch (err) {
-      console.error('히어로 슬라이드 저장 실패:', err)
+
       alert(language === 'ko' ? '저장 중 오류가 발생했습니다.' : 'Error occurred while saving.')
     }
   }, [heroForm, editingHero, language, loadHeroSlides, heroSlides.length])
@@ -442,7 +451,7 @@ const AdminPage = () => {
         alert(result.error || '삭제 실패')
       }
     } catch (err) {
-      console.error('히어로 슬라이드 삭제 실패:', err)
+
     }
   }, [language, loadHeroSlides])
   
@@ -523,7 +532,7 @@ const AdminPage = () => {
         alert(result.error || '수정 실패')
       }
     } catch (err) {
-      console.error('아이템 수정 실패:', err)
+
       alert(language === 'ko' ? '수정 중 오류가 발생했습니다.' : 'Error occurred while updating.')
     }
     setEditSaving(false)
@@ -552,7 +561,7 @@ const AdminPage = () => {
         alert(result.error || '삭제 실패')
       }
     } catch (err) {
-      console.error('아이템 삭제 실패:', err)
+
       alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error occurred while deleting.')
     }
   }, [selectedPage, language, loadStats])
@@ -620,7 +629,7 @@ const AdminPage = () => {
               setSavedItems(prev => ({ ...prev, [pageKey]: [] }))
             }
           } catch (err) {
-            console.error('저장된 아이템 조회 실패:', err)
+
           }
         }
         
@@ -697,7 +706,7 @@ const AdminPage = () => {
         }
       }
     } catch (err) {
-      console.error('데이터 로드 실패:', err)
+
       setPageData([])
       setPageTotalCount(0)
     }
@@ -759,7 +768,7 @@ const AdminPage = () => {
       const savedIds = (data || []).map(item => item[config.uniqueField])
       setSavedItems(prev => ({ ...prev, [pageKey]: savedIds }))
     } catch (err) {
-      console.error('저장된 아이템 로드 실패:', err)
+
     }
   }, [supabase])
   
@@ -914,7 +923,7 @@ const AdminPage = () => {
           .upsert(batchData, { onConflict: config.uniqueField })
         
         if (error) {
-          console.error('배치 저장 실패:', error)
+
         } else {
           batch.forEach(item => {
             newSavedIds.push(item[config.uniqueField])
@@ -937,7 +946,7 @@ const AdminPage = () => {
           : `${savedCount} items have been saved.`
       )
     } catch (err) {
-      console.error('전체 저장 실패:', err)
+
       alert(
         language === 'ko'
           ? '전체 저장 중 오류가 발생했습니다.'
@@ -952,13 +961,13 @@ const AdminPage = () => {
   // 대시보드 로드
   useEffect(() => {
     if (user && activeSection === 'dashboard') {
-      loadStats()
+      loadDbStats() // DB 통계만 자동 로드
       loadApiStats()
       loadSupabaseUsage()
       loadPageVisitStats(visitStatsPeriod)
       loadSearchStats()
     }
-  }, [user, activeSection, loadStats, loadApiStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
+  }, [user, activeSection, loadDbStats, loadApiStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
   
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
@@ -1192,16 +1201,53 @@ const AdminPage = () => {
           {/* 대시보드 섹션 */}
           {activeSection === 'dashboard' && (
             <div className="dashboard-section">
+              {/* API 조회 버튼 섹션 */}
+              <div className="api-fetch-section">
+                <div className="api-fetch-info">
+                  <span className="api-fetch-label">
+                    {language === 'ko' ? '외부 API 데이터 개수 조회' : 'Fetch External API Data Counts'}
+                  </span>
+                  <span className="api-fetch-desc">
+                    {language === 'ko' 
+                      ? '관광지, 축제, 맛집 등 외부 API 데이터를 조회합니다. (API 호출 발생)' 
+                      : 'Fetch data from external APIs (Travel, Festival, Food, etc.). API calls will be made.'}
+                  </span>
+                </div>
+                <button 
+                  onClick={loadStats} 
+                  disabled={statsLoading}
+                  className={`api-fetch-btn ${apiStatsLoaded ? 'loaded' : ''}`}
+                >
+                  {statsLoading ? (
+                    <>
+                      <FiLoader className="spinning" /> 
+                      {language === 'ko' ? '조회 중...' : 'Loading...'}
+                    </>
+                  ) : apiStatsLoaded ? (
+                    <>
+                      <FiRefreshCw /> 
+                      {language === 'ko' ? '다시 조회' : 'Refresh'}
+                    </>
+                  ) : (
+                    <>
+                      <FiSearch /> 
+                      {language === 'ko' ? 'API 조회' : 'Fetch API'}
+                    </>
+                  )}
+                </button>
+              </div>
+              
               <div className="stats-grid">
                 {Object.entries(PAGE_CONFIGS).map(([key, config]) => (
                   <StatCard
                     key={key}
                     title={config.title[language]}
-                    value={stats[key]}
+                    value={apiStatsLoaded ? stats[key] : null}
                     dbValue={dbStats[key]}
                     icon={config.icon}
                     color={config.color}
                     loading={statsLoading}
+                    apiNotLoaded={!apiStatsLoaded}
                     onClick={() => {
                       setActiveSection(`page-${key}`)
                       loadPageData(key)

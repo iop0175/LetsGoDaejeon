@@ -258,7 +258,7 @@ export const getPublicTransitRoute = async (startX, startY, endX, endY, searchTy
       lastEndStation: info.lastEndStation
     }
   } catch (err) {
-    console.error('[ODSay] fetch 에러:', err)
+
     trackApiCall('searchPubTransPathT', false)
     return { success: false, error: err.message }
   }

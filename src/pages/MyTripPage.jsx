@@ -144,7 +144,7 @@ const MyTripPage = () => {
     try {
       localStorage.setItem('accommodationTransport', JSON.stringify(accommodationTransport))
     } catch (err) {
-      console.error('localStorage 저장 실패:', err)
+
     }
   }, [accommodationTransport])
   
@@ -232,7 +232,7 @@ const MyTripPage = () => {
         setTripPlans(result.plans)
       }
     } catch (err) {
-      console.error('여행 계획 로드 실패:', err)
+
     }
     setLoading(false)
   }, [user])
@@ -297,7 +297,7 @@ const MyTripPage = () => {
         }
       }
     } catch (err) {
-      console.error('여행 생성 실패:', err)
+
       alert(language === 'ko' ? '여행 계획 생성에 실패했습니다' : 'Failed to create trip plan')
     }
   }
@@ -317,7 +317,7 @@ const MyTripPage = () => {
         }
       }
     } catch (err) {
-      console.error('여행 삭제 실패:', err)
+
     }
   }
   
@@ -380,7 +380,7 @@ const MyTripPage = () => {
       
       setSearchResults(results)
     } catch (err) {
-      console.error('장소 검색 실패:', err)
+
     }
     setIsSearching(false)
   }
@@ -418,7 +418,7 @@ const MyTripPage = () => {
         setSearchQuery('')
       }
     } catch (err) {
-      console.error('장소 추가 실패:', err)
+
     }
   }
   
@@ -441,7 +441,7 @@ const MyTripPage = () => {
         setAccommodationSearchResults(results)
       }
     } catch (err) {
-      console.error('숙소 검색 실패:', err)
+
     }
     setIsSearchingAccommodation(false)
   }
@@ -479,7 +479,7 @@ const MyTripPage = () => {
         setAccommodationForm({ name: '', address: '' })
       }
     } catch (err) {
-      console.error('숙소 저장 실패:', err)
+
     }
   }
   
@@ -507,7 +507,7 @@ const MyTripPage = () => {
         }))
       }
     } catch (err) {
-      console.error('장소 삭제 실패:', err)
+
     }
   }
   
@@ -544,7 +544,7 @@ const MyTripPage = () => {
         }
       }
     } catch (err) {
-      console.error('이동 방법 업데이트 실패:', err)
+
     }
   }
   
@@ -622,7 +622,7 @@ const MyTripPage = () => {
         }))
       }
     } catch (err) {
-      console.error('숙소 이동 시간 조회 실패:', err)
+
       setAccommodationRouteInfo(prev => ({
         ...prev,
         [dayId]: { error: err.message, loading: false }
@@ -692,7 +692,7 @@ const MyTripPage = () => {
         }))
       }
     } catch (err) {
-      console.error('이동 시간 조회 실패:', err)
+
       setRouteInfo(prev => ({
         ...prev,
         [placeId]: { error: err.message, loading: false }
@@ -755,7 +755,7 @@ const MyTripPage = () => {
           setAllParkings(result.items)
         }
       } catch (err) {
-        console.error('주차장 데이터 로드 실패:', err)
+
       }
     }
     
@@ -768,7 +768,7 @@ const MyTripPage = () => {
     
     // 카카오맵 SDK 로드 확인
     if (!window.kakao || !window.kakao.maps) {
-      console.error('카카오맵 SDK가 로드되지 않았습니다')
+
       return
     }
     
@@ -947,7 +947,7 @@ const MyTripPage = () => {
             markersRef.current.push(accOverlay)
           }
         } catch (err) {
-          console.error('숙소 좌표 조회 실패:', err)
+
         }
       }
       
@@ -996,7 +996,7 @@ const MyTripPage = () => {
             markersRef.current.push(customOverlay)
           }
         } catch (err) {
-          console.error('좌표 조회 실패:', place.placeName, err)
+
         }
       }
       
@@ -1026,7 +1026,7 @@ const MyTripPage = () => {
             accommodationCoords = { lat: accResult.lat, lng: accResult.lng }
           }
         } catch (err) {
-          console.error('숙소 좌표 조회 실패:', err)
+
         }
       }
       
@@ -1694,7 +1694,7 @@ const MyTripPage = () => {
                       markersRef.current.push({ type: 'overlay', overlay: lineInfoBox })
                     }
                   } catch (routeErr) {
-                    console.error('경로 조회 실패:', routeErr)
+
                     // 실패 시 직선으로 연결
                     // 숙소에서 시작하는 경우 출발지 이름을 숙소명으로 설정
                     const fromName = isFromAccommodation 
@@ -1821,7 +1821,7 @@ const MyTripPage = () => {
               isFromAccommodation = false // 첫 번째 장소 이후는 장소에서 시작
             }
           } catch (err) {
-            console.error('좌표 조회 실패:', place.placeName, err)
+
           }
         }
       }
@@ -1886,7 +1886,7 @@ const MyTripPage = () => {
         [placeId]: { loading: false, parkings: nearby }
       }))
     } catch (err) {
-      console.error('주차장 조회 실패:', err)
+
       setNearbyParkings(prev => ({
         ...prev,
         [placeId]: { loading: false, parkings: [], error: err.message }
@@ -2003,7 +2003,7 @@ const MyTripPage = () => {
         try {
           await updateTripPlace(newPlaces[i].id, { orderIndex: i })
         } catch (err) {
-          console.error('순서 업데이트 실패:', err)
+
         }
       }
     }
@@ -2033,7 +2033,7 @@ const MyTripPage = () => {
     try {
       await loginWithKakao()
     } catch (err) {
-      console.error('카카오 로그인 실패:', err)
+
       alert(language === 'ko' ? '로그인에 실패했습니다. 다시 시도해주세요.' : 'Login failed. Please try again.')
     }
   }

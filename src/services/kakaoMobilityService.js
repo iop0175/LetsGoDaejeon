@@ -107,7 +107,7 @@ export const getCoordinatesFromAddress = async (address) => {
     // ===== 캐시 확인 =====
     const cachedCoord = await getCoordinateFromCache(address)
     if (cachedCoord && cachedCoord.fromCache) {
-      console.log(`[좌표 캐시 히트] ${address}`)
+
       return {
         success: true,
         lat: cachedCoord.lat,
@@ -116,7 +116,7 @@ export const getCoordinatesFromAddress = async (address) => {
       }
     }
     
-    console.log(`[좌표 API 호출] ${address}`)
+
     
     // 도로명 숫자 분리 정규화 (예: 엑스포로85 → 엑스포로 85)
     const normalizeRoad = (str) => str.replace(/([가-힣])(\d)/g, '$1 $2').trim()
@@ -222,9 +222,7 @@ export const getCoordinatesFromAddress = async (address) => {
     // 결과를 캐시에 저장하고 반환하는 헬퍼
     const returnWithCache = (lat, lng) => {
       // 캐시 저장 (비동기, 결과 대기하지 않음)
-      saveCoordinateToCache(address, lat, lng).then(saved => {
-        if (saved) console.log(`[좌표 캐시 저장] ${address}`)
-      }).catch(err => console.warn('[좌표 캐시 저장 실패]', err))
+      saveCoordinateToCache(address, lat, lng).catch(() => {})
       
       return { success: true, lat, lng }
     }
@@ -305,7 +303,7 @@ export const getCoordinatesFromAddress = async (address) => {
     return { success: false, error: 'Address not found' }
   } catch (err) {
     trackKakaoApiCall('geocoding', false)
-    console.error('❌ [좌표 변환 실패]:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -360,7 +358,7 @@ export const getCarRoute = async (origin, destination, includePath = false) => {
     return { success: false, error: 'Route not found' }
   } catch (err) {
     trackKakaoApiCall('directions', false)
-    console.error('자동차 경로 탐색 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -387,7 +385,7 @@ export const getPublicTransportRoute = async (origin, destination) => {
       isEstimate: true
     }
   } catch (err) {
-    console.error('대중교통 경로 추정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -413,7 +411,7 @@ export const getWalkingRoute = async (origin, destination) => {
       isEstimate: true
     }
   } catch (err) {
-    console.error('도보 경로 추정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -439,7 +437,7 @@ export const getBicycleRoute = async (origin, destination) => {
       isEstimate: true
     }
   } catch (err) {
-    console.error('자전거 경로 추정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -514,7 +512,7 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
     // ===== 캐시 확인 =====
     const cachedRoute = await getRouteFromCache(origin, destination, transportType)
     if (cachedRoute && cachedRoute.fromCache) {
-      console.log(`[캐시 히트] ${transportType} 경로: ${fromAddress} → ${toAddress}`)
+
       return {
         success: true,
         duration: cachedRoute.duration,
@@ -530,7 +528,7 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
     }
     
     // ===== 캐시 미스: API 호출 =====
-    console.log(`[API 호출] ${transportType} 경로: ${fromAddress} → ${toAddress}`)
+
     
     // 2. 이동 방법에 따른 경로 탐색
     let result = null
@@ -635,16 +633,16 @@ export const getRouteByTransport = async (fromAddress, toAddress, transportType,
         noRoute: result.noRoute
       }).then(saved => {
         if (saved) {
-          console.log(`[캐시 저장] ${transportType} 경로 저장 완료`)
+
         }
       }).catch(err => {
-        console.warn('[캐시 저장 실패]', err)
+
       })
     }
     
     return result
   } catch (err) {
-    console.error('경로 탐색 실패:', err)
+
     return { success: false, error: err.message }
   }
 }

@@ -88,7 +88,7 @@ const CulturePage = () => {
         setAllFacilities([]);
       }
     } catch (error) {
-      console.error('문화시설 불러오기 오류:', error);
+
     } finally {
       setLoading(false);
     }

@@ -72,7 +72,7 @@ const WeatherWidget = () => {
         throw new Error('No data received');
       }
     } catch (err) {
-      console.error('Weather fetch error:', err);
+
       // API 실패 시 샘플 데이터 표시
       setWeatherData([{
         snsrNm: '대전광역시',

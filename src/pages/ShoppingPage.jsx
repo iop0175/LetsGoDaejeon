@@ -70,7 +70,7 @@ const ShoppingPage = () => {
         setAllShops([]);
       }
     } catch (error) {
-      console.error('쇼핑 명소 불러오기 오류:', error);
+
     } finally {
       setLoading(false);
     }

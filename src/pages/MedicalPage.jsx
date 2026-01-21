@@ -86,7 +86,7 @@ const MedicalPage = () => {
         setAllFacilities([]);
       }
     } catch (error) {
-      console.error('의료기관 불러오기 오류:', error);
+
     } finally {
       setLoading(false);
     }

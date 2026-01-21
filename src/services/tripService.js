@@ -59,7 +59,7 @@ export const getUserTripPlans = async (userId) => {
     
     return { success: true, plans }
   } catch (err) {
-    console.error('여행 계획 목록 조회 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -113,7 +113,7 @@ export const createTripPlan = async ({ userId, title, startDate, endDate, descri
       }
     }
   } catch (err) {
-    console.error('여행 계획 생성 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -153,7 +153,7 @@ export const updateTripPlan = async (planId, updates) => {
     
     return { success: true, plan: data }
   } catch (err) {
-    console.error('여행 계획 수정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -178,7 +178,7 @@ export const deleteTripPlan = async (planId) => {
     
     return { success: true }
   } catch (err) {
-    console.error('여행 계획 삭제 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -230,7 +230,7 @@ export const addTripDay = async ({ planId, dayNumber, date }) => {
       }
     }
   } catch (err) {
-    console.error('일정 추가 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -266,7 +266,7 @@ export const updateTripDay = async (dayId, updates) => {
     
     return { success: true, day: data }
   } catch (err) {
-    console.error('일정 수정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -293,7 +293,7 @@ export const deleteTripDay = async (dayId) => {
     
     return { success: true }
   } catch (err) {
-    console.error('일정 삭제 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -374,7 +374,7 @@ export const addTripPlace = async ({
       }
     }
   } catch (err) {
-    console.error('장소 추가 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -421,7 +421,7 @@ export const updateTripPlace = async (placeId, updates) => {
     
     return { success: true, place: data }
   } catch (err) {
-    console.error('장소 수정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -450,7 +450,7 @@ export const deleteTripPlace = async (placeId) => {
     
     return { success: true }
   } catch (err) {
-    console.error('장소 삭제 실패:', err)
+
     return { success: false, error: err.message }
   }
 }

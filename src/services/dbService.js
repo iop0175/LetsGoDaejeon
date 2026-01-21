@@ -52,13 +52,13 @@ export const getDbCount = async (pageType) => {
       .select('*', { count: 'exact', head: true })
     
     if (error) {
-      console.error(`DB 카운트 조회 오류 (${pageType}):`, error)
+
       return 0
     }
     
     return count || 0
   } catch (err) {
-    console.error(`DB 카운트 조회 실패 (${pageType}):`, err)
+
     return 0
   }
 }
@@ -132,7 +132,7 @@ export const getDbData = async (pageType, page = 1, pageSize = 20) => {
       totalCount: totalCount || 0
     }
   } catch (err) {
-    console.error(`DB 데이터 조회 실패 (${pageType}):`, err)
+
     return { success: false, items: [], totalCount: 0 }
   }
 }
@@ -179,7 +179,7 @@ export const getAllDbData = async (pageType, limit = 1000) => {
       totalCount: count || items.length
     }
   } catch (err) {
-    console.error(`DB 전체 데이터 조회 실패 (${pageType}):`, err)
+
     return { success: false, items: [], totalCount: 0 }
   }
 }
@@ -221,7 +221,7 @@ export const getDbItem = async (pageType, id) => {
     
     return { success: true, item: data }
   } catch (err) {
-    console.error(`DB 아이템 조회 실패 (${pageType}):`, err)
+
     return { success: false, item: null }
   }
 }
@@ -252,7 +252,7 @@ export const updateDbItem = async (pageType, id, updates) => {
     
     return { success: true }
   } catch (err) {
-    console.error(`DB 아이템 수정 실패 (${pageType}):`, err)
+
     return { success: false, error: err.message }
   }
 }
@@ -279,7 +279,7 @@ export const deleteDbItem = async (pageType, id) => {
     
     return { success: true }
   } catch (err) {
-    console.error(`DB 아이템 삭제 실패 (${pageType}):`, err)
+
     return { success: false, error: err.message }
   }
 }
@@ -306,7 +306,7 @@ export const deleteDbItems = async (pageType, ids) => {
     
     return { success: true, deletedCount: count || ids.length }
   } catch (err) {
-    console.error(`DB 아이템 일괄 삭제 실패 (${pageType}):`, err)
+
     return { success: false, error: err.message, deletedCount: 0 }
   }
 }
@@ -337,7 +337,7 @@ export const getHeroSlides = async (activeOnly = false) => {
     
     return { success: true, items: data || [] }
   } catch (err) {
-    console.error('히어로 슬라이드 조회 실패:', err)
+
     return { success: false, items: [] }
   }
 }
@@ -359,7 +359,7 @@ export const createHeroSlide = async (slide) => {
     
     return { success: true, item: data }
   } catch (err) {
-    console.error('히어로 슬라이드 추가 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -383,7 +383,7 @@ export const updateHeroSlide = async (id, updates) => {
     
     return { success: true }
   } catch (err) {
-    console.error('히어로 슬라이드 수정 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -404,7 +404,7 @@ export const deleteHeroSlide = async (id) => {
     
     return { success: true }
   } catch (err) {
-    console.error('히어로 슬라이드 삭제 실패:', err)
+
     return { success: false, error: err.message }
   }
 }
@@ -463,7 +463,7 @@ export const getSupabaseUsageStats = async () => {
           stats.totalRows += rowCount
         }
       } catch (err) {
-        console.warn(`테이블 ${tableName} 조회 실패:`, err)
+
         stats.tables[tableName] = { rows: 0, estimatedSizeKB: 0 }
       }
     }
@@ -479,7 +479,7 @@ export const getSupabaseUsageStats = async () => {
     
     return { success: true, stats }
   } catch (err) {
-    console.error('Supabase 사용량 통계 조회 실패:', err)
+
     return { success: false, stats: null, error: err.message }
   }
 }
@@ -524,7 +524,7 @@ export const recordPageVisitDB = async (pageName) => {
         }])
     }
   } catch (err) {
-    console.error('페이지 방문 기록 실패:', err)
+
   }
 }
 
@@ -551,7 +551,7 @@ export const getPageVisitStats = async () => {
     
     return { success: true, stats }
   } catch (err) {
-    console.error('페이지 방문 통계 조회 실패:', err)
+
     return { success: false, stats: {} }
   }
 }
@@ -615,7 +615,7 @@ export const getPageVisitStatsByPeriod = async (period = 'all') => {
     
     return { success: true, stats }
   } catch (err) {
-    console.error('기간별 방문 통계 조회 실패:', err)
+
     return { success: false, stats: {} }
   }
 }
@@ -642,7 +642,7 @@ export const getTodayPageVisitStats = async () => {
     
     return { success: true, stats }
   } catch (err) {
-    console.error('오늘 방문 통계 조회 실패:', err)
+
     return { success: false, stats: {} }
   }
 }
@@ -668,7 +668,7 @@ export const getRecentPageVisitStats = async (days = 7) => {
     
     return { success: true, data }
   } catch (err) {
-    console.error('최근 방문 통계 조회 실패:', err)
+
     return { success: false, data: [] }
   }
 }
@@ -694,7 +694,7 @@ export const getMostVisitedPageDB = async () => {
     
     return { success: true, page: maxPage, count: maxCount }
   } catch (err) {
-    console.error('최다 방문 페이지 조회 실패:', err)
+
     return { success: false, page: null, count: 0 }
   }
 }
@@ -743,7 +743,7 @@ export const recordSearchQuery = async (query) => {
         }])
     }
   } catch (err) {
-    console.error('검색 기록 저장 실패:', err)
+
   }
 }
 
@@ -778,7 +778,7 @@ export const getPopularSearchQueries = async (limit = 10) => {
     
     return { success: true, items: sorted }
   } catch (err) {
-    console.error('인기 검색어 조회 실패:', err)
+
     return { success: false, items: [] }
   }
 }
@@ -808,7 +808,7 @@ export const getTodayPopularSearchQueries = async (limit = 10) => {
     
     return { success: true, items }
   } catch (err) {
-    console.error('오늘 인기 검색어 조회 실패:', err)
+
     return { success: false, items: [] }
   }
 }
@@ -851,7 +851,7 @@ export const getSearchStats = async () => {
     
     return { success: true, totalSearches, uniqueQueries, topQuery }
   } catch (err) {
-    console.error('검색 통계 조회 실패:', err)
+
     return { success: false, totalSearches: 0, uniqueQueries: 0, topQuery: null }
   }
 }
@@ -891,7 +891,7 @@ export const getRouteFromCache = async (origin, dest, transportType) => {
       .maybeSingle() // single() 대신 maybeSingle() 사용 - 결과가 없어도 에러 발생하지 않음
     
     if (error) {
-      console.error('경로 캐시 조회 오류:', error)
+
       return null
     }
     
@@ -902,7 +902,7 @@ export const getRouteFromCache = async (origin, dest, transportType) => {
         .update({ hit_count: (data.hit_count || 0) + 1 })
         .eq('id', data.id)
         .then(() => {})
-        .catch(err => console.warn('캐시 hit_count 업데이트 실패:', err))
+        .catch(() => {})
       
       return {
         success: true,
@@ -920,7 +920,7 @@ export const getRouteFromCache = async (origin, dest, transportType) => {
     
     return null
   } catch (err) {
-    console.error('경로 캐시 조회 실패:', err)
+
     return null
   }
 }
@@ -964,13 +964,13 @@ export const saveRouteToCache = async (origin, dest, transportType, routeData) =
       })
     
     if (error) {
-      console.error('경로 캐시 저장 오류:', error)
+
       return false
     }
     
     return true
   } catch (err) {
-    console.error('경로 캐시 저장 실패:', err)
+
     return false
   }
 }
@@ -1004,13 +1004,13 @@ export const deleteRouteCache = async (origin, dest, transportType = null) => {
     const { error } = await query
     
     if (error) {
-      console.error('경로 캐시 삭제 오류:', error)
+
       return false
     }
     
     return true
   } catch (err) {
-    console.error('경로 캐시 삭제 실패:', err)
+
     return false
   }
 }
@@ -1052,7 +1052,7 @@ export const getRouteCacheStats = async () => {
       oldestCache: oldestData?.created_at || null
     }
   } catch (err) {
-    console.error('캐시 통계 조회 실패:', err)
+
     return { success: false, totalCached: 0, totalHits: 0, oldestCache: null }
   }
 }
@@ -1088,7 +1088,7 @@ export const getCoordinateFromCache = async (address) => {
       .maybeSingle()
     
     if (error) {
-      console.error('좌표 캐시 조회 오류:', error)
+
       return null
     }
     
@@ -1099,7 +1099,7 @@ export const getCoordinateFromCache = async (address) => {
         .update({ hit_count: (data.hit_count || 0) + 1 })
         .eq('id', data.id)
         .then(() => {})
-        .catch(err => console.warn('좌표 캐시 hit_count 업데이트 실패:', err))
+        .catch(() => {})
       
       return {
         success: true,
@@ -1112,7 +1112,7 @@ export const getCoordinateFromCache = async (address) => {
     
     return null
   } catch (err) {
-    console.error('좌표 캐시 조회 실패:', err)
+
     return null
   }
 }
@@ -1143,13 +1143,13 @@ export const saveCoordinateToCache = async (address, lat, lng, placeName = null)
       })
     
     if (error) {
-      console.error('좌표 캐시 저장 오류:', error)
+
       return false
     }
     
     return true
   } catch (err) {
-    console.error('좌표 캐시 저장 실패:', err)
+
     return false
   }
 }
@@ -1214,16 +1214,15 @@ export const recordApiCall = async (logData) => {
     supabase
       .from('api_call_logs')
       .insert(entry)
-      .then(({ error }) => {
-        if (error) console.warn('API 로그 저장 실패:', error.message)
-      })
+      .then(() => {})
+      .catch(() => {})
     
     // 일별 통계도 업데이트
     updateApiDailyStat(logData.apiType, logData.responseStatus === 'success', logData.fromCache, logData.responseTimeMs)
     
     return true
   } catch (err) {
-    console.warn('API 로그 기록 실패:', err)
+
     return false
   }
 }
@@ -1297,7 +1296,7 @@ const updateApiDailyStat = async (apiType, isSuccess, fromCache, responseTimeMs)
         })
     }
   } catch (err) {
-    console.warn('일별 통계 업데이트 실패:', err)
+
   }
 }
 
@@ -1343,7 +1342,7 @@ export const getTodayApiStats = async () => {
       }
     }
   } catch (err) {
-    console.error('오늘 API 통계 조회 실패:', err)
+
     return { success: false, stats: {}, summary: { totalCalls: 0, totalCacheHits: 0, cacheHitRate: 0 } }
   }
 }
@@ -1368,7 +1367,7 @@ export const getApiStatsByPeriod = async (days = 7) => {
     
     return { success: true, data }
   } catch (err) {
-    console.error('기간별 API 통계 조회 실패:', err)
+
     return { success: false, data: [] }
   }
 }
@@ -1397,7 +1396,7 @@ export const getRecentApiLogs = async (limit = 100, apiType = null) => {
     
     return { success: true, logs: data }
   } catch (err) {
-    console.error('API 로그 조회 실패:', err)
+
     return { success: false, logs: [] }
   }
 }
@@ -1456,7 +1455,7 @@ export const getApiCallSummary = async () => {
       topApi: topApi?.api_type || null
     }
   } catch (err) {
-    console.error('API 통계 요약 조회 실패:', err)
+
     return { success: false }
   }
 }

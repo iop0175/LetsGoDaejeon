@@ -16,13 +16,13 @@ export const AuthProvider = ({ children }) => {
         const code = url.searchParams.get('code')
         
         if (code) {
-          console.log('OAuth 인증 코드 발견, 세션 교환 중...')
+
           const { data: exchangeData, error: exchangeError } = await exchangeCodeForSession()
           
           if (exchangeError) {
-            console.error('코드 교환 오류:', exchangeError)
+
           } else if (exchangeData?.session) {
-            console.log('세션 교환 성공:', exchangeData.session.user.email)
+
             setUser(exchangeData.session.user)
             setLoading(false)
             return
@@ -33,18 +33,18 @@ export const AuthProvider = ({ children }) => {
         const { session, error } = await getSession()
         
         if (error) {
-          console.error('세션 가져오기 오류:', error)
+
         }
         
         if (session?.user) {
-          console.log('사용자 세션 발견:', session.user.email)
+
           setUser(session.user)
         } else {
-          console.log('활성 세션 없음')
+
           setUser(null)
         }
       } catch (err) {
-        console.error('인증 초기화 오류:', err)
+
         setUser(null)
       }
       setLoading(false)
@@ -54,7 +54,7 @@ export const AuthProvider = ({ children }) => {
 
     // 인증 상태 변경 리스너
     const { data: { subscription } } = onAuthStateChange((event, session) => {
-      console.log('인증 상태 변경:', event, session?.user?.email)
+
       
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
         setUser(session?.user ?? null)

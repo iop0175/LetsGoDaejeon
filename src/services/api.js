@@ -36,7 +36,7 @@ export const getTourSpots = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('관광지 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -59,7 +59,7 @@ export const getFestivals = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('공연/행사 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -82,7 +82,7 @@ export const getRestaurants = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('맛집 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -105,7 +105,7 @@ export const getAccommodations = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('숙박시설 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -172,7 +172,7 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('대전시 주차장 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -194,7 +194,7 @@ export const getDaejeonFestivals = async (pageNo = 1, numOfRows = 20) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('대전 축제 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -217,7 +217,7 @@ export const getCulturalFacilities = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('문화시설 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -240,7 +240,7 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('의료기관 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -263,7 +263,7 @@ export const getShoppingPlaces = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('쇼핑 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -286,7 +286,7 @@ export const getTourRooms = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('숙박업소 API 호출 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };
@@ -314,7 +314,7 @@ const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('한국관광공사 포토갤러리 검색 오류:', error);
+
     return { success: false, items: [], totalCount: 0, error };
   }
 };

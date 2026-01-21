@@ -46,7 +46,7 @@ async function handleOdsay(request, env, pathname) {
       }
     });
 
-    console.log('Calling ODSay API:', odsayUrl.toString().replace(apiKey, '***'));
+
     
     // ODSay에 등록된 도메인을 Referer로 설정
     const response = await fetch(odsayUrl.toString(), {
@@ -60,7 +60,7 @@ async function handleOdsay(request, env, pathname) {
     
     return jsonResponse(data);
   } catch (error) {
-    console.error('ODSay API Error:', error);
+
     return errorResponse('ODSay API 요청 실패: ' + error.message, 500);
   }
 }
@@ -89,7 +89,7 @@ async function handleKakao(request, env, pathname) {
 
     const apiKey = env.KAKAO_REST_API_KEY ? env.KAKAO_REST_API_KEY.trim() : '';
     
-    console.log('Calling Kakao API:', kakaoUrl.toString());
+
     
     const response = await fetch(kakaoUrl.toString(), {
       headers: {
@@ -101,7 +101,7 @@ async function handleKakao(request, env, pathname) {
     const data = await response.json();
     return jsonResponse(data);
   } catch (error) {
-    console.error('Kakao API Error:', error);
+
     return errorResponse('카카오 API 요청 실패: ' + error.message, 500);
   }
 }

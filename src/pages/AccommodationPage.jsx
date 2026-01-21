@@ -89,7 +89,7 @@ const AccommodationPage = () => {
         setAllRooms([]);
       }
     } catch (error) {
-      console.error('숙박업소 불러오기 오류:', error);
+
     } finally {
       setLoading(false);
     }

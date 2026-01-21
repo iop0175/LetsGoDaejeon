@@ -125,7 +125,7 @@ const FestivalSection = () => {
         setFestivals(defaultFestivals)
       }
     } catch (error) {
-      console.error('축제 데이터 로딩 실패:', error)
+
       setFestivals(defaultFestivals)
     }
     setLoading(false)

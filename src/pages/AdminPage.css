@@ -345,6 +345,75 @@
   padding: 32px;
 }
 
+/* API 조회 섹션 */
+.api-fetch-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #e0f2fe 0%, #dbeafe 100%);
+  border: 1px solid #93c5fd;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-bottom: 20px;
+}
+
+.api-fetch-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.api-fetch-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #1e40af;
+}
+
+.api-fetch-desc {
+  font-size: 0.82rem;
+  color: #3b82f6;
+}
+
+.api-fetch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.api-fetch-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+.api-fetch-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.api-fetch-btn.loaded {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.api-fetch-btn .spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* API 미조회 상태 값 */
+.stat-value.not-loaded {
+  color: #94a3b8;
+  font-style: italic;
+}
+
 /* 대시보드 */
 .stats-grid {
   display: grid;
@@ -1026,6 +1095,22 @@
   
   .mobile-menu-btn {
     display: block;
+  }
+  
+  /* API 조회 섹션 반응형 */
+  .api-fetch-section {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+  
+  .api-fetch-info {
+    align-items: center;
+  }
+  
+  .api-fetch-btn {
+    width: 100%;
+    justify-content: center;
   }
   
   .stats-grid {
@@ -2584,6 +2669,10 @@
   color: #10b981;
 }
 
+.api-stat-card .api-stat-value.cache-value {
+  color: #8b5cf6;
+}
+
 .api-stat-card .api-stat-value svg {
   font-size: 1rem;
 }
@@ -2898,6 +2987,10 @@
 
 .dark-theme .api-stat-card .api-stat-value {
   color: #f1f5f9;
+}
+
+.dark-theme .api-stat-card .api-stat-value.cache-value {
+  color: #a78bfa;
 }
 
 .dark-theme .usage-bar-wrapper {
@@ -4040,6 +4133,24 @@
 
 .dark-theme .mobile-menu-btn:hover {
   background: #475569;
+}
+
+/* API 조회 섹션 다크모드 */
+.dark-theme .api-fetch-section {
+  background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%);
+  border-color: #3b82f6;
+}
+
+.dark-theme .api-fetch-label {
+  color: #93c5fd;
+}
+
+.dark-theme .api-fetch-desc {
+  color: #60a5fa;
+}
+
+.dark-theme .stat-value.not-loaded {
+  color: #64748b;
 }
 
 /* 통계 그리드 */
