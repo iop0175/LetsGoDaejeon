@@ -4,7 +4,8 @@ import {
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud,
-  FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch
+  FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
+  FiNavigation, FiEye, FiToggleLeft, FiToggleRight
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -20,6 +21,10 @@ import {
   getPopularSearchQueries, getTodayPopularSearchQueries, getSearchStats,
   getPageVisitStatsByPeriod
 } from '../services/dbService'
+import {
+  getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
+  adminDeleteTrip, getPublishedTripStats
+} from '../services/tripService'
 import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
 import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
@@ -187,6 +192,18 @@ const AdminPage = () => {
   const [todaySearches, setTodaySearches] = useState([])
   const [searchStats, setSearchStats] = useState(null)
   const [searchStatsLoading, setSearchStatsLoading] = useState(false)
+  
+  // 추천 여행 코스 관리
+  const [publishedTrips, setPublishedTrips] = useState([])
+  const [tripsLoading, setTripsLoading] = useState(false)
+  const [tripStats, setTripStats] = useState(null)
+  const [editingTrip, setEditingTrip] = useState(null)
+  const [tripForm, setTripForm] = useState({
+    title: '',
+    description: '',
+    thumbnailUrl: '',
+    authorNickname: ''
+  })
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
   const parseDate = useCallback((dateStr) => {
@@ -371,6 +388,97 @@ const AdminPage = () => {
     }
     setSearchStatsLoading(false)
   }, [])
+  
+  // 추천 여행 코스 로드
+  const loadPublishedTrips = useCallback(async () => {
+    setTripsLoading(true)
+    try {
+      const result = await getAdminPublishedTrips({ limit: 100 })
+      if (result.success) {
+        setPublishedTrips(result.trips)
+      }
+      
+      const statsResult = await getPublishedTripStats()
+      if (statsResult.success) {
+        setTripStats(statsResult.stats)
+      }
+    } catch (err) {
+
+    }
+    setTripsLoading(false)
+  }, [])
+  
+  // 여행 코스 게시 상태 토글
+  const handleToggleTripPublish = useCallback(async (trip) => {
+    const newStatus = !trip.isPublished
+    const confirmMsg = newStatus
+      ? (language === 'ko' ? '이 여행 코스를 게시하시겠습니까?' : 'Publish this trip?')
+      : (language === 'ko' ? '이 여행 코스의 게시를 취소하시겠습니까?' : 'Unpublish this trip?')
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      const result = await adminUpdateTripPublishStatus(trip.id, newStatus)
+      if (result.success) {
+        loadPublishedTrips()
+      } else {
+        alert(result.error || '오류가 발생했습니다.')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '상태 변경 중 오류가 발생했습니다.' : 'Error changing status.')
+    }
+  }, [language, loadPublishedTrips])
+  
+  // 여행 코스 수정 시작
+  const handleEditTrip = useCallback((trip) => {
+    setEditingTrip(trip)
+    setTripForm({
+      title: trip.title || '',
+      description: trip.description || '',
+      thumbnailUrl: trip.thumbnailUrl || '',
+      authorNickname: trip.authorNickname || ''
+    })
+  }, [])
+  
+  // 여행 코스 수정 저장
+  const handleSaveTripEdit = useCallback(async () => {
+    if (!editingTrip) return
+    
+    try {
+      const result = await adminUpdateTrip(editingTrip.id, tripForm)
+      if (result.success) {
+        alert(language === 'ko' ? '수정되었습니다.' : 'Updated.')
+        setEditingTrip(null)
+        setTripForm({ title: '', description: '', thumbnailUrl: '', authorNickname: '' })
+        loadPublishedTrips()
+      } else {
+        alert(result.error || '수정 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '수정 중 오류가 발생했습니다.' : 'Error occurred while updating.')
+    }
+  }, [editingTrip, tripForm, language, loadPublishedTrips])
+  
+  // 여행 코스 삭제
+  const handleDeleteTrip = useCallback(async (trip) => {
+    const confirmMsg = language === 'ko'
+      ? `"${trip.title}" 여행 코스를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`
+      : `Delete "${trip.title}"?\nThis action cannot be undone.`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      const result = await adminDeleteTrip(trip.id)
+      if (result.success) {
+        alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
+        loadPublishedTrips()
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error occurred while deleting.')
+    }
+  }, [language, loadPublishedTrips])
   
   // Hero 슬라이드 로드
   const loadHeroSlides = useCallback(async () => {
@@ -1116,6 +1224,17 @@ const AdminPage = () => {
             <span>{language === 'ko' ? '히어로 슬라이드' : 'Hero Slides'}</span>
           </button>
           
+          <button 
+            className={`nav-item ${activeSection === 'courses' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('courses')
+              loadPublishedTrips()
+            }}
+          >
+            <FiNavigation style={{ color: activeSection === 'courses' ? 'white' : '#10b981' }} />
+            <span>{language === 'ko' ? '추천 여행 코스' : 'Travel Courses'}</span>
+          </button>
+          
           <div className="nav-section-title">
             {language === 'ko' ? '페이지 관리' : 'Pages'}
           </div>
@@ -1181,12 +1300,18 @@ const AdminPage = () => {
           <h1>
             {activeSection === 'dashboard' && (language === 'ko' ? '대시보드' : 'Dashboard')}
             {activeSection === 'hero' && (language === 'ko' ? '히어로 슬라이드 관리' : 'Hero Slides')}
+            {activeSection === 'courses' && (language === 'ko' ? '추천 여행 코스 관리' : 'Travel Courses')}
             {activeSection === 'database' && 'Supabase'}
             {activeSection === 'settings' && (language === 'ko' ? '설정' : 'Settings')}
             {activeSection.startsWith('page-') && PAGE_CONFIGS[activeSection.replace('page-', '')]?.title[language]}
           </h1>
           {activeSection === 'hero' && (
             <button className="refresh-btn" onClick={loadHeroSlides}>
+              <FiRefreshCw />
+            </button>
+          )}
+          {activeSection === 'courses' && (
+            <button className="refresh-btn" onClick={loadPublishedTrips}>
               <FiRefreshCw />
             </button>
           )}
@@ -1732,6 +1857,177 @@ const AdminPage = () => {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+          
+          {/* 추천 여행 코스 관리 */}
+          {activeSection === 'courses' && (
+            <div className="courses-management">
+              {/* 통계 카드 */}
+              {tripStats && (
+                <div className="trip-stats-cards">
+                  <div className="trip-stat-card">
+                    <FiNavigation className="stat-icon" />
+                    <div className="stat-info">
+                      <span className="stat-value">{tripStats.totalCount}</span>
+                      <span className="stat-label">{language === 'ko' ? '게시된 코스' : 'Published Courses'}</span>
+                    </div>
+                  </div>
+                  <div className="trip-stat-card">
+                    <FiEye className="stat-icon" />
+                    <div className="stat-info">
+                      <span className="stat-value">{tripStats.totalViews?.toLocaleString()}</span>
+                      <span className="stat-label">{language === 'ko' ? '총 조회수' : 'Total Views'}</span>
+                    </div>
+                  </div>
+                  <div className="trip-stat-card">
+                    <FiHeart className="stat-icon" />
+                    <div className="stat-info">
+                      <span className="stat-value">{tripStats.totalLikes?.toLocaleString()}</span>
+                      <span className="stat-label">{language === 'ko' ? '총 좋아요' : 'Total Likes'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* 수정 폼 */}
+              {editingTrip && (
+                <div className="trip-edit-form">
+                  <h3>{language === 'ko' ? '여행 코스 수정' : 'Edit Travel Course'}</h3>
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '제목' : 'Title'}</label>
+                      <input
+                        type="text"
+                        value={tripForm.title}
+                        onChange={(e) => setTripForm({...tripForm, title: e.target.value})}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>{language === 'ko' ? '작성자' : 'Author'}</label>
+                      <input
+                        type="text"
+                        value={tripForm.authorNickname}
+                        onChange={(e) => setTripForm({...tripForm, authorNickname: e.target.value})}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-group">
+                    <label>{language === 'ko' ? '설명' : 'Description'}</label>
+                    <textarea
+                      value={tripForm.description}
+                      onChange={(e) => setTripForm({...tripForm, description: e.target.value})}
+                      rows={3}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>{language === 'ko' ? '썸네일 URL' : 'Thumbnail URL'}</label>
+                    <input
+                      type="text"
+                      value={tripForm.thumbnailUrl}
+                      onChange={(e) => setTripForm({...tripForm, thumbnailUrl: e.target.value})}
+                      placeholder="https://..."
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button className="btn-save" onClick={handleSaveTripEdit}>
+                      <FiSave /> {language === 'ko' ? '저장' : 'Save'}
+                    </button>
+                    <button className="btn-cancel" onClick={() => setEditingTrip(null)}>
+                      <FiXCircle /> {language === 'ko' ? '취소' : 'Cancel'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              
+              {/* 여행 코스 목록 */}
+              {tripsLoading ? (
+                <div className="loading-container">
+                  <FiLoader className="spinning" size={32} />
+                  <p>{language === 'ko' ? '로딩 중...' : 'Loading...'}</p>
+                </div>
+              ) : publishedTrips.length > 0 ? (
+                <div className="trips-list">
+                  <table className="trips-table">
+                    <thead>
+                      <tr>
+                        <th>{language === 'ko' ? '썸네일' : 'Thumbnail'}</th>
+                        <th>{language === 'ko' ? '제목' : 'Title'}</th>
+                        <th>{language === 'ko' ? '작성자' : 'Author'}</th>
+                        <th>{language === 'ko' ? '조회수' : 'Views'}</th>
+                        <th>{language === 'ko' ? '좋아요' : 'Likes'}</th>
+                        <th>{language === 'ko' ? '게시일' : 'Published'}</th>
+                        <th>{language === 'ko' ? '관리' : 'Actions'}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {publishedTrips.map(trip => (
+                        <tr key={trip.id}>
+                          <td>
+                            <div className="trip-thumbnail">
+                              {trip.thumbnailUrl ? (
+                                <img src={trip.thumbnailUrl} alt={trip.title} />
+                              ) : (
+                                <div className="no-thumbnail"><FiImage /></div>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <a 
+                              href={`/trip/shared/${trip.id}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="trip-title-link"
+                            >
+                              {trip.title}
+                            </a>
+                          </td>
+                          <td>{trip.authorNickname}</td>
+                          <td>{trip.viewCount?.toLocaleString()}</td>
+                          <td>{trip.likeCount?.toLocaleString()}</td>
+                          <td>
+                            {trip.publishedAt 
+                              ? new Date(trip.publishedAt).toLocaleDateString() 
+                              : '-'}
+                          </td>
+                          <td>
+                            <div className="trip-actions">
+                              <button 
+                                className="btn-edit" 
+                                onClick={() => handleEditTrip(trip)}
+                                title={language === 'ko' ? '수정' : 'Edit'}
+                              >
+                                <FiEdit2 />
+                              </button>
+                              <button 
+                                className={`btn-toggle ${trip.isPublished ? 'published' : ''}`}
+                                onClick={() => handleToggleTripPublish(trip)}
+                                title={trip.isPublished 
+                                  ? (language === 'ko' ? '게시 취소' : 'Unpublish')
+                                  : (language === 'ko' ? '게시' : 'Publish')}
+                              >
+                                {trip.isPublished ? <FiToggleRight /> : <FiToggleLeft />}
+                              </button>
+                              <button 
+                                className="btn-delete" 
+                                onClick={() => handleDeleteTrip(trip)}
+                                title={language === 'ko' ? '삭제' : 'Delete'}
+                              >
+                                <FiTrash2 />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="no-data">
+                  <FiNavigation size={48} />
+                  <p>{language === 'ko' ? '게시된 여행 코스가 없습니다.' : 'No published travel courses.'}</p>
+                </div>
+              )}
             </div>
           )}
           

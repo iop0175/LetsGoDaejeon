@@ -4557,3 +4557,351 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ===== 추천 여행 코스 관리 ===== */
+.courses-management {
+  padding: 0;
+}
+
+.trip-stats-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.trip-stat-card {
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.trip-stat-card .stat-icon {
+  font-size: 24px;
+  color: #10b981;
+  padding: 12px;
+  background: #ecfdf5;
+  border-radius: 10px;
+}
+
+.trip-stat-card .stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.trip-stat-card .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+
+.trip-stat-card .stat-label {
+  font-size: 0.85rem;
+  color: #666;
+}
+
+/* 여행 코스 수정 폼 */
+.trip-edit-form {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.trip-edit-form h3 {
+  margin-bottom: 20px;
+  color: #1a1a2e;
+}
+
+.trip-edit-form .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.trip-edit-form .form-group {
+  margin-bottom: 16px;
+  padding: 0;
+  background: transparent;
+}
+
+.trip-edit-form .form-group label {
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.trip-edit-form .form-group input,
+.trip-edit-form .form-group textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.trip-edit-form .form-group textarea {
+  resize: vertical;
+}
+
+.trip-edit-form .form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.trip-edit-form .btn-save,
+.trip-edit-form .btn-cancel {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.trip-edit-form .btn-save {
+  background: #10b981;
+  color: white;
+}
+
+.trip-edit-form .btn-save:hover {
+  background: #059669;
+}
+
+.trip-edit-form .btn-cancel {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.trip-edit-form .btn-cancel:hover {
+  background: #e2e8f0;
+}
+
+/* 여행 코스 목록 테이블 */
+.trips-list {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.trips-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.trips-table th,
+.trips-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.trips-table th {
+  background: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+}
+
+.trips-table tr:hover {
+  background: #f8fafc;
+}
+
+.trip-thumbnail {
+  width: 60px;
+  height: 40px;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #f1f5f9;
+}
+
+.trip-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trip-thumbnail .no-thumbnail {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.trip-title-link {
+  color: #1a1a2e;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.trip-title-link:hover {
+  color: #10b981;
+  text-decoration: underline;
+}
+
+.trip-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.trip-actions button {
+  padding: 8px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.trip-actions .btn-edit {
+  background: #f0f9ff;
+  color: #0284c7;
+}
+
+.trip-actions .btn-edit:hover {
+  background: #e0f2fe;
+}
+
+.trip-actions .btn-toggle {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.trip-actions .btn-toggle.published {
+  background: #ecfdf5;
+  color: #10b981;
+}
+
+.trip-actions .btn-toggle:hover {
+  opacity: 0.8;
+}
+
+.trip-actions .btn-delete {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.trip-actions .btn-delete:hover {
+  background: #fee2e2;
+}
+
+/* 로딩 컨테이너 */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  color: #64748b;
+}
+
+.loading-container .spinning {
+  animation: spin 1s linear infinite;
+}
+
+/* 다크모드 - 추천 여행 코스 */
+.dark-theme .trip-stat-card {
+  background: #1e293b;
+}
+
+.dark-theme .trip-stat-card .stat-icon {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.dark-theme .trip-stat-card .stat-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .trip-stat-card .stat-label {
+  color: #94a3b8;
+}
+
+.dark-theme .trip-edit-form {
+  background: #1e293b;
+}
+
+.dark-theme .trip-edit-form h3 {
+  color: #f1f5f9;
+}
+
+.dark-theme .trip-edit-form .form-group input,
+.dark-theme .trip-edit-form .form-group textarea {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .trip-edit-form .btn-cancel {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .trips-list {
+  background: #1e293b;
+}
+
+.dark-theme .trips-table th {
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+.dark-theme .trips-table td {
+  border-color: #334155;
+}
+
+.dark-theme .trips-table tr:hover {
+  background: #334155;
+}
+
+.dark-theme .trip-thumbnail {
+  background: #334155;
+}
+
+.dark-theme .trip-title-link {
+  color: #f1f5f9;
+}
+
+.dark-theme .trip-actions .btn-edit {
+  background: rgba(2, 132, 199, 0.15);
+}
+
+.dark-theme .trip-actions .btn-toggle {
+  background: rgba(217, 119, 6, 0.15);
+}
+
+.dark-theme .trip-actions .btn-toggle.published {
+  background: rgba(16, 185, 129, 0.15);
+}
+
+.dark-theme .trip-actions .btn-delete {
+  background: rgba(220, 38, 38, 0.15);
+}
+
+@media (max-width: 768px) {
+  .trip-stats-cards {
+    grid-template-columns: 1fr;
+  }
+  
+  .trip-edit-form .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .trips-table {
+    display: block;
+    overflow-x: auto;
+  }
+}

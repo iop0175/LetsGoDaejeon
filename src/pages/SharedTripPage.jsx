@@ -1,12 +1,23 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
-import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiX, FiInfo } from 'react-icons/fi'
-import { FaBus, FaSubway, FaWalking } from 'react-icons/fa'
+import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiX, FiInfo, FiMap } from 'react-icons/fi'
+import { FaBus, FaSubway, FaWalking, FaCar } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
-import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked } from '../services/tripService'
+import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked, getPlaceDetail } from '../services/tripService'
 import { getPublicTransitRoute } from '../services/odsayService'
-import { getCoordinatesFromAddress } from '../services/kakaoMobilityService'
+import { getCoordinatesFromAddress, getCarRoute } from '../services/kakaoMobilityService'
 import './SharedTripPage.css'
+
+// 일차별 경로 색상
+const DAY_COLORS = [
+  '#3B82F6', // 파랑
+  '#10B981', // 초록
+  '#F59E0B', // 주황
+  '#EF4444', // 빨강
+  '#8B5CF6', // 보라
+  '#EC4899', // 분홍
+  '#06b6d4', // 청록
+]
 
 const SharedTripPage = () => {
   const { tripId } = useParams()
@@ -20,9 +31,18 @@ const SharedTripPage = () => {
   const [likeCount, setLikeCount] = useState(0)
   const [likingInProgress, setLikingInProgress] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState(null)
+  const [placeDetail, setPlaceDetail] = useState(null) // DB에서 가져온 장소 상세 정보
+  const [detailLoading, setDetailLoading] = useState(false)
   const [transitInfo, setTransitInfo] = useState(null)
   const [transitLoading, setTransitLoading] = useState(false)
+  const [selectedDay, setSelectedDay] = useState(0) // 선택된 일차 (지도용)
+  const [mapReady, setMapReady] = useState(false)
   const detailCardRef = useRef(null)
+  const mapRef = useRef(null)
+  const mapInstanceRef = useRef(null)
+  const markersRef = useRef([])
+  const polylinesRef = useRef([])
+  const overlaysRef = useRef([])
   
   // 여행 계획 로드
   useEffect(() => {
@@ -59,6 +79,198 @@ const SharedTripPage = () => {
       loadTrip()
     }
   }, [tripId])
+  
+  // 카카오맵 초기화
+  useEffect(() => {
+    if (!trip || !window.kakao?.maps) return
+    
+    const container = mapRef.current
+    if (!container) return
+    
+    const { maps } = window.kakao
+    
+    // 모든 일차의 장소 좌표 수집
+    const allPlaces = trip.days?.flatMap(day => day.places || []) || []
+    const validPlaces = allPlaces.filter(p => p.lat && p.lng)
+    
+    if (validPlaces.length === 0) return
+    
+    // 중심점 계산
+    const avgLat = validPlaces.reduce((sum, p) => sum + p.lat, 0) / validPlaces.length
+    const avgLng = validPlaces.reduce((sum, p) => sum + p.lng, 0) / validPlaces.length
+    
+    const options = {
+      center: new maps.LatLng(avgLat, avgLng),
+      level: 6
+    }
+    
+    const map = new maps.Map(container, options)
+    mapInstanceRef.current = map
+    
+    // 지도 로드 완료
+    maps.event.addListener(map, 'tilesloaded', () => {
+      setMapReady(true)
+    })
+    
+    // 컨트롤 추가
+    const zoomControl = new maps.ZoomControl()
+    map.addControl(zoomControl, maps.ControlPosition.RIGHT)
+    
+    setMapReady(true)
+  }, [trip])
+  
+  // 선택된 일차의 경로 표시 (실제 자동차 경로)
+  useEffect(() => {
+    if (!mapReady || !mapInstanceRef.current || !trip?.days) return
+    
+    const { maps } = window.kakao
+    const map = mapInstanceRef.current
+    
+    // 기존 마커/오버레이/경로선 제거
+    markersRef.current.forEach(m => m.setMap(null))
+    overlaysRef.current.forEach(o => o.setMap(null))
+    polylinesRef.current.forEach(p => p.setMap(null))
+    markersRef.current = []
+    overlaysRef.current = []
+    polylinesRef.current = []
+    
+    const bounds = new maps.LatLngBounds()
+    
+    // 비동기 경로 그리기 함수
+    const drawRoutes = async () => {
+      // 일차별로 경로 표시
+      for (let dayIndex = 0; dayIndex < trip.days.length; dayIndex++) {
+        const day = trip.days[dayIndex]
+        const places = day.places || []
+        const validPlaces = places.filter(p => p.lat && p.lng)
+        
+        if (validPlaces.length === 0) continue
+        
+        const dayColor = DAY_COLORS[dayIndex % DAY_COLORS.length]
+        const isSelected = dayIndex === selectedDay
+        const opacity = isSelected ? 1 : 0.3
+        
+        // 마커 및 오버레이 생성
+        validPlaces.forEach((place, placeIndex) => {
+          const position = new maps.LatLng(place.lat, place.lng)
+          bounds.extend(position)
+          
+          // 커스텀 마커 오버레이 (번호 원)
+          const markerContent = document.createElement('div')
+          markerContent.innerHTML = `
+            <div style="
+              background: ${dayColor};
+              color: white;
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: bold;
+              font-size: 14px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              opacity: ${opacity};
+              border: 3px solid white;
+              cursor: pointer;
+              transition: transform 0.2s;
+            ">${placeIndex + 1}</div>
+          `
+          
+          const overlay = new maps.CustomOverlay({
+            position,
+            content: markerContent,
+            yAnchor: 0.5,
+            xAnchor: 0.5,
+            map
+          })
+          overlaysRef.current.push(overlay)
+          
+          // 클릭 이벤트
+          markerContent.addEventListener('click', () => {
+            handlePlaceClick(place, dayIndex, placeIndex)
+          })
+          
+          // 호버 효과
+          markerContent.addEventListener('mouseenter', () => {
+            markerContent.firstElementChild.style.transform = 'scale(1.2)'
+          })
+          markerContent.addEventListener('mouseleave', () => {
+            markerContent.firstElementChild.style.transform = 'scale(1)'
+          })
+        })
+        
+        // 실제 자동차 경로 가져와서 그리기
+        for (let i = 0; i < validPlaces.length - 1; i++) {
+          const origin = validPlaces[i]
+          const destination = validPlaces[i + 1]
+          
+          try {
+            // 실제 자동차 경로 API 호출
+            const routeResult = await getCarRoute(
+              { lat: origin.lat, lng: origin.lng },
+              { lat: destination.lat, lng: destination.lng },
+              true // includePath: 경로 좌표 포함
+            )
+            
+            if (routeResult.success && routeResult.path && routeResult.path.length > 0) {
+              // 실제 도로 경로로 폴리라인 그리기
+              const path = routeResult.path.map(coord => 
+                new maps.LatLng(coord.lat, coord.lng)
+              )
+              
+              const polyline = new maps.Polyline({
+                path,
+                strokeWeight: isSelected ? 5 : 3,
+                strokeColor: dayColor,
+                strokeOpacity: isSelected ? 0.9 : 0.3,
+                strokeStyle: 'solid'
+              })
+              polyline.setMap(map)
+              polylinesRef.current.push(polyline)
+            } else {
+              // 경로 실패시 직선으로 연결
+              const linePath = [
+                new maps.LatLng(origin.lat, origin.lng),
+                new maps.LatLng(destination.lat, destination.lng)
+              ]
+              const polyline = new maps.Polyline({
+                path: linePath,
+                strokeWeight: isSelected ? 5 : 3,
+                strokeColor: dayColor,
+                strokeOpacity: isSelected ? 0.9 : 0.3,
+                strokeStyle: 'dashed' // 직선 경로는 점선으로 표시
+              })
+              polyline.setMap(map)
+              polylinesRef.current.push(polyline)
+            }
+          } catch (err) {
+            // 에러 시 직선 연결
+            const linePath = [
+              new maps.LatLng(origin.lat, origin.lng),
+              new maps.LatLng(destination.lat, destination.lng)
+            ]
+            const polyline = new maps.Polyline({
+              path: linePath,
+              strokeWeight: isSelected ? 5 : 3,
+              strokeColor: dayColor,
+              strokeOpacity: isSelected ? 0.9 : 0.3,
+              strokeStyle: 'dashed'
+            })
+            polyline.setMap(map)
+            polylinesRef.current.push(polyline)
+          }
+        }
+      }
+      
+      // 지도 범위 조정
+      if (bounds.isEmpty() === false) {
+        map.setBounds(bounds)
+      }
+    }
+    
+    drawRoutes()
+  }, [mapReady, trip, selectedDay])
   
   // 좋아요 토글
   const handleLike = async () => {
@@ -231,13 +443,29 @@ const SharedTripPage = () => {
     setTransitLoading(false)
   }
   
-  // 장소 선택 토글
+  // 장소 선택 토글 및 상세 정보 로드
   const handlePlaceClick = async (place, dayIndex, placeIndex) => {
     if (selectedPlace?.dayIndex === dayIndex && selectedPlace?.placeIndex === placeIndex) {
       setSelectedPlace(null) // 같은 장소 클릭 시 닫기
       setTransitInfo(null)
+      setPlaceDetail(null)
     } else {
       setSelectedPlace({ ...place, dayIndex, placeIndex })
+      setPlaceDetail(null)
+      
+      // DB에서 장소 상세 정보 로드
+      if (place.placeType && place.placeName) {
+        setDetailLoading(true)
+        try {
+          const result = await getPlaceDetail(place.placeType, place.placeName)
+          if (result.success && result.detail) {
+            setPlaceDetail(result.detail)
+          }
+        } catch (err) {
+          console.error('Failed to load place detail:', err)
+        }
+        setDetailLoading(false)
+      }
       
       // 다음 장소가 있으면 대중교통 정보 조회
       const day = trip?.days?.[dayIndex]
@@ -258,6 +486,7 @@ const SharedTripPage = () => {
         if (!e.target.closest('.place-item')) {
           setSelectedPlace(null)
           setTransitInfo(null)
+          setPlaceDetail(null)
         }
       }
     }
@@ -347,13 +576,49 @@ const SharedTripPage = () => {
       {/* 일정 내용 */}
       <div className="shared-trip-content">
         <div className="container">
+          {/* 지도 섹션 */}
+          <div className="trip-map-section">
+            <div className="map-header">
+              <h2><FiMap /> {language === 'ko' ? '여행 경로' : 'Trip Route'}</h2>
+              <div className="day-selector">
+                {trip.days?.map((_, idx) => (
+                  <button
+                    key={idx}
+                    className={`day-btn ${selectedDay === idx ? 'active' : ''}`}
+                    style={{
+                      '--day-color': DAY_COLORS[idx % DAY_COLORS.length]
+                    }}
+                    onClick={() => setSelectedDay(idx)}
+                  >
+                    {language === 'ko' ? `${idx + 1}일차` : `Day ${idx + 1}`}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="trip-map-container">
+              <div ref={mapRef} className="trip-map"></div>
+              <div className="map-legend">
+                {trip.days?.map((day, idx) => (
+                  <div key={idx} className="legend-item" style={{ opacity: selectedDay === idx ? 1 : 0.5 }}>
+                    <span className="legend-color" style={{ backgroundColor: DAY_COLORS[idx % DAY_COLORS.length] }}></span>
+                    <span>{language === 'ko' ? `${idx + 1}일차` : `Day ${idx + 1}`} ({day.places?.length || 0}{language === 'ko' ? '곳' : ' places'})</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          
           <div className="trip-layout">
             {/* 왼쪽: 일정 목록 */}
             <div className="trip-schedule">
               {trip.days && trip.days.length > 0 ? (
                 trip.days.map((day, dayIndex) => (
-                  <div key={dayIndex} className="day-section">
-                    <div className="day-header">
+                  <div 
+                    key={dayIndex} 
+                    className={`day-section ${selectedDay === dayIndex ? 'active' : ''}`}
+                    onClick={() => setSelectedDay(dayIndex)}
+                  >
+                    <div className="day-header" style={{ '--day-color': DAY_COLORS[dayIndex % DAY_COLORS.length] }}>
                       <span className="day-number">
                         {language === 'ko' ? `${dayIndex + 1}일차` : `Day ${dayIndex + 1}`}
                       </span>
@@ -402,16 +667,98 @@ const SharedTripPage = () => {
             <div className={`place-detail-panel ${selectedPlace ? 'visible' : ''}`}>
               {selectedPlace && (
                 <div ref={detailCardRef} className="place-detail-card">
-                  <button className="close-detail-btn" onClick={() => { setSelectedPlace(null); setTransitInfo(null); }}>
+                  <button className="close-detail-btn" onClick={() => { setSelectedPlace(null); setTransitInfo(null); setPlaceDetail(null); }}>
                     <FiX />
                   </button>
                   
+                  {/* 장소 이미지 */}
+                  {(placeDetail?.imageUrl || selectedPlace.placeImage) && (
+                    <div className="detail-image">
+                      <img 
+                        src={placeDetail?.imageUrl || selectedPlace.placeImage} 
+                        alt={selectedPlace.placeName}
+                        onError={(e) => { e.target.style.display = 'none' }}
+                      />
+                    </div>
+                  )}
+                  
                   <h3 className="detail-place-name">{selectedPlace.placeName}</h3>
                   
-                  {selectedPlace.address && (
+                  {/* 로딩 중 */}
+                  {detailLoading && (
+                    <div className="detail-loading">
+                      <div className="loading-spinner small" />
+                      <span>{language === 'ko' ? '상세 정보 로딩 중...' : 'Loading details...'}</span>
+                    </div>
+                  )}
+                  
+                  {/* DB 상세 정보 */}
+                  {placeDetail && !detailLoading && (
+                    <div className="db-detail-section">
+                      {placeDetail.description && (
+                        <div className="detail-description">
+                          <p>{placeDetail.description}</p>
+                        </div>
+                      )}
+                      
+                      {placeDetail.tel && (
+                        <div className="detail-row">
+                          <FiInfo />
+                          <span>{language === 'ko' ? '전화' : 'Tel'}: {placeDetail.tel}</span>
+                        </div>
+                      )}
+                      
+                      {placeDetail.operatingHours && (
+                        <div className="detail-row">
+                          <FiClock />
+                          <span>{language === 'ko' ? '운영시간' : 'Hours'}: {placeDetail.operatingHours}</span>
+                        </div>
+                      )}
+                      
+                      {placeDetail.closedDays && (
+                        <div className="detail-row">
+                          <FiCalendar />
+                          <span>{language === 'ko' ? '휴무일' : 'Closed'}: {placeDetail.closedDays}</span>
+                        </div>
+                      )}
+                      
+                      {(placeDetail.fee || placeDetail.price) && (
+                        <div className="detail-row">
+                          <FiInfo />
+                          <span>{language === 'ko' ? '요금/가격' : 'Price'}: {placeDetail.fee || placeDetail.price}</span>
+                        </div>
+                      )}
+                      
+                      {placeDetail.menu && (
+                        <div className="detail-row">
+                          <FiInfo />
+                          <span>{language === 'ko' ? '메뉴' : 'Menu'}: {placeDetail.menu}</span>
+                        </div>
+                      )}
+                      
+                      {placeDetail.period && (
+                        <div className="detail-row">
+                          <FiCalendar />
+                          <span>{language === 'ko' ? '기간' : 'Period'}: {placeDetail.period}</span>
+                        </div>
+                      )}
+                      
+                      {placeDetail.homepage && (
+                        <div className="detail-row">
+                          <FiInfo />
+                          <a href={placeDetail.homepage} target="_blank" rel="noopener noreferrer" className="detail-link">
+                            {language === 'ko' ? '홈페이지 방문' : 'Visit Website'}
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  
+                  {/* 주소 */}
+                  {(selectedPlace.address || placeDetail?.address) && (
                     <div className="detail-row">
                       <FiMapPin />
-                      <span>{selectedPlace.address}</span>
+                      <span>{placeDetail?.address || selectedPlace.address}</span>
                     </div>
                   )}
                   

@@ -837,3 +837,347 @@ export const checkTripLiked = async (planId, userId = null) => {
     return { success: true, liked: false }
   }
 }
+
+// ===== 관리자용 함수들 =====
+
+/**
+ * 관리자용 - 모든 게시된 여행 계획 가져오기 (관리용)
+ * @param {Object} options - 조회 옵션
+ */
+export const getAdminPublishedTrips = async ({ limit = 50, offset = 0 } = {}) => {
+  try {
+    const { data, error, count } = await supabase
+      .from('trip_plans')
+      .select(`
+        id,
+        title,
+        description,
+        start_date,
+        end_date,
+        is_published,
+        published_at,
+        view_count,
+        like_count,
+        thumbnail_url,
+        author_nickname,
+        created_at,
+        user_id
+      `, { count: 'exact' })
+      .eq('is_published', true)
+      .order('published_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+    
+    if (error) throw error
+    
+    const trips = data.map(trip => ({
+      id: trip.id,
+      title: trip.title,
+      description: trip.description,
+      startDate: trip.start_date,
+      endDate: trip.end_date,
+      isPublished: trip.is_published,
+      publishedAt: trip.published_at,
+      viewCount: trip.view_count || 0,
+      likeCount: trip.like_count || 0,
+      thumbnailUrl: trip.thumbnail_url,
+      authorNickname: trip.author_nickname || '익명',
+      createdAt: trip.created_at,
+      userId: trip.user_id
+    }))
+    
+    return { success: true, trips, totalCount: count }
+  } catch (err) {
+    return { success: false, error: err.message, trips: [] }
+  }
+}
+
+/**
+ * 관리자용 - 여행 계획 게시 상태 변경
+ * @param {string} planId - 여행 계획 ID
+ * @param {boolean} isPublished - 게시 상태
+ */
+export const adminUpdateTripPublishStatus = async (planId, isPublished) => {
+  try {
+    const updates = {
+      is_published: isPublished,
+      published_at: isPublished ? new Date().toISOString() : null
+    }
+    
+    const { error } = await supabase
+      .from('trip_plans')
+      .update(updates)
+      .eq('id', planId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 관리자용 - 여행 계획 정보 수정
+ * @param {string} planId - 여행 계획 ID
+ * @param {Object} updates - 수정할 데이터
+ */
+export const adminUpdateTrip = async (planId, updates) => {
+  try {
+    const updateData = {}
+    
+    if (updates.title !== undefined) updateData.title = updates.title
+    if (updates.description !== undefined) updateData.description = updates.description
+    if (updates.thumbnailUrl !== undefined) updateData.thumbnail_url = updates.thumbnailUrl
+    if (updates.authorNickname !== undefined) updateData.author_nickname = updates.authorNickname
+    
+    const { error } = await supabase
+      .from('trip_plans')
+      .update(updateData)
+      .eq('id', planId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 관리자용 - 여행 계획 삭제
+ * @param {string} planId - 여행 계획 ID
+ */
+export const adminDeleteTrip = async (planId) => {
+  try {
+    // trip_likes 먼저 삭제 (외래키 제약)
+    await supabase
+      .from('trip_likes')
+      .delete()
+      .eq('trip_id', planId)
+    
+    // trip_places 삭제 (trip_days를 통해)
+    const { data: days } = await supabase
+      .from('trip_days')
+      .select('id')
+      .eq('plan_id', planId)
+    
+    if (days && days.length > 0) {
+      const dayIds = days.map(d => d.id)
+      await supabase
+        .from('trip_places')
+        .delete()
+        .in('day_id', dayIds)
+    }
+    
+    // trip_days 삭제
+    await supabase
+      .from('trip_days')
+      .delete()
+      .eq('plan_id', planId)
+    
+    // trip_plans 삭제
+    const { error } = await supabase
+      .from('trip_plans')
+      .delete()
+      .eq('id', planId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 게시된 여행 계획 통계
+ */
+export const getPublishedTripStats = async () => {
+  try {
+    const { count: totalCount } = await supabase
+      .from('trip_plans')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_published', true)
+    
+    const { data: topViewed } = await supabase
+      .from('trip_plans')
+      .select('id, title, view_count')
+      .eq('is_published', true)
+      .order('view_count', { ascending: false })
+      .limit(1)
+      .single()
+    
+    const { data: topLiked } = await supabase
+      .from('trip_plans')
+      .select('id, title, like_count')
+      .eq('is_published', true)
+      .order('like_count', { ascending: false })
+      .limit(1)
+      .single()
+    
+    // 총 조회수, 좋아요 합계
+    const { data: statsData } = await supabase
+      .from('trip_plans')
+      .select('view_count, like_count')
+      .eq('is_published', true)
+    
+    const totalViews = statsData?.reduce((sum, t) => sum + (t.view_count || 0), 0) || 0
+    const totalLikes = statsData?.reduce((sum, t) => sum + (t.like_count || 0), 0) || 0
+    
+    return {
+      success: true,
+      stats: {
+        totalCount: totalCount || 0,
+        totalViews,
+        totalLikes,
+        topViewed: topViewed || null,
+        topLiked: topLiked || null
+      }
+    }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 장소 타입별 테이블에서 상세 정보 가져오기
+ * @param {string} placeType - 장소 타입 (travel, food, culture 등)
+ * @param {string} placeName - 장소 이름
+ * @returns {Promise<Object>} { success, detail }
+ */
+export const getPlaceDetail = async (placeType, placeName) => {
+  if (!placeType || !placeName) {
+    return { success: false, error: '장소 정보가 없습니다.' }
+  }
+  
+  // placeType에 따른 테이블 매핑
+  const tableMap = {
+    travel: { table: 'travel_spots', nameField: 'tourspotNm' },
+    food: { table: 'restaurants', nameField: 'restrntNm' },
+    culture: { table: 'cultural_facilities', nameField: 'fcltyNm' },
+    festival: { table: 'festivals', nameField: 'title' },
+    accommodation: { table: 'accommodations', nameField: 'romsNm' },
+    shopping: { table: 'shopping_places', nameField: 'shppgNm' },
+    medical: { table: 'medical_facilities', nameField: 'hsptlNm' }
+  }
+  
+  const config = tableMap[placeType]
+  if (!config) {
+    return { success: false, error: `지원하지 않는 장소 타입입니다: ${placeType}` }
+  }
+  
+  try {
+    // 정확한 이름 매칭 시도
+    let { data, error } = await supabase
+      .from(config.table)
+      .select('*')
+      .eq(config.nameField, placeName)
+      .limit(1)
+      .maybeSingle()
+    
+    // 정확한 매칭 실패 시 부분 매칭 시도
+    if (!data) {
+      const { data: fuzzyData, error: fuzzyError } = await supabase
+        .from(config.table)
+        .select('*')
+        .ilike(config.nameField, `%${placeName}%`)
+        .limit(1)
+        .maybeSingle()
+      
+      if (fuzzyError) throw fuzzyError
+      data = fuzzyData
+    }
+    
+    if (!data) {
+      return { success: false, error: '장소 정보를 찾을 수 없습니다.' }
+    }
+    
+    // raw_data가 있으면 그것을 사용, 없으면 원본 데이터 사용
+    const detail = data.raw_data || data
+    
+    // 테이블 타입별 필드 매핑
+    let mappedDetail = {
+      id: data.id,
+      type: placeType
+    }
+    
+    if (placeType === 'travel') {
+      mappedDetail = {
+        ...mappedDetail,
+        name: detail.tourspotNm,
+        address: detail.roadAddr || detail.addr || detail.address,
+        description: detail.mainFclty || detail.description,
+        tel: detail.telNo,
+        homepage: detail.homepage,
+        operatingHours: detail.operTime,
+        closedDays: detail.clsInfo || detail.closedDays,
+        fee: detail.fee || detail.useFee,
+        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
+        lat: detail.lat,
+        lng: detail.lng
+      }
+    } else if (placeType === 'food') {
+      mappedDetail = {
+        ...mappedDetail,
+        name: detail.restrntNm,
+        address: detail.roadAddr || detail.addr,
+        description: detail.restrntTypeSpcl || detail.description,
+        tel: detail.telNo,
+        menu: detail.menuNm,
+        operatingHours: detail.operTime,
+        closedDays: detail.closedDays,
+        price: detail.avgPrice,
+        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
+        lat: detail.lat,
+        lng: detail.lng
+      }
+    } else if (placeType === 'culture') {
+      mappedDetail = {
+        ...mappedDetail,
+        name: detail.fcltyNm,
+        address: detail.roadAddr || detail.addr,
+        description: detail.description,
+        tel: detail.telNo,
+        homepage: detail.homepage,
+        operatingHours: detail.operTime,
+        closedDays: detail.closedDays,
+        fee: detail.fee || detail.useFee,
+        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
+        lat: detail.lat,
+        lng: detail.lng
+      }
+    } else if (placeType === 'festival') {
+      mappedDetail = {
+        ...mappedDetail,
+        name: detail.title,
+        address: detail.roadAddr || detail.addr || detail.eventplace,
+        description: detail.summary || detail.description,
+        tel: detail.telNo || detail.eventhomepage,
+        period: detail.opar,
+        place: detail.eventplace,
+        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
+        lat: detail.lat,
+        lng: detail.lng
+      }
+    } else {
+      // 기타 타입 (accommodation, shopping, medical 등)
+      mappedDetail = {
+        ...mappedDetail,
+        name: placeName,
+        address: detail.roadAddr || detail.addr || detail.address,
+        description: detail.description,
+        tel: detail.telNo,
+        homepage: detail.homepage,
+        operatingHours: detail.operTime,
+        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
+        lat: detail.lat,
+        lng: detail.lng
+      }
+    }
+    
+    return { success: true, detail: mappedDetail }
+  } catch (err) {
+    console.error('getPlaceDetail error:', err)
+    return { success: false, error: err.message }
+  }
+}
