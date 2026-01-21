@@ -443,6 +443,16 @@ ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS image_source TEXT;
 -- 여행 장소 이동 방법 컬럼 마이그레이션
 ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS transport_to_next TEXT;
 
+-- 여행 장소 좌표 및 체류시간 컬럼 마이그레이션
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS lat DOUBLE PRECISION;
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS lng DOUBLE PRECISION;
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS stay_duration INTEGER;
+
+-- 여행 장소 다음 장소까지 대중교통 정보 컬럼 마이그레이션
+-- transit_to_next: 다음 장소까지의 대중교통 정보 (JSONB)
+-- 예: {"bus": {"totalTime": 15, "routes": ["301", "802"]}, "subway": {"totalTime": 20, "lines": ["1호선"]}}
+ALTER TABLE trip_places ADD COLUMN IF NOT EXISTS transit_to_next JSONB;
+
 -- ============================================================
 -- 15. 여행 계획 RLS 정책 (Row Level Security)
 -- ============================================================
@@ -696,3 +706,47 @@ DROP TRIGGER IF EXISTS update_api_daily_stats_updated_at ON api_daily_stats;
 CREATE TRIGGER update_api_daily_stats_updated_at
   BEFORE UPDATE ON api_daily_stats
   FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- ============================================================
+-- 게시된 여행 계획 관련 테이블 추가
+-- ============================================================
+
+-- trip_plans에 게시 관련 컬럼 추가
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS is_published BOOLEAN DEFAULT FALSE;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS published_at TIMESTAMPTZ;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS view_count INTEGER DEFAULT 0;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS like_count INTEGER DEFAULT 0;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+ALTER TABLE trip_plans ADD COLUMN IF NOT EXISTS author_nickname TEXT;
+
+-- 게시된 여행 계획 인덱스
+CREATE INDEX IF NOT EXISTS idx_trip_plans_published ON trip_plans(is_published) WHERE is_published = true;
+CREATE INDEX IF NOT EXISTS idx_trip_plans_published_at ON trip_plans(published_at DESC) WHERE is_published = true;
+
+-- 게시된 여행 계획은 모든 사용자가 읽을 수 있도록 RLS 정책 추가
+DROP POLICY IF EXISTS "Anyone can read published trip_plans" ON trip_plans;
+CREATE POLICY "Anyone can read published trip_plans"
+  ON trip_plans FOR SELECT
+  USING (is_published = true);
+
+-- 여행 좋아요 테이블
+CREATE TABLE IF NOT EXISTS trip_likes (
+  id SERIAL PRIMARY KEY,
+  trip_id INTEGER NOT NULL REFERENCES trip_plans(id) ON DELETE CASCADE,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  session_id TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(trip_id, user_id),
+  UNIQUE(trip_id, session_id)
+);
+
+-- 여행 좋아요 인덱스
+CREATE INDEX IF NOT EXISTS idx_trip_likes_trip ON trip_likes(trip_id);
+CREATE INDEX IF NOT EXISTS idx_trip_likes_user ON trip_likes(user_id);
+
+-- trip_likes RLS
+ALTER TABLE trip_likes ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Anyone can read trip_likes" ON trip_likes FOR SELECT USING (true);
+CREATE POLICY "Anyone can insert trip_likes" ON trip_likes FOR INSERT WITH CHECK (true);
+CREATE POLICY "Users can delete own trip_likes" ON trip_likes FOR DELETE 
+  USING (user_id = auth.uid() OR session_id IS NOT NULL);

@@ -15,6 +15,7 @@
   overflow: hidden;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
+  cursor: pointer;
 }
 
 .course-card:hover {
@@ -149,4 +150,207 @@
 
 .dark-theme .course-link {
   color: var(--primary-color);
+}
+
+/* 로딩 스타일 */
+.course-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--primary-color);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* 게시된 코스 스타일 */
+.published-course {
+  border: 2px solid transparent;
+  transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.published-course:hover {
+  border-color: var(--primary-color);
+}
+
+.course-tag.user-tag {
+  background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+}
+
+.course-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.course-author svg {
+  color: var(--primary-color);
+  font-size: 0.9rem;
+}
+
+.course-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.course-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.course-stats svg {
+  font-size: 0.85rem;
+}
+
+.spot-badge.empty {
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* 클릭 가능한 장소 배지 */
+.spot-badge.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.spot-badge.clickable:hover {
+  background: var(--primary-color);
+  color: white;
+  transform: scale(1.05);
+}
+
+/* 장소 정보 팝오버 카드 */
+.spot-info-card {
+  position: absolute;
+  z-index: 1000;
+  width: 260px;
+  background: var(--card-bg, white);
+  border-radius: var(--border-radius);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: 16px;
+  animation: spotCardIn 0.2s ease;
+}
+
+@keyframes spotCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.spot-card-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: var(--text-tertiary);
+  transition: color 0.2s;
+}
+
+.spot-card-close:hover {
+  color: var(--text-primary);
+}
+
+.spot-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+  padding-right: 24px;
+}
+
+.spot-card-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  line-height: 1.4;
+}
+
+.spot-card-address svg {
+  color: var(--secondary-color);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.spot-card-memo {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.spot-card-direction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  background: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.spot-card-direction:hover {
+  background: var(--primary-hover);
+  transform: translateY(-2px);
+}
+
+/* 다크모드 - 게시된 코스 */
+.dark-theme .published-course:hover {
+  border-color: var(--primary-color);
+}
+
+.dark-theme .course-author {
+  color: var(--text-secondary);
+}
+
+.dark-theme .course-stats {
+  color: var(--text-secondary);
+}
+
+/* 다크모드 - 장소 정보 카드 */
+.dark-theme .spot-info-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.dark-theme .spot-card-memo {
+  background: var(--bg-tertiary);
 }

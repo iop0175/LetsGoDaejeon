@@ -310,7 +310,10 @@ export const addTripPlace = async ({
   placeImage,
   orderIndex,
   visitTime,
-  memo
+  memo,
+  lat,
+  lng,
+  stayDuration
 }) => {
   try {
     // 로컬 데이터인 경우
@@ -325,11 +328,15 @@ export const addTripPlace = async ({
             placeType,
             placeName,
             placeAddress,
+            address: placeAddress,
             placeDescription,
             placeImage,
             orderIndex,
             visitTime,
-            memo
+            memo,
+            lat,
+            lng,
+            stayDuration
           }
           day.places = day.places || []
           day.places.push(newPlace)
@@ -351,7 +358,10 @@ export const addTripPlace = async ({
         place_image: placeImage,
         order_index: orderIndex,
         visit_time: visitTime,
-        memo
+        memo,
+        lat,
+        lng,
+        stay_duration: stayDuration
       })
       .select()
       .single()
@@ -366,11 +376,15 @@ export const addTripPlace = async ({
         placeType: data.place_type,
         placeName: data.place_name,
         placeAddress: data.place_address,
+        address: data.place_address,
         placeDescription: data.place_description,
         placeImage: data.place_image,
         orderIndex: data.order_index,
         visitTime: data.visit_time,
-        memo: data.memo
+        memo: data.memo,
+        lat: data.lat,
+        lng: data.lng,
+        stayDuration: data.stay_duration
       }
     }
   } catch (err) {
@@ -452,5 +466,374 @@ export const deleteTripPlace = async (placeId) => {
   } catch (err) {
 
     return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 장소의 대중교통 정보 업데이트
+ * @param {number} placeId - 장소 ID
+ * @param {Object} transitInfo - 대중교통 정보
+ * @param {Object} transitInfo.bus - 버스 정보 {totalTime, routes: []}
+ * @param {Object} transitInfo.subway - 지하철 정보 {totalTime, lines: []}
+ */
+export const updatePlaceTransitInfo = async (placeId, transitInfo) => {
+  try {
+    // 로컬 데이터인 경우
+    if (placeId.toString().startsWith('local_place_')) {
+      const localPlans = JSON.parse(localStorage.getItem('tripPlans') || '[]')
+      for (const plan of localPlans) {
+        for (const day of plan.days || []) {
+          const place = day.places?.find(p => p.id === placeId)
+          if (place) {
+            place.transitToNext = transitInfo
+            localStorage.setItem('tripPlans', JSON.stringify(localPlans))
+            return { success: true }
+          }
+        }
+      }
+      return { success: false, error: 'Place not found' }
+    }
+    
+    const { error } = await supabase
+      .from('trip_places')
+      .update({ transit_to_next: transitInfo })
+      .eq('id', placeId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+// ===== 여행 계획 게시 (Publish) =====
+
+/**
+ * 여행 계획 게시하기
+ * @param {string} planId - 여행 계획 ID
+ * @param {Object} options - 게시 옵션
+ * @param {string} options.authorNickname - 작성자 닉네임
+ * @param {string} options.thumbnailUrl - 썸네일 이미지 URL
+ */
+export const publishTripPlan = async (planId, { authorNickname, thumbnailUrl } = {}) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_plans')
+      .update({
+        is_published: true,
+        published_at: new Date().toISOString(),
+        author_nickname: authorNickname || '익명',
+        thumbnail_url: thumbnailUrl || null
+      })
+      .eq('id', planId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return { success: true, plan: data }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 여행 계획 게시 취소
+ * @param {string} planId - 여행 계획 ID
+ */
+export const unpublishTripPlan = async (planId) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_plans')
+      .update({
+        is_published: false,
+        published_at: null
+      })
+      .eq('id', planId)
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return { success: true, plan: data }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 게시된 여행 계획 목록 가져오기
+ * @param {Object} options - 조회 옵션
+ * @param {number} options.limit - 조회 개수 (기본 10)
+ * @param {number} options.offset - 오프셋 (기본 0)
+ * @param {string} options.orderBy - 정렬 기준 (published_at, view_count, like_count)
+ */
+export const getPublishedTripPlans = async ({ limit = 10, offset = 0, orderBy = 'published_at' } = {}) => {
+  try {
+    const { data, error, count } = await supabase
+      .from('trip_plans')
+      .select(`
+        *,
+        trip_days (
+          *,
+          trip_places (*)
+        )
+      `, { count: 'exact' })
+      .eq('is_published', true)
+      .order(orderBy, { ascending: false })
+      .range(offset, offset + limit - 1)
+    
+    if (error) throw error
+    
+    // 데이터 형식 변환
+    const plans = data.map(plan => ({
+      id: plan.id,
+      userId: plan.user_id,
+      title: plan.title,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+      description: plan.description,
+      accommodationName: plan.accommodation_name,
+      accommodationAddress: plan.accommodation_address,
+      isPublished: plan.is_published,
+      publishedAt: plan.published_at,
+      viewCount: plan.view_count || 0,
+      likeCount: plan.like_count || 0,
+      thumbnailUrl: plan.thumbnail_url,
+      authorNickname: plan.author_nickname || '익명',
+      createdAt: plan.created_at,
+      days: plan.trip_days?.map(day => ({
+        id: day.id,
+        planId: day.plan_id,
+        dayNumber: day.day_number,
+        date: day.date,
+        places: day.trip_places?.map(place => ({
+          id: place.id,
+          dayId: place.day_id,
+          placeType: place.place_type,
+          placeName: place.place_name,
+          placeAddress: place.place_address,
+          placeDescription: place.place_description,
+          placeImage: place.place_image,
+          orderIndex: place.order_index,
+          visitTime: place.visit_time,
+          memo: place.memo,
+          transportToNext: place.transport_to_next
+        })).sort((a, b) => a.orderIndex - b.orderIndex) || []
+      })).sort((a, b) => a.dayNumber - b.dayNumber) || []
+    }))
+    
+    return { success: true, plans, totalCount: count }
+  } catch (err) {
+    return { success: false, error: err.message, plans: [] }
+  }
+}
+
+/**
+ * 게시된 여행 계획 상세 조회 (조회수 증가)
+ * @param {string} planId - 여행 계획 ID
+ */
+export const getPublishedTripPlanDetail = async (planId) => {
+  try {
+    // 현재 조회수 조회
+    const { data: currentPlan } = await supabase
+      .from('trip_plans')
+      .select('view_count')
+      .eq('id', planId)
+      .eq('is_published', true)
+      .single()
+    
+    // 조회수 증가
+    if (currentPlan) {
+      await supabase
+        .from('trip_plans')
+        .update({ view_count: (currentPlan.view_count || 0) + 1 })
+        .eq('id', planId)
+        .eq('is_published', true)
+    }
+    
+    // 상세 조회
+    const { data, error } = await supabase
+      .from('trip_plans')
+      .select(`
+        *,
+        trip_days (
+          *,
+          trip_places (*)
+        )
+      `)
+      .eq('id', planId)
+      .eq('is_published', true)
+      .single()
+    
+    if (error) throw error
+    
+    if (!data) {
+      return { success: false, error: '게시된 여행 계획을 찾을 수 없습니다.' }
+    }
+    
+    // 데이터 형식 변환
+    const plan = {
+      id: data.id,
+      userId: data.user_id,
+      title: data.title,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      description: data.description,
+      accommodationName: data.accommodation_name,
+      accommodationAddress: data.accommodation_address,
+      isPublished: data.is_published,
+      publishedAt: data.published_at,
+      viewCount: data.view_count || 0,
+      likeCount: data.like_count || 0,
+      thumbnailUrl: data.thumbnail_url,
+      authorNickname: data.author_nickname || '익명',
+      createdAt: data.created_at,
+      days: data.trip_days?.map(day => ({
+        id: day.id,
+        planId: day.plan_id,
+        dayNumber: day.day_number,
+        date: day.date,
+        places: day.trip_places?.map(place => ({
+          id: place.id,
+          dayId: place.day_id,
+          placeType: place.place_type,
+          placeName: place.place_name,
+          address: place.place_address,
+          placeAddress: place.place_address,
+          placeDescription: place.place_description,
+          placeImage: place.place_image,
+          orderIndex: place.order_index,
+          visitTime: place.visit_time,
+          stayDuration: place.stay_duration,
+          memo: place.memo,
+          transportToNext: place.transport_to_next,
+          transitToNext: place.transit_to_next,
+          lat: place.lat,
+          lng: place.lng
+        })).sort((a, b) => a.orderIndex - b.orderIndex) || []
+      })).sort((a, b) => a.dayNumber - b.dayNumber) || []
+    }
+    
+    return { success: true, plan }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 여행 계획 좋아요 토글
+ * @param {string} planId - 여행 계획 ID
+ * @param {string} userId - 사용자 ID (없으면 세션 ID 사용)
+ */
+export const toggleTripLike = async (planId, userId = null) => {
+  try {
+    const sessionId = !userId ? (localStorage.getItem('tripSessionId') || `session_${Date.now()}`) : null
+    
+    if (!userId && sessionId) {
+      localStorage.setItem('tripSessionId', sessionId)
+    }
+    
+    // 좋아요 확인
+    let query = supabase
+      .from('trip_likes')
+      .select('id')
+      .eq('trip_id', planId)
+    
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else {
+      query = query.eq('session_id', sessionId)
+    }
+    
+    const { data: existing } = await query.maybeSingle()
+    
+    if (existing) {
+      // 좋아요 취소
+      await supabase
+        .from('trip_likes')
+        .delete()
+        .eq('id', existing.id)
+      
+      // like_count 감소 (현재 값 조회 후 업데이트)
+      const { data: plan } = await supabase
+        .from('trip_plans')
+        .select('like_count')
+        .eq('id', planId)
+        .single()
+      
+      if (plan) {
+        await supabase
+          .from('trip_plans')
+          .update({ like_count: Math.max((plan.like_count || 0) - 1, 0) })
+          .eq('id', planId)
+      }
+      
+      return { success: true, liked: false }
+    } else {
+      // 좋아요 추가
+      await supabase
+        .from('trip_likes')
+        .insert({
+          trip_id: planId,
+          user_id: userId || null,
+          session_id: sessionId
+        })
+      
+      // like_count 증가 (현재 값 조회 후 업데이트)
+      const { data: plan } = await supabase
+        .from('trip_plans')
+        .select('like_count')
+        .eq('id', planId)
+        .single()
+      
+      if (plan) {
+        await supabase
+          .from('trip_plans')
+          .update({ like_count: (plan.like_count || 0) + 1 })
+          .eq('id', planId)
+      }
+      
+      return { success: true, liked: true }
+    }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 좋아요 여부 확인
+ * @param {string} planId - 여행 계획 ID
+ * @param {string} userId - 사용자 ID
+ */
+export const checkTripLiked = async (planId, userId = null) => {
+  try {
+    const sessionId = !userId ? localStorage.getItem('tripSessionId') : null
+    
+    if (!userId && !sessionId) {
+      return { success: true, liked: false }
+    }
+    
+    let query = supabase
+      .from('trip_likes')
+      .select('id')
+      .eq('trip_id', planId)
+    
+    if (userId) {
+      query = query.eq('user_id', userId)
+    } else {
+      query = query.eq('session_id', sessionId)
+    }
+    
+    const { data, error } = await query.maybeSingle()
+    
+    if (error) {
+      return { success: true, liked: false }
+    }
+    
+    return { success: true, liked: !!data }
+  } catch (err) {
+    return { success: true, liked: false }
   }
 }

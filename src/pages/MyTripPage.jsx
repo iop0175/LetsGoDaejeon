@@ -4,7 +4,7 @@ import {
   FiPlus, FiTrash2, FiEdit2, FiMapPin, FiCalendar, FiClock, 
   FiChevronDown, FiChevronUp, FiSave, FiX, FiMap, FiCoffee,
   FiStar, FiNavigation, FiUsers, FiGrid, FiList, FiShare2,
-  FiMaximize2, FiMinimize2, FiHome, FiSearch
+  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart
 } from 'react-icons/fi'
 import { 
   FaCar, FaBus, FaSubway, FaWalking, FaTaxi, FaBicycle, FaParking 
@@ -16,10 +16,12 @@ import { getReliableImageUrl, escapeHtml } from '../utils/imageUtils'
 import { 
   getUserTripPlans, createTripPlan, updateTripPlan, deleteTripPlan,
   addTripDay, updateTripDay, deleteTripDay,
-  addTripPlace, updateTripPlace, deleteTripPlace
+  addTripPlace, updateTripPlace, deleteTripPlace,
+  publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo
 } from '../services/tripService'
 import { getAllDbData } from '../services/dbService'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
+import { getPublicTransitRoute } from '../services/odsayService'
 import { getDaejeonParking } from '../services/api'
 import './MyTripPage.css'
 
@@ -99,6 +101,11 @@ const MyTripPage = () => {
   
   // 뷰 모드 (grid/list)
   const [viewMode, setViewMode] = useState('grid')
+  
+  // 게시 관련 상태
+  const [publishingTripId, setPublishingTripId] = useState(null) // 게시 중인 여행 ID
+  const [showPublishModal, setShowPublishModal] = useState(false)
+  const [publishForm, setPublishForm] = useState({ nickname: '', thumbnailUrl: '' })
   
   // 이동 방법 편집 상태
   const [editingTransport, setEditingTransport] = useState(null) // { dayId, afterPlaceIndex }
@@ -321,6 +328,71 @@ const MyTripPage = () => {
     }
   }
   
+  // 여행 게시 모달 열기
+  const openPublishModal = (trip) => {
+    setPublishingTripId(trip.id)
+    setPublishForm({
+      nickname: user?.email?.split('@')[0] || '',
+      thumbnailUrl: ''
+    })
+    setShowPublishModal(true)
+  }
+  
+  // 여행 게시 처리
+  const handlePublishTrip = async () => {
+    if (!publishingTripId) return
+    
+    try {
+      const result = await publishTripPlan(publishingTripId, {
+        authorNickname: publishForm.nickname || '익명',
+        thumbnailUrl: publishForm.thumbnailUrl || null
+      })
+      
+      if (result.success) {
+        // 여행 목록 업데이트
+        setTripPlans(prev => prev.map(trip => 
+          trip.id === publishingTripId 
+            ? { ...trip, isPublished: true, publishedAt: new Date().toISOString() }
+            : trip
+        ))
+        if (selectedTrip?.id === publishingTripId) {
+          setSelectedTrip(prev => ({ ...prev, isPublished: true, publishedAt: new Date().toISOString() }))
+        }
+        setShowPublishModal(false)
+        setPublishingTripId(null)
+        alert(language === 'ko' ? '여행 계획이 게시되었습니다!' : 'Trip plan published!')
+      } else {
+        alert(result.error || (language === 'ko' ? '게시 실패' : 'Publish failed'))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '게시 중 오류가 발생했습니다.' : 'Error occurred while publishing.')
+    }
+  }
+  
+  // 여행 게시 취소
+  const handleUnpublishTrip = async (tripId) => {
+    if (!confirm(language === 'ko' ? '게시를 취소하시겠습니까?' : 'Unpublish this trip?')) {
+      return
+    }
+    
+    try {
+      const result = await unpublishTripPlan(tripId)
+      if (result.success) {
+        setTripPlans(prev => prev.map(trip => 
+          trip.id === tripId 
+            ? { ...trip, isPublished: false, publishedAt: null }
+            : trip
+        ))
+        if (selectedTrip?.id === tripId) {
+          setSelectedTrip(prev => ({ ...prev, isPublished: false, publishedAt: null }))
+        }
+        alert(language === 'ko' ? '게시가 취소되었습니다.' : 'Unpublished.')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '취소 중 오류가 발생했습니다.' : 'Error occurred.')
+    }
+  }
+  
   // 장소 검색
   const handleSearchPlaces = async () => {
     if (!searchQuery.trim()) return
@@ -391,6 +463,20 @@ const MyTripPage = () => {
     if (!day) return
     
     try {
+      // 좌표가 없으면 주소에서 좌표 조회
+      let lat = place.lat || null
+      let lng = place.lng || null
+      
+      if (!lat || !lng) {
+        if (place.address) {
+          const coordResult = await getCoordinatesFromAddress(place.address)
+          if (coordResult.success) {
+            lat = coordResult.lat
+            lng = coordResult.lng
+          }
+        }
+      }
+      
       const result = await addTripPlace({
         dayId: dayId,
         placeType: place.type,
@@ -400,15 +486,26 @@ const MyTripPage = () => {
         placeImage: place.image,
         orderIndex: day.places?.length || 0,
         visitTime: null,
-        memo: ''
+        memo: '',
+        lat,
+        lng,
+        stayDuration: place.stayDuration || 60 // 기본 60분
       })
       
       if (result.success) {
+        const newPlace = result.place
+        
+        // 이전 장소가 있으면 대중교통 정보 업데이트 (비동기로 백그라운드 실행)
+        if (day.places?.length > 0) {
+          const prevPlace = day.places[day.places.length - 1]
+          updateTransitInfoBetweenPlaces(prevPlace, newPlace)
+        }
+        
         setSelectedTrip(prev => ({
           ...prev,
           days: prev.days.map(d => 
             d.id === dayId 
-              ? { ...d, places: [...(d.places || []), result.place] }
+              ? { ...d, places: [...(d.places || []), newPlace] }
               : d
           )
         }))
@@ -419,6 +516,85 @@ const MyTripPage = () => {
       }
     } catch (err) {
 
+    }
+  }
+  
+  // 두 장소 간 대중교통 정보 업데이트 (백그라운드)
+  const updateTransitInfoBetweenPlaces = async (fromPlace, toPlace) => {
+    try {
+      if (!fromPlace?.lat || !fromPlace?.lng || !toPlace?.lat || !toPlace?.lng) {
+        console.log('Missing coordinates for transit info update')
+        return
+      }
+      
+      // 버스 경로 조회
+      const busResult = await getPublicTransitRoute(
+        fromPlace.lng, fromPlace.lat,
+        toPlace.lng, toPlace.lat,
+        'bus'
+      )
+      
+      // 지하철 경로 조회
+      const subwayResult = await getPublicTransitRoute(
+        fromPlace.lng, fromPlace.lat,
+        toPlace.lng, toPlace.lat,
+        'subway'
+      )
+      
+      // 대중교통 정보 구조화 (상세 정보 포함)
+      const transitInfo = {
+        bus: busResult.success && !busResult.noRoute ? {
+          totalTime: busResult.totalTime,
+          payment: busResult.payment,
+          // 버스 구간 정보 (승하차 정류장 포함)
+          segments: busResult.routeDetails
+            ?.filter(r => r.type === 'bus')
+            ?.map(r => ({
+              busNo: r.busNo,
+              availableBuses: r.availableBuses?.map(b => b.busNo) || [r.busNo],
+              startStation: r.startStation,
+              endStation: r.endStation,
+              stationCount: r.stationCount,
+              sectionTime: r.sectionTime
+            })) || [],
+          // 간단 버스 노선 목록
+          routes: busResult.routeDetails
+            ?.filter(r => r.type === 'bus')
+            ?.flatMap(r => r.availableBuses?.map(b => b.busNo) || [r.busNo])
+            ?.slice(0, 5) || []
+        } : null,
+        subway: subwayResult.success && !subwayResult.noRoute ? {
+          totalTime: subwayResult.totalTime,
+          payment: subwayResult.payment,
+          // 지하철 구간 정보 (승하차역 포함)
+          segments: subwayResult.routeDetails
+            ?.filter(r => r.type === 'subway')
+            ?.map(r => ({
+              lineName: r.lineName,
+              lineColor: r.lineColor,
+              startStation: r.startStation,
+              endStation: r.endStation,
+              stationCount: r.stationCount,
+              sectionTime: r.sectionTime
+            })) || [],
+          // 간단 노선 목록
+          lines: subwayResult.routeDetails
+            ?.filter(r => r.type === 'subway')
+            ?.map(r => r.lineName) || []
+        } : null,
+        // 도보 구간 정보
+        walk: [...(busResult.routeDetails || []), ...(subwayResult.routeDetails || [])]
+          .filter(r => r.type === 'walk')
+          .reduce((acc, r) => acc + (r.sectionTime || 0), 0) || 0
+      }
+      
+      // DB에 저장
+      if (transitInfo.bus || transitInfo.subway) {
+        await updatePlaceTransitInfo(fromPlace.id, transitInfo)
+        console.log('Transit info saved for place:', fromPlace.id, transitInfo)
+      }
+    } catch (err) {
+      console.error('Failed to update transit info:', err)
     }
   }
   
@@ -2308,6 +2484,34 @@ const MyTripPage = () => {
                         {language === 'ko' ? '개 장소' : ' places'}
                       </span>
                     </div>
+                    
+                    {/* 게시 상태 & 버튼 */}
+                    <div className="trip-card-actions">
+                      {trip.isPublished ? (
+                        <button 
+                          className="publish-btn published"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleUnpublishTrip(trip.id)
+                          }}
+                          title={language === 'ko' ? '게시 취소' : 'Unpublish'}
+                        >
+                          <FiGlobe /> {language === 'ko' ? '게시됨' : 'Published'}
+                        </button>
+                      ) : (
+                        <button 
+                          className="publish-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openPublishModal(trip)
+                          }}
+                          title={language === 'ko' ? '게시하기' : 'Publish'}
+                          disabled={!user}
+                        >
+                          <FiShare2 /> {language === 'ko' ? '게시' : 'Publish'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -3017,6 +3221,56 @@ const MyTripPage = () => {
           )}
         </div>
       </div>
+      
+      {/* 게시 모달 */}
+      {showPublishModal && (
+        <div className="modal-overlay" onClick={() => setShowPublishModal(false)}>
+          <div className="modal-content publish-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FiShare2 /> {language === 'ko' ? '여행 계획 게시' : 'Publish Trip Plan'}</h3>
+              <button className="modal-close" onClick={() => setShowPublishModal(false)}>
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="publish-info">
+                {language === 'ko' 
+                  ? '게시하면 다른 사용자들이 회원님의 여행 코스를 볼 수 있습니다. 수정은 불가능하며, 읽기만 가능합니다.'
+                  : 'Once published, other users can view your trip plan. They can only read, not edit.'}
+              </p>
+              
+              <div className="form-group">
+                <label>{language === 'ko' ? '작성자 닉네임' : 'Author Nickname'}</label>
+                <input
+                  type="text"
+                  value={publishForm.nickname}
+                  onChange={(e) => setPublishForm(prev => ({ ...prev, nickname: e.target.value }))}
+                  placeholder={language === 'ko' ? '닉네임 (선택사항)' : 'Nickname (optional)'}
+                  maxLength={20}
+                />
+              </div>
+              
+              <div className="form-group">
+                <label>{language === 'ko' ? '썸네일 URL (선택)' : 'Thumbnail URL (optional)'}</label>
+                <input
+                  type="url"
+                  value={publishForm.thumbnailUrl}
+                  onChange={(e) => setPublishForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowPublishModal(false)}>
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+              <button className="publish-confirm-btn" onClick={handlePublishTrip}>
+                <FiGlobe /> {language === 'ko' ? '게시하기' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
