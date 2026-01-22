@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+  <rect width="400" height="300" fill="#f8f9fa"/>
+  <rect x="1" y="1" width="398" height="298" rx="8" stroke="#dee2e6" stroke-width="2" fill="none"/>
+  
+  <!-- 이미지 아이콘 -->
+  <g transform="translate(160, 100)">
+    <rect x="0" y="0" width="80" height="60" rx="4" stroke="#adb5bd" stroke-width="2" fill="none"/>
+    <circle cx="25" cy="20" r="8" fill="#adb5bd"/>
+    <path d="M10 50 L30 30 L45 40 L60 25 L70 35 L70 50 L10 50 Z" fill="#adb5bd" opacity="0.5"/>
+  </g>
+  
+  <!-- 텍스트 -->
+  <text x="200" y="200" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6c757d">
+    이미지가 없어
+  </text>
+  <text x="200" y="220" text-anchor="middle" font-family="sans-serif" font-size="14" fill="#6c757d">
+    대체이미지로 대체합니다
+  </text>
+</svg>
