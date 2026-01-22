@@ -3,10 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { 
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
-  FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp, FiCloud,
+  FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
-  FiNavigation, FiEye, FiToggleLeft, FiToggleRight,
-  FiUser, FiFolder, FiGlobe, FiUploadCloud, FiHardDrive, FiAlertCircle
+  FiNavigation, FiEye, FiToggleLeft, FiToggleRight
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -26,7 +25,6 @@ import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
   adminDeleteTrip, getPublishedTripStats
 } from '../services/tripService'
-import { getVercelUsage, formatRelativeTime, getDeploymentStatus } from '../services/vercelService'
 import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
 import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
@@ -183,10 +181,6 @@ const AdminPage = () => {
   const [supabaseUsage, setSupabaseUsage] = useState(null)
   const [usageLoading, setUsageLoading] = useState(false)
   
-  // Vercel 사용량 통계
-  const [vercelUsage, setVercelUsage] = useState(null)
-  const [vercelLoading, setVercelLoading] = useState(false)
-  
   // 페이지 방문 통계 (DB)
   const [pageVisitStats, setPageVisitStats] = useState({})
   const [todayVisitStats, setTodayVisitStats] = useState({})
@@ -340,20 +334,6 @@ const AdminPage = () => {
 
     }
     setUsageLoading(false)
-  }, [])
-  
-  // Vercel 사용량 로드
-  const loadVercelUsage = useCallback(async () => {
-    setVercelLoading(true)
-    try {
-      const result = await getVercelUsage()
-      if (result.success) {
-        setVercelUsage(result)
-      }
-    } catch (err) {
-      console.error('Vercel usage load error:', err)
-    }
-    setVercelLoading(false)
   }, [])
   
   // 페이지 방문 통계 로드 (DB)
@@ -1118,13 +1098,6 @@ const AdminPage = () => {
     }
   }, [user, activeSection, loadDbStats, loadApiStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
   
-  // Vercel 사용량 로드
-  useEffect(() => {
-    if (user && activeSection === 'vercel') {
-      loadVercelUsage()
-    }
-  }, [user, activeSection, loadVercelUsage])
-  
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
     if (user && selectedPage && !savedItems[selectedPage]) {
@@ -1317,14 +1290,6 @@ const AdminPage = () => {
           </button>
           
           <button 
-            className={`nav-item ${activeSection === 'vercel' ? 'active' : ''}`}
-            onClick={() => setActiveSection('vercel')}
-          >
-            <FiCloud />
-            <span>Vercel</span>
-          </button>
-          
-          <button 
             className={`nav-item ${activeSection === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveSection('settings')}
           >
@@ -1358,7 +1323,6 @@ const AdminPage = () => {
             {activeSection === 'hero' && (language === 'ko' ? '히어로 슬라이드 관리' : 'Hero Slides')}
             {activeSection === 'courses' && (language === 'ko' ? '추천 여행 코스 관리' : 'Travel Courses')}
             {activeSection === 'database' && 'Supabase'}
-            {activeSection === 'vercel' && 'Vercel'}
             {activeSection === 'settings' && (language === 'ko' ? '설정' : 'Settings')}
             {activeSection.startsWith('page-') && PAGE_CONFIGS[activeSection.replace('page-', '')]?.title[language]}
           </h1>
@@ -1369,11 +1333,6 @@ const AdminPage = () => {
           )}
           {activeSection === 'courses' && (
             <button className="refresh-btn" onClick={loadPublishedTrips}>
-              <FiRefreshCw />
-            </button>
-          )}
-          {activeSection === 'vercel' && (
-            <button className="refresh-btn" onClick={loadVercelUsage}>
               <FiRefreshCw />
             </button>
           )}
@@ -2296,193 +2255,6 @@ const AdminPage = () => {
               ) : (
                 <div className="no-table-selected">
                   <p>{language === 'ko' ? '위에서 테이블을 선택해주세요.' : 'Please select a table above.'}</p>
-                </div>
-              )}
-            </div>
-          )}
-          
-          {/* Vercel 사용량 섹션 */}
-          {activeSection === 'vercel' && (
-            <div className="vercel-section">
-              <div className="vercel-header">
-                <a 
-                  href="https://vercel.com/dashboard" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="vercel-dashboard-link"
-                >
-                  <FiExternalLink /> Vercel Dashboard
-                </a>
-              </div>
-              
-              {vercelLoading ? (
-                <div className="vercel-loading">
-                  <div className="loading-spinner"></div>
-                  <p>{language === 'ko' ? '데이터 로딩 중...' : 'Loading data...'}</p>
-                </div>
-              ) : vercelUsage ? (
-                <div className="vercel-content">
-                  {/* 사용자 정보 */}
-                  {vercelUsage.user && (
-                    <div className="vercel-card">
-                      <h3><FiUser /> {language === 'ko' ? '계정 정보' : 'Account Info'}</h3>
-                      <div className="vercel-user-info">
-                        <div className="user-avatar">
-                          {vercelUsage.user.avatar ? (
-                            <img src={vercelUsage.user.avatar} alt="avatar" />
-                          ) : (
-                            <FiUser size={32} />
-                          )}
-                        </div>
-                        <div className="user-details">
-                          <p className="user-name">{vercelUsage.user.name || vercelUsage.user.username}</p>
-                          <p className="user-email">{vercelUsage.user.email}</p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 프로젝트 목록 */}
-                  {vercelUsage.projects && vercelUsage.projects.length > 0 && (
-                    <div className="vercel-card">
-                      <h3><FiFolder /> {language === 'ko' ? '프로젝트' : 'Projects'} ({vercelUsage.projects.length})</h3>
-                      <div className="vercel-projects">
-                        {vercelUsage.projects.map((project, idx) => (
-                          <div key={idx} className="project-item">
-                            <div className="project-name">
-                              <FiGlobe />
-                              <span>{project.name}</span>
-                            </div>
-                            <div className="project-meta">
-                              {project.framework && <span className="project-framework">{project.framework}</span>}
-                              {project.latestDeployment && (
-                                <span className={`deployment-status ${project.latestDeployment.readyState?.toLowerCase()}`}>
-                                  {project.latestDeployment.readyState || 'N/A'}
-                                </span>
-                              )}
-                            </div>
-                            {project.latestDeployment?.url && (
-                              <a 
-                                href={`https://${project.latestDeployment.url}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="project-link"
-                              >
-                                <FiExternalLink />
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 최근 배포 */}
-                  {vercelUsage.deployments && vercelUsage.deployments.length > 0 && (
-                    <div className="vercel-card">
-                      <h3><FiUploadCloud /> {language === 'ko' ? '최근 배포' : 'Recent Deployments'}</h3>
-                      <div className="vercel-deployments">
-                        {vercelUsage.deployments.map((deploy, idx) => (
-                          <div key={idx} className="deployment-item">
-                            <div className="deployment-info">
-                              <span className="deployment-name">{deploy.name}</span>
-                              <span className="deployment-time">
-                                {formatRelativeTime(deploy.created)}
-                              </span>
-                            </div>
-                            <div className="deployment-meta">
-                              <span className={`deployment-state ${deploy.readyState?.toLowerCase()}`}>
-                                {getDeploymentStatus(deploy.readyState, language)}
-                              </span>
-                              {deploy.target && (
-                                <span className="deployment-target">{deploy.target}</span>
-                              )}
-                            </div>
-                            {deploy.url && (
-                              <a 
-                                href={`https://${deploy.url}`} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="deployment-link"
-                              >
-                                <FiExternalLink />
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Blob 스토어 */}
-                  {vercelUsage.blobStores && vercelUsage.blobStores.length > 0 && (
-                    <div className="vercel-card">
-                      <h3><FiHardDrive /> {language === 'ko' ? 'Blob 스토어' : 'Blob Stores'}</h3>
-                      <div className="vercel-blobs">
-                        {vercelUsage.blobStores.map((store, idx) => (
-                          <div key={idx} className="blob-item">
-                            <div className="blob-name">
-                              <FiDatabase />
-                              <span>{store.name}</span>
-                            </div>
-                            <div className="blob-meta">
-                              <span className="blob-id">{store.id?.substring(0, 8)}...</span>
-                              <span className={`blob-status ${store.state?.toLowerCase()}`}>
-                                {store.state || 'N/A'}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* 플랜 정보 */}
-                  {vercelUsage.limits && (
-                    <div className="vercel-card">
-                      <h3><FiBarChart2 /> {language === 'ko' ? '플랜 정보' : 'Plan Info'}</h3>
-                      <div className="vercel-plan-info">
-                        <div className="plan-badge">
-                          <span className="plan-name">{(vercelUsage.limits.plan || 'hobby').toUpperCase()}</span>
-                        </div>
-                        {vercelUsage.limits.info && (
-                          <div className="plan-limits">
-                            <div className="plan-limit-item">
-                              <span className="plan-limit-label">{language === 'ko' ? '대역폭' : 'Bandwidth'}</span>
-                              <span className="plan-limit-value">{vercelUsage.limits.info.bandwidth}</span>
-                            </div>
-                            <div className="plan-limit-item">
-                              <span className="plan-limit-label">{language === 'ko' ? 'Serverless 실행' : 'Serverless'}</span>
-                              <span className="plan-limit-value">{vercelUsage.limits.info.serverless}</span>
-                            </div>
-                            <div className="plan-limit-item">
-                              <span className="plan-limit-label">{language === 'ko' ? '빌드 시간' : 'Build Time'}</span>
-                              <span className="plan-limit-value">{vercelUsage.limits.info.buildTime}</span>
-                            </div>
-                            <div className="plan-limit-item">
-                              <span className="plan-limit-label">{language === 'ko' ? 'Analytics' : 'Analytics'}</span>
-                              <span className="plan-limit-value">{vercelUsage.limits.info.analytics}</span>
-                            </div>
-                          </div>
-                        )}
-                        <p className="plan-note">
-                          {language === 'ko' 
-                            ? '※ 실제 사용량은 Vercel Dashboard에서 확인하세요.' 
-                            : '※ Check actual usage in Vercel Dashboard.'}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="vercel-error">
-                  <FiAlertCircle size={48} />
-                  <p>{language === 'ko' ? 'Vercel 데이터를 불러올 수 없습니다.' : 'Unable to load Vercel data.'}</p>
-                  <p className="error-hint">
-                    {language === 'ko' 
-                      ? 'VERCEL_TOKEN 환경변수를 확인해주세요.' 
-                      : 'Please check VERCEL_TOKEN environment variable.'}
-                  </p>
                 </div>
               )}
             </div>
