@@ -16,7 +16,7 @@ const CopyrightPage = () => {
   const content = {
     ko: {
       title: '저작권 정책',
-      lastUpdated: '최종 수정일: 2024년 1월 1일',
+      lastUpdated: '최종 수정일: 2025년 6월 16일',
       intro: '대전으로는 저작권법 및 관련 법령을 준수하며, 콘텐츠의 적법한 이용을 위해 노력하고 있습니다. 본 페이지는 사이트에서 사용되는 데이터 및 콘텐츠의 저작권에 관한 정보를 안내합니다.',
       sections: [
         {
@@ -44,9 +44,11 @@ const CopyrightPage = () => {
         },
         {
           icon: <FiCode />,
-          title: '지도 서비스',
+          title: '지도 및 외부 서비스',
           content: `• 본 사이트의 지도 서비스는 카카오맵 API를 사용합니다.
 • 카카오맵의 저작권은 (주)카카오에 있습니다.
+• 경로 탐색은 카카오모빌리티 API 및 ODsay 대중교통 API를 사용합니다.
+• 날씨 정보는 기상청 공공데이터 API를 통해 제공됩니다.
 • 지도 이용 시 카카오맵 이용약관을 준수해야 합니다.
 • 지도 데이터의 무단 복제, 배포는 금지됩니다.`
         },
@@ -95,6 +97,21 @@ const CopyrightPage = () => {
             name: '카카오맵 API',
             url: 'https://developers.kakao.com',
             license: '카카오 API 이용약관'
+          },
+          {
+            name: '카카오모빌리티 API',
+            url: 'https://developers.kakaomobility.com',
+            license: '카카오모빌리티 API 이용약관'
+          },
+          {
+            name: 'ODsay 대중교통 API',
+            url: 'https://lab.odsay.com',
+            license: 'ODsay Lab 이용약관'
+          },
+          {
+            name: '기상청 날씨 API',
+            url: 'https://data.kma.go.kr',
+            license: '공공누리 제1유형'
           }
         ]
       },
@@ -102,7 +119,7 @@ const CopyrightPage = () => {
     },
     en: {
       title: 'Copyright Policy',
-      lastUpdated: 'Last Updated: January 1, 2024',
+      lastUpdated: 'Last Updated: June 16, 2025',
       intro: 'To Daejeon complies with copyright laws and related regulations, and strives for the lawful use of content. This page provides information about the copyright of data and content used on this site.',
       sections: [
         {
@@ -130,9 +147,11 @@ const CopyrightPage = () => {
         },
         {
           icon: <FiCode />,
-          title: 'Map Service',
+          title: 'Map and External Services',
           content: `• The map service on this site uses Kakao Maps API.
 • Copyright for Kakao Maps belongs to Kakao Corp.
+• Route navigation uses Kakao Mobility API and ODsay Public Transit API.
+• Weather information is provided through Korea Meteorological Administration API.
 • Use of maps must comply with Kakao Maps Terms of Service.
 • Unauthorized reproduction or distribution of map data is prohibited.`
         },
@@ -181,6 +200,21 @@ We will take prompt action upon receiving a valid copyright infringement report.
             name: 'Kakao Maps API',
             url: 'https://developers.kakao.com',
             license: 'Kakao API Terms'
+          },
+          {
+            name: 'Kakao Mobility API',
+            url: 'https://developers.kakaomobility.com',
+            license: 'Kakao Mobility API Terms'
+          },
+          {
+            name: 'ODsay Public Transit API',
+            url: 'https://lab.odsay.com',
+            license: 'ODsay Lab Terms'
+          },
+          {
+            name: 'KMA Weather API',
+            url: 'https://data.kma.go.kr',
+            license: 'KOGL Type 1'
           }
         ]
       },

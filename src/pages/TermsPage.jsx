@@ -16,7 +16,7 @@ const TermsPage = () => {
   const content = {
     ko: {
       title: '이용약관',
-      lastUpdated: '최종 수정일: 2024년 1월 1일',
+      lastUpdated: '최종 수정일: 2025년 6월 16일',
       intro: '대전으로 서비스 이용약관에 오신 것을 환영합니다. 본 약관은 대전으로(이하 "사이트")가 제공하는 서비스 이용에 관한 조건과 절차, 기타 필요한 사항을 규정합니다.',
       sections: [
         {
@@ -35,6 +35,9 @@ const TermsPage = () => {
 • 맛집 및 음식점 정보 제공
 • 숙박, 쇼핑, 문화시설 정보 제공
 • 지도 기반 위치 서비스
+• 나만의 여행 코스 생성 및 공유 기능
+• 대전 날씨 정보 제공
+• 주차장 및 의료시설 정보 제공
 • 기타 대전 관광에 관련된 정보 서비스`
         },
         {
@@ -75,7 +78,7 @@ const TermsPage = () => {
     },
     en: {
       title: 'Terms of Service',
-      lastUpdated: 'Last Updated: January 1, 2024',
+      lastUpdated: 'Last Updated: June 16, 2025',
       intro: 'Welcome to To Daejeon\'s Terms of Service. These terms govern your use of the services provided by To Daejeon (hereinafter referred to as "the Site").',
       sections: [
         {
@@ -94,6 +97,9 @@ provided by To Daejeon, as well as the rights, obligations, and responsibilities
 • Restaurant and food information
 • Accommodation, shopping, and cultural facility information
 • Map-based location services
+• Personal travel course creation and sharing features
+• Daejeon weather information
+• Parking and medical facility information
 • Other Daejeon tourism-related information services`
         },
         {

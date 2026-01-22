@@ -16,7 +16,7 @@ const PrivacyPage = () => {
   const content = {
     ko: {
       title: '개인정보처리방침',
-      lastUpdated: '최종 수정일: 2024년 1월 1일',
+      lastUpdated: '최종 수정일: 2025년 6월 16일',
       intro: '대전으로(이하 "사이트")는 이용자의 개인정보를 중요시하며, 「개인정보 보호법」을 준수하고 있습니다.',
       sections: [
         {
@@ -25,10 +25,10 @@ const PrivacyPage = () => {
           content: `본 사이트는 최소한의 개인정보만을 수집합니다.
 
 • 필수 수집 항목: 없음 (비로그인 서비스)
-• 선택 수집 항목: 이메일 주소 (관리자 로그인 시)
-• 자동 수집 항목: 방문 기록, 접속 IP, 쿠키
+• 선택 수집 항목: 이메일 주소 (소셜 로그인 시), 프로필 정보
+• 자동 수집 항목: 방문 기록, 접속 IP, 쿠키, 브라우저 정보
 
-본 사이트는 관광 정보 제공을 목적으로 하며, 일반 이용자의 회원가입을 요구하지 않습니다.`
+본 사이트는 관광 정보 제공을 목적으로 하며, 일반 이용자의 회원가입 없이도 대부분의 서비스를 이용하실 수 있습니다. 나만의 여행 코스 저장/공유 기능은 소셜 로그인을 통해 이용 가능합니다.`
         },
         {
           icon: <FiUser />,
@@ -36,6 +36,7 @@ const PrivacyPage = () => {
           content: `수집된 개인정보는 다음의 목적을 위해 활용됩니다.
 
 • 서비스 제공 및 운영
+• 나만의 여행 코스 저장 및 공유 기능 제공
 • 사이트 이용 통계 분석
 • 서비스 개선 및 신규 서비스 개발
 • 문의사항 응대`
@@ -78,7 +79,7 @@ const PrivacyPage = () => {
     },
     en: {
       title: 'Privacy Policy',
-      lastUpdated: 'Last Updated: January 1, 2024',
+      lastUpdated: 'Last Updated: June 16, 2025',
       intro: 'To Daejeon (hereinafter referred to as "the Site") values the privacy of its users and complies with the Personal Information Protection Act.',
       sections: [
         {
@@ -87,10 +88,10 @@ const PrivacyPage = () => {
           content: `This site collects only minimal personal information.
 
 • Required: None (No login required for general use)
-• Optional: Email address (for administrator login)
-• Automatically collected: Visit logs, IP address, cookies
+• Optional: Email address (for social login), profile information
+• Automatically collected: Visit logs, IP address, cookies, browser information
 
-This site aims to provide tourism information and does not require user registration.`
+This site aims to provide tourism information. Most services are available without registration. Social login is available for saving and sharing personal travel courses.`
         },
         {
           icon: <FiUser />,
@@ -98,6 +99,7 @@ This site aims to provide tourism information and does not require user registra
           content: `Collected personal information is used for the following purposes:
 
 • Service provision and operation
+• Personal travel course saving and sharing features
 • Site usage statistics analysis
 • Service improvement and new service development
 • Responding to inquiries`

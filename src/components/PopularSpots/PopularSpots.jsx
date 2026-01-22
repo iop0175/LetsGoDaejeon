@@ -98,7 +98,7 @@ const PopularSpots = () => {
       // DB에서 가져오기
       const dbResult = await getAllDbData('travel');
       if (dbResult.success && dbResult.items.length > 0) {
-        const formattedSpots = dbResult.items.slice(0, 8).map((item, idx) => ({
+        const formattedSpots = dbResult.items.slice(0, 9).map((item, idx) => ({
           id: idx + 1,
           title: { ko: item.tourspotNm, en: item.tourspotNm },
           location: { ko: extractDistrict(item.tourspotAddr), en: extractDistrict(item.tourspotAddr) },

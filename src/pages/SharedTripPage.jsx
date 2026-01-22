@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiX, FiInfo, FiMap } from 'react-icons/fi'
-import { FaBus, FaSubway, FaWalking, FaCar } from 'react-icons/fa'
+import { FaBus, FaSubway, FaWalking, FaCar, FaBicycle } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
 import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked, getPlaceDetail } from '../services/tripService'
 import { getPublicTransitRoute } from '../services/odsayService'
@@ -37,12 +37,28 @@ const SharedTripPage = () => {
   const [transitLoading, setTransitLoading] = useState(false)
   const [selectedDay, setSelectedDay] = useState(0) // 선택된 일차 (지도용)
   const [mapReady, setMapReady] = useState(false)
+  const [kakaoMapLoaded, setKakaoMapLoaded] = useState(!!window.kakao?.maps)
   const detailCardRef = useRef(null)
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markersRef = useRef([])
   const polylinesRef = useRef([])
   const overlaysRef = useRef([])
+  
+  // 카카오맵 SDK 로드 대기
+  useEffect(() => {
+    if (window.kakao?.maps) {
+      setKakaoMapLoaded(true)
+      return
+    }
+    
+    const handleKakaoLoad = () => {
+      setKakaoMapLoaded(true)
+    }
+    
+    window.addEventListener('kakaoMapLoaded', handleKakaoLoad)
+    return () => window.removeEventListener('kakaoMapLoaded', handleKakaoLoad)
+  }, [])
   
   // 여행 계획 로드
   useEffect(() => {
@@ -82,46 +98,70 @@ const SharedTripPage = () => {
   
   // 카카오맵 초기화
   useEffect(() => {
-    if (!trip || !window.kakao?.maps) return
-    
-    const container = mapRef.current
-    if (!container) return
-    
-    const { maps } = window.kakao
-    
-    // 모든 일차의 장소 좌표 수집
-    const allPlaces = trip.days?.flatMap(day => day.places || []) || []
-    const validPlaces = allPlaces.filter(p => p.lat && p.lng)
-    
-    if (validPlaces.length === 0) return
-    
-    // 중심점 계산
-    const avgLat = validPlaces.reduce((sum, p) => sum + p.lat, 0) / validPlaces.length
-    const avgLng = validPlaces.reduce((sum, p) => sum + p.lng, 0) / validPlaces.length
-    
-    const options = {
-      center: new maps.LatLng(avgLat, avgLng),
-      level: 6
+    if (!trip || !kakaoMapLoaded || !window.kakao?.maps) {
+      return
     }
     
-    const map = new maps.Map(container, options)
-    mapInstanceRef.current = map
+    // 이미 맵이 생성되어 있으면 다시 생성하지 않음
+    if (mapInstanceRef.current) {
+      return
+    }
     
-    // 지도 로드 완료
-    maps.event.addListener(map, 'tilesloaded', () => {
+    // DOM이 렌더링될 때까지 약간의 지연
+    const initMap = () => {
+      // 이미 맵이 생성되어 있으면 다시 생성하지 않음
+      if (mapInstanceRef.current) {
+        return
+      }
+      
+      const container = mapRef.current
+      if (!container) {
+        setTimeout(initMap, 100)
+        return
+      }
+      
+      const { maps } = window.kakao
+      
+      // 모든 일차의 장소 좌표 수집
+      const allPlaces = trip.days?.flatMap(day => day.places || []) || []
+      const validPlaces = allPlaces.filter(p => p.lat && p.lng)
+      
+      if (validPlaces.length === 0) {
+        return
+      }
+      
+      // 중심점 계산
+      const avgLat = validPlaces.reduce((sum, p) => sum + p.lat, 0) / validPlaces.length
+      const avgLng = validPlaces.reduce((sum, p) => sum + p.lng, 0) / validPlaces.length
+      
+      const options = {
+        center: new maps.LatLng(avgLat, avgLng),
+        level: 6
+      }
+      
+      const map = new maps.Map(container, options)
+      mapInstanceRef.current = map
+      
+      // 지도 로드 완료
+      maps.event.addListener(map, 'tilesloaded', () => {
+        setMapReady(true)
+      })
+      
+      // 컨트롤 추가
+      const zoomControl = new maps.ZoomControl()
+      map.addControl(zoomControl, maps.ControlPosition.RIGHT)
+      
       setMapReady(true)
-    })
+    }
     
-    // 컨트롤 추가
-    const zoomControl = new maps.ZoomControl()
-    map.addControl(zoomControl, maps.ControlPosition.RIGHT)
-    
-    setMapReady(true)
-  }, [trip])
+    initMap()
+  }, [trip, kakaoMapLoaded])
   
   // 선택된 일차의 경로 표시 (실제 자동차 경로)
   useEffect(() => {
-    if (!mapReady || !mapInstanceRef.current || !trip?.days) return
+    if (!mapReady || !mapInstanceRef.current || !trip?.days) {
+      return
+    }
     
     const { maps } = window.kakao
     const map = mapInstanceRef.current
@@ -144,7 +184,9 @@ const SharedTripPage = () => {
         const places = day.places || []
         const validPlaces = places.filter(p => p.lat && p.lng)
         
-        if (validPlaces.length === 0) continue
+        if (validPlaces.length === 0) {
+          continue
+        }
         
         const dayColor = DAY_COLORS[dayIndex % DAY_COLORS.length]
         const isSelected = dayIndex === selectedDay
@@ -182,7 +224,8 @@ const SharedTripPage = () => {
             content: markerContent,
             yAnchor: 0.5,
             xAnchor: 0.5,
-            map
+            zIndex: 999,
+            map: mapInstanceRef.current
           })
           overlaysRef.current.push(overlay)
           
@@ -340,25 +383,88 @@ const SharedTripPage = () => {
     }
   }
   
-  // 다음 장소까지의 대중교통 정보 조회 (저장된 정보 우선 사용)
+  // 다음 장소까지의 이동 정보 조회 (저장된 정보 우선 사용)
   const fetchTransitInfo = async (currentPlace, nextPlace) => {
+    const transportType = currentPlace?.transportToNext
+    
     setTransitLoading(true)
     
     try {
-      // 1. 먼저 DB에 저장된 대중교통 정보 확인
+      // 1. 먼저 DB에 저장된 경로 정보 확인 (모든 이동 수단)
       if (currentPlace?.transitToNext) {
-        console.log('Using saved transit info:', currentPlace.transitToNext)
+        const savedInfo = currentPlace.transitToNext
+        
+        // 대중교통이 아닌 경우 (도보, 자전거, 자가용, 택시)
+        const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
+        if (nonTransitTypes.includes(transportType)) {
+          setTransitInfo({
+            transportType: savedInfo.transportType || transportType,
+            duration: savedInfo.duration,
+            distance: savedInfo.distance,
+            isEstimate: savedInfo.isEstimate,
+            bus: null,
+            subway: null,
+            nextPlaceName: nextPlace.placeName
+          })
+          setTransitLoading(false)
+          return
+        }
+        
+        // 대중교통(버스/지하철)인 경우
+        // savedInfo에 bus/subway 상세가 없으면 기본 정보만 표시
+        let busInfo = savedInfo.bus || null
+        let subwayInfo = savedInfo.subway || null
+        
+        // bus 타입인데 bus 상세 정보가 없으면 기본 카드만 표시하도록 설정
+        if (transportType === 'bus' && !busInfo) {
+          busInfo = {
+            totalTime: savedInfo.duration,
+            distance: savedInfo.distance,
+            payment: savedInfo.payment,
+            busRoutes: [],
+            routeDetails: []
+          }
+        }
+        
+        // subway 타입인데 subway 상세 정보가 없으면 기본 카드만 표시하도록 설정
+        if (transportType === 'subway' && !subwayInfo) {
+          subwayInfo = {
+            totalTime: savedInfo.duration,
+            distance: savedInfo.distance,
+            payment: savedInfo.payment,
+            lines: [],
+            routeDetails: []
+          }
+        }
+        
         setTransitInfo({
-          bus: currentPlace.transitToNext.bus || null,
-          subway: currentPlace.transitToNext.subway || null,
+          transportType: savedInfo.transportType || transportType,
+          duration: savedInfo.duration,
+          distance: savedInfo.distance,
+          bus: busInfo,
+          subway: subwayInfo,
           nextPlaceName: nextPlace.placeName
         })
         setTransitLoading(false)
         return
       }
       
-      // 2. 저장된 정보가 없으면 API 호출
-      console.log('No saved transit info, fetching from API...')
+      // 2. 저장된 정보가 없고, 대중교통이 아닌 경우 - 정보 없음 표시
+      const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
+      if (nonTransitTypes.includes(transportType)) {
+        setTransitInfo({
+          transportType,
+          duration: null,
+          distance: null,
+          bus: null,
+          subway: null,
+          nextPlaceName: nextPlace.placeName
+        })
+        setTransitLoading(false)
+        return
+      }
+      
+      // 3. 저장된 정보가 없고, 대중교통인 경우 - API로 조회
       
       // 좌표가 없으면 주소에서 조회
       let currentLat = currentPlace?.lat
@@ -407,10 +513,7 @@ const SharedTripPage = () => {
         }
       }
       
-      console.log('Transit search coords:', { currentLat, currentLng, nextLat, nextLng })
-      
       if (!currentLat || !currentLng || !nextLat || !nextLng) {
-        console.log('Missing coordinates, skipping transit search')
         setTransitInfo(null)
         setTransitLoading(false)
         return
@@ -422,7 +525,6 @@ const SharedTripPage = () => {
         nextLng, nextLat,
         'bus'
       )
-      console.log('Bus result:', busResult)
       
       // 지하철 경로 조회
       const subwayResult = await getPublicTransitRoute(
@@ -430,7 +532,6 @@ const SharedTripPage = () => {
         nextLng, nextLat,
         'subway'
       )
-      console.log('Subway result:', subwayResult)
       
       setTransitInfo({
         bus: busResult.success ? busResult : null,
@@ -946,9 +1047,42 @@ const SharedTripPage = () => {
                         </div>
                       )}
                       
-                      {/* 대중교통 경로가 없을 때 */}
+                      {/* 비대중교통 이동수단 (택시, 도보, 자전거, 자가용) */}
+                      {['taxi', 'car', 'walk', 'bicycle'].includes(transitInfo.transportType) && (
+                        <div className={`transit-card ${transitInfo.transportType}`}>
+                          <div className="transit-header">
+                            {transitInfo.transportType === 'taxi' && <FaCar className="transit-icon taxi" />}
+                            {transitInfo.transportType === 'car' && <FaCar className="transit-icon car" />}
+                            {transitInfo.transportType === 'walk' && <FaWalking className="transit-icon walk" />}
+                            {transitInfo.transportType === 'bicycle' && <FaBicycle className="transit-icon bicycle" />}
+                            <span className="transit-type">
+                              {transitInfo.transportType === 'taxi' && (language === 'ko' ? '택시' : 'Taxi')}
+                              {transitInfo.transportType === 'car' && (language === 'ko' ? '자가용' : 'Car')}
+                              {transitInfo.transportType === 'walk' && (language === 'ko' ? '도보' : 'Walk')}
+                              {transitInfo.transportType === 'bicycle' && (language === 'ko' ? '자전거' : 'Bicycle')}
+                            </span>
+                            {transitInfo.duration && (
+                              <span className="transit-time">
+                                {transitInfo.duration}{language === 'ko' ? '분' : ' min'}
+                              </span>
+                            )}
+                          </div>
+                          {transitInfo.distance && (
+                            <div className="transit-details">
+                              <span className="transit-distance">
+                                {language === 'ko' ? '거리' : 'Distance'}: {typeof transitInfo.distance === 'number' && transitInfo.distance >= 1 
+                                  ? `${transitInfo.distance.toFixed(1)}km`
+                                  : `${Math.round((transitInfo.distance || 0) * 1000)}m`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* 대중교통 경로가 없고 비대중교통도 아닐 때 */}
                       {(!transitInfo.bus || transitInfo.bus.noRoute) && 
-                       (!transitInfo.subway || transitInfo.subway.noRoute) && (
+                       (!transitInfo.subway || transitInfo.subway.noRoute) &&
+                       !['taxi', 'car', 'walk', 'bicycle'].includes(transitInfo.transportType) && (
                         <div className="no-transit">
                           <FaWalking />
                           <span>{language === 'ko' ? '도보 또는 자가용 이용' : 'Walk or drive'}</span>

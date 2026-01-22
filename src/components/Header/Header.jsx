@@ -22,6 +22,7 @@ const Header = memo(() => {
     { path: '/travel', label: t.nav.travel },
     { path: '/festival', label: t.nav.festival },
     { path: '/food', label: t.nav.food },
+    { path: '/shared-trips', label: language === 'ko' ? '여행코스' : 'Travel Courses' },
     { path: '/map', label: t.nav.map },
     { path: '/my-trip', label: language === 'ko' ? '나의 여행' : 'My Trip' },
   ]

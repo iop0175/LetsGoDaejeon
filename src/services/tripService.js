@@ -423,6 +423,7 @@ export const updateTripPlace = async (placeId, updates) => {
     if (updates.visitTime !== undefined) updateData.visit_time = updates.visitTime
     if (updates.memo !== undefined) updateData.memo = updates.memo
     if (updates.transportToNext !== undefined) updateData.transport_to_next = updates.transportToNext
+    if (updates.transitToNext !== undefined) updateData.transit_to_next = updates.transitToNext
     
     const { data, error } = await supabase
       .from('trip_places')
@@ -653,7 +654,7 @@ export const getPublishedTripPlanDetail = async (planId) => {
         .eq('is_published', true)
     }
     
-    // 상세 조회
+    // 상세 조회 (정렬 포함)
     const { data, error } = await supabase
       .from('trip_plans')
       .select(`
@@ -665,6 +666,8 @@ export const getPublishedTripPlanDetail = async (planId) => {
       `)
       .eq('id', planId)
       .eq('is_published', true)
+      .order('day_number', { foreignTable: 'trip_days', ascending: true })
+      .order('order_index', { foreignTable: 'trip_days.trip_places', ascending: true })
       .single()
     
     if (error) throw error

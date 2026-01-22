@@ -81,12 +81,19 @@ const MyTripPage = () => {
   // 현재 편집 중인 여행
   const [selectedTrip, setSelectedTrip] = useState(null)
   const [isCreating, setIsCreating] = useState(false)
+  const [isEditing, setIsEditing] = useState(false) // 여행 정보 수정 모드
   
   // 새 여행 폼
   const [newTripForm, setNewTripForm] = useState({
     title: '',
     startDate: '',
     endDate: '',
+    description: ''
+  })
+  
+  // 여행 수정 폼
+  const [editTripForm, setEditTripForm] = useState({
+    title: '',
     description: ''
   })
   
@@ -328,6 +335,53 @@ const MyTripPage = () => {
     }
   }
   
+  // 여행 수정 모달 열기
+  const openEditModal = () => {
+    if (!selectedTrip) return
+    setEditTripForm({
+      title: selectedTrip.title || '',
+      description: selectedTrip.description || ''
+    })
+    setIsEditing(true)
+  }
+  
+  // 여행 정보 수정 저장
+  const handleSaveTrip = async () => {
+    if (!editTripForm.title) {
+      alert(language === 'ko' ? '제목을 입력해주세요' : 'Please enter a title')
+      return
+    }
+    
+    try {
+      const result = await updateTripPlan(selectedTrip.id, {
+        title: editTripForm.title,
+        description: editTripForm.description
+      })
+      
+      if (result.success) {
+        // selectedTrip 업데이트
+        setSelectedTrip(prev => ({
+          ...prev,
+          title: editTripForm.title,
+          description: editTripForm.description
+        }))
+        
+        // tripPlans 목록도 업데이트
+        setTripPlans(prev => prev.map(trip => 
+          trip.id === selectedTrip.id 
+            ? { ...trip, title: editTripForm.title, description: editTripForm.description }
+            : trip
+        ))
+        
+        setIsEditing(false)
+        alert(language === 'ko' ? '저장되었습니다!' : 'Saved!')
+      }
+    } catch (err) {
+
+      alert(language === 'ko' ? '저장에 실패했습니다' : 'Failed to save')
+    }
+  }
+  
   // 여행 게시 모달 열기
   const openPublishModal = (trip) => {
     setPublishingTripId(trip.id)
@@ -495,10 +549,15 @@ const MyTripPage = () => {
       if (result.success) {
         const newPlace = result.place
         
-        // 이전 장소가 있으면 대중교통 정보 업데이트 (비동기로 백그라운드 실행)
+        // 이전 장소가 있고, 대중교통(버스/지하철)인 경우에만 대중교통 정보 업데이트
         if (day.places?.length > 0) {
           const prevPlace = day.places[day.places.length - 1]
-          updateTransitInfoBetweenPlaces(prevPlace, newPlace)
+          const prevTransport = prevPlace?.transportToNext
+          // 대중교통이 아닌 경우(도보, 자전거, 자가용, 택시) 대중교통 정보 미리 조회 안 함
+          const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
+          if (!nonTransitTypes.includes(prevTransport)) {
+            updateTransitInfoBetweenPlaces(prevPlace, newPlace)
+          }
         }
         
         setSelectedTrip(prev => ({
@@ -522,6 +581,14 @@ const MyTripPage = () => {
   // 두 장소 간 대중교통 정보 업데이트 (백그라운드)
   const updateTransitInfoBetweenPlaces = async (fromPlace, toPlace) => {
     try {
+      // 대중교통(버스/지하철)이 아닌 경우 대중교통 정보 조회하지 않음
+      const transportType = fromPlace?.transportToNext
+      const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
+      if (nonTransitTypes.includes(transportType)) {
+        console.log(`Transport is ${transportType}, skipping transit info update`)
+        return
+      }
+      
       if (!fromPlace?.lat || !fromPlace?.lng || !toPlace?.lat || !toPlace?.lng) {
         console.log('Missing coordinates for transit info update')
         return
@@ -687,10 +754,14 @@ const MyTripPage = () => {
     }
   }
   
-  // 이동 방법 업데이트
+  // 이동 방법 업데이트 (이동 수단, 예상 시간, 대중교통 정보 모두 DB에 저장)
   const handleUpdateTransport = async (dayId, placeId, transportType) => {
+    console.log('=== handleUpdateTransport called ===')
+    console.log('dayId:', dayId, 'placeId:', placeId, 'transportType:', transportType)
     try {
+      // 먼저 이동 수단만 저장
       const result = await updateTripPlace(placeId, { transportToNext: transportType })
+      console.log('updateTripPlace result (transportToNext):', result)
       if (result.success) {
         setSelectedTrip(prev => ({
           ...prev,
@@ -708,7 +779,7 @@ const MyTripPage = () => {
           )
         }))
         
-        // 이동 시간 조회 (저장된 좌표 사용)
+        // 이동 시간 조회 및 DB 저장 (저장된 좌표 사용)
         const day = selectedTrip?.days?.find(d => d.id === dayId)
         const placeIndex = day?.places?.findIndex(p => p.id === placeId)
         if (day && placeIndex !== -1 && placeIndex < day.places.length - 1) {
@@ -716,11 +787,182 @@ const MyTripPage = () => {
           const toPlace = day.places[placeIndex + 1]
           const fromCoords = placeCoordinates[fromPlace.id] || null
           const toCoords = placeCoordinates[toPlace.id] || null
-          fetchRouteInfo(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType, fromPlace.placeName, toPlace.placeName, fromCoords, toCoords)
+          
+          // 경로 정보 조회하고 DB에도 저장
+          fetchRouteInfoAndSave(placeId, fromPlace.placeAddress, toPlace.placeAddress, transportType, fromPlace.placeName, toPlace.placeName, fromCoords, toCoords)
         }
       }
     } catch (err) {
-
+      console.error('Failed to update transport:', err)
+    }
+  }
+  
+  // 경로 정보 조회 및 DB 저장 (이동 시간, 대중교통 정보)
+  const fetchRouteInfoAndSave = async (placeId, fromAddress, toAddress, transportType, fromName = null, toName = null, fromCoords = null, toCoords = null) => {
+    if (!fromAddress || !toAddress) return
+    
+    // 로딩 상태 설정
+    setRouteInfo(prev => ({
+      ...prev,
+      [placeId]: { loading: true }
+    }))
+    
+    try {
+      // 좌표가 있으면 직접 전달, 없으면 주소 검색
+      let result = await getRouteByTransport(fromAddress, toAddress, transportType, true, fromCoords, toCoords)
+      
+      // 부분 실패 시 실패한 쪽만 장소명으로 재시도
+      if (!result.success && (fromName || toName)) {
+        if (result.originFailed && !result.destFailed) {
+          const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
+          const resolvedToCoords = result.resolvedDestCoords || toCoords
+          result = await getRouteByTransport(fromQuery, toAddress, transportType, true, null, resolvedToCoords)
+        } else if (!result.originFailed && result.destFailed) {
+          const toQuery = toName ? `대전 ${toName}` : toAddress
+          const resolvedFromCoords = result.resolvedOriginCoords || fromCoords
+          result = await getRouteByTransport(fromAddress, toQuery, transportType, true, resolvedFromCoords, null)
+        } else if (result.originFailed && result.destFailed) {
+          const fromQuery = fromName ? `대전 ${fromName}` : fromAddress
+          const toQuery = toName ? `대전 ${toName}` : toAddress
+          result = await getRouteByTransport(fromQuery, toQuery, transportType)
+        }
+      }
+      
+      if (result.success) {
+        const routeData = {
+          duration: result.duration,
+          distance: result.distance,
+          isEstimate: result.isEstimate,
+          routeDetails: result.routeDetails || [],
+          allRoutes: result.allRoutes || [],
+          selectedRouteIndex: 0,
+          payment: result.payment,
+          busTransitCount: result.busTransitCount,
+          subwayTransitCount: result.subwayTransitCount,
+          noRoute: result.noRoute || false,
+          loading: false
+        }
+        
+        setRouteInfo(prev => ({
+          ...prev,
+          [placeId]: routeData
+        }))
+        
+        // DB에 경로 정보 저장
+        const transitInfo = {
+          transportType,
+          duration: result.duration,
+          distance: result.distance,
+          payment: result.payment,
+          isEstimate: result.isEstimate,
+          noRoute: result.noRoute || false
+        }
+        
+        // 대중교통인 경우 버스와 지하철 정보 모두 조회해서 저장
+        if (transportType === 'bus' || transportType === 'subway') {
+          // 선택한 경로의 버스 정보
+          const busDetails = result.routeDetails?.filter(r => r.type === 'bus') || []
+          if (busDetails.length > 0) {
+            transitInfo.bus = {
+              totalTime: busDetails.reduce((acc, r) => acc + (r.sectionTime || 0), 0),
+              routes: busDetails.flatMap(r => r.availableBuses?.map(b => b.busNo) || [r.busNo]).slice(0, 5),
+              segments: busDetails.map(r => ({
+                busNo: r.busNo,
+                availableBuses: r.availableBuses?.map(b => b.busNo) || [r.busNo],
+                startStation: r.startStation,
+                endStation: r.endStation,
+                stationCount: r.stationCount,
+                sectionTime: r.sectionTime
+              }))
+            }
+          }
+          
+          // 선택한 경로의 지하철 정보
+          const subwayDetails = result.routeDetails?.filter(r => r.type === 'subway') || []
+          if (subwayDetails.length > 0) {
+            transitInfo.subway = {
+              totalTime: subwayDetails.reduce((acc, r) => acc + (r.sectionTime || 0), 0),
+              lines: subwayDetails.map(r => r.lineName),
+              segments: subwayDetails.map(r => ({
+                lineName: r.lineName,
+                lineColor: r.lineColor,
+                startStation: r.startStation,
+                endStation: r.endStation,
+                stationCount: r.stationCount,
+                sectionTime: r.sectionTime
+              }))
+            }
+          }
+          
+          // 다른 대중교통 타입도 조회해서 저장 (버스 선택 시 지하철도, 지하철 선택 시 버스도)
+          const otherType = transportType === 'bus' ? 'subway' : 'bus'
+          try {
+            const otherResult = await getRouteByTransport(fromAddress, toAddress, otherType, true, fromCoords, toCoords)
+            if (otherResult.success && !otherResult.noRoute) {
+              const otherDetails = otherResult.routeDetails || []
+              
+              if (otherType === 'bus') {
+                const otherBusDetails = otherDetails.filter(r => r.type === 'bus')
+                if (otherBusDetails.length > 0 && !transitInfo.bus) {
+                  transitInfo.bus = {
+                    totalTime: otherResult.duration,
+                    payment: otherResult.payment,
+                    routes: otherBusDetails.flatMap(r => r.availableBuses?.map(b => b.busNo) || [r.busNo]).slice(0, 5),
+                    segments: otherBusDetails.map(r => ({
+                      busNo: r.busNo,
+                      availableBuses: r.availableBuses?.map(b => b.busNo) || [r.busNo],
+                      startStation: r.startStation,
+                      endStation: r.endStation,
+                      stationCount: r.stationCount,
+                      sectionTime: r.sectionTime
+                    }))
+                  }
+                }
+              } else {
+                const otherSubwayDetails = otherDetails.filter(r => r.type === 'subway')
+                if (otherSubwayDetails.length > 0 && !transitInfo.subway) {
+                  transitInfo.subway = {
+                    totalTime: otherResult.duration,
+                    payment: otherResult.payment,
+                    lines: otherSubwayDetails.map(r => r.lineName),
+                    segments: otherSubwayDetails.map(r => ({
+                      lineName: r.lineName,
+                      lineColor: r.lineColor,
+                      startStation: r.startStation,
+                      endStation: r.endStation,
+                      stationCount: r.stationCount,
+                      sectionTime: r.sectionTime
+                    }))
+                  }
+                }
+              }
+            }
+          } catch (otherErr) {
+            console.log('Failed to fetch other transit type:', otherErr)
+          }
+        }
+        
+        // DB 저장 (비동기)
+        updateTripPlace(placeId, { transitToNext: transitInfo }).then(res => {
+          if (res.success) {
+            console.log('Transit info saved to DB for place:', placeId, transitInfo)
+          }
+        }).catch(err => {
+          console.error('Failed to save transit info:', err)
+        })
+        
+      } else {
+        setRouteInfo(prev => ({
+          ...prev,
+          [placeId]: { error: result.error, loading: false }
+        }))
+      }
+    } catch (err) {
+      console.error('Error fetching route info:', err)
+      setRouteInfo(prev => ({
+        ...prev,
+        [placeId]: { error: err.message, loading: false }
+      }))
     }
   }
   
@@ -2095,6 +2337,8 @@ const MyTripPage = () => {
   // 드롭
   const handleDrop = async (e, dayId, targetIndex) => {
     e.preventDefault()
+    console.log('=== handleDrop called ===')
+    console.log('dayId:', dayId, 'targetIndex:', targetIndex, 'draggedPlace:', draggedPlace)
     
     if (!draggedPlace || draggedPlace.dayId !== dayId) {
       // 다른 날짜로의 이동은 지원하지 않음 (복잡도 증가)
@@ -2175,13 +2419,17 @@ const MyTripPage = () => {
       newPlaces.splice(targetIndex, 0, movedPlace)
       
       // 모든 장소의 orderIndex 업데이트
+      console.log('=== Updating orderIndex in DB ===')
       for (let i = 0; i < newPlaces.length; i++) {
         try {
-          await updateTripPlace(newPlaces[i].id, { orderIndex: i })
+          console.log(`Updating place ${newPlaces[i].placeName} (id: ${newPlaces[i].id}) to orderIndex: ${i}`)
+          const res = await updateTripPlace(newPlaces[i].id, { orderIndex: i })
+          console.log('orderIndex update result:', res)
         } catch (err) {
-
+          console.error('Failed to update orderIndex:', err)
         }
       }
+      console.log('=== orderIndex update complete ===')
     }
     
     setDraggedPlace(null)
@@ -2336,6 +2584,48 @@ const MyTripPage = () => {
                 </button>
                 <button className="save-btn" onClick={handleCreateTrip}>
                   <FiSave /> {language === 'ko' ? '생성하기' : 'Create'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* 여행 정보 수정 모달 */}
+        {isEditing && (
+          <div className="trip-modal-overlay">
+            <div className="trip-modal">
+              <div className="modal-header">
+                <h2>{language === 'ko' ? '여행 계획 수정' : 'Edit Trip'}</h2>
+                <button className="modal-close" onClick={() => setIsEditing(false)}>
+                  <FiX />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label>{language === 'ko' ? '여행 제목' : 'Trip Title'}</label>
+                  <input
+                    type="text"
+                    value={editTripForm.title}
+                    onChange={(e) => setEditTripForm(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder={language === 'ko' ? '예: 대전 봄 여행' : 'e.g., Spring Trip to Daejeon'}
+                  />
+                </div>
+                <div className="form-group">
+                  <label>{language === 'ko' ? '설명 (선택)' : 'Description (optional)'}</label>
+                  <textarea
+                    value={editTripForm.description}
+                    onChange={(e) => setEditTripForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder={language === 'ko' ? '여행에 대한 간단한 설명...' : 'Brief description of your trip...'}
+                    rows={3}
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button className="cancel-btn" onClick={() => setIsEditing(false)}>
+                  {language === 'ko' ? '취소' : 'Cancel'}
+                </button>
+                <button className="save-btn" onClick={handleSaveTrip}>
+                  <FiSave /> {language === 'ko' ? '저장' : 'Save'}
                 </button>
               </div>
             </div>
@@ -2531,10 +2821,18 @@ const MyTripPage = () => {
                     {selectedTrip.startDate} ~ {selectedTrip.endDate}
                     ({getTripDuration(selectedTrip)}{language === 'ko' ? '일' : ' days'})
                   </span>
+                  {selectedTrip.description && (
+                    <p className="trip-description-text">{selectedTrip.description}</p>
+                  )}
                 </div>
-                <button className="close-detail" onClick={() => setSelectedTrip(null)}>
-                  <FiX />
-                </button>
+                <div className="trip-detail-actions">
+                  <button className="edit-trip-btn" onClick={openEditModal} title={language === 'ko' ? '수정' : 'Edit'}>
+                    <FiEdit2 />
+                  </button>
+                  <button className="close-detail" onClick={() => setSelectedTrip(null)}>
+                    <FiX />
+                  </button>
+                </div>
               </div>
               
               {/* 숙소 설정 섹션 */}
