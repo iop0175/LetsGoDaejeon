@@ -5172,3 +5172,529 @@
 .dark-theme .image-preview {
   background: #1e293b;
 }
+/* ==================== Vercel 섹션 스타일 ==================== */
+.vercel-section {
+  padding: 0;
+}
+
+.vercel-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
+.vercel-dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #000 0%, #333 100%);
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.vercel-dashboard-link:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.vercel-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.vercel-loading p {
+  margin-top: 16px;
+  color: #666;
+}
+
+.vercel-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 24px;
+}
+
+.vercel-card {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.vercel-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.1rem;
+  color: #333;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eee;
+}
+
+.vercel-card h3 svg {
+  color: #000;
+}
+
+/* 사용자 정보 */
+.vercel-user-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.user-avatar svg {
+  color: #999;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+/* 프로젝트 목록 */
+.vercel-projects {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.project-item:hover {
+  background: #eef2f7;
+}
+
+.project-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  font-weight: 500;
+  color: #333;
+}
+
+.project-name svg {
+  color: #666;
+}
+
+.project-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-framework {
+  padding: 4px 10px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.deployment-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.deployment-status.ready {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.deployment-status.building {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.deployment-status.error {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.project-link {
+  padding: 8px;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.project-link:hover {
+  color: #1976d2;
+}
+
+/* 배포 목록 */
+.vercel-deployments {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.deployment-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.deployment-item:hover {
+  background: #eef2f7;
+}
+
+.deployment-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.deployment-name {
+  font-weight: 500;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.deployment-time {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.deployment-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.deployment-state {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.deployment-state.ready {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.deployment-state.building {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.deployment-state.error,
+.deployment-state.canceled {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.deployment-target {
+  padding: 4px 8px;
+  background: #f0f0f0;
+  color: #666;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  text-transform: capitalize;
+}
+
+.deployment-link {
+  padding: 8px;
+  color: #666;
+  transition: color 0.2s;
+}
+
+.deployment-link:hover {
+  color: #1976d2;
+}
+
+/* Blob 스토어 */
+.vercel-blobs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.blob-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.blob-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+  color: #333;
+}
+
+.blob-name svg {
+  color: #666;
+}
+
+.blob-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.blob-id {
+  font-size: 0.75rem;
+  color: #888;
+  font-family: monospace;
+}
+
+.blob-status {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.blob-status.ready,
+.blob-status.active {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* 사용량 제한 */
+.vercel-limits {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.limit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.limit-label {
+  font-weight: 500;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.limit-bar {
+  height: 10px;
+  background: #e0e0e0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.limit-progress {
+  height: 100%;
+  background: linear-gradient(90deg, #4caf50 0%, #8bc34a 100%);
+  border-radius: 5px;
+  transition: width 0.3s ease;
+}
+
+.limit-value {
+  font-size: 0.85rem;
+  color: #666;
+  text-align: right;
+}
+
+/* 에러 상태 */
+.vercel-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  text-align: center;
+}
+
+.vercel-error svg {
+  color: #ff9800;
+  margin-bottom: 16px;
+}
+
+.vercel-error p {
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.vercel-error .error-hint {
+  font-size: 0.85rem;
+  color: #999;
+}
+
+/* ==================== Vercel 다크 테마 ==================== */
+.dark-theme .vercel-dashboard-link {
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: #000;
+}
+
+.dark-theme .vercel-loading {
+  background: #1e293b;
+}
+
+.dark-theme .vercel-loading p {
+  color: #94a3b8;
+}
+
+.dark-theme .vercel-card {
+  background: #1e293b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .vercel-card h3 {
+  color: #f1f5f9;
+  border-bottom-color: #334155;
+}
+
+.dark-theme .vercel-card h3 svg {
+  color: #fff;
+}
+
+.dark-theme .user-avatar {
+  background: #334155;
+}
+
+.dark-theme .user-avatar svg {
+  color: #64748b;
+}
+
+.dark-theme .user-name {
+  color: #f1f5f9;
+}
+
+.dark-theme .user-email {
+  color: #94a3b8;
+}
+
+.dark-theme .project-item,
+.dark-theme .deployment-item,
+.dark-theme .blob-item {
+  background: #0f172a;
+}
+
+.dark-theme .project-item:hover,
+.dark-theme .deployment-item:hover {
+  background: #1e293b;
+}
+
+.dark-theme .project-name,
+.dark-theme .deployment-name,
+.dark-theme .blob-name {
+  color: #f1f5f9;
+}
+
+.dark-theme .project-name svg,
+.dark-theme .blob-name svg {
+  color: #94a3b8;
+}
+
+.dark-theme .project-framework {
+  background: rgba(25, 118, 210, 0.2);
+  color: #64b5f6;
+}
+
+.dark-theme .deployment-time,
+.dark-theme .blob-id {
+  color: #64748b;
+}
+
+.dark-theme .deployment-target {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.dark-theme .project-link,
+.dark-theme .deployment-link {
+  color: #94a3b8;
+}
+
+.dark-theme .project-link:hover,
+.dark-theme .deployment-link:hover {
+  color: #60a5fa;
+}
+
+.dark-theme .limit-label {
+  color: #cbd5e1;
+}
+
+.dark-theme .limit-bar {
+  background: #334155;
+}
+
+.dark-theme .limit-value {
+  color: #94a3b8;
+}
+
+.dark-theme .vercel-error {
+  background: #1e293b;
+}
+
+.dark-theme .vercel-error svg {
+  color: #fbbf24;
+}
+
+.dark-theme .vercel-error p {
+  color: #94a3b8;
+}
+
+.dark-theme .vercel-error .error-hint {
+  color: #64748b;
+}
