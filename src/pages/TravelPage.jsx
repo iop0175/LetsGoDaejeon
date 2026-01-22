@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FiFilter, FiMapPin, FiClock, FiLoader, FiX, FiChevronLeft, FiChevronRight, FiCamera, FiPhone, FiExternalLink, FiImage, FiNavigation } from 'react-icons/fi'
+import { FiFilter, FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getTourSpotImage, getDaejeonPhotoGallery } from '../services/api'
+import { getTourSpotImage } from '../services/api'
 import { getAllDbData } from '../services/dbService'
 import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
 import TravelCard from '../components/TravelCard/TravelCard'
@@ -29,9 +29,6 @@ const TravelPage = () => {
 
   // 상세 모달 상태
   const [selectedSpot, setSelectedSpot] = useState(null)
-  const [photoGallery, setPhotoGallery] = useState([])
-  const [galleryLoading, setGalleryLoading] = useState(false)
-  const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0)
 
   // 지역 추출 함수
   const extractDistrict = (address) => {
@@ -117,54 +114,11 @@ const TravelPage = () => {
   // 관광지 상세 보기 (모달 열기)
   const openSpotDetail = async (spot) => {
     setSelectedSpot(spot)
-    setGalleryLoading(true)
-    setCurrentPhotoIndex(0)
-    
-    // 한국관광공사 사진 갤러리 로드
-    try {
-      const result = await getDaejeonPhotoGallery(spot.title, 20)
-      if (result.success && result.items.length > 0) {
-        setPhotoGallery(result.items)
-      } else {
-        // 기본 이미지 사용
-        setPhotoGallery([{
-          imageUrl: spot.image,
-          title: spot.title,
-          photographer: '대전사진누리',
-          location: '대전광역시'
-        }])
-      }
-    } catch (error) {
-
-      setPhotoGallery([{
-        imageUrl: spot.image,
-        title: spot.title,
-        photographer: '대전사진누리',
-        location: '대전광역시'
-      }])
-    }
-    
-    setGalleryLoading(false)
   }
 
   // 모달 닫기
   const closeSpotDetail = () => {
     setSelectedSpot(null)
-    setPhotoGallery([])
-    setCurrentPhotoIndex(0)
-  }
-
-  // 이전/다음 사진
-  const prevPhoto = () => {
-    setCurrentPhotoIndex(prev => 
-      prev === 0 ? photoGallery.length - 1 : prev - 1
-    )
-  }
-
-  const nextPhoto = () => {
-    setCurrentPhotoIndex(prev => 
-      prev === photoGallery.length - 1 ? 0 : prev + 1
-    )
   }
 
   // DB에서 데이터 로드
@@ -293,10 +247,6 @@ const TravelPage = () => {
                           <span>{spot.image_author || spot.photographer}</span>
                         </div>
                       )}
-                      <div className="spot-image-overlay">
-                        <FiImage />
-                        <span>{language === 'ko' ? '사진 더보기' : 'View Photos'}</span>
-                      </div>
                     </div>
                     <div className="spot-content">
                       <h3 className="spot-title">{spot.title}</h3>
@@ -404,63 +354,13 @@ const TravelPage = () => {
               <FiX />
             </button>
 
-            {/* 사진 갤러리 */}
-            <div className="modal-gallery">
-              {galleryLoading ? (
-                <div className="gallery-loading">
-                  <FiLoader className="loading-spinner" />
-                  <p>{language === 'ko' ? '사진을 불러오는 중...' : 'Loading photos...'}</p>
-                </div>
-              ) : (
-                <>
-                  <div className="gallery-main">
-                    <img 
-                      src={getReliableImageUrl(photoGallery[currentPhotoIndex]?.imageUrl)}
-                      alt={photoGallery[currentPhotoIndex]?.title}
-                      onError={handleImageError}
-                    />
-                    
-                    {photoGallery.length > 1 && (
-                      <>
-                        <button className="gallery-nav prev" onClick={prevPhoto}>
-                          <FiChevronLeft />
-                        </button>
-                        <button className="gallery-nav next" onClick={nextPhoto}>
-                          <FiChevronRight />
-                        </button>
-                      </>
-                    )}
-                    
-                    <div className="gallery-info">
-                      <FiCamera />
-                      <span>{photoGallery[currentPhotoIndex]?.photographer || '한국관광공사'}</span>
-                    </div>
-                    
-                    <div className="gallery-counter">
-                      {currentPhotoIndex + 1} / {photoGallery.length}
-                    </div>
-                  </div>
-
-                  {/* 썸네일 목록 */}
-                  {photoGallery.length > 1 && (
-                    <div className="gallery-thumbnails">
-                      {photoGallery.map((photo, index) => (
-                        <div 
-                          key={index}
-                          className={`thumbnail ${index === currentPhotoIndex ? 'active' : ''}`}
-                          onClick={() => setCurrentPhotoIndex(index)}
-                        >
-                          <img 
-                            src={getReliableImageUrl(photo.imageUrl)} 
-                            alt={`${photo.title} ${index + 1}`}
-                            onError={handleImageError}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
+            {/* 대표 이미지 */}
+            <div className="modal-image">
+              <img 
+                src={getReliableImageUrl(selectedSpot.image)}
+                alt={selectedSpot.title}
+                onError={handleImageError}
+              />
             </div>
 
             {/* 상세 정보 */}

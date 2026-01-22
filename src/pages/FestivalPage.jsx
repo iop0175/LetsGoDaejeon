@@ -379,7 +379,7 @@ const FestivalPage = () => {
       
       {/* 상세 정보 모달 */}
       {selectedEvent && (
-        <div className="modal-overlay" onClick={closeModal}>
+        <div className="modal-overlay festival-modal" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={closeModal}>
               <FiX />
