@@ -5,6 +5,21 @@ import { getPublishedTripPlans } from '../services/tripService'
 import { useLanguage } from '../context/LanguageContext'
 import './SharedTripsPage.css'
 
+// 대전 관광지 대체 이미지 (여행코스 썸네일 없을 때 사용)
+const TRAVEL_PLACEHOLDER_IMAGES = [
+  'https://tong.visitkorea.or.kr/cms/resource/54/191054_image2_1.jpg', // 엑스포과학공원
+  'https://tong.visitkorea.or.kr/cms/resource/21/1893821_image2_1.jpg', // 한밭수목원
+  'https://tong.visitkorea.or.kr/cms/resource/73/2675273_image2_1.jpg', // 계족산 황톳길
+  'https://tong.visitkorea.or.kr/cms/resource/30/2612030_image2_1.jpg', // 성심당
+  'https://tong.visitkorea.or.kr/cms/resource/17/1568117_image2_1.JPG', // 뿌리공원
+]
+
+// 일관된 대체 이미지 반환 (ID 기반)
+const getPlaceholderImage = (tripId) => {
+  const index = tripId ? Math.abs(tripId.toString().charCodeAt(0)) % TRAVEL_PLACEHOLDER_IMAGES.length : 0
+  return TRAVEL_PLACEHOLDER_IMAGES[index]
+}
+
 function SharedTripsPage() {
   const { language } = useLanguage()
   const [trips, setTrips] = useState([])
@@ -82,13 +97,14 @@ function SharedTripsPage() {
   const TripCard = ({ trip }) => (
     <Link to={`/trip/shared/${trip.id}`} className="trip-card">
       <div className="trip-card-image">
-        {trip.thumbnailUrl ? (
-          <img src={trip.thumbnailUrl} alt={trip.title} />
-        ) : (
-          <div className="trip-card-placeholder">
-            <FaMapMarkerAlt />
-          </div>
-        )}
+        <img 
+          src={trip.thumbnailUrl || getPlaceholderImage(trip.id)} 
+          alt={trip.title}
+          onError={(e) => {
+            e.target.onerror = null
+            e.target.src = getPlaceholderImage(trip.id)
+          }}
+        />
         {trip.authorNickname === 'LetsGoDaejeon 관리자' && (
           <div className="admin-badge">
             <FaStar /> 추천

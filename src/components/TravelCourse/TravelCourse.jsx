@@ -5,6 +5,21 @@ import { useLanguage } from '../../context/LanguageContext'
 import { getPublishedTripPlans } from '../../services/tripService'
 import './TravelCourse.css'
 
+// 대전 관광지 대체 이미지 (여행코스 썸네일 없을 때 사용)
+const TRAVEL_PLACEHOLDER_IMAGES = [
+  'https://tong.visitkorea.or.kr/cms/resource/54/191054_image2_1.jpg', // 엑스포과학공원
+  'https://tong.visitkorea.or.kr/cms/resource/21/1893821_image2_1.jpg', // 한밭수목원
+  'https://tong.visitkorea.or.kr/cms/resource/73/2675273_image2_1.jpg', // 계족산 황톳길
+  'https://tong.visitkorea.or.kr/cms/resource/30/2612030_image2_1.jpg', // 성심당
+  'https://tong.visitkorea.or.kr/cms/resource/17/1568117_image2_1.JPG', // 뿌리공원
+]
+
+// 일관된 대체 이미지 반환 (ID 기반)
+const getPlaceholderImage = (tripId) => {
+  const index = tripId ? Math.abs(tripId.toString().charCodeAt(0)) % TRAVEL_PLACEHOLDER_IMAGES.length : 0
+  return TRAVEL_PLACEHOLDER_IMAGES[index]
+}
+
 const TravelCourse = memo(() => {
   const { language, t } = useLanguage()
   const navigate = useNavigate()
@@ -65,7 +80,7 @@ const TravelCourse = memo(() => {
         ko: `${trip.days?.length || 1}일`, 
         en: `${trip.days?.length || 1} day${(trip.days?.length || 1) > 1 ? 's' : ''}`
       },
-      image: trip.thumbnailUrl || 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=400&fit=crop',
+      image: trip.thumbnailUrl || getPlaceholderImage(trip.id),
       tag: { ko: '추천 코스', en: 'Recommended' },
       author: trip.authorNickname || '익명',
       viewCount: trip.viewCount || 0,
@@ -137,7 +152,15 @@ const TravelCourse = memo(() => {
                 onClick={() => handleCardClick(course)}
               >
                 <div className="course-image">
-                  <img src={course.image} alt={course.title[language]} loading="lazy" />
+                  <img 
+                    src={course.image} 
+                    alt={course.title[language]} 
+                    loading="lazy"
+                    onError={(e) => {
+                      e.target.onerror = null
+                      e.target.src = getPlaceholderImage(course.id)
+                    }}
+                  />
                   <span className="course-tag user-tag">
                     {course.tag[language]}
                   </span>
