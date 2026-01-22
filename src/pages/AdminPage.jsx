@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
-  FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, 
+  FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, FiCloud,
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
   FiNavigation, FiEye, FiToggleLeft, FiToggleRight

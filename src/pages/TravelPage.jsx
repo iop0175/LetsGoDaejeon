@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FiFilter, FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation } from 'react-icons/fi'
+import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getTourSpotImage } from '../services/api'
 import { getAllDbData } from '../services/dbService'
