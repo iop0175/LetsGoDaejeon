@@ -1334,6 +1334,96 @@
   margin-left: 4px;
 }
 
+/* DB 검색 바 */
+.db-search-bar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+}
+
+.search-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper .search-icon {
+  position: absolute;
+  left: 14px;
+  color: #999;
+  width: 18px;
+  height: 18px;
+}
+
+.db-search-input {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.db-search-input:focus {
+  outline: none;
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+}
+
+.db-search-input::placeholder {
+  color: #aaa;
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 10px;
+  padding: 6px;
+  border: none;
+  background: transparent;
+  color: #999;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.search-clear-btn:hover {
+  background: #eee;
+  color: #666;
+}
+
+.search-submit-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.search-submit-btn:hover {
+  background: linear-gradient(135deg, #43a047, #2e7d32);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.search-query-info {
+  color: #4caf50;
+  font-weight: 500;
+}
+
 /* 페이지 헤더 레이아웃 조정 */
 .page-header {
   display: flex;
@@ -1778,6 +1868,115 @@
   height: auto;
   max-height: 100px;
   object-fit: cover;
+}
+
+/* 이미지 업로드 섹션 */
+.image-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.image-upload-section input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+}
+
+.upload-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #4caf50, #388e3c);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.upload-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+}
+
+.upload-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.upload-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.delete-image-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: #f5f5f5;
+  color: #e53935;
+  border: 1px solid #e53935;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.delete-image-btn:hover:not(:disabled) {
+  background: #ffebee;
+}
+
+.upload-error {
+  padding: 8px 12px;
+  background: #ffebee;
+  color: #c62828;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+
+.image-preview {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f5f5f5;
+  max-height: 200px;
+}
+
+.image-preview img {
+  width: 100%;
+  height: auto;
+  max-height: 200px;
+  object-fit: contain;
+}
+
+.image-preview .preview-label {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  color: white;
+  border-radius: 4px;
+  font-size: 0.8rem;
 }
 
 .edit-modal-footer {
@@ -4418,6 +4617,44 @@
   color: #64748b;
 }
 
+/* DB 검색 바 다크 테마 */
+.dark-theme .db-search-bar {
+  background: #0f172a;
+  border-color: #1e293b;
+}
+
+.dark-theme .db-search-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .db-search-input:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.2);
+}
+
+.dark-theme .db-search-input::placeholder {
+  color: #64748b;
+}
+
+.dark-theme .search-input-wrapper .search-icon {
+  color: #64748b;
+}
+
+.dark-theme .search-clear-btn {
+  color: #64748b;
+}
+
+.dark-theme .search-clear-btn:hover {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .search-query-info {
+  color: #4ade80;
+}
+
 /* 벌크 저장 버튼 */
 .dark-theme .bulk-save-btn {
   background: linear-gradient(135deg, #3b82f6, #1d4ed8);
@@ -4904,4 +5141,34 @@
     display: block;
     overflow-x: auto;
   }
+}
+
+/* 이미지 업로드 다크 테마 */
+.dark-theme .image-upload-section input[type="text"] {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.dark-theme .image-upload-section input[type="text"]:focus {
+  border-color: #4caf50;
+}
+
+.dark-theme .delete-image-btn {
+  background: transparent;
+  border-color: #ef4444;
+  color: #ef4444;
+}
+
+.dark-theme .delete-image-btn:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.dark-theme .upload-error {
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+}
+
+.dark-theme .image-preview {
+  background: #1e293b;
 }

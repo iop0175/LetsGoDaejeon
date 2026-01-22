@@ -142,6 +142,7 @@ const AdminPage = () => {
   const [pageLoading, setPageLoading] = useState(false)
   const [selectedPage, setSelectedPage] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [searchQuery, setSearchQuery] = useState('') // DB 검색어
   const itemsPerPage = 20
   
   // Supabase 테이블 데이터
@@ -698,7 +699,7 @@ const AdminPage = () => {
   // 페이지 데이터 소스 상태 (api/db/both)
   const [dataSource, setDataSource] = useState('api')
   
-  const loadPageData = useCallback(async (pageKey, page = 1, source = 'api') => {
+  const loadPageData = useCallback(async (pageKey, page = 1, source = 'api', search = '') => {
     setPageLoading(true)
     setSelectedPage(pageKey)
     setCurrentPage(page)
@@ -707,9 +708,9 @@ const AdminPage = () => {
     const config = PAGE_CONFIGS[pageKey]
     try {
       if (source === 'db') {
-        // DB에서만 가져오기
+        // DB에서만 가져오기 (검색어 지원)
         const { getDbData } = await import('../services/dbService')
-        const dbResult = await getDbData(pageKey, page, itemsPerPage)
+        const dbResult = await getDbData(pageKey, page, itemsPerPage, search)
         
         if (dbResult.success) {
           setPageData(dbResult.items)
@@ -832,16 +833,36 @@ const AdminPage = () => {
   // 페이지 변경 핸들러
   const handlePageChange = useCallback((page) => {
     if (selectedPage && page >= 1) {
-      loadPageData(selectedPage, page, dataSource)
+      loadPageData(selectedPage, page, dataSource, dataSource === 'db' ? searchQuery : '')
     }
-  }, [selectedPage, loadPageData, dataSource])
+  }, [selectedPage, loadPageData, dataSource, searchQuery])
   
   // 데이터 소스 변경 핸들러
   const handleDataSourceChange = useCallback((source) => {
     if (selectedPage) {
-      loadPageData(selectedPage, 1, source)
+      // 데이터 소스 변경 시 검색어 초기화
+      if (source === 'api') {
+        setSearchQuery('')
+      }
+      loadPageData(selectedPage, 1, source, source === 'db' ? searchQuery : '')
     }
-  }, [selectedPage, loadPageData])
+  }, [selectedPage, loadPageData, searchQuery])
+  
+  // DB 검색 핸들러
+  const handleDbSearch = useCallback((e) => {
+    e.preventDefault()
+    if (selectedPage && dataSource === 'db') {
+      loadPageData(selectedPage, 1, 'db', searchQuery)
+    }
+  }, [selectedPage, dataSource, searchQuery, loadPageData])
+  
+  // 검색어 초기화 핸들러
+  const handleClearSearch = useCallback(() => {
+    setSearchQuery('')
+    if (selectedPage && dataSource === 'db') {
+      loadPageData(selectedPage, 1, 'db', '')
+    }
+  }, [selectedPage, dataSource, loadPageData])
   
   // 총 페이지 수 계산
   const totalPages = useMemo(() => Math.ceil(pageTotalCount / itemsPerPage), [pageTotalCount, itemsPerPage])
@@ -2052,12 +2073,47 @@ const AdminPage = () => {
                 </button>
               </div>
               
+              {/* DB 검색 바 (DB 소스일 때만 표시) */}
+              {dataSource === 'db' && (
+                <form className="db-search-bar" onSubmit={handleDbSearch}>
+                  <div className="search-input-wrapper">
+                    <FiSearch className="search-icon" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={language === 'ko' ? '이름, 주소, 설명 등으로 검색...' : 'Search by name, address, description...'}
+                      className="db-search-input"
+                    />
+                    {searchQuery && (
+                      <button 
+                        type="button" 
+                        className="search-clear-btn"
+                        onClick={handleClearSearch}
+                      >
+                        <FiX />
+                      </button>
+                    )}
+                  </div>
+                  <button type="submit" className="search-submit-btn">
+                    {language === 'ko' ? '검색' : 'Search'}
+                  </button>
+                </form>
+              )}
+              
               <div className="page-header">
                 <span className="page-count">
                   {dataSource === 'api' 
                     ? (language === 'ko' ? '미저장 API 데이터' : 'Unsaved API Data')
-                    : (language === 'ko' ? '저장된 DB 데이터' : 'Saved DB Data')
+                    : (language === 'ko' 
+                        ? (searchQuery ? `검색 결과` : '저장된 DB 데이터')
+                        : (searchQuery ? 'Search Results' : 'Saved DB Data'))
                   }: <strong>{pageTotalCount.toLocaleString()}</strong> {language === 'ko' ? '개' : 'items'}
+                  {searchQuery && dataSource === 'db' && (
+                    <span className="search-query-info">
+                      {' '}("{searchQuery}")
+                    </span>
+                  )}
                   {pageTotalCount > 0 && (
                     <span className="page-info">
                       {' '}(페이지 {currentPage}/{totalPages})

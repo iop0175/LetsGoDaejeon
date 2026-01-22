@@ -84,17 +84,41 @@ export const getAllDbCounts = async () => {
  * @param {number} pageSize - 페이지당 항목 수
  * @returns {Promise<Object>} { success, items, totalCount }
  */
-export const getDbData = async (pageType, page = 1, pageSize = 20) => {
+export const getDbData = async (pageType, page = 1, pageSize = 20, searchQuery = '') => {
   const config = TABLE_CONFIGS[pageType]
   if (!config) {
     return { success: false, items: [], totalCount: 0 }
   }
   
   try {
-    // 전체 개수 조회
-    const { count: totalCount, error: countError } = await supabase
+    // 검색 필드 결정 (각 테이블의 주요 필드)
+    const searchFields = {
+      travel: ['tourspotNm', 'tourspotAddr', 'tourspotSumm'],
+      festival: ['title', 'themeCdNm', 'placeCdNm'],
+      food: ['restrntNm', 'restrntAddr', 'reprMenu'],
+      culture: ['fcltyNm', 'locplc', 'fcltyKnd'],
+      medical: ['hsptlNm', 'locplc', 'hsptlKnd'],
+      shopping: ['shppgNm', 'shppgAddr', 'shppgIntro'],
+      accommodation: ['romsNm', 'romsAddr', 'romsScl'],
+      parking: ['pkParkNm', 'pkAddr']
+    }
+    
+    // 전체 개수 조회 (검색 필터 적용)
+    let countQuery = supabase
       .from(config.tableName)
       .select('*', { count: 'exact', head: true })
+    
+    // 검색어가 있으면 필터 적용
+    if (searchQuery && searchQuery.trim()) {
+      const fields = searchFields[pageType] || []
+      if (fields.length > 0) {
+        // OR 조건으로 여러 필드 검색
+        const orConditions = fields.map(field => `${field}.ilike.%${searchQuery}%`).join(',')
+        countQuery = countQuery.or(orConditions)
+      }
+    }
+    
+    const { count: totalCount, error: countError } = await countQuery
     
     if (countError) throw countError
     
@@ -102,9 +126,20 @@ export const getDbData = async (pageType, page = 1, pageSize = 20) => {
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
     
-    const { data, error } = await supabase
+    let dataQuery = supabase
       .from(config.tableName)
       .select('*')
+    
+    // 검색어가 있으면 필터 적용
+    if (searchQuery && searchQuery.trim()) {
+      const fields = searchFields[pageType] || []
+      if (fields.length > 0) {
+        const orConditions = fields.map(field => `${field}.ilike.%${searchQuery}%`).join(',')
+        dataQuery = dataQuery.or(orConditions)
+      }
+    }
+    
+    const { data, error } = await dataQuery
       .range(from, to)
       .order('saved_at', { ascending: false })
     
