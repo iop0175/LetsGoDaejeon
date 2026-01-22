@@ -5552,6 +5552,65 @@
   text-align: right;
 }
 
+/* 플랜 정보 */
+.vercel-plan-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.plan-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+}
+
+.plan-name {
+  padding: 8px 20px;
+  background: linear-gradient(135deg, #000 0%, #333 100%);
+  color: white;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  letter-spacing: 1px;
+}
+
+.plan-limits {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.plan-limit-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.plan-limit-label {
+  font-size: 0.75rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.plan-limit-value {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.95rem;
+}
+
+.plan-note {
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+  margin-top: 8px;
+}
+
 /* 에러 상태 */
 .vercel-error {
   display: flex;
@@ -5696,5 +5755,27 @@
 }
 
 .dark-theme .vercel-error .error-hint {
+  color: #64748b;
+}
+
+/* 플랜 정보 다크 테마 */
+.dark-theme .plan-name {
+  background: linear-gradient(135deg, #fff 0%, #e0e0e0 100%);
+  color: #000;
+}
+
+.dark-theme .plan-limit-item {
+  background: #0f172a;
+}
+
+.dark-theme .plan-limit-label {
+  color: #64748b;
+}
+
+.dark-theme .plan-limit-value {
+  color: #f1f5f9;
+}
+
+.dark-theme .plan-note {
   color: #64748b;
 }

@@ -75,37 +75,41 @@ export default async function handler(request, response) {
       user: {
         username: userData.user?.username || userData.username,
         email: userData.user?.email || userData.email,
+        name: userData.user?.name || userData.name,
+        avatar: userData.user?.avatar || userData.avatar,
         plan: userData.user?.billing?.plan || userData.billing?.plan || 'hobby'
       },
-      projects: {
-        total: projectsData.projects?.length || 0,
-        list: (projectsData.projects || []).slice(0, 5).map(p => ({
-          name: p.name,
-          framework: p.framework,
-          updatedAt: p.updatedAt
-        }))
-      },
-      deployments: {
-        recent: (deploymentsData.deployments || []).map(d => ({
-          name: d.name,
-          state: d.state,
-          createdAt: d.createdAt,
-          url: d.url
-        }))
-      },
-      blob: blobInfo ? {
-        stores: blobInfo.stores?.length || 0,
-        storesList: (blobInfo.stores || []).map(s => ({
-          name: s.name,
-          createdAt: s.createdAt
-        }))
-      } : null,
+      projects: (projectsData.projects || []).slice(0, 5).map(p => ({
+        name: p.name,
+        framework: p.framework,
+        updatedAt: p.updatedAt,
+        latestDeployment: p.latestDeployments?.[0] ? {
+          readyState: p.latestDeployments[0].readyState,
+          url: p.latestDeployments[0].alias?.[0] || p.latestDeployments[0].url
+        } : null
+      })),
+      deployments: (deploymentsData.deployments || []).map(d => ({
+        name: d.name,
+        readyState: d.readyState || d.state,
+        created: d.createdAt || d.created,
+        url: d.url,
+        target: d.target
+      })),
+      blobStores: blobInfo?.stores ? blobInfo.stores.map(s => ({
+        id: s.id,
+        name: s.name || 'Default Store',
+        state: s.state || 'READY',
+        createdAt: s.createdAt
+      })) : [],
       limits: {
-        // Hobby 플랜 기준 한도
-        bandwidth: { limit: '100 GB', unit: '/월' },
-        serverless: { limit: '100 GB-Hours', unit: '/월' },
-        buildTime: { limit: '6,000 분', unit: '/월' },
-        analytics: { limit: '25,000 events', unit: '/월' }
+        // Hobby 플랜 기준 한도 정보 (실제 사용량은 별도 API 필요)
+        info: {
+          bandwidth: '100 GB/월',
+          serverless: '100 GB-Hours/월',
+          buildTime: '6,000 분/월',
+          analytics: '25,000 events/월'
+        },
+        plan: userData.user?.billing?.plan || userData.billing?.plan || 'hobby'
       },
       timestamp: new Date().toISOString()
     };

@@ -2437,53 +2437,39 @@ const AdminPage = () => {
                     </div>
                   )}
                   
-                  {/* 사용량 제한 */}
+                  {/* 플랜 정보 */}
                   {vercelUsage.limits && (
                     <div className="vercel-card">
-                      <h3><FiBarChart2 /> {language === 'ko' ? '사용량 제한' : 'Usage Limits'}</h3>
-                      <div className="vercel-limits">
-                        {vercelUsage.limits.bandwidth && (
-                          <div className="limit-item">
-                            <span className="limit-label">{language === 'ko' ? '대역폭' : 'Bandwidth'}</span>
-                            <div className="limit-bar">
-                              <div 
-                                className="limit-progress" 
-                                style={{ width: `${Math.min((vercelUsage.limits.bandwidth.used / vercelUsage.limits.bandwidth.limit) * 100, 100)}%` }}
-                              />
+                      <h3><FiBarChart2 /> {language === 'ko' ? '플랜 정보' : 'Plan Info'}</h3>
+                      <div className="vercel-plan-info">
+                        <div className="plan-badge">
+                          <span className="plan-name">{(vercelUsage.limits.plan || 'hobby').toUpperCase()}</span>
+                        </div>
+                        {vercelUsage.limits.info && (
+                          <div className="plan-limits">
+                            <div className="plan-limit-item">
+                              <span className="plan-limit-label">{language === 'ko' ? '대역폭' : 'Bandwidth'}</span>
+                              <span className="plan-limit-value">{vercelUsage.limits.info.bandwidth}</span>
                             </div>
-                            <span className="limit-value">
-                              {(vercelUsage.limits.bandwidth.used / 1024 / 1024 / 1024).toFixed(2)} / {(vercelUsage.limits.bandwidth.limit / 1024 / 1024 / 1024).toFixed(0)} GB
-                            </span>
+                            <div className="plan-limit-item">
+                              <span className="plan-limit-label">{language === 'ko' ? 'Serverless 실행' : 'Serverless'}</span>
+                              <span className="plan-limit-value">{vercelUsage.limits.info.serverless}</span>
+                            </div>
+                            <div className="plan-limit-item">
+                              <span className="plan-limit-label">{language === 'ko' ? '빌드 시간' : 'Build Time'}</span>
+                              <span className="plan-limit-value">{vercelUsage.limits.info.buildTime}</span>
+                            </div>
+                            <div className="plan-limit-item">
+                              <span className="plan-limit-label">{language === 'ko' ? 'Analytics' : 'Analytics'}</span>
+                              <span className="plan-limit-value">{vercelUsage.limits.info.analytics}</span>
+                            </div>
                           </div>
                         )}
-                        {vercelUsage.limits.serverless && (
-                          <div className="limit-item">
-                            <span className="limit-label">{language === 'ko' ? 'Serverless 실행시간' : 'Serverless Execution'}</span>
-                            <div className="limit-bar">
-                              <div 
-                                className="limit-progress" 
-                                style={{ width: `${Math.min((vercelUsage.limits.serverless.used / vercelUsage.limits.serverless.limit) * 100, 100)}%` }}
-                              />
-                            </div>
-                            <span className="limit-value">
-                              {(vercelUsage.limits.serverless.used / 1000 / 60).toFixed(1)} / {(vercelUsage.limits.serverless.limit / 1000 / 60).toFixed(0)} min
-                            </span>
-                          </div>
-                        )}
-                        {vercelUsage.limits.builds && (
-                          <div className="limit-item">
-                            <span className="limit-label">{language === 'ko' ? '빌드 실행시간' : 'Build Execution'}</span>
-                            <div className="limit-bar">
-                              <div 
-                                className="limit-progress" 
-                                style={{ width: `${Math.min((vercelUsage.limits.builds.used / vercelUsage.limits.builds.limit) * 100, 100)}%` }}
-                              />
-                            </div>
-                            <span className="limit-value">
-                              {(vercelUsage.limits.builds.used / 60).toFixed(1)} / {(vercelUsage.limits.builds.limit / 60).toFixed(0)} min
-                            </span>
-                          </div>
-                        )}
+                        <p className="plan-note">
+                          {language === 'ko' 
+                            ? '※ 실제 사용량은 Vercel Dashboard에서 확인하세요.' 
+                            : '※ Check actual usage in Vercel Dashboard.'}
+                        </p>
                       </div>
                     </div>
                   )}
