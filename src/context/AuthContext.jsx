@@ -74,9 +74,9 @@ export const AuthProvider = ({ children }) => {
     return data
   }
 
-  // 카카오 로그인
-  const loginWithKakao = async () => {
-    const { data, error } = await signInWithKakao()
+  // 카카오 로그인 (returnPath: 로그인 후 돌아갈 경로)
+  const loginWithKakao = async (returnPath) => {
+    const { data, error } = await signInWithKakao(returnPath)
     if (error) throw error
     return data
   }

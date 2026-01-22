@@ -2207,7 +2207,8 @@ const MyTripPage = () => {
   // 카카오 로그인 핸들러
   const handleKakaoLogin = async () => {
     try {
-      await loginWithKakao()
+      // /my-trip 페이지에서 로그인하면 그대로 /my-trip으로 돌아옴
+      await loginWithKakao('/my-trip')
     } catch (err) {
 
       alert(language === 'ko' ? '로그인에 실패했습니다. 다시 시도해주세요.' : 'Login failed. Please try again.')

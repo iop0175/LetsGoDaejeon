@@ -54,7 +54,8 @@ const Header = memo(() => {
 
   const handleKakaoLogin = async () => {
     try {
-      await loginWithKakao()
+      // 현재 페이지 경로를 전달하여 로그인 후 돌아오도록 함
+      await loginWithKakao(location.pathname)
     } catch (err) {
 
     }

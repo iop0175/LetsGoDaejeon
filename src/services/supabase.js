@@ -43,9 +43,11 @@ export const onAuthStateChange = (callback) => {
 }
 
 // 카카오 OAuth 로그인
-export const signInWithKakao = async () => {
+export const signInWithKakao = async (returnPath) => {
+  // 현재 페이지 경로를 리다이렉트 URL로 사용 (기본값: 현재 페이지)
+  const currentPath = returnPath || (typeof window !== 'undefined' ? window.location.pathname : '/')
   const redirectUrl = typeof window !== 'undefined' 
-    ? `${window.location.origin}/my-trip` 
+    ? `${window.location.origin}${currentPath}` 
     : undefined
 
   const { data, error } = await supabase.auth.signInWithOAuth({
