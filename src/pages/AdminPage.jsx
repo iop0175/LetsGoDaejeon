@@ -250,13 +250,10 @@ const AdminPage = () => {
   useEffect(() => {
     const checkAdminRole = async () => {
       if (!user) {
-        console.log('[AdminCheck] No user logged in')
         setIsAdmin(false)
         setAdminCheckLoading(false)
         return
       }
-      
-      console.log('[AdminCheck] Checking admin for user:', user.id)
       
       try {
         // admin_users 테이블에서 현재 사용자 확인
@@ -267,17 +264,12 @@ const AdminPage = () => {
           .eq('is_active', true)
           .single()
         
-        console.log('[AdminCheck] Query result:', { data, error })
-        
         if (error || !data) {
-          console.log('[AdminCheck] Not admin - error or no data')
           setIsAdmin(false)
         } else {
-          console.log('[AdminCheck] User is admin!')
           setIsAdmin(true)
         }
       } catch (err) {
-        console.log('[AdminCheck] Exception:', err)
         setIsAdmin(false)
       }
       setAdminCheckLoading(false)
