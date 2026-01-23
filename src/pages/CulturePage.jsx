@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getAllDbData } from '../services/dbService';
-import { FiMapPin, FiPhone, FiClock, FiNavigation } from 'react-icons/fi';
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
+import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
+import { handleImageError } from '../utils/imageUtils';
 import './CulturePage.css';
 
 // 대전시 구 목록
@@ -78,17 +79,36 @@ const CulturePage = () => {
   const fetchAllFacilities = async () => {
     setLoading(true);
     try {
-      // DB에서 데이터 가져오기
-      const dbResult = await getAllDbData('culture');
+      // 먼저 tour_spots에서 문화시설(14) 데이터 시도
+      const tourResult = await getTourSpotsDb('14', 1, 1000);
       
-      if (dbResult.success && dbResult.items.length > 0) {
-        setAllFacilities(dbResult.items);
+      if (tourResult.success && tourResult.items.length > 0) {
+        // TourAPI 데이터를 기존 형식으로 변환
+        const formattedItems = tourResult.items.map(item => ({
+          fcltyNm: item.title,
+          locplc: item.addr1 || item.addr2,
+          fcltyKnd: '', // TourAPI에는 시설종류가 없음
+          operTime: '',
+          telno: item.tel,
+          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          mapx: item.mapx,
+          mapy: item.mapy,
+          overview: item.overview,
+          _source: 'tourapi'
+        }));
+        setAllFacilities(formattedItems);
       } else {
-        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
-        setAllFacilities([]);
+        // tour_spots에 데이터가 없으면 기존 cultural_facilities 테이블 시도
+        const dbResult = await getAllDbData('culture');
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          setAllFacilities(dbResult.items);
+        } else {
+          setAllFacilities([]);
+        }
       }
     } catch (error) {
-
+      console.error('문화시설 데이터 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -261,46 +281,56 @@ const CulturePage = () => {
           <div className="culture-grid">
             {paginatedFacilities.map((facility, index) => (
               <div key={index} className="culture-card">
-                <div className="culture-card-header">
-                  <div className="culture-icon">
-                    {getIcon(facility.fcltyKnd)}
+                <div className="culture-image">
+                  <img 
+                    src={facility.imageUrl || '/images/no-image.svg'} 
+                    alt={facility.fcltyNm} 
+                    loading="lazy"
+                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                  />
+                </div>
+                <div className="culture-card-content">
+                  <div className="culture-card-header">
+                    <div className="culture-icon">
+                      {getIcon(facility.fcltyKnd)}
+                    </div>
+                    <div className="culture-title">
+                      <h3>{facility.fcltyNm || '문화시설'}</h3>
+                      {facility.fcltyKnd && (
+                        <span className="facility-type">{facility.fcltyKnd}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="culture-title">
-                    <h3>{facility.fcltyNm || '문화시설'}</h3>
-                    {facility.fcltyKnd && (
-                      <span className="facility-type">{facility.fcltyKnd}</span>
+                  
+                  <div className="facility-info">
+                    {facility.locplc && (
+                      <div className="info-item">
+                        <FiMapPin />
+                        <span>{facility.signgu} {facility.locplc}</span>
+                      </div>
+                    )}
+                    {facility.telno && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <span>{facility.telno}</span>
+                      </div>
+                    )}
+                    {facility.seatCo && facility.seatCo !== '-' && (
+                      <div className="info-item">
+                        <FiClock />
+                        <span>{language === 'ko' ? '좌석수: ' : 'Seats: '}{facility.seatCo}</span>
+                      </div>
                     )}
                   </div>
-                </div>
-                
-                <div className="facility-info">
-                  {facility.locplc && (
-                    <div className="info-item">
-                      <FiMapPin />
-                      <span>{facility.signgu} {facility.locplc}</span>
-                    </div>
-                  )}
-                  {facility.telno && (
-                    <div className="info-item">
-                      <FiPhone />
-                      <span>{facility.telno}</span>
-                    </div>
-                  )}
-                  {facility.seatCo && facility.seatCo !== '-' && (
-                    <div className="info-item">
-                      <FiClock />
-                      <span>{language === 'ko' ? '좌석수: ' : 'Seats: '}{facility.seatCo}</span>
-                    </div>
-                  )}
-                </div>
 
-                <button 
-                  className="navigate-btn"
-                  onClick={() => handleNavigate(facility)}
-                >
-                  <FiNavigation />
-                  {t.navigate}
-                </button>
+                  <button 
+                    className="navigate-btn"
+                    onClick={() => handleNavigate(facility)}
+                  >
+                    <FiNavigation />
+                    {t.navigate}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

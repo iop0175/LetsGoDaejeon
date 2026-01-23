@@ -282,6 +282,209 @@ async function handleKtoApi(request, env, pathname) {
   }
 }
 
+// KCISA 문화예술 공연 API 프록시 (XML → JSON 변환)
+async function handleKcisaApi(request, env, pathname) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/kcisa', '');
+    
+    // API 키 (환경변수에서 가져옴)
+    const apiKey = env.KCISA_API_KEY ? env.KCISA_API_KEY.trim() : '';
+    
+    // KCISA API URL 구성
+    const kcisaUrl = new URL(`https://api.kcisa.kr/openapi${apiPath}/request`);
+    
+    // 서비스 키 추가
+    kcisaUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        kcisaUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(kcisaUrl.toString());
+    const text = await response.text();
+    
+    // XML 파싱 헬퍼 (Workers 환경용)
+    const getTagValue = (xml, tag) => {
+      const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
+      return match ? match[1].trim() : '';
+    };
+    
+    const resultCode = getTagValue(text, 'resultCode');
+    const resultMsg = getTagValue(text, 'resultMsg');
+    
+    if (resultCode === '0000' || resultCode === '0') {
+      // item 태그들 추출
+      const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
+      const items = itemMatches.map(itemXml => ({
+        title: getTagValue(itemXml, 'title'),
+        type: getTagValue(itemXml, 'type'),           // 분류 (연극, 뮤지컬 등)
+        period: getTagValue(itemXml, 'period'),       // 공연기간
+        eventPeriod: getTagValue(itemXml, 'eventPeriod'),
+        eventSite: getTagValue(itemXml, 'eventSite'), // 장소
+        charge: getTagValue(itemXml, 'charge'),       // 요금
+        contactPoint: getTagValue(itemXml, 'contactPoint'), // 연락처
+        url: getTagValue(itemXml, 'url'),             // 상세페이지
+        imageObject: getTagValue(itemXml, 'imageObject'), // 이미지 URL
+        description: getTagValue(itemXml, 'description'), // 설명
+        viewCount: parseInt(getTagValue(itemXml, 'viewCount') || '0')
+      }));
+      
+      return jsonResponse({
+        success: true,
+        resultCode,
+        resultMsg,
+        totalCount: items.length,
+        items: items
+      });
+    }
+    
+    return jsonResponse({ 
+      success: false, 
+      resultCode,
+      resultMsg,
+      items: [], 
+      totalCount: 0 
+    });
+  } catch (error) {
+    return errorResponse('KCISA API 요청 실패: ' + error.message, 500);
+  }
+}
+
+// TourAPI 4.0 (한국관광공사 국문 관광정보 서비스) 프록시
+async function handleTourApi(request, env, pathname) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/tour', '');
+    
+    // API 키 (환경변수에서 가져옴)
+    const apiKey = env.TOURAPI_KEY ? env.TOURAPI_KEY.trim() : '';
+    
+    // TourAPI URL 구성 (KorService2)
+    const tourUrl = new URL(`https://apis.data.go.kr/B551011/KorService2${apiPath}`);
+    
+    // 서비스 키 추가
+    tourUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 필수 파라미터 기본값 설정
+    if (!url.searchParams.has('MobileOS')) {
+      tourUrl.searchParams.set('MobileOS', 'ETC');
+    }
+    if (!url.searchParams.has('MobileApp')) {
+      tourUrl.searchParams.set('MobileApp', 'LetsGoDaejeon');
+    }
+    if (!url.searchParams.has('_type')) {
+      tourUrl.searchParams.set('_type', 'json');
+    }
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        tourUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(tourUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    const data = await response.json();
+    return jsonResponse(data);
+  } catch (error) {
+    return errorResponse('TourAPI 요청 실패: ' + error.message, 500);
+  }
+}
+
+// KCISA 전시정보 API (API_CCA_145) - 필드명이 대문자
+async function handleKcisaExhibitionApi(request, env, pathname) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/kcisa-exhibition', '');
+    
+    // API 키 (전시 API용 별도 키)
+    const apiKey = env.KCISA_EXHIBITION_API_KEY ? env.KCISA_EXHIBITION_API_KEY.trim() : '';
+    
+    // KCISA API URL 구성
+    const kcisaUrl = new URL(`https://api.kcisa.kr/openapi${apiPath}/request`);
+    
+    // 서비스 키 추가
+    kcisaUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        kcisaUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(kcisaUrl.toString());
+    const text = await response.text();
+    
+    // XML 파싱 헬퍼 (대문자 태그용)
+    const getTagValue = (xml, tag) => {
+      const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
+      return match ? match[1].trim() : '';
+    };
+    
+    const resultCode = getTagValue(text, 'resultCode');
+    const resultMsg = getTagValue(text, 'resultMsg');
+    const totalCount = parseInt(getTagValue(text, 'totalCount') || '0');
+    
+    if (resultCode === '0000' || resultCode === '0') {
+      // item 태그들 추출
+      const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
+      const items = itemMatches.map(itemXml => ({
+        title: getTagValue(itemXml, 'TITLE'),
+        institution: getTagValue(itemXml, 'CNTC_INSTT_NM'),     // 기관명
+        collectedDate: getTagValue(itemXml, 'COLLECTED_DATE'),
+        issuedDate: getTagValue(itemXml, 'ISSUED_DATE'),
+        description: getTagValue(itemXml, 'DESCRIPTION'),
+        imageObject: getTagValue(itemXml, 'IMAGE_OBJECT'),      // 이미지 URL
+        localId: getTagValue(itemXml, 'LOCAL_ID'),
+        url: getTagValue(itemXml, 'URL'),                       // 상세페이지
+        viewCount: getTagValue(itemXml, 'VIEW_COUNT'),
+        subDescription: getTagValue(itemXml, 'SUB_DESCRIPTION'),
+        spatialCoverage: getTagValue(itemXml, 'SPATIAL_COVERAGE'),
+        eventSite: getTagValue(itemXml, 'EVENT_SITE'),          // 장소 (서울, 대전 등)
+        genre: getTagValue(itemXml, 'GENRE'),                   // 장르 (예정전시, 현재전시 등)
+        duration: getTagValue(itemXml, 'DURATION'),
+        author: getTagValue(itemXml, 'AUTHOR'),                 // 작가
+        contactPoint: getTagValue(itemXml, 'CONTACT_POINT'),
+        actor: getTagValue(itemXml, 'ACTOR'),
+        contributor: getTagValue(itemXml, 'CONTRIBUTOR'),
+        audience: getTagValue(itemXml, 'AUDIENCE'),
+        charge: getTagValue(itemXml, 'CHARGE'),                 // 요금
+        period: getTagValue(itemXml, 'PERIOD'),                 // 기간 (YYYY-MM-DD~YYYY-MM-DD)
+        eventPeriod: getTagValue(itemXml, 'EVENT_PERIOD')
+      }));
+      
+      return jsonResponse({
+        success: true,
+        resultCode,
+        resultMsg,
+        totalCount,
+        items: items
+      });
+    }
+    
+    return jsonResponse({ 
+      success: false, 
+      resultCode,
+      resultMsg,
+      items: [], 
+      totalCount: 0 
+    });
+  } catch (error) {
+    return errorResponse('KCISA 전시 API 요청 실패: ' + error.message, 500);
+  }
+}
+
 // 디버그 엔드포인트
 async function handleDebug(request, env) {
   return jsonResponse({
@@ -291,6 +494,9 @@ async function handleDebug(request, env) {
     hasKakaoKey: !!env.KAKAO_REST_API_KEY,
     hasDaejeonKey: !!env.DAEJEON_API_KEY,
     hasKtoKey: !!env.KTO_API_KEY,
+    hasKcisaKey: !!env.KCISA_API_KEY,
+    hasKcisaExhibitionKey: !!env.KCISA_EXHIBITION_API_KEY,
+    hasTourApiKey: !!env.TOURAPI_KEY,
   });
 }
 
@@ -334,6 +540,21 @@ export default {
     
     if (pathname.startsWith('/api/kto')) {
       return handleKtoApi(request, env, pathname);
+    }
+    
+    // TourAPI 4.0 (한국관광공사 국문 관광정보 서비스)
+    if (pathname.startsWith('/api/tour')) {
+      return handleTourApi(request, env, pathname);
+    }
+    
+    // KCISA 전시 API (API_CCA_145) - 먼저 체크 (더 구체적인 경로)
+    if (pathname.startsWith('/api/kcisa-exhibition')) {
+      return handleKcisaExhibitionApi(request, env, pathname);
+    }
+    
+    // KCISA 공연 API (CNV_060)
+    if (pathname.startsWith('/api/kcisa')) {
+      return handleKcisaApi(request, env, pathname);
     }
 
     // 404

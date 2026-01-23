@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation, FiPlus, FiCalendar, FiCheck, FiX } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { getAllDbData } from '../services/dbService'
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { getReliableImageUrl } from '../utils/imageUtils'
+import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
 import './FoodPage.css'
 
 // 대전시 구 목록
@@ -40,7 +40,8 @@ const FoodPage = () => {
   // 지역 추출 함수
   const extractDistrict = (address) => {
     if (!address) return { ko: '대전', en: 'Daejeon', district: null }
-    const match = address.match(/대전\s*(시)?\s*(\S+구)/)
+    // "대전광역시", "대전시", "대전" 모두 지원
+    const match = address.match(/대전\s*(광역시|시)?\s*(\S+구)/)
     if (match) {
       const district = match[2]
       const districtMap = {
@@ -125,35 +126,58 @@ const FoodPage = () => {
       setError(null)
       
       try {
-        // DB에서 데이터 가져오기
-        const dbResult = await getAllDbData('food')
+        // 먼저 tour_spots에서 음식점(39) 데이터 시도
+        const tourResult = await getTourSpotsDb('39', 1, 1000)
         
-        if (dbResult.success && dbResult.items.length > 0) {
-          // DB 데이터 사용
-          const formattedRestaurants = dbResult.items.map((item, index) => {
-            const district = extractDistrict(item.restrntAddr)
+        if (tourResult.success && tourResult.items.length > 0) {
+          // TourAPI 데이터 사용
+          const formattedRestaurants = tourResult.items.map((item, index) => {
+            const district = extractDistrict(item.addr1 || item.addr2)
             return {
-              id: item._id || index + 1,
-              name: item.restrntNm,
+              id: item.id || item.content_id || index + 1,
+              contentId: item.content_id,
+              name: item.title,
               location: district,
-              address: item.restrntDtlAddr || item.restrntAddr,
-              summary: item.restrntSumm,
-              phone: item.restrntInqrTel || item.telNo,
-              menu: item.rprsFod || item.reprMenu,
-              hours: item.salsTime,
-              holiday: item.hldyGuid,
-              lat: item.mapLat,
-              lng: item.mapLot,
-              image: item.imageUrl
+              address: item.addr1 || item.addr2,
+              summary: item.overview || '',
+              phone: item.tel,
+              image: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+              mapx: item.mapx,
+              mapy: item.mapy,
+              homepage: item.homepage,
+              _source: 'tourapi'
             }
           })
           setAllRestaurants(formattedRestaurants)
         } else {
-          // DB에 데이터가 없으면 메시지 표시
-          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+          // tour_spots에 데이터가 없으면 기존 restaurants 테이블 시도
+          const dbResult = await getAllDbData('food')
+          
+          if (dbResult.success && dbResult.items.length > 0) {
+            const formattedRestaurants = dbResult.items.map((item, index) => {
+              const district = extractDistrict(item.restrntAddr)
+              return {
+                id: item._id || index + 1,
+                name: item.restrntNm,
+                location: district,
+                address: item.restrntDtlAddr || item.restrntAddr,
+                summary: item.restrntSumm,
+                phone: item.restrntInqrTel || item.telNo,
+                menu: item.rprsFod || item.reprMenu,
+                hours: item.salsTime,
+                holiday: item.hldyGuid,
+                lat: item.mapLat,
+                lng: item.mapLot,
+                image: item.imageUrl
+              }
+            })
+            setAllRestaurants(formattedRestaurants)
+          } else {
+            setError(language === 'ko' ? '관리자 페이지에서 TourAPI 데이터를 먼저 동기화해주세요.' : 'Please sync TourAPI data from admin page first.')
+          }
         }
       } catch (err) {
-
+        console.error('음식점 데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       
@@ -175,9 +199,7 @@ const FoodPage = () => {
     try {
       const result = await getUserTripPlans(user?.id || 'anonymous')
       if (result.success) {
-        // 일차 정보가 있는 여행만 필터링
-        const tripsWithDays = result.plans.filter(plan => plan.days && plan.days.length > 0)
-        setTripPlans(tripsWithDays)
+        setTripPlans(result.plans)
       }
     } catch (err) {
       console.error('Failed to load trips:', err)
@@ -297,7 +319,7 @@ const FoodPage = () => {
                 <div key={restaurant.id} className="food-card-large">
                   <div className="food-image-wrapper">
                     <img 
-                      src={`https://picsum.photos/seed/${encodeURIComponent(restaurant.name)}/600/400`} 
+                      src={restaurant.image || '/images/no-image.svg'} 
                       alt={restaurant.name} 
                       loading="lazy"
                       onError={(e) => {
@@ -358,9 +380,9 @@ const FoodPage = () => {
                       </button>
                       
                       {/* 길찾기 버튼 */}
-                      {restaurant.lat && restaurant.lng && (
+                      {restaurant.address && (
                         <a 
-                          href={`https://map.kakao.com/link/to/${encodeURIComponent(restaurant.name)},${restaurant.lat},${restaurant.lng}`}
+                          href={`https://map.kakao.com/link/search/${encodeURIComponent(restaurant.address)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="food-nav-btn"
@@ -512,6 +534,16 @@ const FoodPage = () => {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {selectedTripId && selectedTripDays.length === 0 && (
+                    <div className="no-trips">
+                      <p>{language === 'ko' ? '선택한 여행에 일정이 없습니다.' : 'No days in the selected trip.'}</p>
+                      <p className="hint">
+                        {language === 'ko'
+                          ? '"나의 여행" 페이지에서 일정을 먼저 추가해주세요.'
+                          : 'Please add days in the "My Trip" page first.'}
+                      </p>
                     </div>
                   )}
                 </>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { FiMapPin, FiList, FiX, FiNavigation, FiPhone, FiClock, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
-import { getAllDbData } from '../services/dbService'
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import './MapPage.css'
 
 // 대전시 구 목록
@@ -210,61 +210,68 @@ const MapPage = () => {
       let result
       switch (activeTab) {
         case 'tour':
-          result = await getAllDbData('travel')
-          if (result.success) {
+          // 먼저 tour_spots에서 관광지(12) 데이터 시도
+          result = await getTourSpotsDb('12', 1, 1000)
+          console.log('[DEBUG] MapPage tour - 결과:', result)
+          if (result.success && result.items.length > 0) {
+            console.log('[DEBUG] MapPage tour - 샘플 mapx/mapy:', result.items[0].mapx, result.items[0].mapy)
             const tourPlaces = result.items.map(item => ({
-              id: item.tourspotNm,
-              name: item.tourspotNm,
-              address: item.tourspotAddr,
-              summary: item.tourspotSumm,
+              id: item.content_id || item.id,
+              name: item.title,
+              address: item.addr1 || item.addr2,
+              summary: item.overview,
               type: 'tour',
-              lat: parseCoord(item.tourspotLat) || parseCoord(item.mapLat),
-              lng: parseCoord(item.tourspotLng) || parseCoord(item.mapLot)
+              lat: parseCoord(item.mapy),
+              lng: parseCoord(item.mapx)
             }))
-            
-            // 좌표가 없는 관광지는 주소로 좌표 검색
-            if (window.kakao && window.kakao.maps && window.kakao.maps.services) {
-              const geocoder = new window.kakao.maps.services.Geocoder()
-              const placesWithCoords = await Promise.all(
-                tourPlaces.map(async (place) => {
-                  if (place.lat && place.lng) return place
-                  if (!place.address) return place
-                  
-                  return new Promise((resolve) => {
-                    geocoder.addressSearch(place.address, (result, status) => {
-                      if (status === window.kakao.maps.services.Status.OK && result[0]) {
-                        resolve({
-                          ...place,
-                          lat: parseFloat(result[0].y),
-                          lng: parseFloat(result[0].x)
-                        })
-                      } else {
-                        resolve(place)
-                      }
-                    })
-                  })
-                })
-              )
-              setAllPlaces(placesWithCoords)
-            } else {
+            console.log('[DEBUG] MapPage tour - 변환된 샘플 lat/lng:', tourPlaces[0].lat, tourPlaces[0].lng)
+            setAllPlaces(tourPlaces)
+          } else {
+            // 기존 travel_spots 테이블 시도
+            result = await getAllDbData('travel')
+            if (result.success) {
+              const tourPlaces = result.items.map(item => ({
+                id: item.tourspotNm,
+                name: item.tourspotNm,
+                address: item.tourspotAddr,
+                summary: item.tourspotSumm,
+                type: 'tour',
+                lat: parseCoord(item.tourspotLat) || parseCoord(item.mapLat),
+                lng: parseCoord(item.tourspotLng) || parseCoord(item.mapLot)
+              }))
               setAllPlaces(tourPlaces)
             }
           }
           break
         case 'food':
-          result = await getAllDbData('food')
-          if (result.success) {
+          // 먼저 tour_spots에서 음식점(39) 데이터 시도
+          result = await getTourSpotsDb('39', 1, 1000)
+          if (result.success && result.items.length > 0) {
             setAllPlaces(result.items.map(item => ({
-              id: item.restrntNm,
-              name: item.restrntNm,
-              address: item.restrntAddr,
-              summary: item.restrntSumm,
-              menu: item.reprMenu,
-              hours: item.salsTime,
+              id: item.content_id || item.id,
+              name: item.title,
+              address: item.addr1 || item.addr2,
+              summary: item.overview,
               type: 'food',
-              lat: parseCoord(item.mapLat),
-              lng: parseCoord(item.mapLot)
+              lat: parseCoord(item.mapy),
+              lng: parseCoord(item.mapx)
             })))
+          } else {
+            // 기존 restaurants 테이블 시도
+            result = await getAllDbData('food')
+            if (result.success) {
+              setAllPlaces(result.items.map(item => ({
+                id: item.restrntNm,
+                name: item.restrntNm,
+                address: item.restrntAddr,
+                summary: item.restrntSumm,
+                menu: item.reprMenu,
+                hours: item.salsTime,
+                type: 'food',
+                lat: parseCoord(item.mapLat),
+                lng: parseCoord(item.mapLot)
+              })))
+            }
           }
           break
         case 'parking':
@@ -300,6 +307,18 @@ const MapPage = () => {
     return isNaN(num) ? null : num
   }
 
+  // 유효 좌표 체크
+  const isValidCoord = (lat, lng) => {
+    if (typeof lat !== 'number' || typeof lng !== 'number') return false
+    if (Number.isNaN(lat) || Number.isNaN(lng)) return false
+    return lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180
+  }
+
+  // 대전시 대략 범위 (이상치 좌표 필터링용)
+  const isWithinDaejeonBounds = (lat, lng) => {
+    return lat >= 36.1 && lat <= 36.6 && lng >= 127.2 && lng <= 127.6
+  }
+
   // 마커 업데이트
   useEffect(() => {
     if (!map || !places.length) return
@@ -321,7 +340,9 @@ const MapPage = () => {
     const markerMap = {} // place.id -> marker 매핑
 
     places.forEach((place, idx) => {
-      if (!place.lat || !place.lng) return
+      if (place.lat == null || place.lng == null) return
+      if (!isValidCoord(place.lat, place.lng)) return
+      if (!isWithinDaejeonBounds(place.lat, place.lng)) return
       
       hasValidCoords = true
       const position = new window.kakao.maps.LatLng(place.lat, place.lng)
@@ -388,6 +409,10 @@ const MapPage = () => {
     // 지도 범위 조정 (선택된 장소가 없을 때만 - ref 사용으로 확실히 체크)
     if (hasValidCoords && newMarkers.length > 0 && !selectedPlaceRef.current) {
       map.setBounds(bounds)
+      const level = map.getLevel()
+      if (level > 7) {
+        map.setLevel(7)
+      }
     }
 
   }, [map, places])
@@ -626,9 +651,9 @@ const MapPage = () => {
               )}
             </div>
             
-            {selectedPlace.lat && selectedPlace.lng && (
+            {selectedPlace.address && (
               <a
-                href={`https://map.kakao.com/link/to/${encodeURIComponent(selectedPlace.name)},${selectedPlace.lat},${selectedPlace.lng}`}
+                href={`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.address)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="nav-btn"

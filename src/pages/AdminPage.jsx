@@ -5,21 +5,28 @@ import {
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, FiCloud,
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
-  FiNavigation, FiEye, FiToggleLeft, FiToggleRight
+  FiNavigation, FiEye, FiToggleLeft, FiToggleRight, FiMusic, FiDownload,
+  FiGlobe, FiSun
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
-  getTourSpots, getFestivals, getRestaurants, getCulturalFacilities,
-  getMedicalFacilities, getShoppingPlaces, getTourRooms, getDaejeonParking
+  getMedicalFacilities, getDaejeonParking,
+  getCulturalPerformances,
+  getTourApiSpots, getTourApiFestivals, getTourApiCounts
 } from '../services/api'
 import { 
   getAllDbCounts, getHeroSlides, createHeroSlide, updateHeroSlide, 
   deleteHeroSlide, deleteDbItem, updateDbItem, getSupabaseUsageStats,
   getPageVisitStats, getTodayPageVisitStats, getMostVisitedPageDB,
   getPopularSearchQueries, getTodayPopularSearchQueries, getSearchStats,
-  getPageVisitStatsByPeriod
+  getPageVisitStatsByPeriod,
+  getDbPerformances, savePerformances, deletePerformance, deleteExpiredPerformances,
+  getPerformanceCount,
+  saveTourSpots, deleteTourSpots, getTourSpotsCount,
+  saveTourFestivals, deleteAllTourFestivals, deleteExpiredTourFestivals, getTourFestivalsCount,
+  getTourApiStats
 } from '../services/dbService'
 import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
@@ -30,48 +37,8 @@ import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPag
 import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
 
-// 페이지 관리 설정
+// 페이지 관리 설정 (TourAPI에 없는 데이터만 유지)
 const PAGE_CONFIGS = {
-  travel: {
-    title: { ko: '관광지', en: 'Travel' },
-    icon: FiMap,
-    color: '#0066cc',
-    fetchFn: getTourSpots,
-    fields: ['tourspotNm', 'tourspotAddr', 'tourspotSumm', 'signguNm', 'imageUrl', 'image_author', 'image_source'],
-    labels: { tourspotNm: '관광지명', tourspotAddr: '주소', tourspotSumm: '설명', signguNm: '구', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'travel_spots',
-    uniqueField: 'tourspotNm'
-  },
-  festival: {
-    title: { ko: '축제/행사', en: 'Festival' },
-    icon: FiCalendar,
-    color: '#9c27b0',
-    fetchFn: getFestivals,
-    fields: ['title', 'themeCdNm', 'placeCdNm', 'beginDt', 'endDt', 'imageUrl', 'image_author', 'image_source'],
-    labels: { title: '행사명', themeCdNm: '테마', placeCdNm: '장소유형', beginDt: '시작일', endDt: '종료일', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'festivals',
-    uniqueField: 'title'
-  },
-  food: {
-    title: { ko: '맛집', en: 'Food' },
-    icon: FiCoffee,
-    color: '#ff6b35',
-    fetchFn: getRestaurants,
-    fields: ['restrntNm', 'restrntAddr', 'reprMenu', 'telNo', 'signguNm', 'imageUrl', 'image_author', 'image_source'],
-    labels: { restrntNm: '식당명', restrntAddr: '주소', reprMenu: '대표메뉴', telNo: '전화', signguNm: '구', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'restaurants',
-    uniqueField: 'restrntNm'
-  },
-  culture: {
-    title: { ko: '문화시설', en: 'Culture' },
-    icon: FiActivity,
-    color: '#2196f3',
-    fetchFn: getCulturalFacilities,
-    fields: ['fcltyNm', 'locplc', 'fcltyKnd', 'operTime', 'imageUrl', 'image_author', 'image_source'],
-    labels: { fcltyNm: '시설명', locplc: '주소', fcltyKnd: '종류', operTime: '운영시간', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'cultural_facilities',
-    uniqueField: 'fcltyNm'
-  },
   medical: {
     title: { ko: '의료시설', en: 'Medical' },
     icon: FiHeart,
@@ -81,26 +48,6 @@ const PAGE_CONFIGS = {
     labels: { hsptlNm: '병원명', locplc: '주소', hsptlKnd: '종류', fondSe: '설립구분', telno: '전화', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
     tableName: 'medical_facilities',
     uniqueField: 'hsptlNm'
-  },
-  shopping: {
-    title: { ko: '쇼핑', en: 'Shopping' },
-    icon: FiShoppingBag,
-    color: '#4caf50',
-    fetchFn: getShoppingPlaces,
-    fields: ['shppgNm', 'shppgAddr', 'shppgIntro', 'telNo', 'imageUrl', 'image_author', 'image_source'],
-    labels: { shppgNm: '상점명', shppgAddr: '주소', shppgIntro: '소개', telNo: '전화', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'shopping_places',
-    uniqueField: 'shppgNm'
-  },
-  accommodation: {
-    title: { ko: '숙박', en: 'Stay' },
-    icon: FiHome,
-    color: '#795548',
-    fetchFn: getTourRooms,
-    fields: ['romsNm', 'romsAddr', 'romsScl', 'romsRefadNo', 'imageUrl', 'image_author', 'image_source'],
-    labels: { romsNm: '숙소명', romsAddr: '주소', romsScl: '유형', romsRefadNo: '전화', imageUrl: '이미지', image_author: '사진 원작자', image_source: '이미지 출처' },
-    tableName: 'accommodations',
-    uniqueField: 'romsNm'
   },
   parking: {
     title: { ko: '주차장', en: 'Parking' },
@@ -213,6 +160,29 @@ const AdminPage = () => {
   const [tripThumbnailFile, setTripThumbnailFile] = useState(null) // 여행 썸네일 파일
   const [tripThumbnailPreview, setTripThumbnailPreview] = useState(null) // 여행 썸네일 미리보기
   const [tripImageUploading, setTripImageUploading] = useState(false) // 업로드 중 상태
+
+  // 공연 관리 상태
+  const [dbPerformances, setDbPerformances] = useState([]) // DB에 저장된 공연 목록
+  const [apiPerformances, setApiPerformances] = useState([]) // KCISA API에서 불러온 공연 목록
+  const [performancesLoading, setPerformancesLoading] = useState(false)
+  const [performanceSyncLoading, setPerformanceSyncLoading] = useState(false)
+  const [performanceDeleteLoading, setPerformanceDeleteLoading] = useState(false)
+  const [performanceDbCount, setPerformanceDbCount] = useState(0)
+
+  // TourAPI 관리 상태
+  const [tourApiCounts, setTourApiCounts] = useState({}) // API에서 가져온 각 타입별 개수
+  const [tourDbCounts, setTourDbCounts] = useState({})   // DB에 저장된 각 타입별 개수
+  const [tourApiLoading, setTourApiLoading] = useState(false)
+  const [tourSyncLoading, setTourSyncLoading] = useState({}) // 각 타입별 동기화 로딩 상태
+  const TOUR_CONTENT_TYPES = {
+    '12': { name: '관광지', icon: FiMap, color: '#0066cc' },
+    '14': { name: '문화시설', icon: FiActivity, color: '#2196f3' },
+    '28': { name: '레포츠', icon: FiSun, color: '#ff9800' },
+    '32': { name: '숙박', icon: FiHome, color: '#795548' },
+    '38': { name: '쇼핑', icon: FiShoppingBag, color: '#4caf50' },
+    '39': { name: '음식점', icon: FiCoffee, color: '#ff6b35' },
+    '15': { name: '행사/축제', icon: FiCalendar, color: '#9c27b0' }
+  }
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
   const parseDate = useCallback((dateStr) => {
@@ -614,6 +584,315 @@ const AdminPage = () => {
       alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error occurred while deleting.')
     }
   }, [language, loadPublishedTrips])
+  
+  // ==================== 공연 관리 함수 ====================
+  
+  // DB에 저장된 공연 목록 로드
+  const loadDbPerformances = useCallback(async () => {
+    setPerformancesLoading(true)
+    try {
+      const performances = await getDbPerformances(false) // 전체 조회
+      setDbPerformances(performances)
+      const count = await getPerformanceCount()
+      setPerformanceDbCount(count)
+    } catch (err) {
+      console.error('공연 목록 로드 실패:', err)
+    }
+    setPerformancesLoading(false)
+  }, [])
+  
+  // KCISA API에서 공연 데이터 가져오기
+  const loadApiPerformances = useCallback(async () => {
+    setPerformanceSyncLoading(true)
+    try {
+      // 대전 키워드로 검색하여 API 레벨에서 필터링
+      const result = await getCulturalPerformances({ numOfRows: 100, title: '대전' })
+      if (result.success && result.items) {
+        // 종료일 지나지 않은 것만 추가 필터링
+        const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
+        const todayNum = parseInt(today)
+        
+        const filtered = result.items.filter(item => {
+          // 장소(eventSite)에 "대전"이 포함된 것만
+          const siteHasDaejeon = (item.eventSite || '').includes('대전')
+          if (!siteHasDaejeon) return false
+          
+          // 종료일 체크 (eventPeriod: "20260123 ~ 20260125" 형식)
+          if (item.eventPeriod) {
+            const parts = item.eventPeriod.split(' ~ ')
+            const endDateStr = parts[1]?.trim() || parts[0]?.trim()
+            if (endDateStr && endDateStr.length === 8) {
+              const endDateNum = parseInt(endDateStr)
+              if (endDateNum < todayNum) return false
+            }
+          }
+          
+          return true
+        })
+        
+        setApiPerformances(filtered)
+        return { success: true, count: filtered.length }
+      }
+      return { success: false }
+    } catch (err) {
+      console.error('KCISA API 호출 실패:', err)
+      return { success: false, error: err.message }
+    } finally {
+      setPerformanceSyncLoading(false)
+    }
+  }, [])
+  
+  // API 공연 데이터를 DB에 저장
+  const handleSyncPerformances = useCallback(async () => {
+    if (apiPerformances.length === 0) {
+      // 먼저 API에서 데이터 로드
+      const loadResult = await loadApiPerformances()
+      if (!loadResult.success) {
+        alert(language === 'ko' ? 'API에서 공연 데이터를 불러오지 못했습니다.' : 'Failed to load performance data from API.')
+        return
+      }
+    }
+    
+    const confirmMsg = language === 'ko'
+      ? `${apiPerformances.length}개의 대전 지역 공연을 DB에 저장하시겠습니까?`
+      : `Save ${apiPerformances.length} Daejeon performances to DB?`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setPerformanceSyncLoading(true)
+    try {
+      const result = await savePerformances(apiPerformances)
+      if (result.success) {
+        alert(language === 'ko' 
+          ? `${result.savedCount}개 공연이 저장되었습니다.` 
+          : `${result.savedCount} performances saved.`)
+        loadDbPerformances()
+      } else {
+        alert(result.error || '저장 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '저장 중 오류가 발생했습니다.' : 'Error saving performances.')
+    }
+    setPerformanceSyncLoading(false)
+  }, [apiPerformances, language, loadApiPerformances, loadDbPerformances])
+  
+  // 만료된 공연 삭제
+  const handleDeleteExpiredPerformances = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? '종료일이 지난 모든 공연을 삭제하시겠습니까?'
+      : 'Delete all expired performances?'
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setPerformanceDeleteLoading(true)
+    try {
+      const result = await deleteExpiredPerformances()
+      if (result.success) {
+        alert(language === 'ko' 
+          ? `${result.deletedCount}개의 만료된 공연이 삭제되었습니다.` 
+          : `${result.deletedCount} expired performances deleted.`)
+        loadDbPerformances()
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error deleting performances.')
+    }
+    setPerformanceDeleteLoading(false)
+  }, [language, loadDbPerformances])
+  
+  // 개별 공연 삭제
+  const handleDeletePerformance = useCallback(async (performance) => {
+    const confirmMsg = language === 'ko'
+      ? `"${performance.title}" 공연을 삭제하시겠습니까?`
+      : `Delete "${performance.title}"?`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      const result = await deletePerformance(performance.id)
+      if (result.success) {
+        alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
+        loadDbPerformances()
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error deleting performance.')
+    }
+  }, [language, loadDbPerformances])
+  
+  // ============================================================
+  // TourAPI 관련 함수들
+  // ============================================================
+  
+  // TourAPI 데이터 개수 로드 (API + DB)
+  const loadTourApiStats = useCallback(async () => {
+    setTourApiLoading(true)
+    try {
+      console.log('[DEBUG] loadTourApiStats - 시작')
+      
+      // API에서 각 타입별 개수 가져오기
+      const apiCounts = await getTourApiCounts()
+      console.log('[DEBUG] loadTourApiStats - apiCounts:', apiCounts)
+      setTourApiCounts(apiCounts)
+      
+      // DB에서 각 타입별 개수 가져오기
+      const dbStats = await getTourApiStats()
+      console.log('[DEBUG] loadTourApiStats - dbStats:', dbStats)
+      
+      if (dbStats.success) {
+        console.log('[DEBUG] loadTourApiStats - dbStats.stats:', dbStats.stats)
+        setTourDbCounts(dbStats.stats)
+      }
+    } catch (err) {
+      console.error('TourAPI 통계 로드 실패:', err)
+    }
+    setTourApiLoading(false)
+  }, [])
+  
+  // TourAPI 특정 타입 데이터를 DB에 동기화
+  const handleSyncTourData = useCallback(async (contentTypeId) => {
+    const typeName = TOUR_CONTENT_TYPES[contentTypeId]?.name || contentTypeId
+    const confirmMsg = language === 'ko'
+      ? `${typeName} 데이터를 API에서 가져와 DB에 저장하시겠습니까?\n(기존 ${typeName} 데이터는 삭제됩니다)`
+      : `Sync ${typeName} data from API to DB?\n(Existing ${typeName} data will be deleted)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setTourSyncLoading(prev => ({ ...prev, [contentTypeId]: true }))
+    try {
+      if (contentTypeId === '15') {
+        // 행사/축제는 별도 처리
+        // 1년 전부터 시작하는 행사 가져오기 (종료되지 않은 것 포함)
+        const oneYearAgo = new Date()
+        oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1)
+        const startDate = oneYearAgo.toISOString().slice(0, 10).replace(/-/g, '')
+        console.log('[DEBUG] 행사/축제 동기화 - eventStartDate:', startDate)
+        
+        let allItems = []
+        let pageNo = 1
+        let hasMore = true
+        
+        while (hasMore) {
+          const result = await getTourApiFestivals({
+            pageNo,
+            numOfRows: 100,
+            eventStartDate: startDate
+          })
+          console.log('[DEBUG] 행사/축제 동기화 - page:', pageNo, 'items:', result.items?.length, 'total:', result.totalCount)
+          
+          if (result.success && result.items.length > 0) {
+            allItems = [...allItems, ...result.items]
+            pageNo++
+            hasMore = result.items.length === 100
+          } else {
+            hasMore = false
+          }
+        }
+        
+        // 기존 데이터 삭제
+        await deleteAllTourFestivals()
+        
+        // 새 데이터 저장
+        if (allItems.length > 0) {
+          const saveResult = await saveTourFestivals(allItems)
+          if (saveResult.success) {
+            alert(language === 'ko'
+              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 저장되었습니다.`
+              : `${saveResult.savedCount} ${typeName} items saved.`)
+          } else {
+            throw new Error(saveResult.error)
+          }
+        } else {
+          alert(language === 'ko' ? '저장할 데이터가 없습니다.' : 'No data to save.')
+        }
+      } else {
+        // 일반 관광정보 처리
+        let allItems = []
+        let pageNo = 1
+        let hasMore = true
+        
+        while (hasMore) {
+          const result = await getTourApiSpots({
+            contentTypeId,
+            pageNo,
+            numOfRows: 100
+          })
+          
+          if (result.success && result.items.length > 0) {
+            allItems = [...allItems, ...result.items]
+            pageNo++
+            hasMore = result.items.length === 100
+          } else {
+            hasMore = false
+          }
+        }
+        
+        // 기존 데이터 삭제
+        await deleteTourSpots(contentTypeId)
+        
+        // 새 데이터 저장
+        if (allItems.length > 0) {
+          const saveResult = await saveTourSpots(allItems)
+          if (saveResult.success) {
+            alert(language === 'ko'
+              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 저장되었습니다.`
+              : `${saveResult.savedCount} ${typeName} items saved.`)
+          } else {
+            throw new Error(saveResult.error)
+          }
+        } else {
+          alert(language === 'ko' ? '저장할 데이터가 없습니다.' : 'No data to save.')
+        }
+      }
+      
+      // 통계 새로고침
+      await loadTourApiStats()
+    } catch (err) {
+      console.error(`${typeName} 동기화 실패:`, err)
+      alert(language === 'ko'
+        ? `${typeName} 동기화 중 오류가 발생했습니다: ${err.message}`
+        : `Error syncing ${typeName}: ${err.message}`)
+    }
+    setTourSyncLoading(prev => ({ ...prev, [contentTypeId]: false }))
+  }, [language, loadTourApiStats])
+  
+  // 만료된 행사 삭제
+  const handleDeleteExpiredTourFestivals = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? '종료일이 지난 모든 행사/축제를 삭제하시겠습니까?'
+      : 'Delete all expired festivals?'
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      const result = await deleteExpiredTourFestivals()
+      if (result.success) {
+        alert(language === 'ko'
+          ? `${result.deletedCount}개의 만료된 행사가 삭제되었습니다.`
+          : `${result.deletedCount} expired festivals deleted.`)
+        await loadTourApiStats()
+      } else {
+        alert(result.error || '삭제 실패')
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error deleting expired festivals.')
+    }
+  }, [language, loadTourApiStats])
+  
+  // 전체 TourAPI 데이터 동기화
+  const handleSyncAllTourData = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? '모든 TourAPI 데이터를 동기화하시겠습니까?\n(기존 데이터는 모두 삭제됩니다. 시간이 걸릴 수 있습니다.)'
+      : 'Sync all TourAPI data?\n(All existing data will be deleted. This may take a while.)'
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    for (const typeId of Object.keys(TOUR_CONTENT_TYPES)) {
+      await handleSyncTourData(typeId)
+    }
+  }, [handleSyncTourData, language])
   
   // Hero 슬라이드 로드
   const loadHeroSlides = useCallback(async () => {
@@ -1426,6 +1705,29 @@ const AdminPage = () => {
             <span>{language === 'ko' ? '추천 여행 코스' : 'Travel Courses'}</span>
           </button>
           
+          <button 
+            className={`nav-item ${activeSection === 'performances' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('performances')
+              loadDbPerformances()
+              loadApiPerformances()
+            }}
+          >
+            <FiMusic style={{ color: activeSection === 'performances' ? 'white' : '#9c27b0' }} />
+            <span>{language === 'ko' ? '공연 관리' : 'Performances'}</span>
+          </button>
+          
+          <button 
+            className={`nav-item ${activeSection === 'tourapi' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('tourapi')
+              loadTourApiStats()
+            }}
+          >
+            <FiGlobe style={{ color: activeSection === 'tourapi' ? 'white' : '#00bcd4' }} />
+            <span>{language === 'ko' ? 'TourAPI 관리' : 'TourAPI'}</span>
+          </button>
+          
           <div className="nav-section-title">
             {language === 'ko' ? '페이지 관리' : 'Pages'}
           </div>
@@ -1492,6 +1794,8 @@ const AdminPage = () => {
             {activeSection === 'dashboard' && (language === 'ko' ? '대시보드' : 'Dashboard')}
             {activeSection === 'hero' && (language === 'ko' ? '히어로 슬라이드 관리' : 'Hero Slides')}
             {activeSection === 'courses' && (language === 'ko' ? '추천 여행 코스 관리' : 'Travel Courses')}
+            {activeSection === 'performances' && (language === 'ko' ? '공연 관리' : 'Performances')}
+            {activeSection === 'tourapi' && (language === 'ko' ? 'TourAPI 관리' : 'TourAPI Management')}
             {activeSection === 'database' && 'Supabase'}
             {activeSection === 'settings' && (language === 'ko' ? '설정' : 'Settings')}
             {activeSection.startsWith('page-') && PAGE_CONFIGS[activeSection.replace('page-', '')]?.title[language]}
@@ -1503,6 +1807,11 @@ const AdminPage = () => {
           )}
           {activeSection === 'courses' && (
             <button className="refresh-btn" onClick={loadPublishedTrips}>
+              <FiRefreshCw />
+            </button>
+          )}
+          {activeSection === 'performances' && (
+            <button className="refresh-btn" onClick={() => { loadDbPerformances(); loadApiPerformances(); }}>
               <FiRefreshCw />
             </button>
           )}
@@ -2275,6 +2584,276 @@ const AdminPage = () => {
                   <p>{language === 'ko' ? '게시된 여행 코스가 없습니다.' : 'No published travel courses.'}</p>
                 </div>
               )}
+            </div>
+          )}
+          
+          {/* 공연 관리 섹션 */}
+          {activeSection === 'performances' && (
+            <div className="performances-management">
+              {/* 통계 및 액션 버튼 */}
+              <div className="performances-header">
+                <div className="performance-stats">
+                  <div className="stat-badge">
+                    <FiDatabase />
+                    <span>DB: {performanceDbCount}개</span>
+                  </div>
+                  <div className="stat-badge api">
+                    <FiCloud />
+                    <span>API: {apiPerformances.length}개 (대전 지역)</span>
+                  </div>
+                </div>
+                
+                <div className="performance-actions">
+                  <button 
+                    className="btn-sync"
+                    onClick={handleSyncPerformances}
+                    disabled={performanceSyncLoading}
+                  >
+                    {performanceSyncLoading ? (
+                      <><FiLoader className="spinning" /> 동기화 중...</>
+                    ) : (
+                      <><FiDownload /> {language === 'ko' ? 'API → DB 저장' : 'Sync from API'}</>
+                    )}
+                  </button>
+                  <button 
+                    className="btn-delete-expired"
+                    onClick={handleDeleteExpiredPerformances}
+                    disabled={performanceDeleteLoading}
+                  >
+                    {performanceDeleteLoading ? (
+                      <><FiLoader className="spinning" /> 삭제 중...</>
+                    ) : (
+                      <><FiTrash2 /> {language === 'ko' ? '만료 공연 삭제' : 'Delete Expired'}</>
+                    )}
+                  </button>
+                </div>
+              </div>
+              
+              {/* DB 저장된 공연 목록 */}
+              <div className="performance-section">
+                <h3><FiDatabase /> {language === 'ko' ? 'DB에 저장된 공연' : 'Saved Performances'}</h3>
+                
+                {performancesLoading ? (
+                  <div className="loading-container">
+                    <FiLoader className="spinning" size={32} />
+                    <p>{language === 'ko' ? '로딩 중...' : 'Loading...'}</p>
+                  </div>
+                ) : dbPerformances.length > 0 ? (
+                  <div className="performances-table-wrapper">
+                    <table className="performances-table">
+                      <thead>
+                        <tr>
+                          <th>{language === 'ko' ? '이미지' : 'Image'}</th>
+                          <th>{language === 'ko' ? '공연명' : 'Title'}</th>
+                          <th>{language === 'ko' ? '분류' : 'Type'}</th>
+                          <th>{language === 'ko' ? '기간' : 'Period'}</th>
+                          <th>{language === 'ko' ? '장소' : 'Venue'}</th>
+                          <th>{language === 'ko' ? '요금' : 'Price'}</th>
+                          <th>{language === 'ko' ? '상태' : 'Status'}</th>
+                          <th>{language === 'ko' ? '관리' : 'Actions'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {dbPerformances.map(perf => {
+                          const today = new Date().toISOString().split('T')[0]
+                          const isExpired = perf.end_date && perf.end_date < today
+                          return (
+                            <tr key={perf.id} className={isExpired ? 'expired' : ''}>
+                              <td>
+                                <div className="perf-thumbnail">
+                                  {perf.image_url ? (
+                                    <img src={perf.image_url} alt={perf.title} />
+                                  ) : (
+                                    <div className="no-thumbnail"><FiImage /></div>
+                                  )}
+                                </div>
+                              </td>
+                              <td>
+                                {perf.url ? (
+                                  <a href={perf.url} target="_blank" rel="noopener noreferrer" className="perf-title-link">
+                                    {perf.title}
+                                  </a>
+                                ) : (
+                                  perf.title
+                                )}
+                              </td>
+                              <td><span className="perf-type-badge">{perf.type || '-'}</span></td>
+                              <td className="perf-period">
+                                {perf.start_date && perf.end_date 
+                                  ? `${perf.start_date} ~ ${perf.end_date}`
+                                  : perf.event_period || '-'}
+                              </td>
+                              <td>{perf.event_site || '-'}</td>
+                              <td className="perf-charge">{perf.charge || '-'}</td>
+                              <td>
+                                {isExpired ? (
+                                  <span className="status-badge expired">만료</span>
+                                ) : (
+                                  <span className="status-badge active">진행중</span>
+                                )}
+                              </td>
+                              <td>
+                                <button 
+                                  className="btn-delete"
+                                  onClick={() => handleDeletePerformance(perf)}
+                                  title={language === 'ko' ? '삭제' : 'Delete'}
+                                >
+                                  <FiTrash2 />
+                                </button>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="no-data">
+                    <FiMusic size={48} />
+                    <p>{language === 'ko' ? 'DB에 저장된 공연이 없습니다.' : 'No performances in database.'}</p>
+                    <p className="sub-text">{language === 'ko' ? '"API → DB 저장" 버튼을 클릭하여 공연 데이터를 가져오세요.' : 'Click "Sync from API" to import performances.'}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* API에서 불러온 공연 미리보기 */}
+              {apiPerformances.length > 0 && (
+                <div className="performance-section api-preview">
+                  <h3><FiCloud /> {language === 'ko' ? 'API에서 불러온 공연 (대전 지역, 미만료)' : 'API Performances (Daejeon, Active)'}</h3>
+                  <div className="api-performances-grid">
+                    {apiPerformances.slice(0, 12).map((perf, idx) => (
+                      <div key={idx} className="api-perf-card">
+                        {perf.imageObject && (
+                          <img src={perf.imageObject} alt={perf.title} className="api-perf-img" />
+                        )}
+                        <div className="api-perf-info">
+                          <h4>{perf.title}</h4>
+                          <p className="api-perf-period">{perf.eventPeriod}</p>
+                          <p className="api-perf-site">{perf.eventSite}</p>
+                          {perf.charge && <p className="api-perf-charge">{perf.charge}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {apiPerformances.length > 12 && (
+                    <p className="more-info">...외 {apiPerformances.length - 12}개 더 있음</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* TourAPI 관리 섹션 */}
+          {activeSection === 'tourapi' && (
+            <div className="tourapi-management">
+              {/* 헤더 및 전체 동기화 버튼 */}
+              <div className="tourapi-header">
+                <div className="tourapi-info">
+                  <h3><FiGlobe /> {language === 'ko' ? '한국관광공사 TourAPI 4.0' : 'Korea Tourism TourAPI 4.0'}</h3>
+                  <p className="tourapi-desc">
+                    {language === 'ko' 
+                      ? '대전 지역 관광정보를 API에서 가져와 DB에 저장합니다.'
+                      : 'Fetch Daejeon tourism data from API and save to DB.'}
+                  </p>
+                </div>
+                <div className="tourapi-actions">
+                  <button 
+                    className="btn-refresh"
+                    onClick={loadTourApiStats}
+                    disabled={tourApiLoading}
+                  >
+                    {tourApiLoading ? (
+                      <><FiLoader className="spinning" /> {language === 'ko' ? '조회 중...' : 'Loading...'}</>
+                    ) : (
+                      <><FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}</>
+                    )}
+                  </button>
+                  <button 
+                    className="btn-sync-all"
+                    onClick={handleSyncAllTourData}
+                    disabled={tourApiLoading || Object.values(tourSyncLoading).some(v => v)}
+                  >
+                    <FiDownload /> {language === 'ko' ? '전체 동기화' : 'Sync All'}
+                  </button>
+                </div>
+              </div>
+              
+              {/* 콘텐츠 타입별 카드 */}
+              <div className="tourapi-cards">
+                {Object.entries(TOUR_CONTENT_TYPES).map(([typeId, typeInfo]) => {
+                  const Icon = typeInfo.icon
+                  const apiCount = tourApiCounts[typeId]?.count || 0
+                  const dbCount = typeId === '15' 
+                    ? tourDbCounts.festivals || 0 
+                    : tourDbCounts.spots?.[typeId]?.count || 0
+                  const isLoading = tourSyncLoading[typeId]
+                  
+                  return (
+                    <div key={typeId} className="tourapi-card">
+                      <div className="tourapi-card-header" style={{ borderColor: typeInfo.color }}>
+                        <div className="tourapi-card-icon" style={{ backgroundColor: typeInfo.color }}>
+                          <Icon />
+                        </div>
+                        <div className="tourapi-card-title">
+                          <h4>{typeInfo.name}</h4>
+                          <span className="content-type-id">contentTypeId: {typeId}</span>
+                        </div>
+                      </div>
+                      
+                      <div className="tourapi-card-stats">
+                        <div className="stat-row">
+                          <span className="stat-label"><FiCloud /> API</span>
+                          <span className="stat-value">{apiCount.toLocaleString()}개</span>
+                        </div>
+                        <div className="stat-row">
+                          <span className="stat-label"><FiDatabase /> DB</span>
+                          <span className="stat-value">{dbCount.toLocaleString()}개</span>
+                        </div>
+                        <div className="stat-row diff">
+                          <span className="stat-label">{language === 'ko' ? '차이' : 'Diff'}</span>
+                          <span className={`stat-value ${apiCount - dbCount > 0 ? 'positive' : apiCount - dbCount < 0 ? 'negative' : ''}`}>
+                            {apiCount - dbCount > 0 ? '+' : ''}{(apiCount - dbCount).toLocaleString()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <div className="tourapi-card-actions">
+                        <button 
+                          className="btn-sync-type"
+                          onClick={() => handleSyncTourData(typeId)}
+                          disabled={isLoading}
+                          style={{ backgroundColor: typeInfo.color }}
+                        >
+                          {isLoading ? (
+                            <><FiLoader className="spinning" /> {language === 'ko' ? '동기화 중...' : 'Syncing...'}</>
+                          ) : (
+                            <><FiDownload /> {language === 'ko' ? 'DB 동기화' : 'Sync to DB'}</>
+                          )}
+                        </button>
+                        {typeId === '15' && (
+                          <button 
+                            className="btn-delete-expired"
+                            onClick={handleDeleteExpiredTourFestivals}
+                            title={language === 'ko' ? '만료된 행사 삭제' : 'Delete expired'}
+                          >
+                            <FiTrash2 /> {language === 'ko' ? '만료 삭제' : 'Del Expired'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              
+              {/* 안내 문구 */}
+              <div className="tourapi-notice">
+                <FiActivity />
+                <p>
+                  {language === 'ko'
+                    ? '동기화 시 해당 타입의 기존 데이터는 삭제되고 새 데이터로 대체됩니다. 행사/축제는 종료일이 지나지 않은 것만 가져옵니다.'
+                    : 'Sync will delete existing data of that type and replace with new data. Festivals only include those not yet ended.'}
+                </p>
+              </div>
             </div>
           )}
           

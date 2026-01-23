@@ -14,6 +14,7 @@ import CulturePage from './pages/CulturePage'
 import MedicalPage from './pages/MedicalPage'
 import ShoppingPage from './pages/ShoppingPage'
 import AccommodationPage from './pages/AccommodationPage'
+import LeisurePage from './pages/LeisurePage'
 import AdminPage from './pages/AdminPage'
 import MyTripPage from './pages/MyTripPage'
 import SharedTripPage from './pages/SharedTripPage'
@@ -38,6 +39,7 @@ const getPageName = (pathname) => {
     '/medical': 'medical',
     '/shopping': 'shopping',
     '/accommodation': 'accommodation',
+    '/leisure': 'leisure',
     '/my-trip': 'my-trip'
   }
   return pathMap[pathname] || null
@@ -72,6 +74,7 @@ function App() {
           <Route path="/medical" element={<MedicalPage />} />
           <Route path="/shopping" element={<ShoppingPage />} />
           <Route path="/accommodation" element={<AccommodationPage />} />
+          <Route path="/leisure" element={<LeisurePage />} />
           <Route path="/my-trip" element={<MyTripPage />} />
           <Route path="/shared-trips" element={<SharedTripsPage />} />
           <Route path="/trip/shared/:tripId" element={<SharedTripPage />} />

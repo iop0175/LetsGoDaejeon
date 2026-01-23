@@ -19,7 +19,7 @@ import {
   addTripPlace, updateTripPlace, deleteTripPlace,
   publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo
 } from '../services/tripService'
-import { getAllDbData } from '../services/dbService'
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { uploadResizedImage } from '../services/blobService'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
 import { getPublicTransitRoute } from '../services/odsayService'
@@ -518,52 +518,96 @@ const MyTripPage = () => {
     setIsSearching(true)
     try {
       let results = []
+      const keyword = searchQuery.trim().toLowerCase()
       
       switch (searchCategory) {
         case 'travel':
-          const travelResult = await getAllDbData('travel')
-          if (travelResult.success) {
-            results = travelResult.items.filter(item => 
-              item.tourspotNm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              item.tourspotAddr?.toLowerCase().includes(searchQuery.toLowerCase())
-            ).slice(0, 10).map(item => ({
+          const tourResult = await getTourSpotsDb('12', 1, 1000, searchQuery)
+          if (tourResult.success && tourResult.items.length > 0) {
+            results = tourResult.items.slice(0, 10).map(item => ({
               type: 'travel',
-              name: item.tourspotNm,
-              address: item.tourspotAddr,
-              description: item.tourspotSumm,
-              image: item.imageUrl
+              name: item.title,
+              address: item.addr1 || item.addr2,
+              description: item.overview,
+              image: item.firstimage || item.firstimage2,
+              lat: item.mapy ? parseFloat(item.mapy) : null,
+              lng: item.mapx ? parseFloat(item.mapx) : null
             }))
+          } else {
+            const travelResult = await getAllDbData('travel')
+            if (travelResult.success) {
+              results = travelResult.items.filter(item => 
+                item.tourspotNm?.toLowerCase().includes(keyword) ||
+                item.tourspotAddr?.toLowerCase().includes(keyword)
+              ).slice(0, 10).map(item => ({
+                type: 'travel',
+                name: item.tourspotNm,
+                address: item.tourspotAddr,
+                description: item.tourspotSumm,
+                image: item.imageUrl,
+                lat: item.tourspotLat ? parseFloat(item.tourspotLat) : (item.mapLat ? parseFloat(item.mapLat) : null),
+                lng: item.tourspotLng ? parseFloat(item.tourspotLng) : (item.mapLot ? parseFloat(item.mapLot) : null)
+              }))
+            }
           }
           break
           
         case 'food':
-          const foodResult = await getAllDbData('food')
-          if (foodResult.success) {
-            results = foodResult.items.filter(item =>
-              item.restrntNm?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-              item.reprMenu?.toLowerCase().includes(searchQuery.toLowerCase())
-            ).slice(0, 10).map(item => ({
+          const foodTourResult = await getTourSpotsDb('39', 1, 1000, searchQuery)
+          if (foodTourResult.success && foodTourResult.items.length > 0) {
+            results = foodTourResult.items.slice(0, 10).map(item => ({
               type: 'food',
-              name: item.restrntNm,
-              address: item.restrntAddr,
-              description: item.reprMenu,
-              image: item.imageUrl
+              name: item.title,
+              address: item.addr1 || item.addr2,
+              description: item.overview,
+              image: item.firstimage || item.firstimage2,
+              lat: item.mapy ? parseFloat(item.mapy) : null,
+              lng: item.mapx ? parseFloat(item.mapx) : null
             }))
+          } else {
+            const foodResult = await getAllDbData('food')
+            if (foodResult.success) {
+              results = foodResult.items.filter(item =>
+                item.restrntNm?.toLowerCase().includes(keyword) ||
+                item.reprMenu?.toLowerCase().includes(keyword)
+              ).slice(0, 10).map(item => ({
+                type: 'food',
+                name: item.restrntNm,
+                address: item.restrntAddr,
+                description: item.reprMenu,
+                image: item.imageUrl,
+                lat: item.mapLat ? parseFloat(item.mapLat) : null,
+                lng: item.mapLot ? parseFloat(item.mapLot) : null
+              }))
+            }
           }
           break
           
         case 'culture':
-          const cultureResult = await getAllDbData('culture')
-          if (cultureResult.success) {
-            results = cultureResult.items.filter(item =>
-              item.fcltyNm?.toLowerCase().includes(searchQuery.toLowerCase())
-            ).slice(0, 10).map(item => ({
+          const cultureTourResult = await getTourSpotsDb('14', 1, 1000, searchQuery)
+          if (cultureTourResult.success && cultureTourResult.items.length > 0) {
+            results = cultureTourResult.items.slice(0, 10).map(item => ({
               type: 'culture',
-              name: item.fcltyNm,
-              address: item.locplc,
-              description: item.fcltyKnd,
-              image: item.imageUrl
+              name: item.title,
+              address: item.addr1 || item.addr2,
+              description: item.overview,
+              image: item.firstimage || item.firstimage2,
+              lat: item.mapy ? parseFloat(item.mapy) : null,
+              lng: item.mapx ? parseFloat(item.mapx) : null
             }))
+          } else {
+            const cultureResult = await getAllDbData('culture')
+            if (cultureResult.success) {
+              results = cultureResult.items.filter(item =>
+                item.fcltyNm?.toLowerCase().includes(keyword)
+              ).slice(0, 10).map(item => ({
+                type: 'culture',
+                name: item.fcltyNm,
+                address: item.locplc,
+                description: item.fcltyKnd,
+                image: item.imageUrl
+              }))
+            }
           }
           break
       }

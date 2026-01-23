@@ -164,7 +164,6 @@
 .culture-card {
   background: var(--card-bg, white);
   border-radius: 16px;
-  padding: 20px;
   display: flex;
   flex-direction: column;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -176,6 +175,31 @@
 .culture-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 30px rgba(107, 91, 149, 0.15);
+}
+
+.culture-image {
+  width: 100%;
+  height: 180px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.culture-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.culture-card:hover .culture-image img {
+  transform: scale(1.05);
+}
+
+.culture-card-content {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .culture-card-header {

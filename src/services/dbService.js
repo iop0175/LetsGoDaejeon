@@ -1,35 +1,11 @@
 // Supabase 데이터베이스에서 데이터 가져오기
 import { supabase } from './supabase'
 
-// 테이블 설정
+// 테이블 설정 (TourAPI에 없는 데이터만 유지)
 const TABLE_CONFIGS = {
-  travel: {
-    tableName: 'travel_spots',
-    uniqueField: 'tourspotNm'
-  },
-  festival: {
-    tableName: 'festivals',
-    uniqueField: 'title'
-  },
-  food: {
-    tableName: 'restaurants',
-    uniqueField: 'restrntNm'
-  },
-  culture: {
-    tableName: 'cultural_facilities',
-    uniqueField: 'fcltyNm'
-  },
   medical: {
     tableName: 'medical_facilities',
     uniqueField: 'hsptlNm'
-  },
-  shopping: {
-    tableName: 'shopping_places',
-    uniqueField: 'shppgNm'
-  },
-  accommodation: {
-    tableName: 'accommodations',
-    uniqueField: 'romsNm'
   },
   parking: {
     tableName: 'parking_lots',
@@ -93,13 +69,7 @@ export const getDbData = async (pageType, page = 1, pageSize = 20, searchQuery =
   try {
     // 검색 필드 결정 (각 테이블의 주요 필드)
     const searchFields = {
-      travel: ['tourspotNm', 'tourspotAddr', 'tourspotSumm'],
-      festival: ['title', 'themeCdNm', 'placeCdNm'],
-      food: ['restrntNm', 'restrntAddr', 'reprMenu'],
-      culture: ['fcltyNm', 'locplc', 'fcltyKnd'],
       medical: ['hsptlNm', 'locplc', 'hsptlKnd'],
-      shopping: ['shppgNm', 'shppgAddr', 'shppgIntro'],
-      accommodation: ['romsNm', 'romsAddr', 'romsScl'],
       parking: ['pkParkNm', 'pkAddr']
     }
     
@@ -1504,5 +1474,781 @@ export const API_TYPES = {
   KTO_PHOTO: 'kto_photo'
 }
 
+// ==================== 공연 관리 함수 ====================
+
+/**
+ * HTML 엔티티 디코딩
+ */
+const decodeHtmlEntities = (str) => {
+  if (!str) return str
+  return str
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+}
+
+/**
+ * 날짜 문자열에서 Date 추출 (YYYY.MM.DD 또는 YYYY-MM-DD 형식)
+ */
+const parseDateFromPeriod = (periodStr, isEnd = false) => {
+  if (!periodStr) return null
+  
+  // 날짜 패턴 추출 (YYYY.MM.DD 또는 YYYY-MM-DD)
+  const datePattern = /(\d{4})[.\-](\d{2})[.\-](\d{2})/g
+  const dates = [...periodStr.matchAll(datePattern)]
+  
+  if (dates.length === 0) return null
+  
+  // 시작일은 첫 번째 날짜, 종료일은 마지막 날짜
+  const targetDate = isEnd ? dates[dates.length - 1] : dates[0]
+  return `${targetDate[1]}-${targetDate[2]}-${targetDate[3]}`
+}
+
+/**
+ * DB에 저장된 공연 목록 조회
+ * @param {boolean} activeOnly - 활성화된 공연만 조회
+ * @returns {Promise<Array>} 공연 목록
+ */
+export const getDbPerformances = async (activeOnly = true) => {
+  try {
+    let query = supabase
+      .from('performances')
+      .select('*')
+      .order('start_date', { ascending: true })
+    
+    if (activeOnly) {
+      query = query.eq('is_active', true)
+    }
+    
+    const { data, error } = await query
+    
+    if (error) {
+      console.error('공연 목록 조회 실패:', error)
+      return []
+    }
+    
+    return data || []
+  } catch (err) {
+    console.error('공연 목록 조회 에러:', err)
+    return []
+  }
+}
+
+/**
+ * 공연 데이터 DB에 저장
+ * @param {Object} performance - 공연 데이터
+ * @returns {Promise<Object>} 저장 결과
+ */
+export const savePerformance = async (performance) => {
+  try {
+    // eventPeriod에서 시작일/종료일 추출
+    const startDate = parseDateFromPeriod(performance.eventPeriod, false)
+    const endDate = parseDateFromPeriod(performance.eventPeriod, true)
+    
+    const performanceData = {
+      title: decodeHtmlEntities(performance.title),
+      type: decodeHtmlEntities(performance.type) || null,
+      event_period: performance.eventPeriod || null,
+      start_date: startDate,
+      end_date: endDate,
+      event_site: decodeHtmlEntities(performance.eventSite) || null,
+      charge: decodeHtmlEntities(performance.charge) || null,
+      contact_point: decodeHtmlEntities(performance.contactPoint) || null,
+      url: performance.url || null,
+      image_url: performance.imageObject || null,
+      description: decodeHtmlEntities(performance.description) || null,
+      view_count: performance.viewCount || 0,
+      is_active: true
+    }
+    
+    // upsert: title로 중복 체크
+    const { data, error } = await supabase
+      .from('performances')
+      .upsert(performanceData, { 
+        onConflict: 'title',
+        ignoreDuplicates: false 
+      })
+      .select()
+    
+    if (error) {
+      console.error('공연 저장 실패:', error)
+      return { success: false, error: error.message }
+    }
+    
+    return { success: true, data }
+  } catch (err) {
+    console.error('공연 저장 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 여러 공연 데이터 일괄 저장
+ * @param {Array} performances - 공연 데이터 배열
+ * @returns {Promise<Object>} 저장 결과
+ */
+export const savePerformances = async (performances) => {
+  try {
+    const performancesData = performances.map(p => {
+      const startDate = parseDateFromPeriod(p.eventPeriod, false)
+      const endDate = parseDateFromPeriod(p.eventPeriod, true)
+      
+      return {
+        title: decodeHtmlEntities(p.title),
+        type: decodeHtmlEntities(p.type) || null,
+        event_period: p.eventPeriod || null,
+        start_date: startDate,
+        end_date: endDate,
+        event_site: decodeHtmlEntities(p.eventSite) || null,
+        charge: decodeHtmlEntities(p.charge) || null,
+        contact_point: decodeHtmlEntities(p.contactPoint) || null,
+        url: p.url || null,
+        image_url: p.imageObject || null,
+        description: decodeHtmlEntities(p.description) || null,
+        view_count: p.viewCount || 0,
+        is_active: true
+      }
+    })
+    
+    // 배치 upsert
+    const { data, error } = await supabase
+      .from('performances')
+      .upsert(performancesData, { 
+        onConflict: 'title',
+        ignoreDuplicates: false 
+      })
+      .select()
+    
+    if (error) {
+      console.error('공연 일괄 저장 실패:', error)
+      return { success: false, error: error.message, savedCount: 0 }
+    }
+    
+    return { success: true, data, savedCount: data?.length || 0 }
+  } catch (err) {
+    console.error('공연 일괄 저장 에러:', err)
+    return { success: false, error: err.message, savedCount: 0 }
+  }
+}
+
+/**
+ * 공연 삭제
+ * @param {string} id - 공연 ID
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deletePerformance = async (id) => {
+  try {
+    const { error } = await supabase
+      .from('performances')
+      .delete()
+      .eq('id', id)
+    
+    if (error) {
+      console.error('공연 삭제 실패:', error)
+      return { success: false, error: error.message }
+    }
+    
+    return { success: true }
+  } catch (err) {
+    console.error('공연 삭제 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 만료된 공연 삭제 (종료일이 오늘 이전인 공연)
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deleteExpiredPerformances = async () => {
+  try {
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+    
+    // 먼저 삭제 대상 조회
+    const { data: expiredData } = await supabase
+      .from('performances')
+      .select('id, title, end_date')
+      .lt('end_date', today)
+    
+    if (!expiredData || expiredData.length === 0) {
+      return { success: true, deletedCount: 0, message: '삭제할 만료된 공연이 없습니다.' }
+    }
+    
+    // 삭제 실행
+    const { error } = await supabase
+      .from('performances')
+      .delete()
+      .lt('end_date', today)
+    
+    if (error) {
+      console.error('만료된 공연 삭제 실패:', error)
+      return { success: false, error: error.message }
+    }
+    
+    return { 
+      success: true, 
+      deletedCount: expiredData.length,
+      deletedPerformances: expiredData
+    }
+  } catch (err) {
+    console.error('만료된 공연 삭제 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 공연 개수 조회
+ * @returns {Promise<number>} 공연 개수
+ */
+export const getPerformanceCount = async () => {
+  try {
+    const { count, error } = await supabase
+      .from('performances')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+    
+    if (error) {
+      console.error('공연 개수 조회 실패:', error)
+      return 0
+    }
+    
+    return count || 0
+  } catch (err) {
+    console.error('공연 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * 공연 수정
+ * @param {string} id - 공연 ID
+ * @param {Object} updates - 수정할 필드
+ * @returns {Promise<Object>} 수정 결과
+ */
+export const updatePerformance = async (id, updates) => {
+  try {
+    // eventPeriod가 수정되면 start_date, end_date도 업데이트
+    if (updates.event_period) {
+      updates.start_date = parseDateFromPeriod(updates.event_period, false)
+      updates.end_date = parseDateFromPeriod(updates.event_period, true)
+    }
+    
+    const { data, error } = await supabase
+      .from('performances')
+      .update(updates)
+      .eq('id', id)
+      .select()
+    
+    if (error) {
+      console.error('공연 수정 실패:', error)
+      return { success: false, error: error.message }
+    }
+    
+    return { success: true, data }
+  } catch (err) {
+    console.error('공연 수정 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
 export { TABLE_CONFIGS }
+
+// ============================================================
+// TourAPI 관련 함수들 (tour_spots, tour_festivals 테이블)
+// ============================================================
+
+/**
+ * TourAPI 관광정보 조회 (tour_spots 테이블)
+ * @param {string} contentTypeId - 관광타입 (12:관광지, 14:문화시설, 28:레포츠, 32:숙박, 38:쇼핑, 39:음식점)
+ * @param {number} page - 페이지 번호 (1부터 시작)
+ * @param {number} pageSize - 페이지당 항목 수
+ * @param {string} searchQuery - 검색어
+ * @returns {Promise<Object>} { success, items, totalCount }
+ */
+export const getTourSpots = async (contentTypeId, page = 1, pageSize = 20, searchQuery = '') => {
+  try {
+    // 전체 개수 조회
+    let countQuery = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_type_id', contentTypeId)
+    
+    if (searchQuery && searchQuery.trim()) {
+      countQuery = countQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
+    }
+    
+    const { count: totalCount, error: countError } = await countQuery
+    if (countError) throw countError
+    
+    // 데이터 조회
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    
+    let dataQuery = supabase
+      .from('tour_spots')
+      .select('*')
+      .eq('content_type_id', contentTypeId)
+    
+    if (searchQuery && searchQuery.trim()) {
+      dataQuery = dataQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
+    }
+    
+    const { data, error } = await dataQuery
+      .range(from, to)
+      .order('updated_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      items: data || [],
+      totalCount: totalCount || 0
+    }
+  } catch (err) {
+    console.error('TourSpots 조회 에러:', err)
+    return { success: false, items: [], totalCount: 0 }
+  }
+}
+
+/**
+ * TourAPI 관광정보 전체 조회 (검색 필터 없이)
+ * @param {string} contentTypeId - 관광타입
+ * @param {number} limit - 최대 개수
+ * @returns {Promise<Object>} { success, items, totalCount }
+ */
+export const getAllTourSpots = async (contentTypeId, limit = 1000) => {
+  try {
+    const { data, error, count } = await supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact' })
+      .eq('content_type_id', contentTypeId)
+      .limit(limit)
+      .order('title', { ascending: true })
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      items: data || [],
+      totalCount: count || 0
+    }
+  } catch (err) {
+    console.error('TourSpots 전체 조회 에러:', err)
+    return { success: false, items: [], totalCount: 0 }
+  }
+}
+
+/**
+ * TourAPI 관광정보 저장 (Upsert)
+ * @param {Array} spots - 저장할 관광정보 배열
+ * @returns {Promise<Object>} { success, savedCount, errors }
+ */
+export const saveTourSpots = async (spots) => {
+  if (!spots || spots.length === 0) {
+    return { success: true, savedCount: 0 }
+  }
+  
+  try {
+    // API 응답을 DB 스키마에 맞게 변환
+    const dbRecords = spots.map(spot => ({
+      content_id: spot.contentid,
+      content_type_id: spot.contenttypeid,
+      title: spot.title,
+      addr1: spot.addr1 || '',
+      addr2: spot.addr2 || '',
+      areacode: spot.areacode || '3',
+      sigungucode: spot.sigungucode || '',
+      cat1: spot.cat1 || '',
+      cat2: spot.cat2 || '',
+      cat3: spot.cat3 || '',
+      firstimage: spot.firstimage || '',
+      firstimage2: spot.firstimage2 || '',
+      mapx: spot.mapx || '',
+      mapy: spot.mapy || '',
+      mlevel: spot.mlevel || '',
+      tel: spot.tel || '',
+      zipcode: spot.zipcode || '',
+      cpyrht_div_cd: spot.cpyrhtDivCd || '',
+      created_time: spot.createdtime || '',
+      modified_time: spot.modifiedtime || ''
+    }))
+    
+    // Upsert (content_id 기준)
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .upsert(dbRecords, { onConflict: 'content_id' })
+      .select()
+    
+    if (error) {
+      console.error('TourSpots 저장 에러:', error)
+      return { success: false, savedCount: 0, error: error.message }
+    }
+    
+    return { success: true, savedCount: data?.length || spots.length }
+  } catch (err) {
+    console.error('TourSpots 저장 에러:', err)
+    return { success: false, savedCount: 0, error: err.message }
+  }
+}
+
+/**
+ * TourAPI 관광정보 삭제
+ * @param {string} contentTypeId - 관광타입
+ * @returns {Promise<Object>} { success, deletedCount }
+ */
+export const deleteTourSpots = async (contentTypeId) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .delete()
+      .eq('content_type_id', contentTypeId)
+      .select()
+    
+    if (error) {
+      console.error('TourSpots 삭제 에러:', error)
+      return { success: false, deletedCount: 0, error: error.message }
+    }
+    
+    return { success: true, deletedCount: data?.length || 0 }
+  } catch (err) {
+    console.error('TourSpots 삭제 에러:', err)
+    return { success: false, deletedCount: 0, error: err.message }
+  }
+}
+
+/**
+ * TourAPI 관광정보 개수 조회
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @returns {Promise<number>} 개수
+ */
+export const getTourSpotsCount = async (contentTypeId = null) => {
+  try {
+    let query = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { count, error } = await query
+    if (error) throw error
+    
+    return count || 0
+  } catch (err) {
+    console.error('TourSpots 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+// ============================================================
+// TourAPI 행사/축제 함수들 (tour_festivals 테이블)
+// ============================================================
+
+/**
+ * TourAPI 행사/축제 조회
+ * @param {boolean} activeOnly - 진행중/예정 행사만 조회 (종료일 >= 오늘)
+ * @param {number} page - 페이지 번호
+ * @param {number} pageSize - 페이지당 항목 수
+ * @param {string} searchQuery - 검색어
+ * @returns {Promise<Object>} { success, items, totalCount }
+ */
+export const getTourFestivals = async (activeOnly = true, page = 1, pageSize = 20, searchQuery = '') => {
+  try {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '') // YYYYMMDD
+    
+    // 전체 개수 조회
+    let countQuery = supabase
+      .from('tour_festivals')
+      .select('*', { count: 'exact', head: true })
+    
+    if (activeOnly) {
+      // event_end_date가 null이거나 오늘 이후인 경우
+      countQuery = countQuery.or(`event_end_date.gte.${today},event_end_date.is.null`)
+    }
+    
+    if (searchQuery && searchQuery.trim()) {
+      countQuery = countQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
+    }
+    
+    const { count: totalCount, error: countError } = await countQuery
+    if (countError) throw countError
+    
+    // 데이터 조회
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    
+    let dataQuery = supabase
+      .from('tour_festivals')
+      .select('*')
+    
+    if (activeOnly) {
+      // event_end_date가 null이거나 오늘 이후인 경우
+      dataQuery = dataQuery.or(`event_end_date.gte.${today},event_end_date.is.null`)
+    }
+    
+    if (searchQuery && searchQuery.trim()) {
+      dataQuery = dataQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
+    }
+    
+    const { data, error } = await dataQuery
+      .range(from, to)
+      .order('event_start_date', { ascending: true })
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      items: data || [],
+      totalCount: totalCount || 0
+    }
+  } catch (err) {
+    console.error('TourFestivals 조회 에러:', err)
+    return { success: false, items: [], totalCount: 0 }
+  }
+}
+
+/**
+ * TourAPI 행사/축제 전체 조회
+ * @param {boolean} activeOnly - 진행중/예정만
+ * @param {number} limit - 최대 개수
+ * @returns {Promise<Object>} { success, items, totalCount }
+ */
+export const getAllTourFestivals = async (activeOnly = true, limit = 500) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    
+    let query = supabase
+      .from('tour_festivals')
+      .select('*', { count: 'exact' })
+    
+    if (activeOnly) {
+      // event_end_date가 null이거나 오늘 이후인 경우
+      query = query.or(`event_end_date.gte.${today},event_end_date.is.null`)
+    }
+    
+    const { data, error, count } = await query
+      .limit(limit)
+      .order('event_start_date', { ascending: true })
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      items: data || [],
+      totalCount: count || 0
+    }
+  } catch (err) {
+    console.error('TourFestivals 전체 조회 에러:', err)
+    return { success: false, items: [], totalCount: 0 }
+  }
+}
+
+/**
+ * TourAPI 행사/축제 저장 (Upsert)
+ * @param {Array} festivals - 저장할 행사 배열
+ * @returns {Promise<Object>} { success, savedCount }
+ */
+export const saveTourFestivals = async (festivals) => {
+  if (!festivals || festivals.length === 0) {
+    return { success: true, savedCount: 0 }
+  }
+  
+  try {
+    console.log('[DEBUG] saveTourFestivals - 입력 개수:', festivals.length)
+    
+    // 샘플 데이터 확인
+    if (festivals.length > 0) {
+      console.log('[DEBUG] saveTourFestivals - 샘플:', {
+        title: festivals[0].title,
+        eventenddate: festivals[0].eventenddate,
+        eventstartdate: festivals[0].eventstartdate
+      })
+    }
+    
+    // 모든 행사를 저장 (종료일 필터링 제거 - 조회 시 필터링)
+    const activeEvents = festivals
+    console.log('[DEBUG] saveTourFestivals - 저장할 개수:', activeEvents.length)
+    
+    // API 응답을 DB 스키마에 맞게 변환
+    const dbRecords = activeEvents.map(f => ({
+      content_id: f.contentid,
+      content_type_id: '15',
+      title: f.title,
+      addr1: f.addr1 || '',
+      addr2: f.addr2 || '',
+      areacode: f.areacode || '3',
+      sigungucode: f.sigungucode || '',
+      cat1: f.cat1 || '',
+      cat2: f.cat2 || '',
+      cat3: f.cat3 || '',
+      firstimage: f.firstimage || '',
+      firstimage2: f.firstimage2 || '',
+      mapx: f.mapx || '',
+      mapy: f.mapy || '',
+      mlevel: f.mlevel || '',
+      tel: f.tel || '',
+      zipcode: f.zipcode || '',
+      event_start_date: f.eventstartdate || '',
+      event_end_date: f.eventenddate || '',
+      cpyrht_div_cd: f.cpyrhtDivCd || '',
+      created_time: f.createdtime || '',
+      modified_time: f.modifiedtime || ''
+    }))
+    
+    // Upsert
+    const { data, error } = await supabase
+      .from('tour_festivals')
+      .upsert(dbRecords, { onConflict: 'content_id' })
+      .select()
+    
+    if (error) {
+      console.error('TourFestivals 저장 에러:', error)
+      return { success: false, savedCount: 0, error: error.message }
+    }
+    
+    return { success: true, savedCount: data?.length || activeEvents.length }
+  } catch (err) {
+    console.error('TourFestivals 저장 에러:', err)
+    return { success: false, savedCount: 0, error: err.message }
+  }
+}
+
+/**
+ * 만료된 TourAPI 행사/축제 삭제
+ * @returns {Promise<Object>} { success, deletedCount }
+ */
+export const deleteExpiredTourFestivals = async () => {
+  try {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    
+    const { data, error } = await supabase
+      .from('tour_festivals')
+      .delete()
+      .lt('event_end_date', today)
+      .select()
+    
+    if (error) {
+      console.error('만료된 TourFestivals 삭제 에러:', error)
+      return { success: false, deletedCount: 0, error: error.message }
+    }
+    
+    return { success: true, deletedCount: data?.length || 0 }
+  } catch (err) {
+    console.error('만료된 TourFestivals 삭제 에러:', err)
+    return { success: false, deletedCount: 0, error: err.message }
+  }
+}
+
+/**
+ * TourAPI 행사/축제 전체 삭제
+ * @returns {Promise<Object>} { success, deletedCount }
+ */
+export const deleteAllTourFestivals = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_festivals')
+      .delete()
+      .neq('content_id', '')  // 모든 레코드 삭제
+      .select()
+    
+    if (error) {
+      console.error('TourFestivals 전체 삭제 에러:', error)
+      return { success: false, deletedCount: 0, error: error.message }
+    }
+    
+    return { success: true, deletedCount: data?.length || 0 }
+  } catch (err) {
+    console.error('TourFestivals 전체 삭제 에러:', err)
+    return { success: false, deletedCount: 0, error: err.message }
+  }
+}
+
+/**
+ * TourAPI 행사/축제 개수 조회
+ * @param {boolean} activeOnly - 진행중/예정만
+ * @returns {Promise<number>} 개수
+ */
+export const getTourFestivalsCount = async (activeOnly = true) => {
+  try {
+    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    console.log('[DEBUG] getTourFestivalsCount - today:', today, 'activeOnly:', activeOnly)
+    
+    // 먼저 전체 개수 확인
+    const { count: totalCount } = await supabase
+      .from('tour_festivals')
+      .select('*', { count: 'exact', head: true })
+    console.log('[DEBUG] getTourFestivalsCount - 전체 개수:', totalCount)
+    
+    // event_end_date 샘플 확인
+    const { data: sampleData } = await supabase
+      .from('tour_festivals')
+      .select('title, event_start_date, event_end_date')
+      .limit(3)
+    console.log('[DEBUG] getTourFestivalsCount - 샘플 데이터:', sampleData)
+    
+    let query = supabase
+      .from('tour_festivals')
+      .select('*', { count: 'exact', head: true })
+    
+    if (activeOnly) {
+      // event_end_date가 null이거나 오늘 이후인 경우
+      query = query.or(`event_end_date.gte.${today},event_end_date.is.null`)
+      console.log('[DEBUG] getTourFestivalsCount - filter applied: event_end_date >=', today)
+    }
+    
+    const { count, error } = await query
+    console.log('[DEBUG] getTourFestivalsCount - 필터 후 개수:', { count, error })
+    
+    if (error) throw error
+    
+    return count || 0
+  } catch (err) {
+    console.error('TourFestivals 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * TourAPI 전체 통계 조회
+ * @returns {Promise<Object>} { success, stats: { spots, festivals } }
+ */
+export const getTourApiStats = async () => {
+  try {
+    console.log('[DEBUG] getTourApiStats - 시작')
+    const stats = {
+      spots: {},
+      festivals: 0
+    }
+    
+    // 관광정보 타입별 개수
+    const contentTypes = ['12', '14', '28', '32', '38', '39']
+    const typeNames = {
+      '12': '관광지',
+      '14': '문화시설',
+      '28': '레포츠',
+      '32': '숙박',
+      '38': '쇼핑',
+      '39': '음식점'
+    }
+    
+    for (const typeId of contentTypes) {
+      const count = await getTourSpotsCount(typeId)
+      console.log(`[DEBUG] getTourApiStats - spots[${typeId}]:`, count)
+      stats.spots[typeId] = { name: typeNames[typeId], count }
+    }
+    
+    // 행사/축제 개수 (전체 - 종료된 것 포함)
+    stats.festivals = await getTourFestivalsCount(false)
+    console.log('[DEBUG] getTourApiStats - festivals:', stats.festivals)
+    console.log('[DEBUG] getTourApiStats - 최종 결과:', stats)
+    
+    return { success: true, stats }
+  } catch (err) {
+    console.error('TourAPI 통계 조회 에러:', err)
+    return { success: false, stats: { spots: {}, festivals: 0 } }
+  }
+}
 

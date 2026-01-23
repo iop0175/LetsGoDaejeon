@@ -3,7 +3,7 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getAllDbData } from '../../services/dbService'
+import { getTourFestivals } from '../../services/dbService'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import './FestivalSection.css'
@@ -82,30 +82,32 @@ const FestivalSection = () => {
 
   const fetchFestivals = async () => {
     try {
-      // DB에서 가져오기
-      const dbResult = await getAllDbData('festival');
-      if (dbResult.success && dbResult.items.length > 0) {
+      // tour_festivals에서 행사/축제 데이터 가져오기
+      const tourResult = await getTourFestivals(true, 1, 10)
+      
+      if (tourResult.success && tourResult.items.length > 0) {
         // 현재 날짜 기준으로 종료되지 않은 축제만 필터링
         const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-        const activeItems = dbResult.items.filter(item => {
-          if (!item.endDt) return true
-          const endDate = item.endDt.replace(/-/g, '')
-          return endDate >= today
+        const activeItems = tourResult.items.filter(item => {
+          if (!item.event_end_date) return true
+          return item.event_end_date >= today
         })
         
         // 시작일 가까운 순으로 정렬
         const sortedItems = activeItems.sort((a, b) => {
-          const aBegin = a.beginDt ? parseInt(a.beginDt.replace(/-/g, '')) : 99999999
-          const bBegin = b.beginDt ? parseInt(b.beginDt.replace(/-/g, '')) : 99999999
+          const aBegin = a.event_start_date ? parseInt(a.event_start_date) : 99999999
+          const bBegin = b.event_start_date ? parseInt(b.event_start_date) : 99999999
           return aBegin - bBegin
         })
         
         const formattedFestivals = sortedItems.slice(0, 10).map((item, idx) => {
-          // 기간 포맷팅 (beginDt ~ endDt)
+          // 기간 포맷팅 (event_start_date ~ event_end_date)
           const formatPeriod = () => {
-            if (!item.beginDt) return ''
-            const begin = item.beginDt.replace(/-/g, '.')
-            const end = item.endDt ? item.endDt.replace(/-/g, '.') : ''
+            if (!item.event_start_date) return ''
+            const begin = `${item.event_start_date.slice(0,4)}.${item.event_start_date.slice(4,6)}.${item.event_start_date.slice(6,8)}`
+            const end = item.event_end_date 
+              ? `${item.event_end_date.slice(0,4)}.${item.event_end_date.slice(4,6)}.${item.event_end_date.slice(6,8)}`
+              : ''
             return end ? `${begin} - ${end}` : begin
           }
           
@@ -113,20 +115,20 @@ const FestivalSection = () => {
             id: idx + 1,
             title: { ko: item.title, en: item.title },
             period: formatPeriod(),
-            location: { ko: item.placeCdNm || item.placeDetail || '', en: item.placeCdNm || item.placeDetail || '' },
-            image: item.imageUrl || getFestivalImage(item.title),
-            summary: item.raw_data?.eventSumm || '',
-            theme: item.themeCdNm
+            location: { ko: item.addr1 || '', en: item.addr1 || '' },
+            image: item.firstimage || item.firstimage2 || getFestivalImage(item.title),
+            summary: item.overview || '',
+            theme: ''
           }
         })
         setFestivals(formattedFestivals)
       } else {
-        // DB에 데이터가 없으면 기본 데이터 사용
-        setFestivals(defaultFestivals)
+        // tour_festivals에 진행중/예정 행사가 없으면 빈 배열
+        setFestivals([])
       }
     } catch (error) {
-
-      setFestivals(defaultFestivals)
+      console.error('축제 데이터 로드 실패:', error)
+      setFestivals([])
     }
     setLoading(false)
   }
@@ -152,6 +154,10 @@ const FestivalSection = () => {
         {loading ? (
           <div className="festival-loading">
             <FiLoader className="loading-spinner" />
+          </div>
+        ) : festivals.length === 0 ? (
+          <div className="festival-empty">
+            <p>{t.festivalSection.noFestivals || '현재 진행중인 행사가 없습니다.'}</p>
           </div>
         ) : (
           <Swiper

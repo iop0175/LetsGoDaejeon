@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getAllDbData } from '../services/dbService';
-import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch } from 'react-icons/fi';
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
+import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
+import { handleImageError } from '../utils/imageUtils';
 import './ShoppingPage.css';
 
 // 대전시 구 목록
@@ -60,17 +61,36 @@ const ShoppingPage = () => {
   const fetchAllShops = async () => {
     setLoading(true);
     try {
-      // DB에서 데이터 가져오기
-      const dbResult = await getAllDbData('shopping');
+      // 먼저 tour_spots에서 쇼핑(38) 데이터 시도
+      const tourResult = await getTourSpotsDb('38', 1, 1000);
       
-      if (dbResult.success && dbResult.items.length > 0) {
-        setAllShops(dbResult.items);
+      if (tourResult.success && tourResult.items.length > 0) {
+        console.log('[DEBUG] ShoppingPage - 샘플 TourAPI 데이터:', tourResult.items[0])
+        // TourAPI 데이터를 기존 형식으로 변환
+        const formattedItems = tourResult.items.map(item => ({
+          shppgNm: item.title,
+          shppgAddr: item.addr1 || item.addr2,
+          shppgIntro: item.overview || '',
+          telNo: item.tel,
+          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          mapx: item.mapx,
+          mapy: item.mapy,
+          _source: 'tourapi'
+        }));
+        console.log('[DEBUG] ShoppingPage - 변환된 데이터:', formattedItems[0])
+        setAllShops(formattedItems);
       } else {
-        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
-        setAllShops([]);
+        // tour_spots에 데이터가 없으면 기존 shopping_places 테이블 시도
+        const dbResult = await getAllDbData('shopping');
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          setAllShops(dbResult.items);
+        } else {
+          setAllShops([]);
+        }
       }
     } catch (error) {
-
+      console.error('쇼핑 데이터 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -240,53 +260,63 @@ const ShoppingPage = () => {
           <div className="shopping-grid">
             {paginatedShops.map((shop, index) => (
               <div key={index} className="shopping-card">
-                <div className="shopping-card-header">
-                  <div className="shopping-icon">
-                    {getIcon(shop.shppgNm)}
+                <div className="shopping-image">
+                  <img 
+                    src={shop.imageUrl || '/images/no-image.svg'} 
+                    alt={shop.shppgNm} 
+                    loading="lazy"
+                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                  />
+                </div>
+                <div className="shopping-card-content">
+                  <div className="shopping-card-header">
+                    <div className="shopping-icon">
+                      {getIcon(shop.shppgNm)}
+                    </div>
+                    <div className="shopping-title">
+                      <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
+                      {shop.salsTime && (
+                        <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="shopping-title">
-                    <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
-                    {shop.salsTime && (
-                      <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
+                    
+                  <div className="shop-info">
+                    {shop.shppgAddr && (
+                      <div className="info-item">
+                        <FiMapPin />
+                        <span>{shop.shppgAddr}</span>
+                      </div>
+                    )}
+                    {shop.shppgInqrTel && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
+                      </div>
+                    )}
+                    {shop.shppgIntrd && (
+                      <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
+                    )}
+                    {shop.shppgHmpgUrl && (
+                      <a 
+                        href={shop.shppgHmpgUrl} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="homepage-link"
+                      >
+                        {language === 'ko' ? '홈페이지' : 'Website'}
+                      </a>
                     )}
                   </div>
-                </div>
-                  
-                <div className="shop-info">
-                  {shop.shppgAddr && (
-                    <div className="info-item">
-                      <FiMapPin />
-                      <span>{shop.shppgAddr}</span>
-                    </div>
-                  )}
-                  {shop.shppgInqrTel && (
-                    <div className="info-item">
-                      <FiPhone />
-                      <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
-                    </div>
-                  )}
-                  {shop.shppgIntrd && (
-                    <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
-                  )}
-                  {shop.shppgHmpgUrl && (
-                    <a 
-                      href={shop.shppgHmpgUrl} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="homepage-link"
-                    >
-                      {language === 'ko' ? '홈페이지' : 'Website'}
-                    </a>
-                  )}
-                </div>
 
-                <button 
-                  className="navigate-btn"
-                  onClick={() => handleNavigate(shop)}
-                >
-                  <FiNavigation />
-                  {t.navigate}
-                </button>
+                  <button 
+                    className="navigate-btn"
+                    onClick={() => handleNavigate(shop)}
+                  >
+                    <FiNavigation />
+                    {t.navigate}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

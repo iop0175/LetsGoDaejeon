@@ -61,6 +61,22 @@
   animation: spin 1s linear infinite;
 }
 
+.festival-empty {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  background: var(--card-bg, white);
+  border-radius: 12px;
+  border: 1px dashed var(--border-color, #e0e0e0);
+  margin-bottom: 48px;
+}
+
+.festival-empty p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+}
+
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }

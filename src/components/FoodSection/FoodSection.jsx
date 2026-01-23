@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getAllDbData } from '../../services/dbService'
+import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import './FoodSection.css'
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -101,28 +101,29 @@ const FoodSection = () => {
 
   const fetchFoods = async () => {
     try {
-      // DB에서 가져오기
-      const dbResult = await getAllDbData('food');
-      if (dbResult.success && dbResult.items.length > 0) {
-        const formattedFoods = dbResult.items.slice(0, 4).map((item, idx) => ({
+      // tour_spots에서 음식점(39) 데이터 가져오기
+      const tourResult = await getTourSpotsDb('39', 1, 4)
+      
+      if (tourResult.success && tourResult.items.length > 0) {
+        const formattedFoods = tourResult.items.map((item, idx) => ({
           id: idx + 1,
-          name: { ko: item.restrntNm, en: item.restrntNm },
-          category: { ko: item.rprsFod || '한식', en: item.rprsFod || 'Korean' },
+          name: { ko: item.title, en: item.title },
+          category: { ko: '맛집', en: 'Restaurant' },
           description: { 
-            ko: item.restrntSumm || `${item.restrntNm}의 맛있는 음식을 즐겨보세요`,
-            en: item.restrntSumm || `Enjoy delicious food at ${item.restrntNm}`
+            ko: item.overview?.slice(0, 60) || `${item.title}의 맛있는 음식을 즐겨보세요`,
+            en: item.overview?.slice(0, 60) || `Enjoy delicious food at ${item.title}`
           },
           rating: (4 + Math.random() * 0.9).toFixed(1),
-          image: item.imageUrl || getFoodImage(item.restrntNm, item.rprsFod),
-          location: { ko: extractDistrict(item.restrntAddr), en: extractDistrict(item.restrntAddr) }
+          image: item.firstimage || item.firstimage2 || getFoodImage(item.title, ''),
+          location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) }
         }))
         setFoods(formattedFoods)
       } else {
-        // DB에 데이터가 없으면 기본 데이터 사용
+        // tour_spots에 데이터가 없으면 기본 데이터 사용
         setFoods(defaultFoods)
       }
     } catch (error) {
-
+      console.error('맛집 데이터 로드 실패:', error)
       setFoods(defaultFoods)
     }
     setLoading(false)

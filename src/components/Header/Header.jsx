@@ -30,6 +30,7 @@ const Header = memo(() => {
   const moreMenuItems = [
     { path: '/parking', label: t.nav.parking },
     { path: '/culture', label: t.nav.culture },
+    { path: '/leisure', label: language === 'ko' ? '레포츠' : 'Leisure' },
     { path: '/medical', label: t.nav.medical },
     { path: '/shopping', label: t.nav.shopping },
     { path: '/accommodation', label: t.nav.accommodation },

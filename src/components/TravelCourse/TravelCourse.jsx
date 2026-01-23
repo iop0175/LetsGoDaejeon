@@ -106,9 +106,13 @@ const TravelCourse = memo(() => {
 
   // 길찾기
   const handleDirection = (spot) => {
-    if (spot.lat && spot.lng) {
-      const kakaoMapUrl = `https://map.kakao.com/link/to/${encodeURIComponent(spot.placeName)},${spot.lat},${spot.lng}`
-      window.open(kakaoMapUrl, '_blank')
+    const address = spot.address || spot.placeAddress
+    if (address) {
+      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(address)}`
+      window.open(kakaoSearchUrl, '_blank')
+    } else if (spot.placeName) {
+      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(spot.placeName)}`
+      window.open(kakaoSearchUrl, '_blank')
     }
   }
 

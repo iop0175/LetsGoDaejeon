@@ -1,11 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo } from 'react-icons/fi'
+import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, FiExternalLink, FiMusic, FiCamera } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getAllDbData } from '../services/dbService'
+import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
+import { handleImageError } from '../utils/imageUtils'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
   const { language, t } = useLanguage()
+  const [activeTab, setActiveTab] = useState('festival') // 'festival' or 'performance'
+  
+  // 축제/행사 상태
   const [allEvents, setAllEvents] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -14,6 +18,15 @@ const FestivalPage = () => {
   const [themeFilter, setThemeFilter] = useState('all')
   const [placeFilter, setPlaceFilter] = useState('all')
   const itemsPerPage = 12
+  
+  // 공연 상태
+  const [performances, setPerformances] = useState([])
+  const [performanceLoading, setPerformanceLoading] = useState(false)
+  const [performanceError, setPerformanceError] = useState(null)
+  const [performancePage, setPerformancePage] = useState(1)
+  const [selectedPerformance, setSelectedPerformance] = useState(null)
+  const [performanceSearchQuery, setPerformanceSearchQuery] = useState('')
+  const performanceItemsPerPage = 12
 
   // 시간 포맷 변환
   const formatTime = (time) => {
@@ -136,34 +149,60 @@ const FestivalPage = () => {
       setError(null)
       
       try {
-        // DB에서 데이터 가져오기
-        const dbResult = await getAllDbData('festival')
+        // 먼저 tour_festivals에서 데이터 시도
+        const tourResult = await getTourFestivals(true, 1, 1000)
         
-        if (dbResult.success && dbResult.items.length > 0) {
-          // DB 데이터 사용
-          const formattedEvents = dbResult.items.map((item, index) => ({
-            id: item._id || item.eventSeq || index + 1,
+        if (tourResult.success && tourResult.items.length > 0) {
+          // TourAPI 데이터 사용
+          const formattedEvents = tourResult.items.map((item, index) => ({
+            id: item.id || item.content_id || index + 1,
+            contentId: item.content_id,
             title: item.title,
-            theme: item.themeCdNm,
-            place: item.placeCdNm,
-            placeDetail: item.placeDetail,
-            target: item.targetCdNm,
-            management: item.managementCdNm,
-            beginDate: item.beginDt,
-            endDate: item.endDt,
-            beginTime: item.beginTm,
-            endTime: item.endTm,
-            isHot: item.hotYn === 'Y',
-            isRecommended: item.recommendationYn === 'Y',
-            image: item.imageUrl
+            theme: '', // TourAPI에는 테마가 없음
+            place: '',
+            placeDetail: item.addr1 || item.addr2,
+            beginDate: item.event_start_date 
+              ? `${item.event_start_date.slice(0, 4)}-${item.event_start_date.slice(4, 6)}-${item.event_start_date.slice(6, 8)}`
+              : '',
+            endDate: item.event_end_date
+              ? `${item.event_end_date.slice(0, 4)}-${item.event_end_date.slice(4, 6)}-${item.event_end_date.slice(6, 8)}`
+              : '',
+            image: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+            tel: item.tel,
+            overview: item.overview,
+            mapx: item.mapx,
+            mapy: item.mapy,
+            _source: 'tourapi'
           }))
           setAllEvents(formattedEvents)
         } else {
-          // DB에 데이터가 없으면 메시지 표시
-          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+          // tour_festivals에 데이터가 없으면 기존 festivals 테이블 시도
+          const dbResult = await getAllDbData('festival')
+          
+          if (dbResult.success && dbResult.items.length > 0) {
+            const formattedEvents = dbResult.items.map((item, index) => ({
+              id: item._id || item.eventSeq || index + 1,
+              title: item.title,
+              theme: item.themeCdNm,
+              place: item.placeCdNm,
+              placeDetail: item.placeDetail,
+              target: item.targetCdNm,
+              management: item.managementCdNm,
+              beginDate: item.beginDt,
+              endDate: item.endDt,
+              beginTime: item.beginTm,
+              endTime: item.endTm,
+              isHot: item.hotYn === 'Y',
+              isRecommended: item.recommendationYn === 'Y',
+              image: item.imageUrl
+            }))
+            setAllEvents(formattedEvents)
+          } else {
+            setError(language === 'ko' ? '관리자 페이지에서 TourAPI 데이터를 먼저 동기화해주세요.' : 'Please sync TourAPI data from admin page first.')
+          }
         }
       } catch (err) {
-
+        console.error('행사 데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       
@@ -172,6 +211,106 @@ const FestivalPage = () => {
 
     loadEvents()
   }, [language])
+  
+  // DB에서 공연 데이터 로드
+  useEffect(() => {
+    const loadPerformances = async () => {
+      if (activeTab !== 'performance') return
+      
+      setPerformanceLoading(true)
+      setPerformanceError(null)
+      
+      try {
+        // DB에서 활성화된 공연만 불러오기
+        const dbPerformances = await getDbPerformances(true)
+        
+        if (dbPerformances && dbPerformances.length > 0) {
+          // 검색어가 있으면 필터링
+          let filteredPerformances = dbPerformances
+          
+          if (performanceSearchQuery.length >= 2) {
+            const query = performanceSearchQuery.toLowerCase()
+            filteredPerformances = dbPerformances.filter(p => 
+              p.title?.toLowerCase().includes(query) ||
+              p.event_site?.toLowerCase().includes(query) ||
+              p.type?.toLowerCase().includes(query)
+            )
+          }
+          
+          // DB 데이터를 API 형식으로 변환
+          const performanceData = filteredPerformances.map(p => ({
+            title: p.title,
+            type: p.type,
+            eventPeriod: p.event_period,
+            eventSite: p.event_site,
+            charge: p.charge,
+            contactPoint: p.contact_point,
+            url: p.url,
+            imageObject: p.image_url,
+            description: p.description,
+            viewCount: p.view_count
+          }))
+          
+          // 시작일 기준 정렬 (가까운 날짜순)
+          performanceData.sort((a, b) => {
+            const aStart = parseInt((a.eventPeriod?.split(' ~ ')[0]?.trim()) || '99999999')
+            const bStart = parseInt((b.eventPeriod?.split(' ~ ')[0]?.trim()) || '99999999')
+            return aStart - bStart
+          })
+          
+          setPerformances(performanceData)
+        } else {
+          setPerformances([])
+          if (performanceSearchQuery.length >= 2) {
+            setPerformanceError(language === 'ko' ? '검색 결과가 없습니다.' : 'No results found.')
+          } else {
+            setPerformanceError(language === 'ko' ? '등록된 공연이 없습니다. 관리자에게 문의하세요.' : 'No performances available.')
+          }
+        }
+      } catch (err) {
+        console.error('공연 로드 실패:', err)
+        setPerformanceError(language === 'ko' ? '공연 정보를 불러오는데 실패했습니다.' : 'Failed to load performances.')
+      }
+      
+      setPerformanceLoading(false)
+    }
+    
+    loadPerformances()
+  }, [activeTab, performanceSearchQuery, language])
+  
+  // 탭 변경 시 페이지 리셋
+  useEffect(() => {
+    setCurrentPage(1)
+    setPerformancePage(1)
+  }, [activeTab])
+  
+  // 현재 페이지에 해당하는 공연 데이터
+  const paginatedPerformances = useMemo(() => {
+    const startIndex = (performancePage - 1) * performanceItemsPerPage
+    return performances.slice(startIndex, startIndex + performanceItemsPerPage)
+  }, [performances, performancePage])
+  
+  const totalPerformancePages = Math.ceil(performances.length / performanceItemsPerPage)
+  
+  // 공연 날짜 포맷
+  const formatPerformanceDate = (dateStr) => {
+    if (!dateStr) return ''
+    // 20260123 형식을 2026.01.23 형식으로 변환
+    if (dateStr.length === 8) {
+      return `${dateStr.slice(0, 4)}.${dateStr.slice(4, 6)}.${dateStr.slice(6, 8)}`
+    }
+    return dateStr
+  }
+  
+  // 공연 기간 파싱
+  const parseEventPeriod = (period) => {
+    if (!period) return { start: '', end: '' }
+    const parts = period.split(' ~ ')
+    return {
+      start: formatPerformanceDate(parts[0]?.trim()),
+      end: formatPerformanceDate(parts[1]?.trim())
+    }
+  }
 
   const totalPages = Math.ceil(filteredEvents.length / itemsPerPage)
 
@@ -199,200 +338,340 @@ const FestivalPage = () => {
       </div>
       
       <div className="container">
-        {loading ? (
-          <div className="loading-container">
-            <FiLoader className="loading-spinner" />
-            <p>{language === 'ko' ? '공연/행사 정보를 불러오는 중...' : 'Loading events...'}</p>
-          </div>
-        ) : error ? (
-          <div className="error-container">
-            <p>{error}</p>
-          </div>
-        ) : (
+        {/* 탭 네비게이션 */}
+        <div className="tab-navigation">
+          <button 
+            className={`tab-btn ${activeTab === 'festival' ? 'active' : ''}`}
+            onClick={() => setActiveTab('festival')}
+          >
+            <FiCalendar />
+            {language === 'ko' ? '축제/행사' : 'Festivals'}
+          </button>
+          <button 
+            className={`tab-btn ${activeTab === 'performance' ? 'active' : ''}`}
+            onClick={() => setActiveTab('performance')}
+          >
+            <FiMusic />
+            {language === 'ko' ? '문화공연' : 'Performances'}
+          </button>
+        </div>
+        
+        {/* 축제/행사 탭 */}
+        {activeTab === 'festival' && (
           <>
-            {/* 필터 섹션 */}
-            <div className="filter-section">
-              {/* 테마 필터 */}
-              {availableThemes.length > 0 && (
-                <div className="theme-filters">
-                  <span className="filter-label">{language === 'ko' ? '테마:' : 'Theme:'}</span>
-                  <div className="theme-buttons">
-                    <button
-                      className={`festival-theme-btn ${themeFilter === 'all' ? 'active' : ''}`}
-                      onClick={() => setThemeFilter('all')}
-                    >
-                      {language === 'ko' ? '전체' : 'All'}
-                    </button>
-                    {availableThemes.map((theme) => (
-                      <button
-                        key={theme}
-                        className={`festival-theme-btn ${themeFilter === theme ? 'active' : ''}`}
-                        onClick={() => setThemeFilter(theme)}
-                      >
-                        {theme}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* 장소 필터 */}
-              {availablePlaces.length > 0 && (
-                <div className="place-filters">
-                  <span className="filter-label">{language === 'ko' ? '장소:' : 'Place:'}</span>
-                  <div className="place-buttons">
-                    <button
-                      className={`place-btn ${placeFilter === 'all' ? 'active' : ''}`}
-                      onClick={() => setPlaceFilter('all')}
-                    >
-                      {language === 'ko' ? '전체' : 'All'}
-                    </button>
-                    {availablePlaces.map((place) => (
-                      <button
-                        key={place}
-                        className={`place-btn ${placeFilter === place ? 'active' : ''}`}
-                        onClick={() => setPlaceFilter(place)}
-                      >
-                        {place}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            <div className="events-count">
-              {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연/행사' : ' events'}
-            </div>
-            
-            <div className="festival-grid">
-              {paginatedEvents.map((event) => (
-                <div 
-                  key={event.id} 
-                  className="event-card"
-                  onClick={() => setSelectedEvent(event)}
-                >
-                  <div className="event-image">
-                    <img 
-                      src={`https://picsum.photos/seed/${encodeURIComponent(event.title)}/800/500`}
-                      alt={event.title}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = '/images/no-image.svg'
-                      }}
-                    />
-                    <div className="event-badges">
-                      <span className="theme-badge">{event.theme}</span>
-                      {event.isHot && <span className="hot-badge">🔥 HOT</span>}
-                      {event.isRecommended && <span className="rec-badge">⭐ {language === 'ko' ? '추천' : 'Recommended'}</span>}
-                    </div>
-                    <div className="event-overlay">
-                      <FiInfo className="info-icon" />
-                      <span>{language === 'ko' ? '상세보기' : 'View Details'}</span>
-                    </div>
-                  </div>
-                  <div className="event-content">
-                    <h3 className="event-title">{event.title}</h3>
-                    
-                    <div className="event-info">
-                      <div className="info-item">
-                        <FiCalendar />
-                        <span>
-                          {formatDate(event.beginDate)}
-                          {event.beginDate !== event.endDate && ` ~ ${formatDate(event.endDate)}`}
-                        </span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <FiClock />
-                        <span>{formatTime(event.beginTime)} ~ {formatTime(event.endTime)}</span>
-                      </div>
-                      
-                      <div className="info-item">
-                        <FiMapPin />
-                        <span>{event.place} {event.placeDetail && `(${event.placeDetail})`}</span>
-                      </div>
-                      
-                      {event.target && (
-                        <div className="info-item">
-                          <FiUser />
-                          <span>{event.target}</span>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {event.management && (
-                      <p className="event-management">
-                        {language === 'ko' ? '주관' : 'Organized by'}: {event.management}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            {/* 페이지네이션 */}
-            <div className="pagination">
-              <button 
-                className="page-btn"
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
-                {language === 'ko' ? '이전' : 'Prev'}
-              </button>
-              
-              <div className="page-numbers">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let pageNum
-                  if (totalPages <= 5) {
-                    pageNum = i + 1
-                  } else if (currentPage <= 3) {
-                    pageNum = i + 1
-                  } else if (currentPage >= totalPages - 2) {
-                    pageNum = totalPages - 4 + i
-                  } else {
-                    pageNum = currentPage - 2 + i
-                  }
-                  return (
-                    <button
-                      key={pageNum}
-                      className={`page-num ${currentPage === pageNum ? 'active' : ''}`}
-                      onClick={() => setCurrentPage(pageNum)}
-                    >
-                      {pageNum}
-                    </button>
-                  )
-                })}
+            {loading ? (
+              <div className="loading-container">
+                <FiLoader className="loading-spinner" />
+                <p>{language === 'ko' ? '공연/행사 정보를 불러오는 중...' : 'Loading events...'}</p>
               </div>
-              
-              <button 
-                className="page-btn"
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
-                {language === 'ko' ? '다음' : 'Next'}
-              </button>
-            </div>
+            ) : error ? (
+              <div className="error-container">
+                <p>{error}</p>
+              </div>
+            ) : (
+              <>
+                {/* 필터 섹션 */}
+                <div className="filter-section">
+                  {availableThemes.length > 0 && (
+                    <div className="theme-filters">
+                      <span className="filter-label">{language === 'ko' ? '테마:' : 'Theme:'}</span>
+                      <div className="theme-buttons">
+                        <button
+                          className={`festival-theme-btn ${themeFilter === 'all' ? 'active' : ''}`}
+                          onClick={() => setThemeFilter('all')}
+                        >
+                          {language === 'ko' ? '전체' : 'All'}
+                        </button>
+                        {availableThemes.map((theme) => (
+                          <button
+                            key={theme}
+                            className={`festival-theme-btn ${themeFilter === theme ? 'active' : ''}`}
+                            onClick={() => setThemeFilter(theme)}
+                          >
+                            {theme}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {availablePlaces.length > 0 && (
+                    <div className="place-filters">
+                      <span className="filter-label">{language === 'ko' ? '장소:' : 'Place:'}</span>
+                      <div className="place-buttons">
+                        <button
+                          className={`place-btn ${placeFilter === 'all' ? 'active' : ''}`}
+                          onClick={() => setPlaceFilter('all')}
+                        >
+                          {language === 'ko' ? '전체' : 'All'}
+                        </button>
+                        {availablePlaces.map((place) => (
+                          <button
+                            key={place}
+                            className={`place-btn ${placeFilter === place ? 'active' : ''}`}
+                            onClick={() => setPlaceFilter(place)}
+                          >
+                            {place}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                
+                <div className="events-count">
+                  {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연/행사' : ' events'}
+                </div>
+                
+                {filteredEvents.length === 0 ? (
+                  <div className="events-empty">
+                    <FiCalendar className="empty-icon" />
+                    <p>{language === 'ko' ? '현재 진행중인 행사가 없습니다.' : 'No events are currently available.'}</p>
+                  </div>
+                ) : (
+                  <div className="festival-grid">
+                    {paginatedEvents.map((event) => (
+                    <div 
+                      key={event.id} 
+                      className="event-card"
+                      onClick={() => setSelectedEvent(event)}
+                    >
+                      <div className="event-image">
+                        <img 
+                          src={`https://picsum.photos/seed/${encodeURIComponent(event.title)}/800/500`}
+                          alt={event.title}
+                          loading="lazy"
+                          onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                        />
+                        <div className="event-badges">
+                          <span className="theme-badge">{event.theme}</span>
+                          {event.isHot && <span className="hot-badge">🔥 HOT</span>}
+                          {event.isRecommended && <span className="rec-badge">⭐ {language === 'ko' ? '추천' : 'Recommended'}</span>}
+                        </div>
+                        <div className="event-overlay">
+                          <FiInfo className="info-icon" />
+                          <span>{language === 'ko' ? '상세보기' : 'View Details'}</span>
+                        </div>
+                      </div>
+                      <div className="event-content">
+                        <h3 className="event-title">{event.title}</h3>
+                        <div className="event-info">
+                          <div className="info-item">
+                            <FiCalendar />
+                            <span>
+                              {formatDate(event.beginDate)}
+                              {event.beginDate !== event.endDate && ` ~ ${formatDate(event.endDate)}`}
+                            </span>
+                          </div>
+                          <div className="info-item">
+                            <FiClock />
+                            <span>{formatTime(event.beginTime)} ~ {formatTime(event.endTime)}</span>
+                          </div>
+                          <div className="info-item">
+                            <FiMapPin />
+                            <span>{event.place} {event.placeDetail && `(${event.placeDetail})`}</span>
+                          </div>
+                          {event.target && (
+                            <div className="info-item">
+                              <FiUser />
+                              <span>{event.target}</span>
+                            </div>
+                          )}
+                        </div>
+                        {event.management && (
+                          <p className="event-management">
+                            {language === 'ko' ? '주관' : 'Organized by'}: {event.management}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  </div>
+                )}
+                
+                {/* 페이지네이션 */}
+                {totalPages > 1 && (
+                  <div className="pagination">
+                    <button 
+                      className="page-btn"
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                    >
+                      {language === 'ko' ? '이전' : 'Prev'}
+                    </button>
+                    <div className="page-numbers">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum
+                        if (totalPages <= 5) {
+                          pageNum = i + 1
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i
+                        } else {
+                          pageNum = currentPage - 2 + i
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`page-num ${currentPage === pageNum ? 'active' : ''}`}
+                            onClick={() => setCurrentPage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <button 
+                      className="page-btn"
+                      onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                    >
+                      {language === 'ko' ? '다음' : 'Next'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+        
+        {/* 문화공연 탭 */}
+        {activeTab === 'performance' && (
+          <>
+            {performanceLoading ? (
+              <div className="loading-container">
+                <FiLoader className="loading-spinner" />
+                <p>{language === 'ko' ? '공연 정보를 불러오는 중...' : 'Loading performances...'}</p>
+              </div>
+            ) : performanceError ? (
+              <div className="error-container">
+                <p>{performanceError}</p>
+              </div>
+            ) : (
+              <>
+                <div className="performance-info-banner">
+                  <FiInfo />
+                  <span>{language === 'ko' ? 'KCISA(한국문화정보원) 제공 대전 지역 공연 정보입니다.' : 'Performance information provided by KCISA for Daejeon area.'}</span>
+                </div>
+                
+                <div className="events-count">
+                  {t.common.total} <strong>{performances.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연' : ' performances'}
+                </div>
+                
+                <div className="festival-grid">
+                  {paginatedPerformances.map((perf, index) => {
+                    const period = parseEventPeriod(perf.eventPeriod)
+                    return (
+                      <div 
+                        key={index} 
+                        className="event-card performance-card"
+                        onClick={() => setSelectedPerformance(perf)}
+                      >
+                        <div className="event-image">
+                          <img 
+                            src={perf.imageObject || '/images/no-image.svg'}
+                            alt={perf.title}
+                            loading="lazy"
+                            onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                          />
+                          <div className="event-badges">
+                            <span className="theme-badge performance-badge">
+                              <FiMusic /> {language === 'ko' ? '공연' : 'Performance'}
+                            </span>
+                          </div>
+                          <div className="event-overlay">
+                            <FiInfo className="info-icon" />
+                            <span>{language === 'ko' ? '상세보기' : 'View Details'}</span>
+                          </div>
+                        </div>
+                        <div className="event-content">
+                          <h3 className="event-title">{perf.title?.replace(/\[대전\]\s*/gi, '').replace(/\[대전 서구\]\s*/gi, '')}</h3>
+                          <div className="event-info">
+                            <div className="info-item">
+                              <FiCalendar />
+                              <span>{period.start}{period.end && period.start !== period.end ? ` ~ ${period.end}` : ''}</span>
+                            </div>
+                            {perf.eventSite && (
+                              <div className="info-item">
+                                <FiMapPin />
+                                <span>{perf.eventSite}</span>
+                              </div>
+                            )}
+                            {perf.contactPoint && (
+                              <div className="info-item">
+                                <FiPhone />
+                                <span>{perf.contactPoint}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                
+                {/* 공연 페이지네이션 */}
+                {totalPerformancePages > 1 && (
+                  <div className="pagination">
+                    <button 
+                      className="page-btn"
+                      onClick={() => setPerformancePage(p => Math.max(1, p - 1))}
+                      disabled={performancePage === 1}
+                    >
+                      {language === 'ko' ? '이전' : 'Prev'}
+                    </button>
+                    <div className="page-numbers">
+                      {Array.from({ length: Math.min(5, totalPerformancePages) }, (_, i) => {
+                        let pageNum
+                        if (totalPerformancePages <= 5) {
+                          pageNum = i + 1
+                        } else if (performancePage <= 3) {
+                          pageNum = i + 1
+                        } else if (performancePage >= totalPerformancePages - 2) {
+                          pageNum = totalPerformancePages - 4 + i
+                        } else {
+                          pageNum = performancePage - 2 + i
+                        }
+                        return (
+                          <button
+                            key={pageNum}
+                            className={`page-num ${performancePage === pageNum ? 'active' : ''}`}
+                            onClick={() => setPerformancePage(pageNum)}
+                          >
+                            {pageNum}
+                          </button>
+                        )
+                      })}
+                    </div>
+                    <button 
+                      className="page-btn"
+                      onClick={() => setPerformancePage(p => Math.min(totalPerformancePages, p + 1))}
+                      disabled={performancePage === totalPerformancePages}
+                    >
+                      {language === 'ko' ? '다음' : 'Next'}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </>
         )}
       </div>
       
-      {/* 상세 정보 모달 */}
+      {/* 축제 상세 정보 모달 */}
       {selectedEvent && (
         <div className="modal-overlay festival-modal" onClick={closeModal}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="modal-close" onClick={closeModal}>
               <FiX />
             </button>
-            
             <div className="modal-header">
               <div className="modal-image">
                 <img 
                   src={`https://picsum.photos/seed/${encodeURIComponent(selectedEvent.title)}/1200/600`}
                   alt={selectedEvent.title}
-                  onError={(e) => {
-                    e.target.src = '/images/no-image.svg'
-                  }}
+                  onError={(e) => { e.target.src = '/images/no-image.svg' }}
                 />
                 <div className="modal-badges">
                   <span className="theme-badge">{selectedEvent.theme}</span>
@@ -401,10 +680,8 @@ const FestivalPage = () => {
                 </div>
               </div>
             </div>
-            
             <div className="modal-body">
               <h2 className="modal-title">{selectedEvent.title}</h2>
-              
               <div className="modal-details">
                 <div className="detail-row">
                   <div className="detail-label">
@@ -423,7 +700,6 @@ const FestivalPage = () => {
                     </p>
                   </div>
                 </div>
-                
                 <div className="detail-row">
                   <div className="detail-label">
                     <FiMapPin />
@@ -436,7 +712,6 @@ const FestivalPage = () => {
                     )}
                   </div>
                 </div>
-                
                 {selectedEvent.target && (
                   <div className="detail-row">
                     <div className="detail-label">
@@ -448,7 +723,6 @@ const FestivalPage = () => {
                     </div>
                   </div>
                 )}
-                
                 {selectedEvent.management && (
                   <div className="detail-row">
                     <div className="detail-label">
@@ -461,12 +735,122 @@ const FestivalPage = () => {
                   </div>
                 )}
               </div>
-              
               <div className="modal-actions">
                 <button className="btn-primary">
                   {language === 'ko' ? '예매하기' : 'Book Now'}
                 </button>
                 <button className="btn-secondary" onClick={closeModal}>
+                  {language === 'ko' ? '닫기' : 'Close'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 공연 상세 정보 모달 */}
+      {selectedPerformance && (
+        <div className="modal-overlay festival-modal" onClick={() => setSelectedPerformance(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <button className="modal-close" onClick={() => setSelectedPerformance(null)}>
+              <FiX />
+            </button>
+            <div className="modal-header">
+              <div className="modal-image">
+                <img 
+                  src={selectedPerformance.imageObject || '/images/no-image.svg'}
+                  alt={selectedPerformance.title}
+                  onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                />
+                <div className="modal-badges">
+                  <span className="theme-badge performance-badge">
+                    <FiMusic /> {language === 'ko' ? '공연' : 'Performance'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="modal-body">
+              <h2 className="modal-title">{selectedPerformance.title?.replace(/\[대전\]\s*/gi, '').replace(/\[대전 서구\]\s*/gi, '')}</h2>
+              <div className="modal-details">
+                <div className="detail-row">
+                  <div className="detail-label">
+                    <FiCalendar />
+                    {language === 'ko' ? '공연기간' : 'Period'}
+                  </div>
+                  <div className="detail-value">
+                    <p>{(() => {
+                      const period = parseEventPeriod(selectedPerformance.eventPeriod)
+                      return `${period.start}${period.end && period.start !== period.end ? ` ~ ${period.end}` : ''}`
+                    })()}</p>
+                  </div>
+                </div>
+                {selectedPerformance.eventSite && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiMapPin />
+                      {language === 'ko' ? '공연장소' : 'Venue'}
+                    </div>
+                    <div className="detail-value">
+                      <p className="venue-main">{selectedPerformance.eventSite}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedPerformance.contactPoint && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiPhone />
+                      {language === 'ko' ? '문의' : 'Contact'}
+                    </div>
+                    <div className="detail-value">
+                      <p>{selectedPerformance.contactPoint}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedPerformance.charge && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiInfo />
+                      {language === 'ko' ? '요금' : 'Price'}
+                    </div>
+                    <div className="detail-value">
+                      <p className="charge-info">{selectedPerformance.charge}</p>
+                    </div>
+                  </div>
+                )}
+                {selectedPerformance.description && (
+                  <div className="detail-row description-row">
+                    <div className="detail-label">
+                      <FiInfo />
+                      {language === 'ko' ? '공연소개' : 'Description'}
+                    </div>
+                    <div className="detail-value">
+                      <div 
+                        className="performance-description"
+                        dangerouslySetInnerHTML={{ 
+                          __html: selectedPerformance.description
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&amp;/g, '&')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&nbsp;/g, ' ')
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-actions">
+                {selectedPerformance.url && (
+                  <a 
+                    href={selectedPerformance.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="btn-primary"
+                  >
+                    <FiExternalLink /> {language === 'ko' ? '상세정보 보기' : 'View Details'}
+                  </a>
+                )}
+                <button className="btn-secondary" onClick={() => setSelectedPerformance(null)}>
                   {language === 'ko' ? '닫기' : 'Close'}
                 </button>
               </div>

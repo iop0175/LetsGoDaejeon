@@ -344,9 +344,9 @@ const ParkingPage = () => {
                     )}
                   </div>
 
-                  {item.lat && item.lon && (
+                  {(item.addrRoad || item.addr) && (
                     <a 
-                      href={`https://map.kakao.com/link/to/${encodeURIComponent(item.name)},${item.lat},${item.lon}`}
+                      href={`https://map.kakao.com/link/search/${encodeURIComponent(item.addrRoad || item.addr)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="parking-nav-btn"

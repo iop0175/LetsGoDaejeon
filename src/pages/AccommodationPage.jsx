@@ -1,8 +1,9 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
-import { getAllDbData } from '../services/dbService';
-import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch } from 'react-icons/fi';
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
+import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
+import { handleImageError } from '../utils/imageUtils';
 import './AccommodationPage.css';
 
 // 대전시 구 목록
@@ -79,17 +80,35 @@ const AccommodationPage = () => {
   const fetchAllRooms = async () => {
     setLoading(true);
     try {
-      // DB에서 데이터 가져오기
-      const dbResult = await getAllDbData('accommodation');
+      // 먼저 tour_spots에서 숙박(32) 데이터 시도
+      const tourResult = await getTourSpotsDb('32', 1, 1000);
       
-      if (dbResult.success && dbResult.items.length > 0) {
-        setAllRooms(dbResult.items);
+      if (tourResult.success && tourResult.items.length > 0) {
+        // TourAPI 데이터를 기존 형식으로 변환
+        const formattedItems = tourResult.items.map(item => ({
+          romsNm: item.title,
+          romsAddr: item.addr1 || item.addr2,
+          romsScl: '', // TourAPI에는 숙소유형이 없음
+          romsRefadNo: item.tel,
+          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          mapx: item.mapx,
+          mapy: item.mapy,
+          overview: item.overview,
+          _source: 'tourapi'
+        }));
+        setAllRooms(formattedItems);
       } else {
-        // DB에 데이터가 없으면 빈 배열 (관리자 페이지에서 저장 필요)
-        setAllRooms([]);
+        // tour_spots에 데이터가 없으면 기존 accommodations 테이블 시도
+        const dbResult = await getAllDbData('accommodation');
+        
+        if (dbResult.success && dbResult.items.length > 0) {
+          setAllRooms(dbResult.items);
+        } else {
+          setAllRooms([]);
+        }
       }
     } catch (error) {
-
+      console.error('숙박 데이터 로드 실패:', error);
     } finally {
       setLoading(false);
     }
@@ -277,55 +296,65 @@ const AccommodationPage = () => {
           <div className="accommodation-grid">
             {paginatedRooms.map((room, index) => (
               <div key={index} className="accommodation-card">
-                <div className="accommodation-card-header">
-                  <div className="accommodation-icon">
-                    {getIcon(room.romsNm)}
+                <div className="accommodation-image">
+                  <img 
+                    src={room.imageUrl || '/images/no-image.svg'} 
+                    alt={room.romsNm} 
+                    loading="lazy"
+                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                  />
+                </div>
+                <div className="accommodation-card-content">
+                  <div className="accommodation-card-header">
+                    <div className="accommodation-icon">
+                      {getIcon(room.romsNm)}
+                    </div>
+                    <div className="accommodation-title">
+                      <h3>{room.romsNm || '숙박시설'}</h3>
+                      {room.romsScl && (
+                        <span className="room-type">{room.romsScl}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="accommodation-title">
-                    <h3>{room.romsNm || '숙박시설'}</h3>
-                    {room.romsScl && (
-                      <span className="room-type">{room.romsScl}</span>
+                  
+                  <div className="accommodation-info">
+                    {room.romsAddr && (
+                      <div className="info-item">
+                        <FiMapPin />
+                        <span>{room.romsAddr}</span>
+                      </div>
+                    )}
+                    {room.romsDtlAddr && room.romsDtlAddr !== room.romsAddr && (
+                      <div className="info-item detail">
+                        <span>{room.romsDtlAddr}</span>
+                      </div>
+                    )}
+                    {room.romsRefadNo && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <a href={`tel:${room.romsRefadNo}`}>{room.romsRefadNo}</a>
+                      </div>
+                    )}
+                    {room.romsHmpgAddr && (
+                      <a 
+                        href={room.romsHmpgAddr} 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="homepage-link"
+                      >
+                        {language === 'ko' ? '홈페이지' : 'Website'}
+                      </a>
                     )}
                   </div>
-                </div>
-                
-                <div className="accommodation-info">
-                  {room.romsAddr && (
-                    <div className="info-item">
-                      <FiMapPin />
-                      <span>{room.romsAddr}</span>
-                    </div>
-                  )}
-                  {room.romsDtlAddr && room.romsDtlAddr !== room.romsAddr && (
-                    <div className="info-item detail">
-                      <span>{room.romsDtlAddr}</span>
-                    </div>
-                  )}
-                  {room.romsRefadNo && (
-                    <div className="info-item">
-                      <FiPhone />
-                      <a href={`tel:${room.romsRefadNo}`}>{room.romsRefadNo}</a>
-                    </div>
-                  )}
-                  {room.romsHmpgAddr && (
-                    <a 
-                      href={room.romsHmpgAddr} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="homepage-link"
-                    >
-                      {language === 'ko' ? '홈페이지' : 'Website'}
-                    </a>
-                  )}
-                </div>
 
-                <button 
-                  className="navigate-btn"
-                  onClick={() => handleNavigate(room)}
-                >
-                  <FiNavigation />
-                  {t.navigate}
-                </button>
+                  <button 
+                    className="navigate-btn"
+                    onClick={() => handleNavigate(room)}
+                  >
+                    <FiNavigation />
+                    {t.navigate}
+                  </button>
+                </div>
               </div>
             ))}
           </div>

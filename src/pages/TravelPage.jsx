@@ -3,7 +3,7 @@ import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, Fi
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpotImage } from '../services/api'
-import { getAllDbData } from '../services/dbService'
+import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
 import TravelCard from '../components/TravelCard/TravelCard'
@@ -45,7 +45,8 @@ const TravelPage = () => {
   // 지역 추출 함수
   const extractDistrict = (address) => {
     if (!address) return { ko: '대전', en: 'Daejeon', district: null }
-    const match = address.match(/대전\s*(시)?\s*(\S+구)/)
+    // "대전광역시", "대전시", "대전" 모두 지원
+    const match = address.match(/대전\s*(광역시|시)?\s*(\S+구)/)
     if (match) {
       const district = match[2]
       const districtMap = {
@@ -145,9 +146,7 @@ const TravelPage = () => {
     try {
       const result = await getUserTripPlans(user?.id || 'anonymous')
       if (result.success) {
-        // 일차 정보가 있는 여행만 필터링
-        const tripsWithDays = result.plans.filter(plan => plan.days && plan.days.length > 0)
-        setTripPlans(tripsWithDays)
+        setTripPlans(result.plans)
       }
     } catch (err) {
       console.error('Failed to load trips:', err)
@@ -207,36 +206,58 @@ const TravelPage = () => {
       setError(null)
       
       try {
-        // DB에서 데이터 가져오기
-        const dbResult = await getAllDbData('travel')
+        // 먼저 tour_spots에서 관광지(12) 데이터 시도
+        const tourResult = await getTourSpotsDb('12', 1, 1000)
         
-        if (dbResult.success && dbResult.items.length > 0) {
-          // DB 데이터 사용
-          const formattedSpots = dbResult.items.map((item, index) => {
-            const district = extractDistrict(item.tourspotAddr || item.tourspotDtlAddr)
+        if (tourResult.success && tourResult.items.length > 0) {
+          // TourAPI 데이터 사용
+          const formattedSpots = tourResult.items.map((item, index) => {
+            const district = extractDistrict(item.addr1 || item.addr2)
             return {
-              id: item._id || index + 1,
-              title: item.tourspotNm,
+              id: item.id || item.content_id || index + 1,
+              contentId: item.content_id,
+              title: item.title,
               location: district,
-              address: item.tourspotDtlAddr || item.tourspotAddr,
-              summary: item.tourspotSumm,
-              phone: item.refadNo,
-              time: item.mngTime,
-              fee: item.tourUtlzAmt,
-              parking: item.pkgFclt,
-              url: item.urlAddr,
-              image: item.imageUrl || getTourSpotImage(item.tourspotNm),
-              image_author: item.image_author,
-              image_source: item.image_source
+              address: item.addr1 || item.addr2,
+              summary: item.overview || '',
+              phone: item.tel,
+              image: item.firstimage || item.firstimage2 || getTourSpotImage(item.title),
+              mapx: item.mapx,
+              mapy: item.mapy,
+              homepage: item.homepage
             }
           })
           setAllSpots(formattedSpots)
         } else {
-          // DB에 데이터가 없으면 메시지 표시
-          setError(language === 'ko' ? '관리자 페이지에서 데이터를 먼저 저장해주세요.' : 'Please save data from admin page first.')
+          // tour_spots에 데이터가 없으면 기존 travel_spots 테이블 시도
+          const dbResult = await getAllDbData('travel')
+          
+          if (dbResult.success && dbResult.items.length > 0) {
+            const formattedSpots = dbResult.items.map((item, index) => {
+              const district = extractDistrict(item.tourspotAddr || item.tourspotDtlAddr)
+              return {
+                id: item._id || index + 1,
+                title: item.tourspotNm,
+                location: district,
+                address: item.tourspotDtlAddr || item.tourspotAddr,
+                summary: item.tourspotSumm,
+                phone: item.refadNo,
+                time: item.mngTime,
+                fee: item.tourUtlzAmt,
+                parking: item.pkgFclt,
+                url: item.urlAddr,
+                image: item.imageUrl || getTourSpotImage(item.tourspotNm),
+                image_author: item.image_author,
+                image_source: item.image_source
+              }
+            })
+            setAllSpots(formattedSpots)
+          } else {
+            setError(language === 'ko' ? '관리자 페이지에서 TourAPI 데이터를 먼저 동기화해주세요.' : 'Please sync TourAPI data from admin page first.')
+          }
         }
       } catch (err) {
-
+        console.error('관광지 데이터 로드 실패:', err)
         setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
       }
       
@@ -377,7 +398,7 @@ const TravelPage = () => {
                         {/* 길찾기 버튼 */}
                         {spot.address && (
                           <a 
-                            href={`https://map.kakao.com/link/search/${encodeURIComponent(spot.title + ' ' + spot.address)}`}
+                            href={`https://map.kakao.com/link/search/${encodeURIComponent(spot.address)}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="spot-nav-btn"
@@ -660,6 +681,16 @@ const TravelPage = () => {
                           </div>
                         ))}
                       </div>
+                    </div>
+                  )}
+                  {selectedTripId && selectedTripDays.length === 0 && (
+                    <div className="no-trips">
+                      <p>{language === 'ko' ? '선택한 여행에 일정이 없습니다.' : 'No days in the selected trip.'}</p>
+                      <p className="hint">
+                        {language === 'ko'
+                          ? '"나의 여행" 페이지에서 일정을 먼저 추가해주세요.'
+                          : 'Please add days in the "My Trip" page first.'}
+                      </p>
                     </div>
                   )}
                 </>

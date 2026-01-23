@@ -361,23 +361,14 @@ const SharedTripPage = () => {
   
   // 장소 길찾기
   const handleDirection = async (place) => {
-    let lat = place.lat
-    let lng = place.lng
+    const address = place.address || place.placeAddress
     
-    // 좌표가 없으면 주소에서 조회
-    if ((!lat || !lng) && (place.address || place.placeAddress)) {
-      const coordResult = await getCoordinatesFromAddress(place.address || place.placeAddress)
-      if (coordResult.success) {
-        lat = coordResult.lat
-        lng = coordResult.lng
-      }
-    }
-    
-    if (lat && lng) {
-      const kakaoMapUrl = `https://map.kakao.com/link/to/${encodeURIComponent(place.placeName)},${lat},${lng}`
-      window.open(kakaoMapUrl, '_blank')
+    if (address) {
+      // 주소로 검색
+      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(address)}`
+      window.open(kakaoSearchUrl, '_blank')
     } else {
-      // 좌표가 없으면 장소 이름으로 검색
+      // 주소가 없으면 장소 이름으로 검색
       const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(place.placeName)}`
       window.open(kakaoSearchUrl, '_blank')
     }
