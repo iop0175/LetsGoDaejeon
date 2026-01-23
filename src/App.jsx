@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { Routes, Route, useLocation } from 'react-router-dom'
+import { SpeedInsights } from '@vercel/speed-insights/react'
 import Header from './components/Header/Header'
 import Footer from './components/Footer/Footer'
 import HomePage from './pages/HomePage'
@@ -56,6 +57,7 @@ function App() {
   
   return (
     <div className="app">
+      <SpeedInsights />
       {!isAdminPage && <Header />}
       <main className="main-content">
         <Routes>
