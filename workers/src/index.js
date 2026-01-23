@@ -106,6 +106,182 @@ async function handleKakao(request, env, pathname) {
   }
 }
 
+// 대전시 공공데이터 API 프록시
+async function handleDaejeonApi(request, env, pathname) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/daejeon', '');
+    
+    // API 키 (환경변수에서 가져옴)
+    const apiKey = env.DAEJEON_API_KEY ? env.DAEJEON_API_KEY.trim() : '';
+    
+    // 특수 경로 처리
+    if (apiPath === '/parking') {
+      // 주차장 API (XML 응답을 JSON으로 파싱)
+      return handleDaejeonParking(request, env);
+    }
+    
+    if (apiPath === '/medical') {
+      // 의료기관 API
+      const medicalUrl = new URL('https://apis.data.go.kr/6300000/mdlcnst/getmdlcnst');
+      medicalUrl.searchParams.set('serviceKey', apiKey);
+      url.searchParams.forEach((value, key) => {
+        if (key !== 'serviceKey') {
+          medicalUrl.searchParams.set(key, value);
+        }
+      });
+      
+      const response = await fetch(medicalUrl.toString(), {
+        method: 'GET',
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await response.json();
+      return jsonResponse(data);
+    }
+    
+    // 대전시 API URL 구성
+    let daejeonUrl;
+    if (apiPath.includes('/eventDataService/')) {
+      // 축제/행사 API
+      daejeonUrl = new URL(`https://apis.data.go.kr/6300000${apiPath}`);
+    } else {
+      // 기본 대전 관광 API
+      daejeonUrl = new URL(`https://apis.data.go.kr/6300000/openapi2022${apiPath}`);
+    }
+    
+    // 서비스 키 추가
+    daejeonUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        daejeonUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(daejeonUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    const data = await response.json();
+    return jsonResponse(data);
+  } catch (error) {
+    return errorResponse('대전시 API 요청 실패: ' + error.message, 500);
+  }
+}
+
+// 대전시 주차장 API (XML을 JSON으로 변환)
+async function handleDaejeonParking(request, env) {
+  try {
+    const url = new URL(request.url);
+    const apiKey = env.DAEJEON_API_KEY ? env.DAEJEON_API_KEY.trim() : '';
+    
+    const numOfRows = url.searchParams.get('numOfRows') || '50';
+    const pageNo = url.searchParams.get('pageNo') || '1';
+    
+    const parkingUrl = new URL('https://apis.data.go.kr/6300000/GetPakpListService1/getPakpList1');
+    parkingUrl.searchParams.set('serviceKey', apiKey);
+    parkingUrl.searchParams.set('numOfRows', numOfRows);
+    parkingUrl.searchParams.set('pageNo', pageNo);
+    parkingUrl.searchParams.set('type', 'xml');
+    
+    const response = await fetch(parkingUrl.toString());
+    const text = await response.text();
+    
+    // 간단한 XML 파싱 (Workers 환경에서는 DOMParser 없음)
+    const getTagValue = (xml, tag) => {
+      const match = xml.match(new RegExp(`<${tag}>([^<]*)</${tag}>`));
+      return match ? match[1] : '';
+    };
+    
+    const resultCode = getTagValue(text, 'resultCode');
+    const totalCount = parseInt(getTagValue(text, 'totalCount') || '0');
+    
+    if (resultCode === '00') {
+      // item 태그들 추출
+      const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || [];
+      const items = itemMatches.map(itemXml => ({
+        name: getTagValue(itemXml, 'PRKPLCENM'),
+        parkingId: getTagValue(itemXml, 'PRKPLCENO'),
+        lat: parseFloat(getTagValue(itemXml, 'LATITUDE') || '0'),
+        lon: parseFloat(getTagValue(itemXml, 'LONGITUDE') || '0'),
+        addr: getTagValue(itemXml, 'LNMADR'),
+        addrRoad: getTagValue(itemXml, 'RDNMADR'),
+        divideNum: getTagValue(itemXml, 'PRKPLCESE') === '공영' ? '6' : '1',
+        typeNum: getTagValue(itemXml, 'PRKPLCETYPE') === '노외' ? '2' : '1',
+        parkingType: getTagValue(itemXml, 'PRKPLCESE'),
+        parkingCategory: getTagValue(itemXml, 'PRKPLCETYPE'),
+        totalLot: getTagValue(itemXml, 'PRKCMPRT'),
+        weekdayOpen: getTagValue(itemXml, 'WEEKDAYOPEROPENHHMM'),
+        weekdayClose: getTagValue(itemXml, 'WEEKDAYOPERCOLSEHHMM'),
+        satOpen: getTagValue(itemXml, 'SATOPEROPEROPENHHMM'),
+        satClose: getTagValue(itemXml, 'SATOPERCLOSEHHMM'),
+        holidayOpen: getTagValue(itemXml, 'HOLIDAYOPEROPENHHMM'),
+        holidayClose: getTagValue(itemXml, 'HOLIDAYCLOSEOPENHHMM'),
+        chargeInfo: getTagValue(itemXml, 'PARKINGCHRGEINFO'),
+        basicTime: getTagValue(itemXml, 'BASICTIME'),
+        basicCharge: getTagValue(itemXml, 'BASICCHARGE'),
+        addTime: getTagValue(itemXml, 'ADDUNITTIME'),
+        addCharge: getTagValue(itemXml, 'ADDUNITCHARGE'),
+        dayTicket: getTagValue(itemXml, 'DAYCMMTKT'),
+        monthTicket: getTagValue(itemXml, 'MONTHCMMTKT'),
+        payMethod: getTagValue(itemXml, 'METPAY'),
+        operDay: getTagValue(itemXml, 'OPERDAY'),
+        referenceDate: getTagValue(itemXml, 'REFERENCEDATE')
+      }));
+      
+      return jsonResponse({
+        success: true,
+        totalCount: totalCount || items.length,
+        items: items
+      });
+    }
+    
+    return jsonResponse({ success: false, items: [], totalCount: 0 });
+  } catch (error) {
+    return errorResponse('주차장 API 요청 실패: ' + error.message, 500);
+  }
+}
+
+// 한국관광공사 API 프록시
+async function handleKtoApi(request, env, pathname) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/kto', '');
+    
+    // API 키 (환경변수에서 가져옴)
+    const apiKey = env.KTO_API_KEY ? env.KTO_API_KEY.trim() : '';
+    
+    // 한국관광공사 API URL 구성
+    const ktoUrl = new URL(`https://apis.data.go.kr/B551011${apiPath}`);
+    
+    // 서비스 키 추가
+    ktoUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        ktoUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(ktoUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    const data = await response.json();
+    return jsonResponse(data);
+  } catch (error) {
+    return errorResponse('한국관광공사 API 요청 실패: ' + error.message, 500);
+  }
+}
+
 // 디버그 엔드포인트
 async function handleDebug(request, env) {
   return jsonResponse({
@@ -113,6 +289,8 @@ async function handleDebug(request, env) {
     odsayKeyLength: env.ODSAY_API_KEY ? env.ODSAY_API_KEY.length : 0,
     odsayKeyTrimLength: env.ODSAY_API_KEY ? env.ODSAY_API_KEY.trim().length : 0,
     hasKakaoKey: !!env.KAKAO_REST_API_KEY,
+    hasDaejeonKey: !!env.DAEJEON_API_KEY,
+    hasKtoKey: !!env.KTO_API_KEY,
   });
 }
 
@@ -148,6 +326,14 @@ export default {
     
     if (pathname.startsWith('/api/kakao')) {
       return handleKakao(request, env, pathname);
+    }
+    
+    if (pathname.startsWith('/api/daejeon')) {
+      return handleDaejeonApi(request, env, pathname);
+    }
+    
+    if (pathname.startsWith('/api/kto')) {
+      return handleKtoApi(request, env, pathname);
     }
 
     // 404

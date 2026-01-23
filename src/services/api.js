@@ -1,13 +1,9 @@
 // 대전 공공데이터 API 서비스
-// API 키는 환경변수에서 불러옵니다 (.env 파일 참조)
+// API 키는 서버(Workers)를 통해 프록시되어 보호됩니다
 import { recordApiCall } from '../utils/apiStats';
 
-const API_KEY = import.meta.env.VITE_API_KEY;
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://apis.data.go.kr/6300000/openapi2022';
-
-// 한국관광공사 포토갤러리 API
-const KTO_PHOTO_API_KEY = import.meta.env.VITE_KTO_PHOTO_API_KEY;
-const KTO_PHOTO_BASE_URL = 'https://apis.data.go.kr/B551011/PhotoGalleryService1';
+// Cloudflare Workers API 프록시 URL
+const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev';
 
 // 기본 이미지 (이미지 없을 때 사용)
 const DEFAULT_IMAGE = '/images/no-image.svg';
@@ -23,7 +19,7 @@ export const getTourSpots = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('travel');
     const response = await fetch(
-      `${BASE_URL}/tourspot/gettourspot?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/tourspot/gettourspot?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -46,7 +42,7 @@ export const getFestivals = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('festival');
     const response = await fetch(
-      `https://apis.data.go.kr/6300000/eventDataService/eventDataListJson?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/eventDataService/eventDataListJson?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -69,7 +65,7 @@ export const getRestaurants = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('food');
     const response = await fetch(
-      `${BASE_URL}/restrnt/getrestrnt?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/restrnt/getrestrnt?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -92,7 +88,7 @@ export const getAccommodations = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('accommodation');
     const response = await fetch(
-      `${BASE_URL}/accommodation/getaccommodation?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/accommodation/getaccommodation?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -115,60 +111,13 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
   try {
     recordApiCall('parking');
     const response = await fetch(
-      `https://apis.data.go.kr/6300000/GetPakpListService1/getPakpList1?serviceKey=${API_KEY}&numOfRows=${numOfRows}&pageNo=${pageNo}&type=xml`
+      `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`
     );
-    const text = await response.text();
+    const data = await response.json();
     
-    // XML을 파싱
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(text, "text/xml");
-    
-    const resultCode = xmlDoc.querySelector('resultCode')?.textContent;
-    // 전체 개수 가져오기 (totalCount 태그 확인)
-    const totalCountNode = xmlDoc.querySelector('totalCount');
-    const apiTotalCount = totalCountNode ? parseInt(totalCountNode.textContent) : 0;
-    
-    if (resultCode === '00') {
-      const parkingNodes = xmlDoc.querySelectorAll('item');
-      const items = Array.from(parkingNodes).map(node => ({
-        name: node.querySelector('PRKPLCENM')?.textContent || '',
-        parkingId: node.querySelector('PRKPLCENO')?.textContent || '',
-        lat: parseFloat(node.querySelector('LATITUDE')?.textContent || '0'),
-        lon: parseFloat(node.querySelector('LONGITUDE')?.textContent || '0'),
-        addr: node.querySelector('LNMADR')?.textContent || '', // 지번주소
-        addrRoad: node.querySelector('RDNMADR')?.textContent || '', // 도로명주소
-        divideNum: node.querySelector('PRKPLCESE')?.textContent === '공영' ? '6' : '1', // 공영/민영
-        typeNum: node.querySelector('PRKPLCETYPE')?.textContent === '노외' ? '2' : '1', // 노상/노외
-        parkingType: node.querySelector('PRKPLCESE')?.textContent || '', // 공영/민영 텍스트
-        parkingCategory: node.querySelector('PRKPLCETYPE')?.textContent || '', // 노상/노외 텍스트
-        totalLot: node.querySelector('PRKCMPRT')?.textContent || '', // 주차면수 (문자열로)
-        // 운영시간
-        weekdayOpen: node.querySelector('WEEKDAYOPEROPENHHMM')?.textContent || '',
-        weekdayClose: node.querySelector('WEEKDAYOPERCOLSEHHMM')?.textContent || '',
-        satOpen: node.querySelector('SATOPEROPEROPENHHMM')?.textContent || '',
-        satClose: node.querySelector('SATOPERCLOSEHHMM')?.textContent || '',
-        holidayOpen: node.querySelector('HOLIDAYOPEROPENHHMM')?.textContent || '',
-        holidayClose: node.querySelector('HOLIDAYCLOSEOPENHHMM')?.textContent || '',
-        // 요금 정보
-        chargeInfo: node.querySelector('PARKINGCHRGEINFO')?.textContent || '', // 유료/무료
-        basicTime: node.querySelector('BASICTIME')?.textContent || '',
-        basicCharge: node.querySelector('BASICCHARGE')?.textContent || '',
-        addTime: node.querySelector('ADDUNITTIME')?.textContent || '',
-        addCharge: node.querySelector('ADDUNITCHARGE')?.textContent || '',
-        dayTicket: node.querySelector('DAYCMMTKT')?.textContent || '',
-        monthTicket: node.querySelector('MONTHCMMTKT')?.textContent || '',
-        // 결제수단
-        payMethod: node.querySelector('METPAY')?.textContent || '',
-        // 기타
-        operDay: node.querySelector('OPERDAY')?.textContent || '', // 운영일
-        referenceDate: node.querySelector('REFERENCEDATE')?.textContent || ''
-      }));
-      
-      return {
-        success: true,
-        totalCount: apiTotalCount || items.length,
-        items: items
-      };
+    // Workers에서 파싱된 JSON 응답을 처리
+    if (data.success) {
+      return data;
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
@@ -181,7 +130,7 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
 export const getDaejeonFestivals = async (pageNo = 1, numOfRows = 20) => {
   try {
     const response = await fetch(
-      `${BASE_URL}/festv/getfestv?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/festv/getfestv?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -204,7 +153,7 @@ export const getCulturalFacilities = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('culture');
     const response = await fetch(
-      `${BASE_URL}/ctlstt/getctlstt?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/ctlstt/getctlstt?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -227,7 +176,7 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('medical');
     const response = await fetch(
-      `https://apis.data.go.kr/6300000/mdlcnst/getmdlcnst?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/medical?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -250,7 +199,7 @@ export const getShoppingPlaces = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('shopping');
     const response = await fetch(
-      `${BASE_URL}/shppg/getshppg?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/shppg/getshppg?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -273,7 +222,7 @@ export const getTourRooms = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('accommodation');
     const response = await fetch(
-      `${BASE_URL}/tourroms/gettourroms?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`
+      `${WORKERS_API_URL}/api/daejeon/tourroms/gettourroms?pageNo=${pageNo}&numOfRows=${numOfRows}`
     );
     const data = await response.json();
     
@@ -300,7 +249,7 @@ const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
   try {
     const encodedKeyword = encodeURIComponent(keyword);
     const response = await fetch(
-      `${KTO_PHOTO_BASE_URL}/gallerySearchList1?serviceKey=${KTO_PHOTO_API_KEY}&numOfRows=${numOfRows}&pageNo=${pageNo}&MobileOS=ETC&MobileApp=LetsGoDaejeon&keyword=${encodedKeyword}&_type=json`
+      `${WORKERS_API_URL}/api/kto/PhotoGalleryService1/gallerySearchList1?numOfRows=${numOfRows}&pageNo=${pageNo}&MobileOS=ETC&MobileApp=LetsGoDaejeon&keyword=${encodedKeyword}&_type=json`
     );
     const data = await response.json();
     
