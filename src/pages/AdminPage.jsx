@@ -33,8 +33,8 @@ import {
   adminDeleteTrip, getPublishedTripStats
 } from '../services/tripService'
 import { uploadResizedImage, deleteImage } from '../services/blobService'
-import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
-import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
+import { PAGE_NAMES } from '../utils/apiStats'
+import { StatCard, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
 
 // 페이지 관리 설정 (TourAPI에 없는 데이터만 유지)
@@ -82,11 +82,6 @@ const AdminPage = () => {
   const [stats, setStats] = useState({})          // API 데이터 개수
   const [dbStats, setDbStats] = useState({})      // DB 데이터 개수
   const [statsLoading, setStatsLoading] = useState(false)
-  
-  // API 호출 통계
-  const [apiCallStats, setApiCallStats] = useState({})
-  const [mostCalledApi, setMostCalledApi] = useState(null)
-  const [mostVisitedPage, setMostVisitedPage] = useState(null)
   
   // 페이지 데이터
   const [pageData, setPageData] = useState([])
@@ -323,14 +318,6 @@ const AdminPage = () => {
     
     setStatsLoading(false)
   }, [parseDate, loadDbStats])
-  
-  // API 호출 통계 로드
-  const loadApiStats = useCallback(() => {
-    const stats = getApiStats()
-    setApiCallStats(stats)
-    setMostCalledApi(getMostCalledApi())
-    setMostVisitedPage(getMostVisitedPage())
-  }, [])
   
   // Supabase 사용량 통계 로드
   const loadSupabaseUsage = useCallback(async () => {
@@ -1088,14 +1075,6 @@ const AdminPage = () => {
     }
   }, [selectedPage, language, loadStats])
   
-  // 통계 리셋
-  const handleResetStats = useCallback(() => {
-    if (window.confirm(language === 'ko' ? '오늘의 API 호출 통계를 초기화하시겠습니까?' : 'Reset today\'s API call statistics?')) {
-      resetApiStats()
-      loadApiStats()
-    }
-  }, [language, loadApiStats])
-  
   // 페이지 데이터 로드
   // 축제/행사 필터 (지난 행사 제외)
   const filterPastEvents = useCallback((items) => {
@@ -1504,12 +1483,11 @@ const AdminPage = () => {
   useEffect(() => {
     if (user && activeSection === 'dashboard') {
       loadDbStats() // DB 통계만 자동 로드
-      loadApiStats()
       loadSupabaseUsage()
       loadPageVisitStats(visitStatsPeriod)
       loadSearchStats()
     }
-  }, [user, activeSection, loadDbStats, loadApiStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
+  }, [user, activeSection, loadDbStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
   
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
@@ -1517,14 +1495,6 @@ const AdminPage = () => {
       loadSavedItems(selectedPage)
     }
   }, [user, selectedPage, savedItems, loadSavedItems])
-  
-  // API 통계 주기적 업데이트
-  useEffect(() => {
-    if (user && activeSection === 'dashboard') {
-      const interval = setInterval(loadApiStats, 10000) // 10초마다 갱신
-      return () => clearInterval(interval)
-    }
-  }, [user, activeSection, loadApiStats])
   
   // 로그인 처리
   const handleLogin = useCallback(async (e) => {
@@ -1881,63 +1851,6 @@ const AdminPage = () => {
                 ))}
               </div>
               
-              {/* API 호출 통계 섹션 */}
-              <div className="api-stats-section">
-                <div className="api-stats-header">
-                  <h3><FiTrendingUp /> {language === 'ko' ? '금일 API 호출 통계' : "Today's API Call Stats"}</h3>
-                  <button onClick={handleResetStats} className="reset-stats-btn">
-                    <FiRefreshCw /> {language === 'ko' ? '초기화' : 'Reset'}
-                  </button>
-                </div>
-                
-                {/* 최고 호출 API & 페이지 */}
-                <div className="top-stats">
-                  <div className="top-stat-card">
-                    <span className="top-label">{language === 'ko' ? '최다 호출 API' : 'Most Called API'}</span>
-                    {mostCalledApi ? (
-                      <span className="top-value">{mostCalledApi.name} <strong>({mostCalledApi.count}회)</strong></span>
-                    ) : (
-                      <span className="top-value empty">{language === 'ko' ? '데이터 없음' : 'No data'}</span>
-                    )}
-                  </div>
-                  <div className="top-stat-card">
-                    <span className="top-label">{language === 'ko' ? '최다 방문 페이지' : 'Most Visited Page'}</span>
-                    {mostVisitedPage ? (
-                      <span className="top-value">{mostVisitedPage.name} <strong>({mostVisitedPage.count}회)</strong></span>
-                    ) : (
-                      <span className="top-value empty">{language === 'ko' ? '데이터 없음' : 'No data'}</span>
-                    )}
-                  </div>
-                </div>
-                
-                {/* API 호출 수 목록 */}
-                <div className="api-call-list">
-                  {Object.entries(API_NAMES).map(([key, name]) => (
-                    <div key={key} className="api-call-item">
-                      <span className="api-name">{name}</span>
-                      <div className="api-bar-container">
-                        <div 
-                          className="api-bar" 
-                          style={{ 
-                            width: `${Math.min((apiCallStats[key] || 0) * 10, 100)}%`,
-                            backgroundColor: PAGE_CONFIGS[key]?.color || '#1976d2'
-                          }}
-                        />
-                      </div>
-                      <span className="api-count">{apiCallStats[key] || 0}회</span>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* Google Charts - API 호출 차트 */}
-                <ApiStatsChart
-                  apiCallStats={apiCallStats}
-                  apiNames={API_NAMES}
-                  pageConfigs={PAGE_CONFIGS}
-                  language={language}
-                />
-              </div>
-              
               {/* Supabase 사용량 통계 섹션 */}
               <SupabaseUsageStats
                 usage={supabaseUsage}
@@ -2151,7 +2064,7 @@ const AdminPage = () => {
                     <a href="/" target="_blank" className="quick-link">
                       <FiHome /> {language === 'ko' ? '사이트 보기' : 'View Site'}
                     </a>
-                    <button onClick={() => { loadStats(); loadApiStats(); }} className="quick-link">
+                    <button onClick={() => { loadStats(); }} className="quick-link">
                       <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
                     </button>
                   </div>

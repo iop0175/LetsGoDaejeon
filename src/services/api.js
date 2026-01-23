@@ -313,11 +313,16 @@ export const getTourApiFestivals = async (options = {}) => {
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
       const itemArray = Array.isArray(items) ? items : [items];
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+      const filteredItems = itemArray.filter(item => {
+        const endDate = item.eventenddate || '';
+        return !endDate || endDate >= today;
+      });
       
       return {
         success: true,
-        totalCount: data.response.body.totalCount || itemArray.length,
-        items: itemArray
+        totalCount: filteredItems.length,
+        items: filteredItems
       };
     }
     
