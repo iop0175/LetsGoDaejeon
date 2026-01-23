@@ -4,7 +4,7 @@ import {
   FiPlus, FiTrash2, FiEdit2, FiMapPin, FiCalendar, FiClock, 
   FiChevronDown, FiChevronUp, FiSave, FiX, FiMap, FiCoffee,
   FiStar, FiNavigation, FiUsers, FiGrid, FiList, FiShare2,
-  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart
+  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart, FiImage
 } from 'react-icons/fi'
 import { 
   FaCar, FaBus, FaSubway, FaWalking, FaTaxi, FaBicycle, FaParking 
