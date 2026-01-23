@@ -127,6 +127,10 @@ const AdminPage = () => {
   const [activeSection, setActiveSection] = useState('dashboard')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   
+  // 관리자 권한 상태
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [adminCheckLoading, setAdminCheckLoading] = useState(true)
+  
   // 대시보드 통계
   const [stats, setStats] = useState({})          // API 데이터 개수
   const [dbStats, setDbStats] = useState({})      // DB 데이터 개수
@@ -241,6 +245,38 @@ const AdminPage = () => {
   
   // API 데이터 통계 로드 여부
   const [apiStatsLoaded, setApiStatsLoaded] = useState(false)
+  
+  // 관리자 권한 체크
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      if (!user) {
+        setIsAdmin(false)
+        setAdminCheckLoading(false)
+        return
+      }
+      
+      try {
+        // admin_users 테이블에서 현재 사용자 확인
+        const { data, error } = await supabase
+          .from('admin_users')
+          .select('id, role, is_active')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .single()
+        
+        if (error || !data) {
+          setIsAdmin(false)
+        } else {
+          setIsAdmin(true)
+        }
+      } catch (err) {
+        setIsAdmin(false)
+      }
+      setAdminCheckLoading(false)
+    }
+    
+    checkAdminRole()
+  }, [user, supabase])
   
   // DB 통계만 로드 (대시보드 진입 시 자동 호출)
   const loadDbStats = useCallback(async () => {
@@ -1232,7 +1268,7 @@ const AdminPage = () => {
   }, [logout, navigate])
   
   // 로딩 중
-  if (loading) {
+  if (loading || adminCheckLoading) {
     return (
       <div className={`admin-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="admin-loading">
@@ -1294,6 +1330,42 @@ const AdminPage = () => {
             </form>
             
             <div className="login-footer">
+              <button onClick={() => navigate('/')} className="back-btn">
+                <FiHome /> {language === 'ko' ? '메인으로' : 'Back to Home'}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
+  // 로그인은 되었지만 관리자가 아닌 경우
+  if (!isAdmin) {
+    return (
+      <div className={`admin-page ${isDark ? 'dark-theme' : ''}`}>
+        <div className="admin-login-container">
+          <div className="admin-login-card">
+            <div className="login-header">
+              <h1>🚫 {language === 'ko' ? '접근 권한 없음' : 'Access Denied'}</h1>
+              <p>{language === 'ko' ? '관리자 권한이 필요합니다.' : 'Administrator privileges required.'}</p>
+            </div>
+            
+            <div className="access-denied-info">
+              <p>{language === 'ko' 
+                ? `로그인 계정: ${user.email}` 
+                : `Logged in as: ${user.email}`}</p>
+              <p className="hint">
+                {language === 'ko' 
+                  ? '이 계정은 관리자로 등록되어 있지 않습니다.' 
+                  : 'This account is not registered as an administrator.'}
+              </p>
+            </div>
+            
+            <div className="login-footer">
+              <button onClick={handleLogout} className="logout-btn">
+                <FiLogOut /> {language === 'ko' ? '로그아웃' : 'Logout'}
+              </button>
               <button onClick={() => navigate('/')} className="back-btn">
                 <FiHome /> {language === 'ko' ? '메인으로' : 'Back to Home'}
               </button>
