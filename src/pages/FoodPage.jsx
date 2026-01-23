@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation } from 'react-icons/fi'
+import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation, FiPlus, FiCalendar, FiCheck, FiX } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
+import { useAuth } from '../context/AuthContext'
 import { getAllDbData } from '../services/dbService'
+import { getUserTripPlans, addTripPlace } from '../services/tripService'
+import { getReliableImageUrl } from '../utils/imageUtils'
 import './FoodPage.css'
 
 // 대전시 구 목록
@@ -16,6 +19,7 @@ const DISTRICTS = [
 
 const FoodPage = () => {
   const { language, t } = useLanguage()
+  const { user } = useAuth()
   const [allRestaurants, setAllRestaurants] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -23,6 +27,15 @@ const FoodPage = () => {
   const [districtFilter, setDistrictFilter] = useState('all')
   const [dongFilter, setDongFilter] = useState('all')
   const itemsPerPage = 12
+  
+  // 내 여행에 추가 모달 상태
+  const [showAddToTripModal, setShowAddToTripModal] = useState(false)
+  const [restaurantToAdd, setRestaurantToAdd] = useState(null)
+  const [tripPlans, setTripPlans] = useState([])
+  const [selectedTripId, setSelectedTripId] = useState(null)
+  const [selectedDayId, setSelectedDayId] = useState(null)
+  const [tripsLoading, setTripsLoading] = useState(false)
+  const [addingToTrip, setAddingToTrip] = useState(false)
 
   // 지역 추출 함수
   const extractDistrict = (address) => {
@@ -149,6 +162,73 @@ const FoodPage = () => {
 
     loadRestaurants()
   }, [language])
+  
+  // 내 여행에 추가 모달 열기
+  const openAddToTripModal = async (restaurant) => {
+    setRestaurantToAdd(restaurant)
+    setShowAddToTripModal(true)
+    setSelectedTripId(null)
+    setSelectedDayId(null)
+    
+    // 사용자의 여행 목록 로드
+    setTripsLoading(true)
+    try {
+      const result = await getUserTripPlans(user?.id || 'anonymous')
+      if (result.success) {
+        // 일차 정보가 있는 여행만 필터링
+        const tripsWithDays = result.plans.filter(plan => plan.days && plan.days.length > 0)
+        setTripPlans(tripsWithDays)
+      }
+    } catch (err) {
+      console.error('Failed to load trips:', err)
+    }
+    setTripsLoading(false)
+  }
+  
+  // 내 여행에 추가 모달 닫기
+  const closeAddToTripModal = () => {
+    setShowAddToTripModal(false)
+    setRestaurantToAdd(null)
+    setSelectedTripId(null)
+    setSelectedDayId(null)
+  }
+  
+  // 선택된 여행의 일차 목록
+  const selectedTripDays = useMemo(() => {
+    if (!selectedTripId) return []
+    const trip = tripPlans.find(t => t.id === selectedTripId)
+    return trip?.days || []
+  }, [selectedTripId, tripPlans])
+  
+  // 여행에 장소 추가
+  const handleAddToTrip = async () => {
+    if (!selectedDayId || !restaurantToAdd) return
+    
+    setAddingToTrip(true)
+    try {
+      const result = await addTripPlace({
+        dayId: selectedDayId,
+        placeType: 'food',
+        placeName: restaurantToAdd.name,
+        placeAddress: restaurantToAdd.address,
+        placeDescription: restaurantToAdd.menu ? `대표메뉴: ${restaurantToAdd.menu}` : restaurantToAdd.summary,
+        placeImage: restaurantToAdd.imageUrl || `https://picsum.photos/seed/${encodeURIComponent(restaurantToAdd.name)}/600/400`,
+        orderIndex: 999, // 마지막에 추가
+        visitTime: null,
+        memo: null
+      })
+      
+      if (result.success) {
+        alert(language === 'ko' ? '여행에 추가되었습니다!' : 'Added to your trip!')
+        closeAddToTripModal()
+      } else {
+        alert(result.error || (language === 'ko' ? '추가에 실패했습니다.' : 'Failed to add.'))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '오류가 발생했습니다.' : 'An error occurred.')
+    }
+    setAddingToTrip(false)
+  }
 
   const totalPages = Math.ceil(filteredRestaurants.length / itemsPerPage)
 
@@ -263,18 +343,33 @@ const FoodPage = () => {
                       )}
                     </div>
                     
-                    {/* 지도 버튼 */}
-                    {restaurant.lat && restaurant.lng && (
-                      <a 
-                        href={`https://map.kakao.com/link/to/${encodeURIComponent(restaurant.name)},${restaurant.lat},${restaurant.lng}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="food-nav-btn"
+                    {/* 버튼 그룹 */}
+                    <div className="food-action-buttons">
+                      {/* 내 여행에 추가 버튼 */}
+                      <button
+                        className="food-add-trip-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openAddToTripModal(restaurant)
+                        }}
                       >
-                        <FiNavigation />
-                        {language === 'ko' ? '길찾기' : 'Directions'}
-                      </a>
-                    )}
+                        <FiPlus />
+                        {language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}
+                      </button>
+                      
+                      {/* 길찾기 버튼 */}
+                      {restaurant.lat && restaurant.lng && (
+                        <a 
+                          href={`https://map.kakao.com/link/to/${encodeURIComponent(restaurant.name)},${restaurant.lat},${restaurant.lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="food-nav-btn"
+                        >
+                          <FiNavigation />
+                          {language === 'ko' ? '길찾기' : 'Directions'}
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -325,6 +420,123 @@ const FoodPage = () => {
           </>
         )}
       </div>
+      
+      {/* 내 여행에 추가 모달 */}
+      {showAddToTripModal && (
+        <div className="modal-overlay" onClick={closeAddToTripModal}>
+          <div className="add-to-trip-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FiPlus /> {language === 'ko' ? '내 여행에 추가' : 'Add to My Trip'}</h3>
+              <button className="modal-close" onClick={closeAddToTripModal}>
+                <FiX />
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              {/* 추가할 장소 정보 */}
+              <div className="restaurant-to-add">
+                <div className="restaurant-to-add-image">
+                  <img 
+                    src={getReliableImageUrl(restaurantToAdd?.imageUrl) || `https://picsum.photos/seed/${encodeURIComponent(restaurantToAdd?.name || '')}/600/400`}
+                    alt={restaurantToAdd?.name}
+                    onError={(e) => e.target.src = '/images/no-image.svg'}
+                  />
+                </div>
+                <div className="restaurant-to-add-info">
+                  <h4>{restaurantToAdd?.name}</h4>
+                  <p><FiMapPin /> {restaurantToAdd?.address}</p>
+                  {restaurantToAdd?.menu && (
+                    <p className="menu-info">🍽️ {restaurantToAdd.menu}</p>
+                  )}
+                </div>
+              </div>
+              
+              {tripsLoading ? (
+                <div className="loading-trips">
+                  <FiLoader className="spinning" />
+                  <span>{language === 'ko' ? '여행 목록 불러오는 중...' : 'Loading trips...'}</span>
+                </div>
+              ) : tripPlans.length === 0 ? (
+                <div className="no-trips">
+                  <p>{language === 'ko' ? '저장된 여행이 없습니다.' : 'No saved trips.'}</p>
+                  <p className="hint">
+                    {language === 'ko' 
+                      ? '먼저 "나의 여행" 페이지에서 여행을 만들어주세요.' 
+                      : 'Please create a trip in "My Trip" page first.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* 여행 선택 */}
+                  <div className="trip-select-section">
+                    <label>{language === 'ko' ? '여행 선택' : 'Select Trip'}</label>
+                    <div className="trip-list">
+                      {tripPlans.map(trip => (
+                        <div 
+                          key={trip.id}
+                          className={`trip-item ${selectedTripId === trip.id ? 'selected' : ''}`}
+                          onClick={() => {
+                            setSelectedTripId(trip.id)
+                            setSelectedDayId(null)
+                          }}
+                        >
+                          <div className="trip-item-info">
+                            <span className="trip-title">{trip.title}</span>
+                            <span className="trip-date">
+                              <FiCalendar />
+                              {trip.startDate} ~ {trip.endDate}
+                            </span>
+                          </div>
+                          {selectedTripId === trip.id && <FiCheck className="check-icon" />}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* 일차 선택 */}
+                  {selectedTripId && selectedTripDays.length > 0 && (
+                    <div className="day-select-section">
+                      <label>{language === 'ko' ? '일차 선택' : 'Select Day'}</label>
+                      <div className="day-list">
+                        {selectedTripDays.map(day => (
+                          <div
+                            key={day.id}
+                            className={`day-item ${selectedDayId === day.id ? 'selected' : ''}`}
+                            onClick={() => setSelectedDayId(day.id)}
+                          >
+                            <span className="day-number">
+                              {language === 'ko' ? `${day.dayNumber}일차` : `Day ${day.dayNumber}`}
+                            </span>
+                            <span className="day-date">{day.date}</span>
+                            {selectedDayId === day.id && <FiCheck className="check-icon" />}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+            
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={closeAddToTripModal}>
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+              <button 
+                className="add-btn"
+                onClick={handleAddToTrip}
+                disabled={!selectedDayId || addingToTrip}
+              >
+                {addingToTrip ? (
+                  <><FiLoader className="spinning" /> {language === 'ko' ? '추가 중...' : 'Adding...'}</>
+                ) : (
+                  <><FiPlus /> {language === 'ko' ? '추가하기' : 'Add'}</>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
