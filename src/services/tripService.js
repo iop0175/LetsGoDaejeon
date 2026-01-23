@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { deleteImage } from './blobService'
 
 // ===== 여행 계획 (Trip Plans) =====
 
@@ -545,11 +546,33 @@ export const publishTripPlan = async (planId, { authorNickname, thumbnailUrl } =
  */
 export const unpublishTripPlan = async (planId) => {
   try {
+    // 먼저 현재 여행 계획 정보를 가져와서 썸네일 URL 확인
+    const { data: currentPlan, error: fetchError } = await supabase
+      .from('trip_plans')
+      .select('thumbnail_url')
+      .eq('id', planId)
+      .single()
+    
+    if (fetchError) throw fetchError
+    
+    // Vercel Blob에 업로드된 이미지인 경우 삭제
+    if (currentPlan?.thumbnail_url && 
+        (currentPlan.thumbnail_url.includes('vercel-storage.com') || 
+         currentPlan.thumbnail_url.includes('blob.vercel-storage.com'))) {
+      try {
+        await deleteImage(currentPlan.thumbnail_url)
+      } catch (deleteErr) {
+        console.warn('썸네일 이미지 삭제 실패:', deleteErr.message)
+        // 이미지 삭제 실패해도 게시 취소는 계속 진행
+      }
+    }
+    
     const { data, error } = await supabase
       .from('trip_plans')
       .update({
         is_published: false,
-        published_at: null
+        published_at: null,
+        thumbnail_url: null // 썸네일 URL도 초기화
       })
       .eq('id', planId)
       .select()

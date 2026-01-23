@@ -20,6 +20,7 @@ import {
   publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo
 } from '../services/tripService'
 import { getAllDbData } from '../services/dbService'
+import { uploadResizedImage } from '../services/blobService'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
 import { getPublicTransitRoute } from '../services/odsayService'
 import { getDaejeonParking } from '../services/api'
@@ -113,6 +114,9 @@ const MyTripPage = () => {
   const [publishingTripId, setPublishingTripId] = useState(null) // 게시 중인 여행 ID
   const [showPublishModal, setShowPublishModal] = useState(false)
   const [publishForm, setPublishForm] = useState({ nickname: '', thumbnailUrl: '' })
+  const [thumbnailFile, setThumbnailFile] = useState(null) // 업로드할 이미지 파일
+  const [thumbnailPreview, setThumbnailPreview] = useState(null) // 미리보기 URL
+  const [isUploading, setIsUploading] = useState(false) // 업로드 중 상태
   
   // 이동 방법 편집 상태
   const [editingTransport, setEditingTransport] = useState(null) // { dayId, afterPlaceIndex }
@@ -389,7 +393,42 @@ const MyTripPage = () => {
       nickname: user?.email?.split('@')[0] || '',
       thumbnailUrl: ''
     })
+    setThumbnailFile(null)
+    setThumbnailPreview(null)
     setShowPublishModal(true)
+  }
+  
+  // 썸네일 이미지 파일 선택 처리
+  const handleThumbnailFileChange = (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    // 이미지 파일 타입 확인
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert(language === 'ko' ? '지원되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)' : 'Unsupported file type. (JPG, PNG, GIF, WebP only)')
+      return
+    }
+    
+    // 파일 크기 확인 (최대 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(language === 'ko' ? '파일 크기가 10MB를 초과합니다.' : 'File size exceeds 10MB.')
+      return
+    }
+    
+    setThumbnailFile(file)
+    // 미리보기 생성
+    const reader = new FileReader()
+    reader.onload = (e) => setThumbnailPreview(e.target.result)
+    reader.readAsDataURL(file)
+    // URL 필드 초기화
+    setPublishForm(prev => ({ ...prev, thumbnailUrl: '' }))
+  }
+  
+  // 썸네일 이미지 제거
+  const handleRemoveThumbnail = () => {
+    setThumbnailFile(null)
+    setThumbnailPreview(null)
   }
   
   // 여행 게시 처리
@@ -397,35 +436,60 @@ const MyTripPage = () => {
     if (!publishingTripId) return
     
     try {
+      setIsUploading(true)
+      
+      let thumbnailUrl = publishForm.thumbnailUrl || null
+      
+      // 파일이 선택된 경우 Blob에 업로드
+      if (thumbnailFile) {
+        const uploadResult = await uploadResizedImage(thumbnailFile, 'trip-thumbnails', {
+          maxWidth: 800,
+          maxHeight: 600,
+          quality: 0.85
+        })
+        
+        if (!uploadResult.success) {
+          alert(uploadResult.error || (language === 'ko' ? '이미지 업로드 실패' : 'Image upload failed'))
+          setIsUploading(false)
+          return
+        }
+        
+        thumbnailUrl = uploadResult.url
+      }
+      
       const result = await publishTripPlan(publishingTripId, {
         authorNickname: publishForm.nickname || '익명',
-        thumbnailUrl: publishForm.thumbnailUrl || null
+        thumbnailUrl
       })
       
       if (result.success) {
         // 여행 목록 업데이트
         setTripPlans(prev => prev.map(trip => 
           trip.id === publishingTripId 
-            ? { ...trip, isPublished: true, publishedAt: new Date().toISOString() }
+            ? { ...trip, isPublished: true, publishedAt: new Date().toISOString(), thumbnailUrl }
             : trip
         ))
         if (selectedTrip?.id === publishingTripId) {
-          setSelectedTrip(prev => ({ ...prev, isPublished: true, publishedAt: new Date().toISOString() }))
+          setSelectedTrip(prev => ({ ...prev, isPublished: true, publishedAt: new Date().toISOString(), thumbnailUrl }))
         }
         setShowPublishModal(false)
         setPublishingTripId(null)
+        setThumbnailFile(null)
+        setThumbnailPreview(null)
         alert(language === 'ko' ? '여행 계획이 게시되었습니다!' : 'Trip plan published!')
       } else {
         alert(result.error || (language === 'ko' ? '게시 실패' : 'Publish failed'))
       }
     } catch (err) {
       alert(language === 'ko' ? '게시 중 오류가 발생했습니다.' : 'Error occurred while publishing.')
+    } finally {
+      setIsUploading(false)
     }
   }
   
   // 여행 게시 취소
   const handleUnpublishTrip = async (tripId) => {
-    if (!confirm(language === 'ko' ? '게시를 취소하시겠습니까?' : 'Unpublish this trip?')) {
+    if (!confirm(language === 'ko' ? '게시를 취소하시겠습니까?\n(업로드된 썸네일 이미지도 함께 삭제됩니다)' : 'Unpublish this trip?\n(Uploaded thumbnail image will also be deleted)')) {
       return
     }
     
@@ -3523,11 +3587,11 @@ const MyTripPage = () => {
       
       {/* 게시 모달 */}
       {showPublishModal && (
-        <div className="modal-overlay" onClick={() => setShowPublishModal(false)}>
+        <div className="modal-overlay" onClick={() => !isUploading && setShowPublishModal(false)}>
           <div className="modal-content publish-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <h3><FiShare2 /> {language === 'ko' ? '여행 계획 게시' : 'Publish Trip Plan'}</h3>
-              <button className="modal-close" onClick={() => setShowPublishModal(false)}>
+              <button className="modal-close" onClick={() => !isUploading && setShowPublishModal(false)} disabled={isUploading}>
                 <FiX />
               </button>
             </div>
@@ -3546,25 +3610,74 @@ const MyTripPage = () => {
                   onChange={(e) => setPublishForm(prev => ({ ...prev, nickname: e.target.value }))}
                   placeholder={language === 'ko' ? '닉네임 (선택사항)' : 'Nickname (optional)'}
                   maxLength={20}
+                  disabled={isUploading}
                 />
               </div>
               
               <div className="form-group">
-                <label>{language === 'ko' ? '썸네일 URL (선택)' : 'Thumbnail URL (optional)'}</label>
-                <input
-                  type="url"
-                  value={publishForm.thumbnailUrl}
-                  onChange={(e) => setPublishForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
-                  placeholder="https://..."
-                />
+                <label>{language === 'ko' ? '썸네일 이미지' : 'Thumbnail Image'}</label>
+                
+                {/* 이미지 업로드 영역 */}
+                {!thumbnailPreview && !publishForm.thumbnailUrl && (
+                  <div className="thumbnail-upload-area">
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleThumbnailFileChange}
+                      id="thumbnail-file-input"
+                      style={{ display: 'none' }}
+                      disabled={isUploading}
+                    />
+                    <label htmlFor="thumbnail-file-input" className="thumbnail-upload-label">
+                      <FiImage />
+                      <span>{language === 'ko' ? '이미지 선택' : 'Select Image'}</span>
+                      <small>{language === 'ko' ? '(JPG, PNG, GIF, WebP / 최대 10MB)' : '(JPG, PNG, GIF, WebP / Max 10MB)'}</small>
+                    </label>
+                  </div>
+                )}
+                
+                {/* 이미지 미리보기 */}
+                {thumbnailPreview && (
+                  <div className="thumbnail-preview">
+                    <img src={thumbnailPreview} alt="Thumbnail preview" />
+                    <button 
+                      type="button" 
+                      className="remove-thumbnail-btn" 
+                      onClick={handleRemoveThumbnail}
+                      disabled={isUploading}
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                )}
+                
+                {/* 또는 URL 직접 입력 */}
+                {!thumbnailFile && (
+                  <>
+                    <div className="thumbnail-divider">
+                      <span>{language === 'ko' ? '또는 URL 직접 입력' : 'Or enter URL directly'}</span>
+                    </div>
+                    <input
+                      type="url"
+                      value={publishForm.thumbnailUrl}
+                      onChange={(e) => setPublishForm(prev => ({ ...prev, thumbnailUrl: e.target.value }))}
+                      placeholder="https://..."
+                      disabled={isUploading}
+                    />
+                  </>
+                )}
               </div>
             </div>
             <div className="modal-footer">
-              <button className="cancel-btn" onClick={() => setShowPublishModal(false)}>
+              <button className="cancel-btn" onClick={() => setShowPublishModal(false)} disabled={isUploading}>
                 {language === 'ko' ? '취소' : 'Cancel'}
               </button>
-              <button className="publish-confirm-btn" onClick={handlePublishTrip}>
-                <FiGlobe /> {language === 'ko' ? '게시하기' : 'Publish'}
+              <button className="publish-confirm-btn" onClick={handlePublishTrip} disabled={isUploading}>
+                {isUploading ? (
+                  <>{language === 'ko' ? '업로드 중...' : 'Uploading...'}</>
+                ) : (
+                  <><FiGlobe /> {language === 'ko' ? '게시하기' : 'Publish'}</>
+                )}
               </button>
             </div>
           </div>

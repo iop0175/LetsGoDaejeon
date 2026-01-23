@@ -4922,6 +4922,117 @@
   background: #e2e8f0;
 }
 
+.trip-edit-form .btn-save:disabled,
+.trip-edit-form .btn-cancel:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 여행 썸네일 업로드 영역 */
+.trip-edit-form .thumbnail-upload-area {
+  margin-bottom: 12px;
+}
+
+.trip-edit-form .thumbnail-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trip-edit-form .thumbnail-upload-label:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.trip-edit-form .thumbnail-upload-label svg {
+  font-size: 1.5rem;
+  color: #94a3b8;
+  margin-bottom: 8px;
+}
+
+.trip-edit-form .thumbnail-upload-label span {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #475569;
+}
+
+.trip-edit-form .thumbnail-upload-label small {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+/* 여행 썸네일 미리보기 */
+.trip-thumbnail-preview {
+  position: relative;
+  display: inline-block;
+  max-width: 250px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+
+.trip-thumbnail-preview img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 10px;
+}
+
+.trip-thumbnail-preview .remove-thumbnail-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.trip-thumbnail-preview .remove-thumbnail-btn:hover {
+  background: #dc2626;
+  transform: scale(1.1);
+}
+
+.trip-thumbnail-preview .remove-thumbnail-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 구분선 */
+.trip-edit-form .thumbnail-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 12px 0;
+}
+
+.trip-edit-form .thumbnail-divider::before,
+.trip-edit-form .thumbnail-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.trip-edit-form .thumbnail-divider span {
+  padding: 0 10px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
 /* 여행 코스 목록 테이블 */
 .trips-list {
   background: white;
@@ -5085,6 +5196,25 @@
 .dark-theme .trip-edit-form .btn-cancel {
   background: #334155;
   color: #94a3b8;
+}
+
+.dark-theme .trip-edit-form .thumbnail-upload-label {
+  border-color: #475569;
+  background: #1e293b;
+}
+
+.dark-theme .trip-edit-form .thumbnail-upload-label:hover {
+  border-color: #60a5fa;
+  background: #1e3a5f;
+}
+
+.dark-theme .trip-edit-form .thumbnail-upload-label span {
+  color: #e2e8f0;
+}
+
+.dark-theme .trip-edit-form .thumbnail-divider::before,
+.dark-theme .trip-edit-form .thumbnail-divider::after {
+  border-color: #475569;
 }
 
 .dark-theme .trips-list {

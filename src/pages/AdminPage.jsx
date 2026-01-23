@@ -25,6 +25,7 @@ import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
   adminDeleteTrip, getPublishedTripStats
 } from '../services/tripService'
+import { uploadResizedImage, deleteImage } from '../services/blobService'
 import { getApiStats, API_NAMES, PAGE_NAMES, getMostCalledApi, getMostVisitedPage, resetApiStats } from '../utils/apiStats'
 import { StatCard, ApiStatsChart, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import './AdminPage.css'
@@ -205,6 +206,9 @@ const AdminPage = () => {
     thumbnailUrl: '',
     authorNickname: ''
   })
+  const [tripThumbnailFile, setTripThumbnailFile] = useState(null) // 여행 썸네일 파일
+  const [tripThumbnailPreview, setTripThumbnailPreview] = useState(null) // 여행 썸네일 미리보기
+  const [tripImageUploading, setTripImageUploading] = useState(false) // 업로드 중 상태
 
   // 날짜 파싱 함수 (YYYYMMDD 또는 YYYY-MM-DD -> Date)
   const parseDate = useCallback((dateStr) => {
@@ -439,6 +443,42 @@ const AdminPage = () => {
       thumbnailUrl: trip.thumbnailUrl || '',
       authorNickname: trip.authorNickname || ''
     })
+    setTripThumbnailFile(null)
+    setTripThumbnailPreview(trip.thumbnailUrl || null)
+  }, [])
+  
+  // 여행 썸네일 파일 선택 처리
+  const handleTripThumbnailChange = useCallback((e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    
+    // 이미지 파일 타입 확인
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      alert(language === 'ko' ? '지원되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)' : 'Unsupported file type.')
+      return
+    }
+    
+    // 파일 크기 확인 (최대 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert(language === 'ko' ? '파일 크기가 10MB를 초과합니다.' : 'File size exceeds 10MB.')
+      return
+    }
+    
+    setTripThumbnailFile(file)
+    // 미리보기 생성
+    const reader = new FileReader()
+    reader.onload = (e) => setTripThumbnailPreview(e.target.result)
+    reader.readAsDataURL(file)
+    // URL 필드 초기화
+    setTripForm(prev => ({ ...prev, thumbnailUrl: '' }))
+  }, [language])
+  
+  // 여행 썸네일 제거
+  const handleRemoveTripThumbnail = useCallback(() => {
+    setTripThumbnailFile(null)
+    setTripThumbnailPreview(null)
+    setTripForm(prev => ({ ...prev, thumbnailUrl: '' }))
   }, [])
   
   // 여행 코스 수정 저장
@@ -446,19 +486,66 @@ const AdminPage = () => {
     if (!editingTrip) return
     
     try {
-      const result = await adminUpdateTrip(editingTrip.id, tripForm)
+      setTripImageUploading(true)
+      
+      let thumbnailUrl = tripForm.thumbnailUrl
+      
+      // 새 파일이 선택된 경우 업로드
+      if (tripThumbnailFile) {
+        // 기존 Blob 이미지가 있으면 삭제
+        if (editingTrip.thumbnailUrl && 
+            (editingTrip.thumbnailUrl.includes('vercel-storage.com') || 
+             editingTrip.thumbnailUrl.includes('blob.vercel-storage.com'))) {
+          try {
+            await deleteImage(editingTrip.thumbnailUrl)
+          } catch (deleteErr) {
+            console.warn('기존 썸네일 삭제 실패:', deleteErr.message)
+          }
+        }
+        
+        const uploadResult = await uploadResizedImage(tripThumbnailFile, 'trip-thumbnails', {
+          maxWidth: 800,
+          maxHeight: 600,
+          quality: 0.85
+        })
+        
+        if (!uploadResult.success) {
+          alert(uploadResult.error || (language === 'ko' ? '이미지 업로드 실패' : 'Image upload failed'))
+          setTripImageUploading(false)
+          return
+        }
+        
+        thumbnailUrl = uploadResult.url
+      } else if (!tripThumbnailPreview && editingTrip.thumbnailUrl) {
+        // 미리보기가 제거되었으면 기존 이미지 삭제
+        if (editingTrip.thumbnailUrl.includes('vercel-storage.com') || 
+            editingTrip.thumbnailUrl.includes('blob.vercel-storage.com')) {
+          try {
+            await deleteImage(editingTrip.thumbnailUrl)
+          } catch (deleteErr) {
+            console.warn('기존 썸네일 삭제 실패:', deleteErr.message)
+          }
+        }
+        thumbnailUrl = ''
+      }
+      
+      const result = await adminUpdateTrip(editingTrip.id, { ...tripForm, thumbnailUrl })
       if (result.success) {
         alert(language === 'ko' ? '수정되었습니다.' : 'Updated.')
         setEditingTrip(null)
         setTripForm({ title: '', description: '', thumbnailUrl: '', authorNickname: '' })
+        setTripThumbnailFile(null)
+        setTripThumbnailPreview(null)
         loadPublishedTrips()
       } else {
         alert(result.error || '수정 실패')
       }
     } catch (err) {
       alert(language === 'ko' ? '수정 중 오류가 발생했습니다.' : 'Error occurred while updating.')
+    } finally {
+      setTripImageUploading(false)
     }
-  }, [editingTrip, tripForm, language, loadPublishedTrips])
+  }, [editingTrip, tripForm, tripThumbnailFile, tripThumbnailPreview, language, loadPublishedTrips])
   
   // 여행 코스 삭제
   const handleDeleteTrip = useCallback(async (trip) => {
@@ -469,6 +556,17 @@ const AdminPage = () => {
     if (!window.confirm(confirmMsg)) return
     
     try {
+      // Blob에 업로드된 이미지가 있으면 삭제
+      if (trip.thumbnailUrl && 
+          (trip.thumbnailUrl.includes('vercel-storage.com') || 
+           trip.thumbnailUrl.includes('blob.vercel-storage.com'))) {
+        try {
+          await deleteImage(trip.thumbnailUrl)
+        } catch (deleteErr) {
+          console.warn('썸네일 삭제 실패:', deleteErr.message)
+        }
+      }
+      
       const result = await adminDeleteTrip(trip.id)
       if (result.success) {
         alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
@@ -1939,22 +2037,78 @@ const AdminPage = () => {
                       value={tripForm.description}
                       onChange={(e) => setTripForm({...tripForm, description: e.target.value})}
                       rows={3}
+                      disabled={tripImageUploading}
                     />
                   </div>
                   <div className="form-group">
-                    <label>{language === 'ko' ? '썸네일 URL' : 'Thumbnail URL'}</label>
-                    <input
-                      type="text"
-                      value={tripForm.thumbnailUrl}
-                      onChange={(e) => setTripForm({...tripForm, thumbnailUrl: e.target.value})}
-                      placeholder="https://..."
-                    />
+                    <label>{language === 'ko' ? '썸네일 이미지' : 'Thumbnail Image'}</label>
+                    
+                    {/* 이미지 미리보기 */}
+                    {tripThumbnailPreview && (
+                      <div className="trip-thumbnail-preview">
+                        <img src={tripThumbnailPreview} alt="Thumbnail preview" />
+                        <button 
+                          type="button" 
+                          className="remove-thumbnail-btn" 
+                          onClick={handleRemoveTripThumbnail}
+                          disabled={tripImageUploading}
+                        >
+                          <FiX />
+                        </button>
+                      </div>
+                    )}
+                    
+                    {/* 이미지 업로드 영역 */}
+                    {!tripThumbnailPreview && (
+                      <div className="thumbnail-upload-area">
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/gif,image/webp"
+                          onChange={handleTripThumbnailChange}
+                          id="trip-thumbnail-file-input"
+                          style={{ display: 'none' }}
+                          disabled={tripImageUploading}
+                        />
+                        <label htmlFor="trip-thumbnail-file-input" className="thumbnail-upload-label">
+                          <FiImage />
+                          <span>{language === 'ko' ? '이미지 선택' : 'Select Image'}</span>
+                          <small>{language === 'ko' ? '(JPG, PNG, GIF, WebP / 최대 10MB)' : '(JPG, PNG, GIF, WebP / Max 10MB)'}</small>
+                        </label>
+                      </div>
+                    )}
+                    
+                    {/* 또는 URL 직접 입력 */}
+                    {!tripThumbnailFile && (
+                      <>
+                        <div className="thumbnail-divider">
+                          <span>{language === 'ko' ? '또는 URL 직접 입력' : 'Or enter URL directly'}</span>
+                        </div>
+                        <input
+                          type="text"
+                          value={tripForm.thumbnailUrl}
+                          onChange={(e) => {
+                            setTripForm({...tripForm, thumbnailUrl: e.target.value})
+                            if (e.target.value) setTripThumbnailPreview(e.target.value)
+                          }}
+                          placeholder="https://..."
+                          disabled={tripImageUploading}
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="form-actions">
-                    <button className="btn-save" onClick={handleSaveTripEdit}>
-                      <FiSave /> {language === 'ko' ? '저장' : 'Save'}
+                    <button className="btn-save" onClick={handleSaveTripEdit} disabled={tripImageUploading}>
+                      {tripImageUploading ? (
+                        <><FiLoader className="spinning" /> {language === 'ko' ? '업로드 중...' : 'Uploading...'}</>
+                      ) : (
+                        <><FiSave /> {language === 'ko' ? '저장' : 'Save'}</>
+                      )}
                     </button>
-                    <button className="btn-cancel" onClick={() => setEditingTrip(null)}>
+                    <button className="btn-cancel" onClick={() => {
+                      setEditingTrip(null)
+                      setTripThumbnailFile(null)
+                      setTripThumbnailPreview(null)
+                    }} disabled={tripImageUploading}>
                       <FiXCircle /> {language === 'ko' ? '취소' : 'Cancel'}
                     </button>
                   </div>
