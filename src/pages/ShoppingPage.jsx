@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
-import { handleImageError } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
 import './ShoppingPage.css';
 
 // 대전시 구 목록
@@ -72,7 +72,7 @@ const ShoppingPage = () => {
           shppgAddr: item.addr1 || item.addr2,
           shppgIntro: item.overview || '',
           telNo: item.tel,
-          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
           _source: 'tourapi'

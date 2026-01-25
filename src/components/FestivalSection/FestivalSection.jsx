@@ -4,6 +4,7 @@ import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourFestivals } from '../../services/dbService'
+import { getReliableImageUrl } from '../../utils/imageUtils'
 import 'swiper/css'
 import 'swiper/css/navigation'
 import './FestivalSection.css'
@@ -116,7 +117,7 @@ const FestivalSection = () => {
             title: { ko: item.title, en: item.title },
             period: formatPeriod(),
             location: { ko: item.addr1 || '', en: item.addr1 || '' },
-            image: item.firstimage || item.firstimage2 || getFestivalImage(item.title),
+            image: getReliableImageUrl(item.firstimage || item.firstimage2, getFestivalImage(item.title)),
             summary: item.overview || '',
             theme: ''
           }

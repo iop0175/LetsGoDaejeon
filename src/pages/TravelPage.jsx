@@ -221,7 +221,7 @@ const TravelPage = () => {
               address: item.addr1 || item.addr2,
               summary: item.overview || '',
               phone: item.tel,
-              image: item.firstimage || item.firstimage2 || getTourSpotImage(item.title),
+              image: getReliableImageUrl(item.firstimage || item.firstimage2, getTourSpotImage(item.title)),
               mapx: item.mapx,
               mapy: item.mapy,
               homepage: item.homepage

@@ -3,6 +3,7 @@ import TravelCard from '../TravelCard/TravelCard'
 import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
+import { getReliableImageUrl } from '../../utils/imageUtils'
 import './PopularSpots.css'
 
 // 기본 이미지 (이미지 없을 때 사용)
@@ -103,7 +104,7 @@ const PopularSpots = () => {
           title: { ko: item.title, en: item.title },
           location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) },
           category: { ko: '관광지', en: 'Attraction' },
-          image: item.firstimage || item.firstimage2 || DEFAULT_IMAGE,
+          image: getReliableImageUrl(item.firstimage || item.firstimage2, DEFAULT_IMAGE),
           duration: { ko: '1-2시간', en: '1-2 hours' },
           summary: item.overview
         }))

@@ -501,35 +501,31 @@ export const recordPageVisitDB = async (pageName) => {
   try {
     const today = new Date().toISOString().split('T')[0]
     
-    // upsert: 오늘 날짜의 기록이 있으면 count 증가, 없으면 새로 생성
-    const { data: existing } = await supabase
+    // 단순 upsert로 처리 (RLS 정책이 없으면 실패할 수 있음)
+    const { error: upsertError } = await supabase
       .from('page_visits')
-      .select('id, visit_count')
-      .eq('page_name', pageName)
-      .eq('visit_date', today)
-      .single()
-    
-    if (existing) {
-      // 기존 레코드 업데이트
-      await supabase
-        .from('page_visits')
-        .update({ 
-          visit_count: existing.visit_count + 1,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id)
-    } else {
-      // 새 레코드 삽입
-      await supabase
-        .from('page_visits')
-        .insert([{ 
+      .upsert(
+        { 
           page_name: pageName, 
           visit_date: today,
           visit_count: 1 
-        }])
+        }, 
+        { 
+          onConflict: 'page_name,visit_date',
+          ignoreDuplicates: true  // 중복 시 무시
+        }
+      )
+    
+    // 에러 발생 시 조용히 무시 (콘솔에도 출력하지 않음)
+    // 페이지 방문 통계는 핵심 기능이 아니므로 실패해도 무방
+    if (upsertError) {
+      // 개발 환경에서만 debug 로그
+      if (import.meta.env.DEV) {
+        console.debug('[PageVisit] Skipped:', upsertError.code)
+      }
     }
   } catch (err) {
-
+    // 완전히 무시 - 사용자 경험에 영향 없음
   }
 }
 

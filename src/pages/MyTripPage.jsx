@@ -529,7 +529,7 @@ const MyTripPage = () => {
               name: item.title,
               address: item.addr1 || item.addr2,
               description: item.overview,
-              image: item.firstimage || item.firstimage2,
+              image: getReliableImageUrl(item.firstimage || item.firstimage2),
               lat: item.mapy ? parseFloat(item.mapy) : null,
               lng: item.mapx ? parseFloat(item.mapx) : null
             }))
@@ -560,7 +560,7 @@ const MyTripPage = () => {
               name: item.title,
               address: item.addr1 || item.addr2,
               description: item.overview,
-              image: item.firstimage || item.firstimage2,
+              image: getReliableImageUrl(item.firstimage || item.firstimage2),
               lat: item.mapy ? parseFloat(item.mapy) : null,
               lng: item.mapx ? parseFloat(item.mapx) : null
             }))
@@ -591,7 +591,7 @@ const MyTripPage = () => {
               name: item.title,
               address: item.addr1 || item.addr2,
               description: item.overview,
-              image: item.firstimage || item.firstimage2,
+              image: getReliableImageUrl(item.firstimage || item.firstimage2),
               lat: item.mapy ? parseFloat(item.mapy) : null,
               lng: item.mapx ? parseFloat(item.mapx) : null
             }))

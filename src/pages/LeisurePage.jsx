@@ -4,7 +4,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { handleImageError } from '../utils/imageUtils'
+import { handleImageError, getReliableImageUrl } from '../utils/imageUtils'
 import './LeisurePage.css'
 
 // 대전시 구 목록
@@ -159,7 +159,7 @@ const LeisurePage = () => {
             address: item.addr1 || item.addr2 || '',
             overview: item.overview || '',
             phone: item.tel,
-            image: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+            image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
             mapx: item.mapx,
             mapy: item.mapy,
             homepage: item.homepage,

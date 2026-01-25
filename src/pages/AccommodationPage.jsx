@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
-import { handleImageError } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
 import './AccommodationPage.css';
 
 // 대전시 구 목록
@@ -90,7 +90,7 @@ const AccommodationPage = () => {
           romsAddr: item.addr1 || item.addr2,
           romsScl: '', // TourAPI에는 숙소유형이 없음
           romsRefadNo: item.tel,
-          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
           overview: item.overview,

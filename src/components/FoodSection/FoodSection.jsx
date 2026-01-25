@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
+import { getReliableImageUrl } from '../../utils/imageUtils'
 import './FoodSection.css'
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -114,7 +115,7 @@ const FoodSection = () => {
             en: item.overview?.slice(0, 60) || `Enjoy delicious food at ${item.title}`
           },
           rating: (4 + Math.random() * 0.9).toFixed(1),
-          image: item.firstimage || item.firstimage2 || getFoodImage(item.title, ''),
+          image: getReliableImageUrl(item.firstimage || item.firstimage2, getFoodImage(item.title, '')),
           location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) }
         }))
         setFoods(formattedFoods)

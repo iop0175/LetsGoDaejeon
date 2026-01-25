@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, FiExternalLink, FiMusic, FiCamera } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
-import { handleImageError } from '../utils/imageUtils'
+import { handleImageError, getReliableImageUrl } from '../utils/imageUtils'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
@@ -167,7 +167,7 @@ const FestivalPage = () => {
             endDate: item.event_end_date
               ? `${item.event_end_date.slice(0, 4)}-${item.event_end_date.slice(4, 6)}-${item.event_end_date.slice(6, 8)}`
               : '',
-            image: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+            image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
             tel: item.tel,
             overview: item.overview,
             mapx: item.mapx,

@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
-import { handleImageError } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
 import './CulturePage.css';
 
 // 대전시 구 목록
@@ -90,7 +90,7 @@ const CulturePage = () => {
           fcltyKnd: '', // TourAPI에는 시설종류가 없음
           operTime: '',
           telno: item.tel,
-          imageUrl: item.firstimage || item.firstimage2 || '/images/no-image.svg',
+          imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
           overview: item.overview,
