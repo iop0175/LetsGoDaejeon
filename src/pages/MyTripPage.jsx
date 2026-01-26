@@ -336,13 +336,17 @@ const MyTripPage = () => {
     }
     
     // 폴링 백업: 5초마다 데이터 확인 (RLS로 인한 실시간 누락 대비)
+    // 현재 planId를 클로저에서 사용
+    const currentPlanId = selectedTrip.id
+    let lastPlaceCount = selectedTrip.days?.reduce((sum, d) => sum + (d.places?.length || 0), 0) || 0
+    
     const pollInterval = setInterval(async () => {
-      const result = await getTripPlanWithDetails(selectedTrip.id)
+      const result = await getTripPlanWithDetails(currentPlanId)
       if (result.success) {
         // 장소 개수가 변경되었으면 업데이트
-        const currentPlaceCount = selectedTrip.days?.reduce((sum, d) => sum + (d.places?.length || 0), 0) || 0
         const newPlaceCount = result.plan.days?.reduce((sum, d) => sum + (d.places?.length || 0), 0) || 0
-        if (currentPlaceCount !== newPlaceCount) {
+        if (lastPlaceCount !== newPlaceCount) {
+          lastPlaceCount = newPlaceCount
           setRealtimeSyncing(true)
           setSelectedTrip(result.plan)
           setLastSyncTime(new Date())
