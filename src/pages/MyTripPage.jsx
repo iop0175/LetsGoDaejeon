@@ -296,11 +296,8 @@ const MyTripPage = () => {
       return
     }
     
-    // 협업 여행일 때만 실시간 동기화 활성화
-    const isCollaborative = collaboratedPlans.some(p => p.id === selectedTrip.id) ||
-      (collaborators && collaborators.length > 0)
-    
-    if (!isCollaborative) return
+    // 서버 저장된 모든 여행에 대해 실시간 동기화 활성화
+    // (협업자가 있을 수 있으므로 소유자도 동기화 필요)
     
     // 기존 구독 해제
     if (realtimeChannelRef.current) {
