@@ -1207,3 +1207,364 @@ export const getPlaceDetail = async (placeType, placeName) => {
     return { success: false, error: err.message }
   }
 }
+
+// ===== 여행 계획 협업 기능 =====
+
+// 초대 코드 생성 (랜덤 8자리)
+const generateInviteCode = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+  let code = ''
+  for (let i = 0; i < 8; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return code
+}
+
+// 초대 링크 생성
+export const createTripInvite = async (planId, permission = 'edit') => {
+  try {
+    const inviteCode = generateInviteCode()
+    
+    // 기존 활성 초대 비활성화 (선택적)
+    // await supabase.from('trip_invites').update({ is_active: false }).eq('plan_id', planId)
+    
+    const { data, error } = await supabase
+      .from('trip_invites')
+      .insert({
+        plan_id: planId,
+        invite_code: inviteCode,
+        permission,
+        created_by: (await supabase.auth.getUser()).data.user?.id
+      })
+      .select()
+      .single()
+    
+    if (error) throw error
+    
+    return { 
+      success: true, 
+      invite: data,
+      inviteUrl: `${window.location.origin}/my-trip?invite=${inviteCode}`
+    }
+  } catch (err) {
+    console.error('createTripInvite error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 초대 코드로 초대 정보 조회
+export const getTripInviteByCode = async (inviteCode) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_invites')
+      .select(`
+        *,
+        trip_plans (
+          id,
+          title,
+          start_date,
+          end_date,
+          description,
+          user_id
+        )
+      `)
+      .eq('invite_code', inviteCode)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .single()
+    
+    if (error) throw error
+    
+    // 사용 횟수 확인
+    if (data.max_uses && data.use_count >= data.max_uses) {
+      return { success: false, error: '초대 링크 사용 횟수가 초과되었습니다.' }
+    }
+    
+    return { success: true, invite: data }
+  } catch (err) {
+    console.error('getTripInviteByCode error:', err)
+    return { success: false, error: '유효하지 않은 초대 링크입니다.' }
+  }
+}
+
+// 초대 수락 (협업자로 등록)
+export const acceptTripInvite = async (inviteCode) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다.' }
+    }
+    
+    // 초대 정보 조회
+    const inviteResult = await getTripInviteByCode(inviteCode)
+    if (!inviteResult.success) {
+      return inviteResult
+    }
+    
+    const invite = inviteResult.invite
+    
+    // 자기 자신의 여행인지 확인
+    if (invite.trip_plans.user_id === user.id) {
+      return { success: false, error: '자신의 여행에는 참여할 수 없습니다.' }
+    }
+    
+    // 이미 협업자인지 확인
+    const { data: existingCollab } = await supabase
+      .from('trip_collaborators')
+      .select('id')
+      .eq('plan_id', invite.plan_id)
+      .eq('user_id', user.id)
+      .single()
+    
+    if (existingCollab) {
+      return { success: false, error: '이미 참여 중인 여행입니다.' }
+    }
+    
+    // 협업자로 등록
+    const { error: collabError } = await supabase
+      .from('trip_collaborators')
+      .insert({
+        plan_id: invite.plan_id,
+        user_id: user.id,
+        permission: invite.permission,
+        invited_by: invite.created_by,
+        accepted_at: new Date().toISOString()
+      })
+    
+    if (collabError) throw collabError
+    
+    // 초대 사용 횟수 증가
+    await supabase
+      .from('trip_invites')
+      .update({ use_count: invite.use_count + 1 })
+      .eq('id', invite.id)
+    
+    return { 
+      success: true, 
+      planId: invite.plan_id,
+      planTitle: invite.trip_plans.title
+    }
+  } catch (err) {
+    console.error('acceptTripInvite error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 여행 계획의 협업자 목록 조회
+export const getTripCollaborators = async (planId) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_collaborators')
+      .select(`
+        *,
+        users:user_id (
+          id,
+          raw_user_meta_data
+        )
+      `)
+      .eq('plan_id', planId)
+    
+    if (error) throw error
+    
+    // 사용자 정보 매핑
+    const collaborators = data.map(collab => ({
+      id: collab.id,
+      planId: collab.plan_id,
+      userId: collab.user_id,
+      permission: collab.permission,
+      invitedAt: collab.invited_at,
+      acceptedAt: collab.accepted_at,
+      // Kakao 사용자 정보
+      userName: collab.users?.raw_user_meta_data?.name || collab.users?.raw_user_meta_data?.full_name || '알 수 없음',
+      userAvatar: collab.users?.raw_user_meta_data?.avatar_url || collab.users?.raw_user_meta_data?.picture
+    }))
+    
+    return { success: true, collaborators }
+  } catch (err) {
+    console.error('getTripCollaborators error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 협업자 권한 변경
+export const updateCollaboratorPermission = async (collaboratorId, permission) => {
+  try {
+    const { error } = await supabase
+      .from('trip_collaborators')
+      .update({ permission })
+      .eq('id', collaboratorId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('updateCollaboratorPermission error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 협업자 제거
+export const removeCollaborator = async (collaboratorId) => {
+  try {
+    const { error } = await supabase
+      .from('trip_collaborators')
+      .delete()
+      .eq('id', collaboratorId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('removeCollaborator error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 협업자 스스로 나가기
+export const leaveTrip = async (planId) => {
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { success: false, error: '로그인이 필요합니다.' }
+    }
+    
+    const { error } = await supabase
+      .from('trip_collaborators')
+      .delete()
+      .eq('plan_id', planId)
+      .eq('user_id', user.id)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('leaveTrip error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 초대 링크 비활성화
+export const deactivateTripInvite = async (inviteId) => {
+  try {
+    const { error } = await supabase
+      .from('trip_invites')
+      .update({ is_active: false })
+      .eq('id', inviteId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('deactivateTripInvite error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 여행 계획의 활성 초대 목록 조회
+export const getTripInvites = async (planId) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_invites')
+      .select('*')
+      .eq('plan_id', planId)
+      .eq('is_active', true)
+      .gt('expires_at', new Date().toISOString())
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    return { success: true, invites: data }
+  } catch (err) {
+    console.error('getTripInvites error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 사용자가 협업 중인 여행 목록 조회 (내가 만든 것이 아닌 공유받은 여행)
+export const getCollaboratedTrips = async (userId) => {
+  try {
+    if (!userId) {
+      return { success: true, plans: [] }
+    }
+    
+    const { data, error } = await supabase
+      .from('trip_collaborators')
+      .select(`
+        permission,
+        trip_plans (
+          *,
+          trip_days (
+            *,
+            trip_places (*)
+          )
+        )
+      `)
+      .eq('user_id', userId)
+    
+    if (error) throw error
+    
+    // 데이터 형식 변환
+    const plans = data.map(collab => ({
+      id: collab.trip_plans.id,
+      userId: collab.trip_plans.user_id,
+      title: collab.trip_plans.title,
+      startDate: collab.trip_plans.start_date,
+      endDate: collab.trip_plans.end_date,
+      description: collab.trip_plans.description,
+      accommodationName: collab.trip_plans.accommodation_name,
+      accommodationAddress: collab.trip_plans.accommodation_address,
+      createdAt: collab.trip_plans.created_at,
+      isCollaborated: true, // 협업 여행 표시
+      myPermission: collab.permission, // 내 권한
+      days: collab.trip_plans.trip_days?.map(day => ({
+        id: day.id,
+        planId: day.plan_id,
+        dayNumber: day.day_number,
+        date: day.date,
+        places: day.trip_places?.map(place => ({
+          id: place.id,
+          dayId: place.day_id,
+          placeType: place.place_type,
+          placeName: place.place_name,
+          placeAddress: place.place_address,
+          placeDescription: place.place_description,
+          placeImage: place.place_image,
+          orderIndex: place.order_index,
+          visitTime: place.visit_time,
+          memo: place.memo,
+          transportToNext: place.transport_to_next
+        })) || []
+      })) || []
+    }))
+    
+    return { success: true, plans }
+  } catch (err) {
+    console.error('getCollaboratedTrips error:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// 내 여행 + 협업 여행 모두 조회
+export const getAllMyTrips = async (userId) => {
+  try {
+    if (!userId || userId === 'anonymous') {
+      const localPlans = JSON.parse(localStorage.getItem('tripPlans') || '[]')
+      return { success: true, plans: localPlans, collaboratedPlans: [] }
+    }
+    
+    // 내 여행과 협업 여행 동시 조회
+    const [myTripsResult, collabTripsResult] = await Promise.all([
+      getUserTripPlans(userId),
+      getCollaboratedTrips(userId)
+    ])
+    
+    return {
+      success: true,
+      plans: myTripsResult.success ? myTripsResult.plans : [],
+      collaboratedPlans: collabTripsResult.success ? collabTripsResult.plans : []
+    }
+  } catch (err) {
+    console.error('getAllMyTrips error:', err)
+    return { success: false, error: err.message }
+  }
+}

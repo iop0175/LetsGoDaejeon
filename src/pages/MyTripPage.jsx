@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { 
   FiPlus, FiTrash2, FiEdit2, FiMapPin, FiCalendar, FiClock, 
   FiChevronDown, FiChevronUp, FiSave, FiX, FiMap, FiCoffee,
   FiStar, FiNavigation, FiUsers, FiGrid, FiList, FiShare2,
-  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart, FiImage
+  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart, FiImage, FiUser
 } from 'react-icons/fi'
 import { 
   FaCar, FaBus, FaSubway, FaWalking, FaTaxi, FaBicycle, FaParking 
@@ -17,7 +17,9 @@ import {
   getUserTripPlans, createTripPlan, updateTripPlan, deleteTripPlan,
   addTripDay, updateTripDay, deleteTripDay,
   addTripPlace, updateTripPlace, deleteTripPlace,
-  publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo
+  publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo,
+  createTripInvite, getTripInviteByCode, acceptTripInvite,
+  getTripCollaborators, removeCollaborator, leaveTrip, getAllMyTrips
 } from '../services/tripService'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { uploadResizedImage } from '../services/blobService'
@@ -117,6 +119,19 @@ const MyTripPage = () => {
   const [thumbnailFile, setThumbnailFile] = useState(null) // 업로드할 이미지 파일
   const [thumbnailPreview, setThumbnailPreview] = useState(null) // 미리보기 URL
   const [isUploading, setIsUploading] = useState(false) // 업로드 중 상태
+  
+  // 협업 관련 상태
+  const [collaboratedPlans, setCollaboratedPlans] = useState([]) // 공유받은 여행 목록
+  const [showInviteModal, setShowInviteModal] = useState(false) // 초대 모달
+  const [invitingTripId, setInvitingTripId] = useState(null) // 초대 중인 여행 ID
+  const [inviteUrl, setInviteUrl] = useState('') // 생성된 초대 URL
+  const [inviteLoading, setInviteLoading] = useState(false) // 초대 생성 중
+  const [showCollaboratorsModal, setShowCollaboratorsModal] = useState(false) // 협업자 목록 모달
+  const [collaborators, setCollaborators] = useState([]) // 협업자 목록
+  const [collaboratorsLoading, setCollaboratorsLoading] = useState(false)
+  const [pendingInvite, setPendingInvite] = useState(null) // URL로 전달받은 초대 코드
+  const [showInviteAcceptModal, setShowInviteAcceptModal] = useState(false) // 초대 수락 모달
+  const [inviteInfo, setInviteInfo] = useState(null) // 초대 정보
   
   // 이동 방법 편집 상태
   const [editingTransport, setEditingTransport] = useState(null) // { dayId, afterPlaceIndex }
@@ -236,7 +251,10 @@ const MyTripPage = () => {
     { id: 'bicycle', icon: FaBicycle, labelKo: '자전거', labelEn: 'Bicycle' }
   ]
   
-  // 여행 계획 목록 로드
+  // URL 파라미터 (초대 코드)
+  const [searchParams, setSearchParams] = useSearchParams()
+  
+  // 여행 계획 목록 로드 (내 여행 + 협업 여행)
   const loadTripPlans = useCallback(async () => {
     if (!user) {
       setLoading(false)
@@ -245,12 +263,13 @@ const MyTripPage = () => {
     
     setLoading(true)
     try {
-      const result = await getUserTripPlans(user.id)
+      const result = await getAllMyTrips(user.id)
       if (result.success) {
-        setTripPlans(result.plans)
+        setTripPlans(result.plans || [])
+        setCollaboratedPlans(result.collaboratedPlans || [])
       }
     } catch (err) {
-
+      console.error('여행 목록 로드 실패:', err)
     }
     setLoading(false)
   }, [user])
@@ -258,6 +277,172 @@ const MyTripPage = () => {
   useEffect(() => {
     loadTripPlans()
   }, [loadTripPlans])
+  
+  // URL의 초대 코드 처리
+  useEffect(() => {
+    const inviteCode = searchParams.get('invite')
+    if (inviteCode && user) {
+      handleInviteCode(inviteCode)
+      // URL에서 초대 코드 파라미터 제거
+      searchParams.delete('invite')
+      setSearchParams(searchParams, { replace: true })
+    } else if (inviteCode && !user && !authLoading) {
+      // 로그인이 필요함을 알림
+      setPendingInvite(inviteCode)
+      alert(language === 'ko' 
+        ? '초대를 수락하려면 로그인이 필요합니다.' 
+        : 'Please login to accept the invitation.')
+    }
+  }, [searchParams, user, authLoading])
+  
+  // 초대 코드 처리
+  const handleInviteCode = async (inviteCode) => {
+    try {
+      const result = await getTripInviteByCode(inviteCode)
+      if (result.success) {
+        setInviteInfo(result.invite)
+        setShowInviteAcceptModal(true)
+      } else {
+        alert(result.error || (language === 'ko' ? '유효하지 않은 초대 링크입니다.' : 'Invalid invite link.'))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '초대 정보를 불러오는데 실패했습니다.' : 'Failed to load invite info.')
+    }
+  }
+  
+  // 초대 수락
+  const handleAcceptInvite = async () => {
+    if (!inviteInfo) return
+    
+    try {
+      const result = await acceptTripInvite(inviteInfo.invite_code)
+      if (result.success) {
+        alert(language === 'ko' 
+          ? `'${result.planTitle}' 여행에 참여했습니다!` 
+          : `You have joined '${result.planTitle}'!`)
+        setShowInviteAcceptModal(false)
+        setInviteInfo(null)
+        loadTripPlans() // 목록 새로고침
+      } else {
+        alert(result.error)
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '초대 수락에 실패했습니다.' : 'Failed to accept invitation.')
+    }
+  }
+  
+  // 초대 링크 생성
+  const handleCreateInvite = async (planId) => {
+    setInviteLoading(true)
+    try {
+      const result = await createTripInvite(planId, 'edit')
+      if (result.success) {
+        setInviteUrl(result.inviteUrl)
+        setInvitingTripId(planId)
+        setShowInviteModal(true)
+      } else {
+        alert(result.error || (language === 'ko' ? '초대 링크 생성에 실패했습니다.' : 'Failed to create invite link.'))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '초대 링크 생성에 실패했습니다.' : 'Failed to create invite link.')
+    }
+    setInviteLoading(false)
+  }
+  
+  // 협업자 목록 조회
+  const handleShowCollaborators = async (planId) => {
+    setCollaboratorsLoading(true)
+    try {
+      const result = await getTripCollaborators(planId)
+      if (result.success) {
+        setCollaborators(result.collaborators)
+        setInvitingTripId(planId)
+        setShowCollaboratorsModal(true)
+      }
+    } catch (err) {
+      console.error('협업자 목록 조회 실패:', err)
+    }
+    setCollaboratorsLoading(false)
+  }
+  
+  // 협업자 제거
+  const handleRemoveCollaborator = async (collaboratorId) => {
+    if (!confirm(language === 'ko' ? '정말 이 협업자를 제거하시겠습니까?' : 'Are you sure you want to remove this collaborator?')) {
+      return
+    }
+    
+    try {
+      const result = await removeCollaborator(collaboratorId)
+      if (result.success) {
+        setCollaborators(prev => prev.filter(c => c.id !== collaboratorId))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '협업자 제거에 실패했습니다.' : 'Failed to remove collaborator.')
+    }
+  }
+  
+  // 협업 여행에서 나가기
+  const handleLeaveTrip = async (planId) => {
+    if (!confirm(language === 'ko' ? '정말 이 여행에서 나가시겠습니까?' : 'Are you sure you want to leave this trip?')) {
+      return
+    }
+    
+    try {
+      const result = await leaveTrip(planId)
+      if (result.success) {
+        loadTripPlans() // 목록 새로고침
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '여행 나가기에 실패했습니다.' : 'Failed to leave trip.')
+    }
+  }
+  
+  // 초대 링크 복사
+  const handleCopyInviteLink = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteUrl)
+      alert(language === 'ko' ? '초대 링크가 복사되었습니다!' : 'Invite link copied!')
+    } catch (err) {
+      // fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = inviteUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      alert(language === 'ko' ? '초대 링크가 복사되었습니다!' : 'Invite link copied!')
+    }
+  }
+  
+  // 카카오톡으로 초대
+  const handleKakaoInvite = () => {
+    if (window.Kakao && window.Kakao.isInitialized()) {
+      const trip = tripPlans.find(t => t.id === invitingTripId)
+      window.Kakao.Share.sendDefault({
+        objectType: 'feed',
+        content: {
+          title: language === 'ko' ? '함께 여행 계획을 만들어요!' : 'Let\'s plan a trip together!',
+          description: trip?.title || '대전 여행',
+          imageUrl: 'https://letsgodaejeon.kr/images/og-image.png',
+          link: {
+            mobileWebUrl: inviteUrl,
+            webUrl: inviteUrl,
+          },
+        },
+        buttons: [
+          {
+            title: language === 'ko' ? '여행 참여하기' : 'Join Trip',
+            link: {
+              mobileWebUrl: inviteUrl,
+              webUrl: inviteUrl,
+            },
+          },
+        ],
+      })
+    } else {
+      alert(language === 'ko' ? '카카오 공유를 사용할 수 없습니다.' : 'Kakao share is not available.')
+    }
+  }
   
   // 새 여행 계획 생성
   const handleCreateTrip = async () => {
@@ -2910,10 +3095,80 @@ const MyTripPage = () => {
                           <FiShare2 /> {language === 'ko' ? '게시' : 'Publish'}
                         </button>
                       )}
+                      <button 
+                        className="invite-btn"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleCreateInvite(trip.id)
+                        }}
+                        title={language === 'ko' ? '같이 만들기' : 'Invite'}
+                        disabled={!user}
+                      >
+                        <FiUsers /> {language === 'ko' ? '초대' : 'Invite'}
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
+            )}
+            
+            {/* 공유받은 여행 섹션 */}
+            {collaboratedPlans.length > 0 && (
+              <>
+                <div className="trip-section-divider">
+                  <FiUsers />
+                  <span>{language === 'ko' ? '공유받은 여행' : 'Shared with me'}</span>
+                </div>
+                <div className={`trip-list ${viewMode}`}>
+                  {collaboratedPlans.map(trip => (
+                    <div 
+                      key={trip.id} 
+                      className={`trip-card shared ${selectedTrip?.id === trip.id ? 'selected' : ''}`}
+                      onClick={() => setSelectedTrip(trip)}
+                    >
+                      <div className="trip-card-header">
+                        <h4>{trip.title}</h4>
+                        <span className="shared-badge">
+                          <FiUsers /> {trip.myPermission === 'edit' 
+                            ? (language === 'ko' ? '편집' : 'Edit') 
+                            : (language === 'ko' ? '보기' : 'View')}
+                        </span>
+                      </div>
+                      <div className="trip-card-info">
+                        <span className="trip-dates">
+                          <FiCalendar />
+                          {trip.startDate} ~ {trip.endDate}
+                        </span>
+                        <span className="trip-duration">
+                          {getTripDuration(trip)}{language === 'ko' ? '일' : ' days'}
+                        </span>
+                      </div>
+                      {trip.description && (
+                        <p className="trip-description">{trip.description}</p>
+                      )}
+                      <div className="trip-card-stats">
+                        <span>
+                          <FiMapPin />
+                          {trip.days?.reduce((acc, day) => acc + (day.places?.length || 0), 0) || 0}
+                          {language === 'ko' ? '개 장소' : ' places'}
+                        </span>
+                      </div>
+                      <div className="trip-card-actions">
+                        <button 
+                          className="leave-btn"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleLeaveTrip(trip.id)
+                          }}
+                          title={language === 'ko' ? '나가기' : 'Leave'}
+                        >
+                          <FiX /> {language === 'ko' ? '나가기' : 'Leave'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
           </aside>
           
@@ -3722,6 +3977,160 @@ const MyTripPage = () => {
                 ) : (
                   <><FiGlobe /> {language === 'ko' ? '게시하기' : 'Publish'}</>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 초대 링크 모달 */}
+      {showInviteModal && (
+        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content invite-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FiUsers /> {language === 'ko' ? '같이 만들기' : 'Invite Friends'}</h3>
+              <button className="modal-close" onClick={() => setShowInviteModal(false)}>
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p className="invite-info">
+                {language === 'ko' 
+                  ? '아래 링크를 친구에게 공유하면 함께 여행 계획을 편집할 수 있습니다.'
+                  : 'Share this link with friends to plan the trip together.'}
+              </p>
+              
+              <div className="invite-link-box">
+                <input 
+                  type="text" 
+                  value={inviteUrl} 
+                  readOnly 
+                  onClick={(e) => e.target.select()}
+                />
+                <button onClick={handleCopyInviteLink} className="copy-btn">
+                  {language === 'ko' ? '복사' : 'Copy'}
+                </button>
+              </div>
+              
+              <div className="invite-actions">
+                <button className="kakao-invite-btn" onClick={handleKakaoInvite}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#3C1E1E">
+                    <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.47 1.607 4.647 4.042 5.877l-.992 3.682c-.052.194.017.4.175.514.158.114.37.123.537.023L10.1 17.77c.623.087 1.26.133 1.9.133 5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
+                  </svg>
+                  {language === 'ko' ? '카카오톡으로 초대' : 'Invite via KakaoTalk'}
+                </button>
+              </div>
+              
+              <p className="invite-expire-info">
+                {language === 'ko' 
+                  ? '※ 초대 링크는 7일간 유효하며, 최대 10명까지 참여할 수 있습니다.'
+                  : '※ The invite link is valid for 7 days and can be used by up to 10 people.'}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 초대 수락 모달 */}
+      {showInviteAcceptModal && inviteInfo && (
+        <div className="modal-overlay" onClick={() => setShowInviteAcceptModal(false)}>
+          <div className="modal-content invite-accept-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FiUsers /> {language === 'ko' ? '여행 초대' : 'Trip Invitation'}</h3>
+              <button className="modal-close" onClick={() => setShowInviteAcceptModal(false)}>
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="invite-trip-info">
+                <h4>{inviteInfo.trip_plans?.title}</h4>
+                <p className="invite-trip-dates">
+                  <FiCalendar />
+                  {inviteInfo.trip_plans?.start_date} ~ {inviteInfo.trip_plans?.end_date}
+                </p>
+                {inviteInfo.trip_plans?.description && (
+                  <p className="invite-trip-desc">{inviteInfo.trip_plans.description}</p>
+                )}
+              </div>
+              
+              <p className="invite-permission-info">
+                {language === 'ko' 
+                  ? `참여 시 '${inviteInfo.permission === 'edit' ? '편집' : '보기'}' 권한이 부여됩니다.`
+                  : `You will be granted '${inviteInfo.permission}' permission.`}
+              </p>
+            </div>
+            <div className="modal-footer">
+              <button className="cancel-btn" onClick={() => setShowInviteAcceptModal(false)}>
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+              <button className="accept-invite-btn" onClick={handleAcceptInvite}>
+                <FiUsers /> {language === 'ko' ? '참여하기' : 'Join'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* 협업자 목록 모달 */}
+      {showCollaboratorsModal && (
+        <div className="modal-overlay" onClick={() => setShowCollaboratorsModal(false)}>
+          <div className="modal-content collaborators-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><FiUsers /> {language === 'ko' ? '함께하는 사람들' : 'Collaborators'}</h3>
+              <button className="modal-close" onClick={() => setShowCollaboratorsModal(false)}>
+                <FiX />
+              </button>
+            </div>
+            <div className="modal-body">
+              {collaboratorsLoading ? (
+                <div className="loading-spinner" />
+              ) : collaborators.length === 0 ? (
+                <p className="no-collaborators">
+                  {language === 'ko' ? '아직 함께하는 사람이 없습니다.' : 'No collaborators yet.'}
+                </p>
+              ) : (
+                <ul className="collaborators-list">
+                  {collaborators.map(collab => (
+                    <li key={collab.id} className="collaborator-item">
+                      <div className="collaborator-info">
+                        {collab.userAvatar ? (
+                          <img src={collab.userAvatar} alt={collab.userName} className="collaborator-avatar" />
+                        ) : (
+                          <div className="collaborator-avatar placeholder">
+                            <FiUser />
+                          </div>
+                        )}
+                        <div className="collaborator-details">
+                          <span className="collaborator-name">{collab.userName}</span>
+                          <span className="collaborator-permission">
+                            {collab.permission === 'edit' 
+                              ? (language === 'ko' ? '편집 가능' : 'Can edit')
+                              : collab.permission === 'admin'
+                              ? (language === 'ko' ? '관리자' : 'Admin')
+                              : (language === 'ko' ? '보기만' : 'View only')}
+                          </span>
+                        </div>
+                      </div>
+                      <button 
+                        className="remove-collaborator-btn"
+                        onClick={() => handleRemoveCollaborator(collab.id)}
+                        title={language === 'ko' ? '제거' : 'Remove'}
+                      >
+                        <FiX />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              
+              <button 
+                className="add-collaborator-btn"
+                onClick={() => {
+                  setShowCollaboratorsModal(false)
+                  handleCreateInvite(invitingTripId)
+                }}
+              >
+                <FiPlus /> {language === 'ko' ? '새로운 초대 링크 생성' : 'Create New Invite Link'}
               </button>
             </div>
           </div>
