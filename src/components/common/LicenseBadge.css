@@ -26,6 +26,18 @@
   flex-shrink: 0;
 }
 
+/* 다중 이미지 (예: 1유형+3유형) */
+.kogl-images {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.license-badge-multi .kogl-image {
+  height: 22px;
+}
+
 .license-text {
   font-size: 0.8rem;
   font-weight: 500;
