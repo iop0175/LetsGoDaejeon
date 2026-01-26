@@ -27,6 +27,7 @@ const LeisurePage = () => {
   const [error, setError] = useState(null)
   const [currentPage, setCurrentPage] = useState(1)
   const [districtFilter, setDistrictFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('name') // 정렬 기준: 'name' | 'views'
   const itemsPerPage = 12
 
   // 상세 모달 상태
@@ -48,20 +49,29 @@ const LeisurePage = () => {
     return match ? match[1] : null
   }
 
-  // 구 변경 시 페이지 리셋
+  // 구/정렬 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1)
-  }, [districtFilter])
+  }, [districtFilter, sortBy])
 
-  // 구별 필터링
+  // 구별 필터링 + 정렬
   const filteredSpots = useMemo(() => {
-    if (districtFilter === 'all') return allSpots
+    let data = districtFilter === 'all' 
+      ? allSpots 
+      : allSpots.filter(item => {
+          const district = extractDistrict(item.address)
+          return district === districtFilter
+        })
     
-    return allSpots.filter(item => {
-      const district = extractDistrict(item.address)
-      return district === districtFilter
-    })
-  }, [allSpots, districtFilter])
+    // 정렬 적용
+    if (sortBy === 'name') {
+      data = [...data].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ko'))
+    } else if (sortBy === 'views') {
+      data = [...data].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    }
+    
+    return data
+  }, [allSpots, districtFilter, sortBy])
 
   // 현재 페이지에 해당하는 데이터
   const paginatedSpots = useMemo(() => {
@@ -223,11 +233,27 @@ const LeisurePage = () => {
               </div>
             </div>
 
-            {/* 결과 수 */}
-            <div className="results-count">
-              {language === 'ko' 
-                ? `총 ${filteredSpots.length}개의 레포츠 시설`
-                : `${filteredSpots.length} leisure spots found`}
+            {/* 정렬 + 결과 수 */}
+            <div className="sort-count-row">
+              <div className="sort-buttons">
+                <button
+                  className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+                  onClick={() => setSortBy('name')}
+                >
+                  {language === 'ko' ? '가나다순' : 'Name'}
+                </button>
+                <button
+                  className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
+                  onClick={() => setSortBy('views')}
+                >
+                  {language === 'ko' ? '조회수순' : 'Views'}
+                </button>
+              </div>
+              <div className="results-count">
+                {language === 'ko' 
+                  ? `총 ${filteredSpots.length}개의 레포츠 시설`
+                  : `${filteredSpots.length} leisure spots found`}
+              </div>
             </div>
 
             {/* 레포츠 카드 그리드 */}

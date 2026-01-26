@@ -26,6 +26,7 @@ const CulturePage = () => {
   const [selectedType, setSelectedType] = useState('all');
   const [districtFilter, setDistrictFilter] = useState('all');
   const [dongFilter, setDongFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
   const itemsPerPage = 12;
 
   const text = {
@@ -160,7 +161,7 @@ const CulturePage = () => {
   // 필터 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedType, dongFilter]);
+  }, [selectedType, dongFilter, sortBy]);
 
   // 타입별 + 구별 + 동별 필터링
   const filteredFacilities = useMemo(() => {
@@ -189,8 +190,15 @@ const CulturePage = () => {
       });
     }
     
+    // 정렬 적용
+    if (sortBy === 'name') {
+      data = [...data].sort((a, b) => (a.fcltyNm || '').localeCompare(b.fcltyNm || '', 'ko'));
+    } else if (sortBy === 'views') {
+      data = [...data].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
+    }
+    
     return data;
-  }, [allFacilities, selectedType, districtFilter, dongFilter]);
+  }, [allFacilities, selectedType, districtFilter, dongFilter, sortBy]);
 
   // 현재 페이지에 해당하는 데이터
   const paginatedFacilities = useMemo(() => {
@@ -272,8 +280,25 @@ const CulturePage = () => {
           )}
         </div>
 
-        <div className="culture-summary">
-          {t.totalCount.replace('{count}', filteredFacilities.length)}
+        {/* 정렬 + 개수 표시 */}
+        <div className="sort-count-row">
+          <div className="sort-buttons">
+            <button
+              className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+              onClick={() => setSortBy('name')}
+            >
+              {language === 'ko' ? '가나다순' : 'Name'}
+            </button>
+            <button
+              className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
+              onClick={() => setSortBy('views')}
+            >
+              {language === 'ko' ? '조회수순' : 'Views'}
+            </button>
+          </div>
+          <div className="culture-count">
+            {t.totalCount.replace('{count}', filteredFacilities.length)}
+          </div>
         </div>
 
         {loading ? (

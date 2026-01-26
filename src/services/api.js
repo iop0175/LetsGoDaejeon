@@ -259,7 +259,7 @@ export const getTourApiDetail = async (contentId, includeOverview = true) => {
     });
     
     const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/detailCommon1?${params.toString()}`
+      `${WORKERS_API_URL}/api/tour/detailCommon2?${params.toString()}`
     );
     const data = await response.json();
     

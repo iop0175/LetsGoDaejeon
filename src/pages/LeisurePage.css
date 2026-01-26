@@ -4,8 +4,7 @@
 
 .leisure-hero {
   height: 300px;
-  background: linear-gradient(135deg, rgba(255, 152, 0, 0.9), rgba(255, 87, 34, 0.9)),
-              url('https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=1920') center/cover;
+  background: linear-gradient(135deg, rgba(255, 152, 0, 0.9), rgba(255, 87, 34, 0.9));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -92,9 +91,46 @@
   border-color: transparent;
 }
 
+/* 정렬 + 결과 수 행 */
+.leisure-page .sort-count-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 20px 0 24px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.leisure-page .sort-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.leisure-page .sort-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border-color, #ddd);
+  border-radius: 20px;
+  background: var(--card-bg, white);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.leisure-page .sort-btn:hover {
+  border-color: #ff9800;
+  color: #ff9800;
+}
+
+.leisure-page .sort-btn.active {
+  background: linear-gradient(135deg, #ff9800, #ff5722);
+  color: white;
+  border-color: transparent;
+}
+
 /* 결과 수 */
 .leisure-page .results-count {
-  margin: 20px 0;
   font-size: 0.95rem;
   color: var(--text-secondary, #666);
 }

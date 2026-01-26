@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { Link } from 'react-router-dom'
-import { FiMapPin, FiPhone, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
+import { FiMapPin, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import './Footer.css'
 
@@ -21,12 +21,8 @@ const Footer = memo(() => {
             </p>
             <div className="footer-contact">
               <div className="contact-item">
-                <FiPhone />
-                <span>{t.footer.tourHotline}</span>
-              </div>
-              <div className="contact-item">
                 <FiMail />
-                <span>tour@daejeon.go.kr</span>
+                <span>daegiEun700@gmail.com</span>
               </div>
             </div>
           </div>

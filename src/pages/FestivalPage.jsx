@@ -20,6 +20,7 @@ const FestivalPage = () => {
   const [selectedEvent, setSelectedEvent] = useState(null)
   const [themeFilter, setThemeFilter] = useState('all')
   const [placeFilter, setPlaceFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('name') // 정렬 기준: 'name' | 'views'
   const itemsPerPage = 12
   
   // 공연 상태
@@ -90,12 +91,12 @@ const FestivalPage = () => {
     return Array.from(places).sort()
   }, [activeEvents])
 
-  // 필터 변경 시 페이지 리셋
+  // 필터/정렬 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1)
-  }, [themeFilter, placeFilter])
+  }, [themeFilter, placeFilter, sortBy])
 
-  // 테마 + 장소별 필터링 (이미 종료된 행사는 activeEvents에서 제외됨)
+  // 테마 + 장소별 필터링 + 정렬 (이미 종료된 행사는 activeEvents에서 제외됨)
   const filteredEvents = useMemo(() => {
     let data = activeEvents
     
@@ -109,35 +110,44 @@ const FestivalPage = () => {
       data = data.filter(event => event.place === placeFilter)
     }
     
-    // 현재 날짜 기준 가까운 순으로 정렬
-    const todayNum = parseInt(today.replace(/-/g, ''))
-    data = [...data].sort((a, b) => {
-      // 시작일 기준 정렬
-      const aBegin = a.beginDate ? parseInt(a.beginDate.replace(/-/g, '')) : 99999999
-      const bBegin = b.beginDate ? parseInt(b.beginDate.replace(/-/g, '')) : 99999999
-      
-      // 이미 시작된 행사 (시작일 <= 오늘) vs 아직 시작 안 한 행사 구분
-      const aStarted = aBegin <= todayNum
-      const bStarted = bBegin <= todayNum
-      
-      // 1. 진행 중인 행사 (시작됨) 우선
-      if (aStarted && !bStarted) return -1
-      if (!aStarted && bStarted) return 1
-      
-      // 2. 같은 그룹 내에서는 시작일 가까운 순
-      if (!aStarted && !bStarted) {
-        // 둘 다 아직 안 시작한 경우: 시작일 빠른 순
-        return aBegin - bBegin
-      }
-      
-      // 3. 둘 다 진행 중인 경우: 종료일 빠른 순 (곧 끝나는 것 먼저)
-      const aEnd = a.endDate ? parseInt(a.endDate.replace(/-/g, '')) : 99999999
-      const bEnd = b.endDate ? parseInt(b.endDate.replace(/-/g, '')) : 99999999
-      return aEnd - bEnd
-    })
+    // 정렬 적용
+    if (sortBy === 'name') {
+      // 가나다순 정렬
+      data = [...data].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ko'))
+    } else if (sortBy === 'views') {
+      // 조회수순 정렬
+      data = [...data].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    } else {
+      // 기본: 날짜순 정렬 (현재 날짜 기준 가까운 순)
+      const todayNum = parseInt(today.replace(/-/g, ''))
+      data = [...data].sort((a, b) => {
+        // 시작일 기준 정렬
+        const aBegin = a.beginDate ? parseInt(a.beginDate.replace(/-/g, '')) : 99999999
+        const bBegin = b.beginDate ? parseInt(b.beginDate.replace(/-/g, '')) : 99999999
+        
+        // 이미 시작된 행사 (시작일 <= 오늘) vs 아직 시작 안 한 행사 구분
+        const aStarted = aBegin <= todayNum
+        const bStarted = bBegin <= todayNum
+        
+        // 1. 진행 중인 행사 (시작됨) 우선
+        if (aStarted && !bStarted) return -1
+        if (!aStarted && bStarted) return 1
+        
+        // 2. 같은 그룹 내에서는 시작일 가까운 순
+        if (!aStarted && !bStarted) {
+          // 둘 다 아직 안 시작한 경우: 시작일 빠른 순
+          return aBegin - bBegin
+        }
+        
+        // 3. 둘 다 진행 중인 경우: 종료일 빠른 순 (곧 끝나는 것 먼저)
+        const aEnd = a.endDate ? parseInt(a.endDate.replace(/-/g, '')) : 99999999
+        const bEnd = b.endDate ? parseInt(b.endDate.replace(/-/g, '')) : 99999999
+        return aEnd - bEnd
+      })
+    }
     
     return data
-  }, [activeEvents, themeFilter, placeFilter, today])
+  }, [activeEvents, themeFilter, placeFilter, sortBy, today])
 
   // 현재 페이지에 해당하는 데이터
   const paginatedEvents = useMemo(() => {
@@ -423,8 +433,25 @@ const FestivalPage = () => {
                   )}
                 </div>
                 
-                <div className="events-count">
-                  {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연/행사' : ' events'}
+                {/* 정렬 + 개수 표시 */}
+                <div className="sort-count-row">
+                  <div className="sort-buttons">
+                    <button
+                      className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+                      onClick={() => setSortBy('name')}
+                    >
+                      {language === 'ko' ? '가나다순' : 'Name'}
+                    </button>
+                    <button
+                      className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
+                      onClick={() => setSortBy('views')}
+                    >
+                      {language === 'ko' ? '조회수순' : 'Views'}
+                    </button>
+                  </div>
+                  <div className="events-count">
+                    {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연/행사' : ' events'}
+                  </div>
                 </div>
                 
                 {filteredEvents.length === 0 ? (

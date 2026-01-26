@@ -28,6 +28,7 @@ const FoodPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [districtFilter, setDistrictFilter] = useState('all')
   const [dongFilter, setDongFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('name') // 정렬 기준: 'name' | 'views'
   const itemsPerPage = 12
   
   // 내 여행에 추가 모달 상태
@@ -87,12 +88,12 @@ const FoodPage = () => {
     setCurrentPage(1)
   }, [districtFilter])
 
-  // 필터 변경 시 페이지 리셋
+  // 필터/정렬 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1)
-  }, [dongFilter])
+  }, [dongFilter, sortBy])
 
-  // 구별 + 동별 필터링
+  // 구별 + 동별 필터링 + 정렬
   const filteredRestaurants = useMemo(() => {
     let data = allRestaurants
     
@@ -112,8 +113,15 @@ const FoodPage = () => {
       })
     }
     
+    // 정렬 적용
+    if (sortBy === 'name') {
+      data = [...data].sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
+    } else if (sortBy === 'views') {
+      data = [...data].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    }
+    
     return data
-  }, [allRestaurants, districtFilter, dongFilter])
+  }, [allRestaurants, districtFilter, dongFilter, sortBy])
 
   // 현재 페이지에 해당하는 데이터
   const paginatedRestaurants = useMemo(() => {
@@ -313,8 +321,25 @@ const FoodPage = () => {
               )}
             </div>
 
-            <div className="food-count">
-              {t.common.total} <strong>{filteredRestaurants.length}</strong>{language === 'ko' ? '개의 맛집' : ' restaurants'}
+            {/* 정렬 + 개수 표시 */}
+            <div className="sort-count-row">
+              <div className="sort-buttons">
+                <button
+                  className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+                  onClick={() => setSortBy('name')}
+                >
+                  {language === 'ko' ? '가나다순' : 'Name'}
+                </button>
+                <button
+                  className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
+                  onClick={() => setSortBy('views')}
+                >
+                  {language === 'ko' ? '조회수순' : 'Views'}
+                </button>
+              </div>
+              <div className="food-count">
+                {t.common.total} <strong>{filteredRestaurants.length}</strong>{language === 'ko' ? '개의 맛집' : ' restaurants'}
+              </div>
             </div>
             
             <div className="food-grid-page">

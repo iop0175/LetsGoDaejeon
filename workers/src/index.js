@@ -394,8 +394,17 @@ async function handleTourApi(request, env, pathname) {
       }
     });
     
-    const data = await response.json();
-    return jsonResponse(data);
+    // 응답 텍스트를 먼저 확인
+    const text = await response.text();
+    
+    // JSON 파싱 시도
+    try {
+      const data = JSON.parse(text);
+      return jsonResponse(data);
+    } catch (parseError) {
+      // JSON 파싱 실패시 원본 텍스트와 함께 에러 반환
+      return errorResponse('TourAPI 응답 파싱 실패: ' + text.substring(0, 200), 500);
+    }
   } catch (error) {
     return errorResponse('TourAPI 요청 실패: ' + error.message, 500);
   }

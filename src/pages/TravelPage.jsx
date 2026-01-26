@@ -31,6 +31,7 @@ const TravelPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [districtFilter, setDistrictFilter] = useState('all')
   const [dongFilter, setDongFilter] = useState('all')
+  const [sortBy, setSortBy] = useState('name') // 정렬 기준: 'name' | 'views'
   const itemsPerPage = 12
 
   // 상세 모달 상태
@@ -96,12 +97,12 @@ const TravelPage = () => {
     setCurrentPage(1)
   }, [districtFilter])
 
-  // 필터 변경 시 페이지 리셋
+  // 필터/정렬 변경 시 페이지 리셋
   useEffect(() => {
     setCurrentPage(1)
-  }, [dongFilter])
+  }, [dongFilter, sortBy])
 
-  // 구별 + 동별 필터링
+  // 구별 + 동별 필터링 + 정렬
   const filteredSpots = useMemo(() => {
     let data = allSpots
     
@@ -121,8 +122,15 @@ const TravelPage = () => {
       })
     }
     
+    // 정렬 적용
+    if (sortBy === 'name') {
+      data = [...data].sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ko'))
+    } else if (sortBy === 'views') {
+      data = [...data].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
+    }
+    
     return data
-  }, [allSpots, districtFilter, dongFilter])
+  }, [allSpots, districtFilter, dongFilter, sortBy])
 
   // 현재 페이지에 해당하는 데이터
   const paginatedSpots = useMemo(() => {
@@ -363,8 +371,25 @@ const TravelPage = () => {
               )}
             </div>
 
-            <div className="spots-count">
-              {t.common.total} <strong>{filteredSpots.length}</strong>{language === 'ko' ? '개의 관광지' : ' attractions'}
+            {/* 정렬 + 개수 표시 */}
+            <div className="sort-count-row">
+              <div className="sort-buttons">
+                <button
+                  className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
+                  onClick={() => setSortBy('name')}
+                >
+                  {language === 'ko' ? '가나다순' : 'Name'}
+                </button>
+                <button
+                  className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
+                  onClick={() => setSortBy('views')}
+                >
+                  {language === 'ko' ? '조회수순' : 'Views'}
+                </button>
+              </div>
+              <div className="spots-count">
+                {t.common.total} <strong>{filteredSpots.length}</strong>{language === 'ko' ? '개의 관광지' : ' attractions'}
+              </div>
             </div>
             
             <div className="spots-grid">
