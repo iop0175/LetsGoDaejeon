@@ -1538,47 +1538,66 @@ export const getTripInvites = async (planId) => {
 }
 
 // 사용자가 협업 중인 여행 목록 조회 (내가 만든 것이 아닌 공유받은 여행)
+// RLS 순환 참조 방지를 위해 2단계 쿼리로 변경
 export const getCollaboratedTrips = async (userId) => {
   try {
     if (!userId) {
       return { success: true, plans: [] }
     }
     
-    const { data, error } = await supabase
+    // 1단계: 내가 협업 중인 plan_id 목록만 조회
+    const { data: collaborations, error: collabError } = await supabase
       .from('trip_collaborators')
-      .select(`
-        permission,
-        trip_plans (
-          *,
-          trip_days (
-            *,
-            trip_places (*)
-          )
-        )
-      `)
+      .select('plan_id, permission')
       .eq('user_id', userId)
     
-    if (error) throw error
+    if (collabError) throw collabError
+    
+    if (!collaborations || collaborations.length === 0) {
+      return { success: true, plans: [] }
+    }
+    
+    // 2단계: 해당 plan_id들의 상세 정보 조회
+    const planIds = collaborations.map(c => c.plan_id)
+    const { data: plans, error: plansError } = await supabase
+      .from('trip_plans')
+      .select(`
+        *,
+        trip_days (
+          *,
+          trip_places (*)
+        )
+      `)
+      .in('id', planIds)
+      .order('created_at', { ascending: false })
+    
+    if (plansError) throw plansError
+    
+    // 권한 정보 매핑
+    const permissionMap = {}
+    collaborations.forEach(c => {
+      permissionMap[c.plan_id] = c.permission
+    })
     
     // 데이터 형식 변환
-    const plans = data.map(collab => ({
-      id: collab.trip_plans.id,
-      userId: collab.trip_plans.user_id,
-      title: collab.trip_plans.title,
-      startDate: collab.trip_plans.start_date,
-      endDate: collab.trip_plans.end_date,
-      description: collab.trip_plans.description,
-      accommodationName: collab.trip_plans.accommodation_name,
-      accommodationAddress: collab.trip_plans.accommodation_address,
-      createdAt: collab.trip_plans.created_at,
+    const formattedPlans = (plans || []).map(plan => ({
+      id: plan.id,
+      userId: plan.user_id,
+      title: plan.title,
+      startDate: plan.start_date,
+      endDate: plan.end_date,
+      description: plan.description,
+      accommodationName: plan.accommodation_name,
+      accommodationAddress: plan.accommodation_address,
+      createdAt: plan.created_at,
       isCollaborated: true, // 협업 여행 표시
-      myPermission: collab.permission, // 내 권한
-      days: collab.trip_plans.trip_days?.map(day => ({
+      myPermission: permissionMap[plan.id] || 'view', // 내 권한
+      days: plan.trip_days?.sort((a, b) => a.day_number - b.day_number).map(day => ({
         id: day.id,
         planId: day.plan_id,
         dayNumber: day.day_number,
         date: day.date,
-        places: day.trip_places?.map(place => ({
+        places: day.trip_places?.sort((a, b) => a.order_index - b.order_index).map(place => ({
           id: place.id,
           dayId: place.day_id,
           placeType: place.place_type,
@@ -1594,7 +1613,7 @@ export const getCollaboratedTrips = async (userId) => {
       })) || []
     }))
     
-    return { success: true, plans }
+    return { success: true, plans: formattedPlans }
   } catch (err) {
     console.error('getCollaboratedTrips error:', err)
     return { success: false, error: err.message }
