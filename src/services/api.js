@@ -61,99 +61,6 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
 };
 
 // ============================
-// 한국관광공사 포토갤러리 API
-// ============================
-
-// 키워드로 관광지 사진 검색 (내부 사용)
-const searchKTOPhotos = async (keyword, pageNo = 1, numOfRows = 10) => {
-  try {
-    const encodedKeyword = encodeURIComponent(keyword);
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/kto/PhotoGalleryService1/gallerySearchList1?numOfRows=${numOfRows}&pageNo=${pageNo}&MobileOS=ETC&MobileApp=LetsGoDaejeon&keyword=${encodedKeyword}&_type=json`
-    );
-    const data = await response.json();
-    
-    if (data.response?.header?.resultCode === '0000') {
-      const items = data.response.body.items?.item || [];
-      return {
-        success: true,
-        totalCount: data.response.body.totalCount || 0,
-        items: Array.isArray(items) ? items : [items]
-      };
-    }
-    return { success: false, items: [], totalCount: 0 };
-  } catch (error) {
-
-    return { success: false, items: [], totalCount: 0, error };
-  }
-};
-
-// 대전 관광지 한국관광공사 사진 키워드 매핑
-const DAEJEON_KTO_PHOTOS = {
-  '유성온천': '유성온천',
-  '유성온천공원': '유성온천공원',
-  '한밭수목원': '한밭수목원',
-  '엑스포과학공원': '엑스포',
-  '대청호': '대청호',
-  '장태산': '장태산',
-  '장태산자연휴양림': '장태산',
-  '계족산': '계족산',
-  '보문산': '보문산',
-  '엑스포기념관': '엑스포기념관',
-  '대전교통문화센터': '대전교통문화센터'
-};
-
-// 대전 관광지 사진 갤러리 가져오기 (여러 장)
-export const getDaejeonPhotoGallery = async (spotName, numOfRows = 10) => {
-  // 매핑된 키워드 찾기
-  let searchKeyword = spotName;
-  
-  for (const [key, value] of Object.entries(DAEJEON_KTO_PHOTOS)) {
-    if (spotName?.includes(key) || key.includes(spotName?.split(' ')[0] || '')) {
-      searchKeyword = value;
-      break;
-    }
-  }
-  
-  // 한국관광공사 사진 검색
-  const result = await searchKTOPhotos(searchKeyword, 1, numOfRows);
-  
-  if (result.success && result.items.length > 0) {
-    // 대전광역시 사진만 필터링
-    const daejeonPhotos = result.items.filter(photo => 
-      photo.galPhotographyLocation?.includes('대전')
-    );
-    
-    if (daejeonPhotos.length > 0) {
-      return {
-        success: true,
-        totalCount: daejeonPhotos.length,
-        items: daejeonPhotos.map(photo => ({
-          imageUrl: photo.galWebImageUrl,
-          title: photo.galTitle,
-          photographer: photo.galPhotographer,
-          location: photo.galPhotographyLocation,
-          keywords: photo.galSearchKeyword
-        }))
-      };
-    }
-  }
-  
-  // 대전 사진이 없으면 기본 이미지 반환
-  return {
-    success: false,
-    totalCount: 1,
-    items: [{
-      imageUrl: DEFAULT_IMAGE,
-      title: spotName,
-      photographer: '한국관광공사',
-      location: '대전광역시',
-      keywords: spotName
-    }]
-  };
-};
-
-// ============================
 // KCISA 문화예술 공연 API
 // ============================
 
@@ -336,14 +243,23 @@ export const getTourApiFestivals = async (options = {}) => {
 /**
  * TourAPI 상세정보 조회 (공통정보)
  * @param {string} contentId - 콘텐츠 ID
+ * @param {boolean} includeOverview - overview 포함 여부
  * @returns {Promise<Object>} { success, item }
  */
-export const getTourApiDetail = async (contentId) => {
+export const getTourApiDetail = async (contentId, includeOverview = true) => {
   try {
     recordApiCall('tourapi');
     
+    const params = new URLSearchParams({
+      contentId,
+      defaultYN: 'Y',
+      firstImageYN: 'Y',
+      addrinfoYN: 'Y',
+      overviewYN: includeOverview ? 'Y' : 'N'
+    });
+    
     const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/detailCommon2?contentId=${contentId}`
+      `${WORKERS_API_URL}/api/tour/detailCommon2?${params.toString()}`
     );
     const data = await response.json();
     
@@ -475,8 +391,6 @@ export default {
   getDaejeonParking,
   getMedicalFacilities,
   getTourSpotImage,
-  // 한국관광공사 포토갤러리
-  getDaejeonPhotoGallery,
   // KCISA 공연 정보
   getCulturalPerformances,
   getDaejeonPerformances,

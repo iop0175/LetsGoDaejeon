@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
-import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck } from 'react-icons/fi'
+import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiImage } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
-import { getTourSpotImage } from '../services/api'
+import { getTourSpotImage, getTourApiImages } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
@@ -32,6 +32,9 @@ const TravelPage = () => {
 
   // 상세 모달 상태
   const [selectedSpot, setSelectedSpot] = useState(null)
+  const [additionalImages, setAdditionalImages] = useState([])
+  const [imagesLoading, setImagesLoading] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   
   // 내 여행에 추가 모달 상태
   const [showAddToTripModal, setShowAddToTripModal] = useState(false)
@@ -127,11 +130,41 @@ const TravelPage = () => {
   // 관광지 상세 보기 (모달 열기)
   const openSpotDetail = async (spot) => {
     setSelectedSpot(spot)
+    setAdditionalImages([])
+    setCurrentImageIndex(0)
+    
+    // 추가 이미지 로드
+    if (spot.contentId) {
+      setImagesLoading(true)
+      try {
+        const result = await getTourApiImages(spot.contentId)
+        if (result.success && result.items.length > 0) {
+          setAdditionalImages(result.items)
+        }
+      } catch (err) {
+        console.error('추가 이미지 로드 실패:', err)
+      } finally {
+        setImagesLoading(false)
+      }
+    }
   }
 
   // 모달 닫기
   const closeSpotDetail = () => {
     setSelectedSpot(null)
+    setAdditionalImages([])
+    setCurrentImageIndex(0)
+  }
+  
+  // 이미지 갤러리 네비게이션
+  const nextImage = () => {
+    const totalImages = 1 + additionalImages.length // 대표이미지 + 추가이미지
+    setCurrentImageIndex((prev) => (prev + 1) % totalImages)
+  }
+  
+  const prevImage = () => {
+    const totalImages = 1 + additionalImages.length
+    setCurrentImageIndex((prev) => (prev - 1 + totalImages) % totalImages)
   }
   
   // 내 여행에 추가 모달 열기
@@ -469,13 +502,74 @@ const TravelPage = () => {
               <FiX />
             </button>
 
-            {/* 대표 이미지 */}
-            <div className="modal-image">
-              <img 
-                src={getReliableImageUrl(selectedSpot.image)}
-                alt={selectedSpot.title}
-                onError={handleImageError}
-              />
+            {/* 이미지 갤러리 */}
+            <div className="modal-image-gallery">
+              <div className="gallery-main-image">
+                {currentImageIndex === 0 ? (
+                  <img 
+                    src={getReliableImageUrl(selectedSpot.image)}
+                    alt={selectedSpot.title}
+                    onError={handleImageError}
+                  />
+                ) : (
+                  <img 
+                    src={getReliableImageUrl(additionalImages[currentImageIndex - 1]?.originimgurl)}
+                    alt={`${selectedSpot.title} - ${currentImageIndex}`}
+                    onError={handleImageError}
+                  />
+                )}
+                
+                {/* 이미지 네비게이션 버튼 */}
+                {additionalImages.length > 0 && (
+                  <>
+                    <button className="gallery-nav-btn prev" onClick={prevImage}>
+                      <FiChevronLeft />
+                    </button>
+                    <button className="gallery-nav-btn next" onClick={nextImage}>
+                      <FiChevronRight />
+                    </button>
+                    <div className="gallery-counter">
+                      {currentImageIndex + 1} / {1 + additionalImages.length}
+                    </div>
+                  </>
+                )}
+                
+                {/* 이미지 로딩 표시 */}
+                {imagesLoading && (
+                  <div className="gallery-loading">
+                    <FiLoader className="spinning" />
+                  </div>
+                )}
+              </div>
+              
+              {/* 썸네일 목록 */}
+              {additionalImages.length > 0 && (
+                <div className="gallery-thumbnails">
+                  <div 
+                    className={`thumbnail ${currentImageIndex === 0 ? 'active' : ''}`}
+                    onClick={() => setCurrentImageIndex(0)}
+                  >
+                    <img 
+                      src={getReliableImageUrl(selectedSpot.image)}
+                      alt="대표"
+                      onError={handleImageError}
+                    />
+                  </div>
+                  {additionalImages.map((img, idx) => (
+                    <div 
+                      key={img.serialnum || idx}
+                      className={`thumbnail ${currentImageIndex === idx + 1 ? 'active' : ''}`}
+                      onClick={() => setCurrentImageIndex(idx + 1)}
+                    >
+                      <img 
+                        src={getReliableImageUrl(img.smallimageurl || img.originimgurl)}
+                        alt={img.imgname || `이미지 ${idx + 1}`}
+                        onError={handleImageError}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* 상세 정보 */}

@@ -6,7 +6,7 @@ import {
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
   FiNavigation, FiEye, FiToggleLeft, FiToggleRight, FiMusic, FiDownload,
-  FiGlobe, FiSun
+  FiGlobe, FiSun, FiInfo
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -26,7 +26,8 @@ import {
   getPerformanceCount,
   saveTourSpots, deleteTourSpots, getTourSpotsCount,
   saveTourFestivals, deleteAllTourFestivals, deleteExpiredTourFestivals, getTourFestivalsCount,
-  getTourApiStats
+  getTourApiStats, syncTourSpotsOverview, getTourSpotsWithoutOverviewCount,
+  syncTourSpotsIntroInfo, getTourSpotsWithoutIntroCount
 } from '../services/dbService'
 import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
@@ -169,6 +170,12 @@ const AdminPage = () => {
   const [tourDbCounts, setTourDbCounts] = useState({})   // DB에 저장된 각 타입별 개수
   const [tourApiLoading, setTourApiLoading] = useState(false)
   const [tourSyncLoading, setTourSyncLoading] = useState({}) // 각 타입별 동기화 로딩 상태
+  const [overviewSyncLoading, setOverviewSyncLoading] = useState(false) // overview 동기화 로딩
+  const [overviewSyncProgress, setOverviewSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 진행 상태
+  const [noOverviewCount, setNoOverviewCount] = useState(0) // overview 없는 항목 개수
+  const [introSyncLoading, setIntroSyncLoading] = useState(false) // intro_info 동기화 로딩
+  const [introSyncProgress, setIntroSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 진행 상태
+  const [noIntroCount, setNoIntroCount] = useState(0) // intro_info 없는 항목 개수
   const TOUR_CONTENT_TYPES = {
     '12': { name: '관광지', icon: FiMap, color: '#0066cc' },
     '14': { name: '문화시설', icon: FiActivity, color: '#2196f3' },
@@ -732,6 +739,14 @@ const AdminPage = () => {
         console.log('[DEBUG] loadTourApiStats - dbStats.stats:', dbStats.stats)
         setTourDbCounts(dbStats.stats)
       }
+      
+      // overview 없는 항목 개수 가져오기
+      const noOverview = await getTourSpotsWithoutOverviewCount()
+      setNoOverviewCount(noOverview)
+      
+      // intro_info 없는 항목 개수 가져오기
+      const noIntro = await getTourSpotsWithoutIntroCount()
+      setNoIntroCount(noIntro)
     } catch (err) {
       console.error('TourAPI 통계 로드 실패:', err)
     }
@@ -880,6 +895,112 @@ const AdminPage = () => {
       await handleSyncTourData(typeId)
     }
   }, [handleSyncTourData, language])
+  
+  // TourAPI overview 동기화
+  const handleSyncOverview = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? `${noOverviewCount}개 항목의 상세정보(overview)를 가져오시겠습니까?\n(시간이 오래 걸릴 수 있습니다)`
+      : `Fetch detail info (overview) for ${noOverviewCount} items?\n(This may take a while)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setOverviewSyncLoading(true)
+    setOverviewSyncProgress({ current: 0, total: noOverviewCount, item: '' })
+    
+    try {
+      const result = await syncTourSpotsOverview(null, (current, total, item) => {
+        setOverviewSyncProgress({ current, total, item })
+      })
+      
+      if (result.success) {
+        let alertMsg = language === 'ko'
+          ? `상세정보 동기화 완료!\n- 성공: ${result.updatedCount}개\n- 실패: ${result.failedCount}개`
+          : `Overview sync complete!\n- Success: ${result.updatedCount}\n- Failed: ${result.failedCount}`
+        
+        // 실패 항목이 있으면 콘솔에 상세 로그 출력
+        if (result.failedItems && result.failedItems.length > 0) {
+          console.group('🔴 상세정보 동기화 실패 항목')
+          result.failedItems.forEach(item => {
+            console.warn(`${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
+            console.log(`  └ 이유: ${item.reason}`)
+          })
+          console.groupEnd()
+          
+          alertMsg += language === 'ko' 
+            ? `\n\n실패 항목 상세는 개발자 도구(F12) 콘솔에서 확인하세요.`
+            : `\n\nSee browser console (F12) for failed item details.`
+        }
+        
+        alert(alertMsg)
+      } else {
+        alert(result.error || 'Sync failed')
+      }
+      
+      // 통계 새로고침
+      await loadTourApiStats()
+    } catch (err) {
+      console.error('Overview 동기화 실패:', err)
+      alert(language === 'ko'
+        ? `상세정보 동기화 중 오류: ${err.message}`
+        : `Error syncing overview: ${err.message}`)
+    }
+    
+    setOverviewSyncLoading(false)
+    setOverviewSyncProgress({ current: 0, total: 0, item: '' })
+  }, [language, noOverviewCount, loadTourApiStats])
+  
+  // TourAPI intro_info (소개정보) 동기화
+  const handleSyncIntroInfo = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? `${noIntroCount}개 항목의 소개정보(이용시간, 주차 등)를 가져오시겠습니까?\n(시간이 오래 걸릴 수 있습니다)`
+      : `Fetch intro info (hours, parking, etc.) for ${noIntroCount} items?\n(This may take a while)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setIntroSyncLoading(true)
+    setIntroSyncProgress({ current: 0, total: noIntroCount, item: '' })
+    
+    try {
+      const result = await syncTourSpotsIntroInfo(null, (current, total, item) => {
+        setIntroSyncProgress({ current, total, item })
+      })
+      
+      if (result.success) {
+        let alertMsg = language === 'ko'
+          ? `소개정보 동기화 완료!\n- 성공: ${result.updatedCount}개\n- 실패: ${result.failedCount}개`
+          : `Intro sync complete!\n- Success: ${result.updatedCount}\n- Failed: ${result.failedCount}`
+        
+        // 실패 항목이 있으면 콘솔에 상세 로그 출력
+        if (result.failedItems && result.failedItems.length > 0) {
+          console.group('🔴 소개정보 동기화 실패 항목')
+          result.failedItems.forEach(item => {
+            console.warn(`${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
+            console.log(`  └ 이유: ${item.reason}`)
+          })
+          console.groupEnd()
+          
+          alertMsg += language === 'ko' 
+            ? `\n\n실패 항목 상세는 개발자 도구(F12) 콘솔에서 확인하세요.`
+            : `\n\nSee browser console (F12) for failed item details.`
+        }
+        
+        alert(alertMsg)
+      } else {
+        alert(result.error || 'Sync failed')
+      }
+      
+      // 통계 새로고침
+      await loadTourApiStats()
+    } catch (err) {
+      console.error('Intro info 동기화 실패:', err)
+      alert(language === 'ko'
+        ? `소개정보 동기화 중 오류: ${err.message}`
+        : `Error syncing intro info: ${err.message}`)
+    }
+    
+    setIntroSyncLoading(false)
+    setIntroSyncProgress({ current: 0, total: 0, item: '' })
+  }, [language, noIntroCount, loadTourApiStats])
   
   // Hero 슬라이드 로드
   const loadHeroSlides = useCallback(async () => {
@@ -2687,6 +2808,30 @@ const AdminPage = () => {
                     disabled={tourApiLoading || Object.values(tourSyncLoading).some(v => v)}
                   >
                     <FiDownload /> {language === 'ko' ? '전체 동기화' : 'Sync All'}
+                  </button>
+                  <button 
+                    className="btn-sync-overview"
+                    onClick={handleSyncOverview}
+                    disabled={tourApiLoading || overviewSyncLoading || noOverviewCount === 0}
+                    title={language === 'ko' ? '상세정보(overview) 동기화' : 'Sync overview details'}
+                  >
+                    {overviewSyncLoading ? (
+                      <><FiLoader className="spinning" /> {overviewSyncProgress.current}/{overviewSyncProgress.total}</>
+                    ) : (
+                      <><FiActivity /> {language === 'ko' ? `상세정보 (${noOverviewCount})` : `Overview (${noOverviewCount})`}</>
+                    )}
+                  </button>
+                  <button 
+                    className="btn-sync-intro"
+                    onClick={handleSyncIntroInfo}
+                    disabled={tourApiLoading || introSyncLoading || noIntroCount === 0}
+                    title={language === 'ko' ? '소개정보(이용시간/주차 등) 동기화' : 'Sync intro info (hours/parking)'}
+                  >
+                    {introSyncLoading ? (
+                      <><FiLoader className="spinning" /> {introSyncProgress.current}/{introSyncProgress.total}</>
+                    ) : (
+                      <><FiInfo /> {language === 'ko' ? `소개정보 (${noIntroCount})` : `Intro (${noIntroCount})`}</>
+                    )}
                   </button>
                 </div>
               </div>

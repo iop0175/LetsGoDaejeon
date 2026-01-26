@@ -1939,6 +1939,301 @@ export const getTourSpotsCount = async (contentTypeId = null) => {
   }
 }
 
+/**
+ * TourAPI 상세정보(overview) 동기화
+ * DB에 저장된 tour_spots 항목들의 overview를 TourAPI에서 가져와 업데이트
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @returns {Promise<Object>} { success, updatedCount, failedCount }
+ */
+export const syncTourSpotsOverview = async (contentTypeId = null, onProgress = null) => {
+  try {
+    // overview가 없는 항목 조회
+    let query = supabase
+      .from('tour_spots')
+      .select('id, content_id, content_type_id, title')
+      .is('overview', null)
+      .order('id', { ascending: true })
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { data: items, error: selectError } = await query
+    if (selectError) throw selectError
+    
+    if (!items || items.length === 0) {
+      return { success: true, updatedCount: 0, failedCount: 0, message: 'No items need overview sync', failedItems: [] }
+    }
+    
+    let updatedCount = 0
+    let failedCount = 0
+    const failedItems = []
+    const total = items.length
+    
+    // 동적 import (순환 참조 방지)
+    const { getTourApiDetail } = await import('./api.js')
+    
+    // 각 항목에 대해 상세정보 조회 및 업데이트
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      
+      try {
+        // TourAPI 상세정보 조회
+        const result = await getTourApiDetail(item.content_id, true)
+        
+        if (result.success && result.item?.overview) {
+          // overview 업데이트
+          const { error: updateError } = await supabase
+            .from('tour_spots')
+            .update({ 
+              overview: result.item.overview,
+              homepage: result.item.homepage || null,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id)
+          
+          if (updateError) {
+            console.error(`Update failed for ${item.title}:`, updateError)
+            failedCount++
+            failedItems.push({
+              id: item.id,
+              content_id: item.content_id,
+              content_type_id: item.content_type_id,
+              title: item.title,
+              reason: `DB update error: ${updateError.message}`
+            })
+          } else {
+            updatedCount++
+          }
+        } else {
+          console.warn(`[OverviewSync] API returned no overview for: ${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
+          failedCount++
+          failedItems.push({
+            id: item.id,
+            content_id: item.content_id,
+            content_type_id: item.content_type_id,
+            title: item.title,
+            reason: 'API returned no overview data'
+          })
+        }
+        
+        // 진행 콜백 호출
+        if (onProgress) {
+          onProgress(i + 1, total, item.title)
+        }
+        
+        // API 호출 간격 (rate limit 방지)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+      } catch (err) {
+        console.error(`Error syncing ${item.title}:`, err)
+        failedCount++
+        failedItems.push({
+          id: item.id,
+          content_id: item.content_id,
+          content_type_id: item.content_type_id,
+          title: item.title,
+          reason: err.message
+        })
+      }
+    }
+    
+    // 실패 항목 요약 로그
+    if (failedItems.length > 0) {
+      console.warn(`[OverviewSync] Failed items (${failedItems.length}):`)
+      failedItems.forEach(item => {
+        console.warn(`  - ${item.title} (${item.content_id}, type: ${item.content_type_id}): ${item.reason}`)
+      })
+    }
+    
+    return { 
+      success: true, 
+      updatedCount, 
+      failedCount, 
+      total,
+      failedItems,
+      message: `Updated ${updatedCount}/${total} items` 
+    }
+  } catch (err) {
+    console.error('Overview 동기화 에러:', err)
+    return { success: false, updatedCount: 0, failedCount: 0, error: err.message, failedItems: [] }
+  }
+}
+
+/**
+ * overview가 없는 tour_spots 개수 조회
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @returns {Promise<number>} 개수
+ */
+export const getTourSpotsWithoutOverviewCount = async (contentTypeId = null) => {
+  try {
+    let query = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+      .is('overview', null)
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { count, error } = await query
+    if (error) throw error
+    
+    return count || 0
+  } catch (err) {
+    console.error('Overview 없는 항목 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * TourAPI 소개정보(intro_info) 동기화
+ * DB에 저장된 tour_spots 항목들의 소개정보를 TourAPI에서 가져와 업데이트
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @returns {Promise<Object>} { success, updatedCount, failedCount }
+ */
+export const syncTourSpotsIntroInfo = async (contentTypeId = null, onProgress = null) => {
+  try {
+    // intro_info가 없는 항목 조회
+    let query = supabase
+      .from('tour_spots')
+      .select('id, content_id, content_type_id, title')
+      .is('intro_info', null)
+      .order('id', { ascending: true })
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { data: items, error: selectError } = await query
+    if (selectError) throw selectError
+    
+    if (!items || items.length === 0) {
+      return { success: true, updatedCount: 0, failedCount: 0, message: 'No items need intro sync', failedItems: [] }
+    }
+    
+    let updatedCount = 0
+    let failedCount = 0
+    const failedItems = []
+    const total = items.length
+    
+    // 동적 import (순환 참조 방지)
+    const { getTourApiIntro } = await import('./api.js')
+    
+    // 각 항목에 대해 소개정보 조회 및 업데이트
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      
+      try {
+        // TourAPI 소개정보 조회
+        const result = await getTourApiIntro(item.content_id, item.content_type_id)
+        
+        if (result.success && result.item) {
+          // intro_info 업데이트 (전체 응답을 JSONB로 저장)
+          const { error: updateError } = await supabase
+            .from('tour_spots')
+            .update({ 
+              intro_info: result.item,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id)
+          
+          if (updateError) {
+            console.error(`Update failed for ${item.title}:`, updateError)
+            failedCount++
+            failedItems.push({
+              id: item.id,
+              content_id: item.content_id,
+              content_type_id: item.content_type_id,
+              title: item.title,
+              reason: `DB update error: ${updateError.message}`
+            })
+          } else {
+            updatedCount++
+          }
+        } else {
+          console.warn(`[IntroSync] API returned no data for: ${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
+          failedCount++
+          failedItems.push({
+            id: item.id,
+            content_id: item.content_id,
+            content_type_id: item.content_type_id,
+            title: item.title,
+            reason: 'API returned no intro data'
+          })
+        }
+        
+        // 진행 콜백 호출
+        if (onProgress) {
+          onProgress(i + 1, total, item.title)
+        }
+        
+        // API 호출 간격 (rate limit 방지)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+      } catch (err) {
+        console.error(`Error syncing intro for ${item.title}:`, err)
+        failedCount++
+        failedItems.push({
+          id: item.id,
+          content_id: item.content_id,
+          content_type_id: item.content_type_id,
+          title: item.title,
+          reason: err.message
+        })
+      }
+    }
+    
+    // 실패 항목 요약 로그
+    if (failedItems.length > 0) {
+      console.warn(`[IntroSync] Failed items (${failedItems.length}):`)
+      failedItems.forEach(item => {
+        console.warn(`  - ${item.title} (${item.content_id}, type: ${item.content_type_id}): ${item.reason}`)
+      })
+    }
+    
+    return { 
+      success: true, 
+      updatedCount, 
+      failedCount, 
+      total,
+      failedItems,
+      message: `Updated ${updatedCount}/${total} items` 
+    }
+  } catch (err) {
+    console.error('Intro info 동기화 에러:', err)
+    return { success: false, updatedCount: 0, failedCount: 0, error: err.message, failedItems: [] }
+  }
+}
+
+/**
+ * intro_info가 없는 tour_spots 개수 조회
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @returns {Promise<number>} 개수
+ */
+export const getTourSpotsWithoutIntroCount = async (contentTypeId = null) => {
+  try {
+    let query = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+      .is('intro_info', null)
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { count, error } = await query
+    if (error) throw error
+    
+    return count || 0
+  } catch (err) {
+    console.error('Intro info 없는 항목 개수 조회 에러:', err)
+    return 0
+  }
+}
+
 // ============================================================
 // TourAPI 행사/축제 함수들 (tour_festivals 테이블)
 // ============================================================
