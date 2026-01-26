@@ -1,0 +1,1074 @@
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useLanguage } from '../context/LanguageContext'
+import { useTheme } from '../context/ThemeContext'
+import { useAuth } from '../context/AuthContext'
+import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview } from '../services/dbService'
+import { getTourApiImages, getTourApiDetail } from '../services/api'
+import { getUserTripPlans, addTripPlace } from '../services/tripService'
+import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import LicenseBadge from '../components/common/LicenseBadge'
+import './SpotDetailPage.css'
+
+// SVG 아이콘 컴포넌트들 (모던 심플 스타일)
+const Icons = {
+  location: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+      <circle cx="12" cy="10" r="3"/>
+    </svg>
+  ),
+  facilities: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="7" height="7"/>
+      <rect x="14" y="3" width="7" height="7"/>
+      <rect x="14" y="14" width="7" height="7"/>
+      <rect x="3" y="14" width="7" height="7"/>
+    </svg>
+  ),
+  info: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="16" x2="12" y2="12"/>
+      <line x1="12" y1="8" x2="12.01" y2="8"/>
+    </svg>
+  ),
+  about: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+    </svg>
+  ),
+  phone: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+    </svg>
+  ),
+  globe: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  ),
+  review: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  ),
+  eye: ({ size = 18, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  ),
+  heart: ({ size = 18, color = 'currentColor', filled = false }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+    </svg>
+  ),
+  star: ({ size = 18, color = '#ffc107', filled = true }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : 'none'} stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  ),
+  parking: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <path d="M9 17V7h4a3 3 0 0 1 0 6H9"/>
+    </svg>
+  ),
+  pet: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="4" r="2"/>
+      <circle cx="18" cy="8" r="2"/>
+      <circle cx="4" cy="8" r="2"/>
+      <path d="M12 15c-4 0-6 2-6 4v2h12v-2c0-2-2-4-6-4z"/>
+    </svg>
+  ),
+  card: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2"/>
+      <line x1="1" y1="10" x2="23" y2="10"/>
+    </svg>
+  ),
+  stroller: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="19" r="2"/>
+      <circle cx="18" cy="19" r="2"/>
+      <path d="M10 17H5V7a2 2 0 0 1 2-2h10l3 6H6"/>
+    </svg>
+  ),
+  reservation: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+      <path d="M9 16l2 2 4-4"/>
+    </svg>
+  ),
+  takeout: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 10V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V10"/>
+      <path d="M3.3 7l8.7 5 8.7-5"/>
+      <path d="M12 22V12"/>
+    </svg>
+  ),
+  map: ({ size = 18, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/>
+      <line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+  ),
+  user: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+      <circle cx="12" cy="7" r="4"/>
+    </svg>
+  ),
+  camera: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+      <circle cx="12" cy="13" r="4"/>
+    </svg>
+  ),
+  image: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <path d="M21 15l-5-5L5 21"/>
+    </svg>
+  ),
+  clock: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+  ),
+  calendar: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  ),
+  ticket: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/>
+      <path d="M13 5v2"/>
+      <path d="M13 17v2"/>
+      <path d="M13 11v2"/>
+    </svg>
+  )
+}
+
+// 시설 아이콘 매핑
+const FACILITY_ICON_MAP = {
+  parking: Icons.parking,
+  pet: Icons.pet,
+  card: Icons.card,
+  babycar: Icons.stroller,
+  reservation: Icons.reservation,
+  packing: Icons.takeout
+}
+
+// intro fields 아이콘 매핑
+const INTRO_ICON_MAP = {
+  clock: Icons.clock,
+  calendar: Icons.calendar,
+  phone: Icons.phone,
+  parking: Icons.parking,
+  baby: Icons.stroller,
+  pet: Icons.pet,
+  card: Icons.card,
+  ticket: Icons.ticket,
+  star: Icons.star,
+  about: Icons.about,
+  facilities: Icons.facilities,
+  user: Icons.user,
+  location: Icons.location
+}
+
+// 콘텐츠 타입별 설정
+const CONTENT_TYPE_CONFIG = {
+  '12': { name: { ko: '관광지', en: 'Tourist Attraction' }, color: '#4CAF50', path: '/travel' },
+  '14': { name: { ko: '문화시설', en: 'Cultural Facility' }, color: '#9C27B0', path: '/culture' },
+  '28': { name: { ko: '레포츠', en: 'Leisure' }, color: '#2196F3', path: '/leisure' },
+  '32': { name: { ko: '숙박', en: 'Accommodation' }, color: '#FF9800', path: '/accommodation' },
+  '38': { name: { ko: '쇼핑', en: 'Shopping' }, color: '#E91E63', path: '/shopping' },
+  '39': { name: { ko: '음식점', en: 'Restaurant' }, color: '#F44336', path: '/food' },
+  '15': { name: { ko: '축제/행사', en: 'Festival' }, color: '#FF5722', path: '/festival' }
+}
+
+// 콘텐츠 타입별 intro_info 필드 매핑
+const INTRO_FIELDS = {
+  '12': [
+    { key: 'usetime', label: { ko: '이용시간', en: 'Hours' }, iconKey: 'clock' },
+    { key: 'restdate', label: { ko: '쉬는날', en: 'Closed' }, iconKey: 'calendar' },
+    { key: 'infocenter', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'parking', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' },
+    { key: 'chkbabycarriage', label: { ko: '유모차대여', en: 'Stroller' }, iconKey: 'baby' },
+    { key: 'chkpet', label: { ko: '애완동물', en: 'Pets' }, iconKey: 'pet' },
+    { key: 'chkcreditcard', label: { ko: '신용카드', en: 'Credit Card' }, iconKey: 'card' }
+  ],
+  '14': [
+    { key: 'usetimeculture', label: { ko: '이용시간', en: 'Hours' }, iconKey: 'clock' },
+    { key: 'restdateculture', label: { ko: '휴관일', en: 'Closed' }, iconKey: 'calendar' },
+    { key: 'usefee', label: { ko: '이용요금', en: 'Fee' }, iconKey: 'ticket' },
+    { key: 'infocenterculture', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'parkingculture', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' },
+    { key: 'spendtime', label: { ko: '관람소요시간', en: 'Duration' }, iconKey: 'clock' }
+  ],
+  '28': [
+    { key: 'usetimeleports', label: { ko: '이용시간', en: 'Hours' }, iconKey: 'clock' },
+    { key: 'restdateleports', label: { ko: '휴무일', en: 'Closed' }, iconKey: 'calendar' },
+    { key: 'usefeeleports', label: { ko: '이용요금', en: 'Fee' }, iconKey: 'ticket' },
+    { key: 'infocenterleports', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'parkingleports', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' },
+    { key: 'reservation', label: { ko: '예약안내', en: 'Reservation' }, iconKey: 'calendar' }
+  ],
+  '32': [
+    { key: 'checkintime', label: { ko: '체크인', en: 'Check-in' }, iconKey: 'clock' },
+    { key: 'checkouttime', label: { ko: '체크아웃', en: 'Check-out' }, iconKey: 'clock' },
+    { key: 'infocenterlodging', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'parkinglodging', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' },
+    { key: 'roomcount', label: { ko: '객실수', en: 'Rooms' }, iconKey: 'about' },
+    { key: 'subfacility', label: { ko: '부대시설', en: 'Facilities' }, iconKey: 'facilities' }
+  ],
+  '38': [
+    { key: 'opentime', label: { ko: '영업시간', en: 'Hours' }, iconKey: 'clock' },
+    { key: 'restdateshopping', label: { ko: '휴무일', en: 'Closed' }, iconKey: 'calendar' },
+    { key: 'infocentershopping', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'parkingshopping', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' },
+    { key: 'saleitem', label: { ko: '판매품목', en: 'Products' }, iconKey: 'about' }
+  ],
+  '39': [
+    { key: 'firstmenu', label: { ko: '대표메뉴', en: 'Signature' }, iconKey: 'star' },
+    { key: 'treatmenu', label: { ko: '취급메뉴', en: 'Menu' }, iconKey: 'about' },
+    { key: 'opentimefood', label: { ko: '영업시간', en: 'Hours' }, iconKey: 'clock' },
+    { key: 'restdatefood', label: { ko: '휴무일', en: 'Closed' }, iconKey: 'calendar' },
+    { key: 'infocenterfood', label: { ko: '문의처', en: 'Contact' }, iconKey: 'phone' },
+    { key: 'packing', label: { ko: '포장', en: 'Takeout' }, iconKey: 'about' },
+    { key: 'parkingfood', label: { ko: '주차시설', en: 'Parking' }, iconKey: 'parking' }
+  ],
+  '15': [
+    { key: 'sponsor1', label: { ko: '주최자', en: 'Organizer' }, iconKey: 'user' },
+    { key: 'playtime', label: { ko: '공연시간', en: 'Time' }, iconKey: 'clock' },
+    { key: 'usetimefestival', label: { ko: '이용요금', en: 'Fee' }, iconKey: 'ticket' },
+    { key: 'eventplace', label: { ko: '행사장소', en: 'Venue' }, iconKey: 'location' }
+  ]
+}
+
+// 시설/서비스 아이콘 매핑
+const FACILITY_ITEMS = [
+  { key: 'parking', label: { ko: '주차', en: 'Parking' }, checkKeys: ['parking', 'parkingculture', 'parkingleports', 'parkinglodging', 'parkingshopping', 'parkingfood'] },
+  { key: 'pet', label: { ko: '반려동물', en: 'Pets' }, checkKeys: ['chkpet'] },
+  { key: 'card', label: { ko: '카드결제', en: 'Card' }, checkKeys: ['chkcreditcard'] },
+  { key: 'babycar', label: { ko: '유모차', en: 'Stroller' }, checkKeys: ['chkbabycarriage'] },
+  { key: 'reservation', label: { ko: '예약', en: 'Reservation' }, checkKeys: ['reservation'] },
+  { key: 'packing', label: { ko: '포장', en: 'Takeout' }, checkKeys: ['packing'] }
+]
+
+const SpotDetailPage = () => {
+  const { contentId } = useParams()
+  const navigate = useNavigate()
+  const { language } = useLanguage()
+  const { isDark } = useTheme()
+  const { user } = useAuth()
+  
+  const [spot, setSpot] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  
+  const [galleryImages, setGalleryImages] = useState([])
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [showFullGallery, setShowFullGallery] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+  const [addressCopied, setAddressCopied] = useState(false)
+  
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [tripPlans, setTripPlans] = useState([])
+  const [selectedTripId, setSelectedTripId] = useState(null)
+  const [selectedDayId, setSelectedDayId] = useState(null)
+  const [tripsLoading, setTripsLoading] = useState(false)
+  const [addingToTrip, setAddingToTrip] = useState(false)
+  
+  // 조회수/좋아요/리뷰 상태
+  const [viewCount, setViewCount] = useState(0)
+  const [likeCount, setLikeCount] = useState(0)
+  const [reviews, setReviews] = useState([])
+  const [reviewCount, setReviewCount] = useState(0)
+  const [avgRating, setAvgRating] = useState(0)
+  const [showReviewForm, setShowReviewForm] = useState(false)
+  const [newRating, setNewRating] = useState(5)
+  const [newReviewContent, setNewReviewContent] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+
+  useEffect(() => {
+    const loadSpot = async () => {
+      setLoading(true)
+      setError(null)
+      
+      try {
+        const result = await getTourSpotByContentId(contentId)
+        
+        if (result.success && result.item) {
+          let spotData = result.item
+          
+          // overview가 없으면 TourAPI에서 상세정보 가져오기
+          if (!spotData.overview) {
+            try {
+              const detailResult = await getTourApiDetail(contentId, true) // includeOverview = true
+              if (detailResult.success && detailResult.item?.overview) {
+                spotData = { ...spotData, overview: detailResult.item.overview }
+              }
+            } catch (err) {
+              console.log('Overview 로드 실패:', err)
+            }
+          }
+          
+          setSpot(spotData)
+          
+          try {
+            const imageResult = await getTourApiImages(contentId)
+            if (imageResult.success && imageResult.items?.length > 0) {
+              setGalleryImages(imageResult.items)
+            }
+          } catch (err) {
+            console.error('이미지 로드 실패:', err)
+          }
+          
+          // 조회수 증가 및 통계 로드
+          incrementSpotViews(contentId)
+          const stats = await getSpotStats(contentId)
+          if (stats.success) {
+            setViewCount(stats.viewCount)
+            setLikeCount(stats.likeCount)
+          }
+          
+          // 리뷰 로드
+          const reviewResult = await getSpotReviews(contentId)
+          if (reviewResult.success) {
+            setReviews(reviewResult.reviews)
+            setReviewCount(reviewResult.totalCount)
+            setAvgRating(reviewResult.avgRating)
+          }
+        } else {
+          setError(language === 'ko' ? '정보를 찾을 수 없습니다.' : 'Information not found.')
+        }
+      } catch (err) {
+        console.error('데이터 로드 실패:', err)
+        setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
+      }
+      
+      setLoading(false)
+    }
+    
+    if (contentId) {
+      loadSpot()
+      window.scrollTo(0, 0)
+    }
+  }, [contentId, language])
+  
+  // 좋아요 상태 확인 (로그인 시)
+  useEffect(() => {
+    const checkLiked = async () => {
+      if (user && contentId) {
+        const liked = await checkSpotLiked(contentId, user.id)
+        setIsLiked(liked)
+      }
+    }
+    checkLiked()
+  }, [user, contentId])
+  
+  // 좋아요 토글
+  const handleToggleLike = async () => {
+    if (!user) {
+      alert(language === 'ko' ? '로그인이 필요합니다' : 'Please login first')
+      return
+    }
+    
+    const result = await toggleSpotLike(contentId, user.id)
+    if (result.success) {
+      setIsLiked(result.isLiked)
+      setLikeCount(result.likeCount)
+    }
+  }
+  
+  // 리뷰 제출
+  const handleSubmitReview = async () => {
+    if (!user) {
+      alert(language === 'ko' ? '로그인이 필요합니다' : 'Please login first')
+      return
+    }
+    
+    if (!newReviewContent.trim()) {
+      alert(language === 'ko' ? '리뷰 내용을 입력해주세요' : 'Please enter review content')
+      return
+    }
+    
+    setReviewSubmitting(true)
+    const result = await createSpotReview({
+      contentId,
+      userId: user.id,
+      rating: newRating,
+      content: newReviewContent
+    })
+    
+    if (result.success) {
+      // 리뷰 목록 다시 로드
+      const reviewResult = await getSpotReviews(contentId)
+      if (reviewResult.success) {
+        setReviews(reviewResult.reviews)
+        setReviewCount(reviewResult.totalCount)
+        setAvgRating(reviewResult.avgRating)
+      }
+      setShowReviewForm(false)
+      setNewRating(5)
+      setNewReviewContent('')
+    } else {
+      alert(result.message || '리뷰 작성에 실패했습니다')
+    }
+    setReviewSubmitting(false)
+  }
+  
+  // 리뷰 삭제
+  const handleDeleteReview = async (reviewId) => {
+    if (!confirm(language === 'ko' ? '리뷰를 삭제하시겠습니까?' : 'Delete this review?')) return
+    
+    const result = await deleteSpotReview(reviewId, user.id)
+    if (result.success) {
+      const reviewResult = await getSpotReviews(contentId)
+      if (reviewResult.success) {
+        setReviews(reviewResult.reviews)
+        setReviewCount(reviewResult.totalCount)
+        setAvgRating(reviewResult.avgRating)
+      }
+    }
+  }
+  
+  const copyAddress = async () => {
+    if (spot?.addr1) {
+      try {
+        await navigator.clipboard.writeText(spot.addr1)
+        setAddressCopied(true)
+        setTimeout(() => setAddressCopied(false), 2000)
+      } catch (err) {
+        console.error('주소 복사 실패:', err)
+      }
+    }
+  }
+  
+  const handleShare = async () => {
+    const shareData = {
+      title: spot?.title || '대전 관광지',
+      text: spot?.overview?.substring(0, 100) || '',
+      url: window.location.href
+    }
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData)
+      } catch (err) {}
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href)
+        alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
+      } catch (err) {}
+    }
+  }
+
+  const openAddModal = async () => {
+    if (!user) {
+      alert(language === 'ko' ? '로그인이 필요합니다.' : 'Please login first.')
+      return
+    }
+    
+    setShowAddModal(true)
+    setTripsLoading(true)
+    
+    try {
+      const result = await getUserTripPlans(user.id)
+      if (result.success) {
+        setTripPlans(result.plans)
+      }
+    } catch (err) {
+      console.error('여행 목록 로드 실패:', err)
+    }
+    
+    setTripsLoading(false)
+  }
+
+  const handleAddToTrip = async () => {
+    if (!selectedDayId || !spot) return
+    
+    setAddingToTrip(true)
+    try {
+      const contentConfig = CONTENT_TYPE_CONFIG[spot.content_type_id] || {}
+      const result = await addTripPlace({
+        dayId: selectedDayId,
+        placeType: contentConfig.name?.ko || '관광지',
+        placeName: spot.title,
+        placeAddress: spot.addr1 || spot.addr2,
+        placeDescription: spot.overview?.substring(0, 200),
+        placeImage: spot.firstimage || spot.firstimage2,
+        orderIndex: 999,
+        visitTime: null,
+        memo: null
+      })
+      
+      if (result.success) {
+        alert(language === 'ko' ? '여행에 추가되었습니다!' : 'Added to your trip!')
+        setShowAddModal(false)
+      } else {
+        alert(result.error || (language === 'ko' ? '추가에 실패했습니다.' : 'Failed to add.'))
+      }
+    } catch (err) {
+      alert(language === 'ko' ? '오류가 발생했습니다.' : 'An error occurred.')
+    }
+    setAddingToTrip(false)
+  }
+
+  const allImages = galleryImages.length > 0 
+    ? galleryImages.map(img => img.originimgurl || img.smallimageurl)
+    : spot?.firstimage ? [spot.firstimage] : []
+    
+  const nextImage = () => setCurrentImageIndex(i => (i + 1) % allImages.length)
+  const prevImage = () => setCurrentImageIndex(i => (i - 1 + allImages.length) % allImages.length)
+
+  const contentConfig = spot ? CONTENT_TYPE_CONFIG[spot.content_type_id] || {} : {}
+  const introFields = spot ? INTRO_FIELDS[spot.content_type_id] || [] : []
+  
+  // 시설/서비스 추출
+  const availableFacilities = spot?.intro_info ? FACILITY_ITEMS.filter(facility => 
+    facility.checkKeys.some(key => {
+      const val = spot.intro_info[key]
+      return val && !val.includes('불가') && !val.includes('없음') && !val.includes('안됨')
+    })
+  ) : []
+
+  if (loading) {
+    return (
+      <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
+        <div className="sdp__loading">
+          <div className="sdp__spinner"></div>
+          <p>{language === 'ko' ? '정보를 불러오는 중...' : 'Loading...'}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error || !spot) {
+    return (
+      <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
+        <div className="sdp__error">
+          <span className="sdp__error-icon">😢</span>
+          <p>{error || (language === 'ko' ? '정보를 찾을 수 없습니다.' : 'Not found')}</p>
+          <button onClick={() => navigate(-1)} className="sdp__error-btn">
+            ← {language === 'ko' ? '뒤로 가기' : 'Go Back'}
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
+      {/* 상단 헤더 */}
+      <header className="sdp__header">
+        <button className="sdp__header-btn" onClick={() => navigate(-1)}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+        </button>
+        <div className="sdp__header-actions">
+          <button className="sdp__header-btn" onClick={handleShare}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+              <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+            </svg>
+          </button>
+          <button className={`sdp__header-btn ${isLiked ? 'sdp__header-btn--liked' : ''}`} onClick={() => setIsLiked(!isLiked)}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      {/* 이미지 갤러리 - 큰 1개 + 작은 4개 그리드 */}
+      <div className="sdp__gallery-wrapper">
+        <section className="sdp__gallery" onClick={() => allImages.length > 0 && setShowFullGallery(true)}>
+          {allImages.length > 0 ? (
+            <div className="sdp__gallery-grid">
+              {/* 메인 이미지 (왼쪽 큰 이미지) */}
+              <div className="sdp__gallery-item sdp__gallery-item--main">
+                <img 
+                  src={getReliableImageUrl(allImages[0])} 
+                  alt={spot.title} 
+                  onError={handleImageError} 
+                />
+              </div>
+              {/* 서브 이미지 4개 (오른쪽 2x2 그리드) */}
+              {[1, 2, 3, 4].map((idx) => (
+                <div 
+                  key={idx} 
+                  className={`sdp__gallery-item sdp__gallery-item--sub ${idx === 4 && allImages.length > 5 ? 'sdp__gallery-item--more' : ''}`}
+                >
+                  {allImages[idx] ? (
+                    <>
+                      <img 
+                        src={getReliableImageUrl(allImages[idx])} 
+                        alt="" 
+                        onError={handleImageError} 
+                      />
+                      {idx === 4 && allImages.length > 5 && (
+                        <div className="sdp__gallery-more">+{allImages.length - 5}</div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="sdp__gallery-placeholder">
+                      <Icons.image size={32} color="#ccc" />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="sdp__gallery-empty">
+              <Icons.camera size={40} color="#999" />
+              <p>{language === 'ko' ? '이미지 없음' : 'No Image'}</p>
+            </div>
+          )}
+          {/* 이미지 카운터 */}
+          {allImages.length > 1 && (
+            <div className="sdp__gallery-counter">
+              <Icons.image size={14} color="#fff" />
+              <span>{allImages.length}</span>
+            </div>
+          )}
+        </section>
+      </div>
+
+      {/* 메인 컨텐츠 */}
+      <main className="sdp__main">
+        {/* 기본 정보 */}
+        <section className="sdp__info">
+          <span className="sdp__badge" style={{ backgroundColor: contentConfig.color }}>
+            {contentConfig.name?.[language]}
+          </span>
+          <h1 className="sdp__title">{spot.title}</h1>
+          
+          {/* 통계 정보 (조회수, 좋아요, 리뷰, 평점) */}
+          <div className="sdp__stats">
+            <span className="sdp__stat-item">
+              <Icons.eye size={16} color="#888" />
+              <span className="sdp__stat-value">{viewCount.toLocaleString()}</span>
+            </span>
+            <span className="sdp__stat-item sdp__stat-item--clickable" onClick={handleToggleLike}>
+              <Icons.heart size={16} color={isLiked ? '#de2f5f' : '#ccc'} filled={isLiked} />
+              <span className="sdp__stat-value">{likeCount.toLocaleString()}</span>
+            </span>
+            <span className="sdp__stat-item">
+              <Icons.review size={16} color="#888" />
+              <span className="sdp__stat-value">{reviewCount}</span>
+            </span>
+            {avgRating > 0 && (
+              <span className="sdp__stat-item">
+                <Icons.star size={16} />
+                <span className="sdp__stat-value">{avgRating}</span>
+              </span>
+            )}
+          </div>
+        </section>
+
+        {/* 위치/교통 */}
+        <section className="sdp__section sdp__location">
+          <div className="sdp__section-header">
+            <span className="sdp__section-icon"><Icons.location size={18} /></span>
+            <h2 className="sdp__section-title">{language === 'ko' ? '위치/교통' : 'Location'}</h2>
+          </div>
+          <div className="sdp__location-content">
+            <p className="sdp__address">{spot.addr1} {spot.addr2}</p>
+            <button className="sdp__copy-btn" onClick={copyAddress}>
+              {addressCopied ? '✓ 복사됨' : '주소복사'}
+            </button>
+          </div>
+          <div className="sdp__map-btns">
+            <a 
+              href={`https://map.kakao.com/link/search/${encodeURIComponent(spot.addr1)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="sdp__map-btn sdp__map-btn--kakao"
+            >
+              <Icons.map size={16} />
+              <span>{language === 'ko' ? '카카오맵' : 'Kakao Map'}</span>
+            </a>
+            <a 
+              href={`https://map.naver.com/v5/search/${encodeURIComponent(spot.addr1)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="sdp__map-btn sdp__map-btn--naver"
+            >
+              <Icons.map size={16} />
+              <span>{language === 'ko' ? '네이버지도' : 'Naver Map'}</span>
+            </a>
+          </div>
+        </section>
+
+        {/* 시설/서비스 */}
+        {availableFacilities.length > 0 && (
+          <section className="sdp__section sdp__facilities">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.facilities size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '시설/서비스' : 'Facilities'}</h2>
+            </div>
+            <div className="sdp__facilities-grid">
+              {availableFacilities.map((item, idx) => {
+                const FacilityIcon = FACILITY_ICON_MAP[item.key]
+                return (
+                  <div key={idx} className="sdp__facility-item">
+                    {FacilityIcon && <span className="sdp__facility-icon"><FacilityIcon size={22} /></span>}
+                    <span className="sdp__facility-label">{item.label[language]}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 소개 */}
+        {spot.overview && (
+          <section className="sdp__section sdp__overview">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.about size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '소개' : 'About'}</h2>
+            </div>
+            <div className="sdp__overview-content" dangerouslySetInnerHTML={{ __html: sanitizeIntroHtml(spot.overview) }} />
+          </section>
+        )}
+
+        {/* 이용 안내 */}
+        {spot.intro_info && Object.keys(spot.intro_info).length > 0 && (
+          <section className="sdp__section sdp__usage">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.info size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '이용 안내' : 'Information'}</h2>
+            </div>
+            <div className="sdp__usage-list">
+              {introFields.map(field => {
+                const value = spot.intro_info[field.key]
+                if (!value) return null
+                const FieldIcon = field.iconKey ? INTRO_ICON_MAP[field.iconKey] : null
+                
+                return (
+                  <div key={field.key} className="sdp__usage-item">
+                    <span className="sdp__usage-icon">
+                      {FieldIcon ? <FieldIcon size={18} /> : null}
+                    </span>
+                    <div className="sdp__usage-text">
+                      <span className="sdp__usage-label">{field.label[language]}</span>
+                      <span className="sdp__usage-value" dangerouslySetInnerHTML={{ __html: sanitizeIntroHtml(value) }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* 전화번호 */}
+        {spot.tel && (
+          <section className="sdp__section sdp__contact">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.phone size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '문의' : 'Contact'}</h2>
+            </div>
+            <a href={`tel:${spot.tel.replace(/[^0-9-]/g, '')}`} className="sdp__phone">
+              <Icons.phone size={16} />
+              {cleanIntroHtml(spot.tel)}
+            </a>
+          </section>
+        )}
+        
+        {/* 홈페이지 */}
+        {spot.homepage && (
+          <section className="sdp__section sdp__website">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.globe size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '홈페이지' : 'Website'}</h2>
+            </div>
+            <a 
+              href={spot.homepage.match(/href="([^"]+)"/)?.[1] || spot.homepage}
+              target="_blank" rel="noopener noreferrer"
+              className="sdp__website-link"
+            >
+              <Icons.globe size={16} />
+              {language === 'ko' ? '홈페이지 방문하기' : 'Visit Website'}
+            </a>
+          </section>
+        )}
+
+        {/* 리뷰 섹션 */}
+        <section className="sdp__section sdp__reviews">
+          <div className="sdp__section-header">
+            <span className="sdp__section-icon"><Icons.review size={18} /></span>
+            <h2 className="sdp__section-title">
+              {language === 'ko' ? '리뷰' : 'Reviews'}
+              {reviewCount > 0 && <span className="sdp__review-count">({reviewCount})</span>}
+            </h2>
+            {user && (
+              <button 
+                className="sdp__review-write-btn"
+                onClick={() => setShowReviewForm(!showReviewForm)}
+              >
+                {showReviewForm ? '취소' : (language === 'ko' ? '리뷰 작성' : 'Write Review')}
+              </button>
+            )}
+          </div>
+          
+          {/* 평균 평점 */}
+          {avgRating > 0 && (
+            <div className="sdp__rating-summary">
+              <span className="sdp__rating-value">{avgRating}</span>
+              <div className="sdp__rating-stars">
+                {[1, 2, 3, 4, 5].map(star => (
+                  <span key={star} className={`sdp__star ${star <= Math.round(avgRating) ? 'sdp__star--filled' : ''}`}>
+                    ★
+                  </span>
+                ))}
+              </div>
+              <span className="sdp__rating-count">{reviewCount}개의 리뷰</span>
+            </div>
+          )}
+          
+          {/* 리뷰 작성 폼 */}
+          {showReviewForm && (
+            <div className="sdp__review-form">
+              <div className="sdp__rating-input">
+                <span>{language === 'ko' ? '평점' : 'Rating'}:</span>
+                <div className="sdp__rating-stars">
+                  {[1, 2, 3, 4, 5].map(star => (
+                    <button 
+                      key={star}
+                      type="button"
+                      className={`sdp__star-btn ${star <= newRating ? 'sdp__star-btn--active' : ''}`}
+                      onClick={() => setNewRating(star)}
+                    >
+                      ★
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <textarea
+                className="sdp__review-textarea"
+                placeholder={language === 'ko' ? '리뷰를 작성해주세요...' : 'Write your review...'}
+                value={newReviewContent}
+                onChange={(e) => setNewReviewContent(e.target.value)}
+                rows={4}
+              />
+              <button 
+                className="sdp__review-submit-btn"
+                onClick={handleSubmitReview}
+                disabled={reviewSubmitting}
+              >
+                {reviewSubmitting ? '등록 중...' : (language === 'ko' ? '리뷰 등록' : 'Submit Review')}
+              </button>
+            </div>
+          )}
+          
+          {/* 리뷰 목록 */}
+          {reviews.length > 0 ? (
+            <div className="sdp__review-list">
+              {reviews.map(review => (
+                <div key={review.id} className="sdp__review-item">
+                  <div className="sdp__review-header">
+                    <div className="sdp__review-author">
+                      {review.profiles?.avatar_url ? (
+                        <img 
+                          src={review.profiles.avatar_url} 
+                          alt="" 
+                          className="sdp__review-avatar"
+                        />
+                      ) : (
+                        <div className="sdp__review-avatar sdp__review-avatar--default"></div>
+                      )}
+                      <span className="sdp__review-nickname">
+                        {review.profiles?.nickname || '익명'}
+                      </span>
+                    </div>
+                    <div className="sdp__review-meta">
+                      <div className="sdp__review-rating">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <span key={star} className={`sdp__star--small ${star <= review.rating ? 'sdp__star--filled' : ''}`}>
+                            ★
+                          </span>
+                        ))}
+                      </div>
+                      <span className="sdp__review-date">
+                        {new Date(review.created_at).toLocaleDateString()}
+                      </span>
+                      {user && user.id === review.user_id && (
+                        <button 
+                          className="sdp__review-delete-btn"
+                          onClick={() => handleDeleteReview(review.id)}
+                        >
+                          삭제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <p className="sdp__review-content">{review.content}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="sdp__review-empty">
+              {language === 'ko' ? '아직 리뷰가 없습니다. 첫 번째 리뷰를 작성해보세요!' : 'No reviews yet. Be the first to write a review!'}
+            </p>
+          )}
+        </section>
+
+        {/* 저작권 */}
+        <section className="sdp__license">
+          <LicenseBadge type="kto" />
+        </section>
+      </main>
+
+      {/* 하단 고정 버튼 */}
+      <div className="sdp__bottom">
+        {user && (
+          <button className="sdp__bottom-btn sdp__bottom-btn--primary" onClick={openAddModal}>
+            + {language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}
+          </button>
+        )}
+        {spot.addr1 && (
+          <a 
+            href={`https://map.kakao.com/link/to/${encodeURIComponent(spot.title)},${spot.mapy},${spot.mapx}`}
+            target="_blank" rel="noopener noreferrer"
+            className="sdp__bottom-btn sdp__bottom-btn--secondary"
+          >
+            🧭 {language === 'ko' ? '길찾기' : 'Directions'}
+          </a>
+        )}
+      </div>
+
+      {/* 갤러리 모달 */}
+      {showFullGallery && (
+        <div className="sdp__modal-overlay" onClick={() => setShowFullGallery(false)}>
+          <div className="sdp__gallery-modal" onClick={e => e.stopPropagation()}>
+            <button className="sdp__modal-close" onClick={() => setShowFullGallery(false)}>×</button>
+            <img 
+              src={getReliableImageUrl(allImages[currentImageIndex])}
+              alt={spot.title}
+              onError={handleImageError}
+            />
+            <div className="sdp__gallery-modal-nav">
+              <button onClick={prevImage}>‹</button>
+              <span>{currentImageIndex + 1} / {allImages.length}</span>
+              <button onClick={nextImage}>›</button>
+            </div>
+            <div className="sdp__gallery-thumbs">
+              {allImages.map((img, idx) => (
+                <div 
+                  key={idx} 
+                  className={`sdp__thumb ${idx === currentImageIndex ? 'sdp__thumb--active' : ''}`}
+                  onClick={() => setCurrentImageIndex(idx)}
+                >
+                  <img src={getReliableImageUrl(img)} alt="" onError={handleImageError} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 내 여행에 추가 모달 */}
+      {showAddModal && (
+        <div className="sdp__modal-overlay" onClick={() => setShowAddModal(false)}>
+          <div className="sdp__trip-modal" onClick={e => e.stopPropagation()}>
+            <div className="sdp__trip-modal-header">
+              <h3>{language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}</h3>
+              <button onClick={() => setShowAddModal(false)}>×</button>
+            </div>
+            
+            <div className="sdp__trip-modal-body">
+              <div className="sdp__trip-preview">
+                <img 
+                  src={getReliableImageUrl(spot.firstimage, '/images/no-image.svg')}
+                  alt={spot.title}
+                  onError={handleImageError}
+                />
+                <div>
+                  <h4>{spot.title}</h4>
+                  <p>{spot.addr1}</p>
+                </div>
+              </div>
+
+              {tripsLoading ? (
+                <div className="sdp__trip-loading"><div className="sdp__spinner"></div></div>
+              ) : tripPlans.length === 0 ? (
+                <div className="sdp__trip-empty">
+                  <p>{language === 'ko' ? '여행 계획이 없습니다.' : 'No trip plans yet.'}</p>
+                  <Link to="/my-trip">{language === 'ko' ? '새 여행 만들기' : 'Create New Trip'}</Link>
+                </div>
+              ) : (
+                <>
+                  <div className="sdp__trip-select">
+                    <label>{language === 'ko' ? '여행 선택' : 'Select Trip'}</label>
+                    <div className="sdp__trip-list">
+                      {tripPlans.map(trip => (
+                        <button
+                          key={trip.id}
+                          className={`sdp__trip-option ${selectedTripId === trip.id ? 'sdp__trip-option--selected' : ''}`}
+                          onClick={() => { setSelectedTripId(trip.id); setSelectedDayId(null); }}
+                        >
+                          {trip.title}
+                          {selectedTripId === trip.id && <span>✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {selectedTripId && (
+                    <div className="sdp__day-select">
+                      <label>{language === 'ko' ? '일차 선택' : 'Select Day'}</label>
+                      <div className="sdp__day-list">
+                        {tripPlans.find(t => t.id === selectedTripId)?.days?.map(day => (
+                          <button
+                            key={day.id}
+                            className={`sdp__day-option ${selectedDayId === day.id ? 'sdp__day-option--selected' : ''}`}
+                            onClick={() => setSelectedDayId(day.id)}
+                          >
+                            📅 {day.dayNumber}{language === 'ko' ? '일차' : ''}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="sdp__trip-modal-footer">
+              <button className="sdp__trip-btn sdp__trip-btn--cancel" onClick={() => setShowAddModal(false)}>
+                {language === 'ko' ? '취소' : 'Cancel'}
+              </button>
+              <button 
+                className="sdp__trip-btn sdp__trip-btn--add" 
+                onClick={handleAddToTrip}
+                disabled={!selectedDayId || addingToTrip}
+              >
+                {addingToTrip ? <span className="sdp__spinner-small"></span> : '+'}
+                {language === 'ko' ? '추가하기' : 'Add'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default SpotDetailPage

@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
-import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
+import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
-import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import './ShoppingPage.css';
 
 // 대전시 구 목록
@@ -18,6 +19,7 @@ const DISTRICTS = [
 
 const ShoppingPage = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [allShops, setAllShops] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -75,6 +77,7 @@ const ShoppingPage = () => {
           imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
+          intro_info: item.intro_info, // 소개정보 (영업시간, 쉬는날, 주차 등)
           _source: 'tourapi'
         }));
         console.log('[DEBUG] ShoppingPage - 변환된 데이터:', formattedItems[0])
@@ -259,7 +262,7 @@ const ShoppingPage = () => {
         ) : (
           <div className="shopping-grid">
             {paginatedShops.map((shop, index) => (
-              <div key={index} className="shopping-card">
+              <div key={index} className="shopping-card" onClick={() => navigate(`/spot/${shop.contentId}`)} style={{ cursor: 'pointer' }}>
                 <div className="shopping-image">
                   <img 
                     src={shop.imageUrl || '/images/no-image.svg'} 
@@ -288,12 +291,39 @@ const ShoppingPage = () => {
                         <span>{shop.shppgAddr}</span>
                       </div>
                     )}
-                    {shop.shppgInqrTel && (
-                      <div className="info-item">
-                        <FiPhone />
-                        <a href={`tel:${shop.shppgInqrTel}`}>{shop.shppgInqrTel}</a>
+                    
+                    {/* 영업시간: intro_info.opentime */}
+                    {shop.intro_info?.opentime && (
+                      <div className="info-item open-time">
+                        <FiClock />
+                        <span>{cleanIntroHtml(shop.intro_info.opentime, ' / ')}</span>
                       </div>
                     )}
+                    
+                    {/* 쉬는날: intro_info.restdateshopping */}
+                    {shop.intro_info?.restdateshopping && (
+                      <div className="info-item rest-day">
+                        <span>📅 {language === 'ko' ? '휴무' : 'Closed'}: {cleanIntroHtml(shop.intro_info.restdateshopping)}</span>
+                      </div>
+                    )}
+                    
+                    {/* 전화번호: intro_info.infocentershopping 또는 기존 shppgInqrTel */}
+                    {(shop.shppgInqrTel || shop.telNo || shop.intro_info?.infocentershopping) && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <a href={`tel:${cleanIntroHtml(shop.shppgInqrTel || shop.telNo || shop.intro_info?.infocentershopping)}`}>
+                          {cleanIntroHtml(shop.shppgInqrTel || shop.telNo || shop.intro_info?.infocentershopping)}
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* 주차시설: intro_info.parkingshopping */}
+                    {shop.intro_info?.parkingshopping && (
+                      <div className="info-item parking">
+                        <span>🅿️ {cleanIntroHtml(shop.intro_info.parkingshopping)}</span>
+                      </div>
+                    )}
+                    
                     {shop.shppgIntrd && (
                       <p className="shop-desc">{shop.shppgIntrd.length > 150 ? shop.shppgIntrd.substring(0, 150) + '...' : shop.shppgIntrd}</p>
                     )}

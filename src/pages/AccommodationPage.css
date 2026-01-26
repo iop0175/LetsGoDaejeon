@@ -302,6 +302,78 @@
   text-decoration: underline;
 }
 
+/* 체크인/체크아웃 스타일 */
+.accommodation-info .checkin-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary, #666);
+}
+
+.accommodation-info .checkin-time svg {
+  color: #FF9800;
+  flex-shrink: 0;
+}
+
+/* 주차 정보 스타일 */
+.accommodation-info .parking {
+  font-size: 0.8rem;
+  color: var(--text-muted, #999);
+  background: var(--bg-secondary, #f5f5f5);
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+/* 예약/홈페이지 버튼 그룹 */
+.accommodation-action-links {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  margin-bottom: 12px;
+}
+
+/* 예약하기 버튼 */
+.accommodation-action-links .reservation-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: #FF9800;
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.accommodation-action-links .reservation-link:hover {
+  background: #F57C00;
+  transform: translateY(-1px);
+}
+
+/* 홈페이지 버튼 */
+.accommodation-action-links .homepage-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: transparent;
+  color: #FF9800;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border: 1px solid #FF9800;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.accommodation-action-links .homepage-link:hover {
+  background: #FFF3E0;
+}
+
 .room-desc {
   font-size: 0.85rem;
   color: var(--text-secondary, #888);
@@ -416,6 +488,29 @@
   background: #FFB74D;
   border-color: #FFB74D;
   color: white;
+}
+
+/* 다크모드 예약/홈페이지 버튼 */
+.dark-theme .accommodation-info .parking {
+  background: rgba(255, 152, 0, 0.1);
+  color: var(--text-secondary);
+}
+
+.dark-theme .accommodation-action-links .reservation-link {
+  background: #FF9800;
+}
+
+.dark-theme .accommodation-action-links .reservation-link:hover {
+  background: #FFB74D;
+}
+
+.dark-theme .accommodation-action-links .homepage-link {
+  color: #FFB74D;
+  border-color: #FFB74D;
+}
+
+.dark-theme .accommodation-action-links .homepage-link:hover {
+  background: rgba(255, 183, 77, 0.1);
 }
 
 @media (max-width: 768px) {

@@ -30,7 +30,7 @@ export const translations = {
       travelCourse: '여행코스',
       restaurant: '맛집',
       festival: '축제',
-      photoSpot: '포토스팟',
+      leisure: '레저',
       seasonTravel: '계절여행',
       recommend: '추천코스'
     },
@@ -101,7 +101,8 @@ export const translations = {
       terms: '이용약관',
       copyrightPolicy: '저작권정책',
       tourHotline: '관광안내 1577-3025',
-      dataSource: '본 사이트의 관광정보는 대전광역시 공공데이터포털, 한국관광공사 Tour API에서 제공받은 정보입니다.'
+      dataSource: '본 사이트의 관광정보는 대전광역시 공공데이터포털, 한국관광공사 Tour API에서 제공받은 정보입니다.',
+      disclaimer: '본 사이트는 대전광역시 공식 홈페이지가 아니며, 관광 정보 제공을 목적으로 운영되는 민간 사이트입니다.'
     },
 
     // 공통
@@ -181,7 +182,7 @@ export const translations = {
       travelCourse: 'Travel Course',
       restaurant: 'Restaurants',
       festival: 'Festivals',
-      photoSpot: 'Photo Spots',
+      leisure: 'Leisure',
       seasonTravel: 'Seasonal',
       recommend: 'Recommended'
     },
@@ -252,7 +253,8 @@ export const translations = {
       terms: 'Terms of Use',
       copyrightPolicy: 'Copyright Policy',
       tourHotline: 'Tour Hotline 1577-3025',
-      dataSource: 'Tourism data provided by Daejeon Metropolitan City Open Data Portal and Korea Tourism Organization Tour API.'
+      dataSource: 'Tourism data provided by Daejeon Metropolitan City Open Data Portal and Korea Tourism Organization Tour API.',
+      disclaimer: 'This site is not the official website of Daejeon Metropolitan City. It is a private website operated to provide tourism information.'
     },
 
     // Common

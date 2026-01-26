@@ -95,12 +95,18 @@ const PopularSpots = () => {
 
   const fetchSpots = async () => {
     try {
-      // tour_spots에서 관광지(12) 데이터 가져오기
-      const tourResult = await getTourSpotsDb('12', 1, 9)
+      // tour_spots에서 관광지(12) 데이터 가져오기 (더 많이 가져와서 랜덤 선택)
+      const tourResult = await getTourSpotsDb('12', 1, 30)
       
       if (tourResult.success && tourResult.items.length > 0) {
-        const formattedSpots = tourResult.items.map((item, idx) => ({
+        // 랜덤으로 섞기
+        const shuffled = [...tourResult.items].sort(() => Math.random() - 0.5)
+        // 랜덤으로 9개 선택
+        const selected = shuffled.slice(0, 9)
+        
+        const formattedSpots = selected.map((item, idx) => ({
           id: idx + 1,
+          contentId: item.content_id,
           title: { ko: item.title, en: item.title },
           location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) },
           category: { ko: '관광지', en: 'Attraction' },
@@ -138,6 +144,7 @@ const PopularSpots = () => {
               <TravelCard 
                 key={spot.id} 
                 id={spot.id}
+                contentId={spot.contentId}
                 title={spot.title[language] || spot.title.ko}
                 location={spot.location[language] || spot.location.ko}
                 category={spot.category[language] || spot.category.ko}

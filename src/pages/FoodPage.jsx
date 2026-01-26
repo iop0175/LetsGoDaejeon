@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation, FiPlus, FiCalendar, FiCheck, FiX } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
+import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import './FoodPage.css'
 
 // 대전시 구 목록
@@ -20,6 +21,7 @@ const DISTRICTS = [
 const FoodPage = () => {
   const { language, t } = useLanguage()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [allRestaurants, setAllRestaurants] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -145,6 +147,7 @@ const FoodPage = () => {
               mapx: item.mapx,
               mapy: item.mapy,
               homepage: item.homepage,
+              intro_info: item.intro_info, // 소개정보 (영업시간, 쉬는날, 대표메뉴 등)
               _source: 'tourapi'
             }
           })
@@ -316,7 +319,7 @@ const FoodPage = () => {
             
             <div className="food-grid-page">
               {paginatedRestaurants.map((restaurant) => (
-                <div key={restaurant.id} className="food-card-large">
+                <div key={restaurant.id} className="food-card-large" onClick={() => navigate(`/spot/${restaurant.contentId}`)} style={{ cursor: 'pointer' }}>
                   <div className="food-image-wrapper">
                     <img 
                       src={restaurant.image || '/images/no-image.svg'} 
@@ -341,26 +344,69 @@ const FoodPage = () => {
                       </div>
                     )}
                     
+                    {/* intro_info에서 대표메뉴/인기메뉴 표시 */}
+                    {!restaurant.menu && restaurant.intro_info?.firstmenu && (
+                      <div className="food-menu">
+                        <strong>🍽️ {language === 'ko' ? '대표메뉴' : 'Signature'}: </strong>
+                        <span>{cleanIntroHtml(restaurant.intro_info.firstmenu, ', ')}</span>
+                      </div>
+                    )}
+                    
+                    {/* intro_info에서 취급메뉴 표시 */}
+                    {restaurant.intro_info?.treatmenu && (
+                      <div className="food-menu treat-menu">
+                        <strong>📋 {language === 'ko' ? '취급메뉴' : 'Menu'}: </strong>
+                        <span>{cleanIntroHtml(restaurant.intro_info.treatmenu, ', ')}</span>
+                      </div>
+                    )}
+                    
                     <div className="food-details">
                       <div className="detail-item">
                         <FiMapPin />
                         <span>{restaurant.address}</span>
                       </div>
-                      {restaurant.hours && (
+                      
+                      {/* 영업시간: intro_info.opentimefood 우선 */}
+                      {(restaurant.hours || restaurant.intro_info?.opentimefood) && (
                         <div className="detail-item">
                           <FiClock />
-                          <span>{restaurant.hours}</span>
+                          <span>{cleanIntroHtml(restaurant.intro_info?.opentimefood || restaurant.hours, ' / ')}</span>
                         </div>
                       )}
-                      {restaurant.holiday && (
+                      
+                      {/* 쉬는날: intro_info.restdatefood */}
+                      {restaurant.intro_info?.restdatefood && (
+                        <div className="detail-item holiday">
+                          <span>📅 {language === 'ko' ? '휴무' : 'Closed'}: {cleanIntroHtml(restaurant.intro_info.restdatefood)}</span>
+                        </div>
+                      )}
+                      
+                      {/* 기존 휴일 정보 */}
+                      {restaurant.holiday && !restaurant.intro_info?.restdatefood && (
                         <div className="detail-item holiday">
                           <span>{restaurant.holiday}</span>
                         </div>
                       )}
-                      {restaurant.phone && (
+                      
+                      {/* 전화번호: intro_info.infocenterfood 또는 phone */}
+                      {(restaurant.phone || restaurant.intro_info?.infocenterfood) && (
                         <div className="detail-item">
                           <FiPhone />
-                          <span>{restaurant.phone}</span>
+                          <span>{cleanIntroHtml(restaurant.phone || restaurant.intro_info?.infocenterfood)}</span>
+                        </div>
+                      )}
+                      
+                      {/* 포장가능 여부 */}
+                      {restaurant.intro_info?.packing && (
+                        <div className="detail-item packing">
+                          <span>📦 {language === 'ko' ? '포장' : 'Takeout'}: {cleanIntroHtml(restaurant.intro_info.packing)}</span>
+                        </div>
+                      )}
+                      
+                      {/* 주차 정보 */}
+                      {restaurant.intro_info?.parkingfood && (
+                        <div className="detail-item parking">
+                          <span>🅿️ {cleanIntroHtml(restaurant.intro_info.parkingfood)}</span>
                         </div>
                       )}
                     </div>

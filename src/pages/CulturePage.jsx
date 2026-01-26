@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
-import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import './CulturePage.css';
 
 // 대전시 구 목록
@@ -18,6 +19,7 @@ const DISTRICTS = [
 
 const CulturePage = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [allFacilities, setAllFacilities] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +96,7 @@ const CulturePage = () => {
           mapx: item.mapx,
           mapy: item.mapy,
           overview: item.overview,
+          intro_info: item.intro_info, // 소개정보 (이용시간, 쉬는날, 이용요금 등)
           _source: 'tourapi'
         }));
         setAllFacilities(formattedItems);
@@ -280,7 +283,7 @@ const CulturePage = () => {
         ) : (
           <div className="culture-grid">
             {paginatedFacilities.map((facility, index) => (
-              <div key={index} className="culture-card">
+              <div key={index} className="culture-card" onClick={() => navigate(`/spot/${facility.contentId}`)} style={{ cursor: 'pointer' }}>
                 <div className="culture-image">
                   <img 
                     src={facility.imageUrl || '/images/no-image.svg'} 
@@ -309,12 +312,46 @@ const CulturePage = () => {
                         <span>{facility.signgu} {facility.locplc}</span>
                       </div>
                     )}
-                    {facility.telno && (
+                    
+                    {/* 이용시간: intro_info.usetimeculture */}
+                    {facility.intro_info?.usetimeculture && (
                       <div className="info-item">
-                        <FiPhone />
-                        <span>{facility.telno}</span>
+                        <FiClock />
+                        <span>{cleanIntroHtml(facility.intro_info.usetimeculture, ' / ')}</span>
                       </div>
                     )}
+                    
+                    {/* 쉬는날: intro_info.restdateculture */}
+                    {facility.intro_info?.restdateculture && (
+                      <div className="info-item rest-day">
+                        <span>📅 {language === 'ko' ? '휴관' : 'Closed'}: </span>
+                        <span>{cleanIntroHtml(facility.intro_info.restdateculture, ', ')}</span>
+                      </div>
+                    )}
+                    
+                    {/* 이용요금: intro_info.usefee */}
+                    {facility.intro_info?.usefee && (
+                      <div className="info-item">
+                        <span>💰 </span>
+                        <span>{cleanIntroHtml(facility.intro_info.usefee, ' / ')}</span>
+                      </div>
+                    )}
+                    
+                    {/* 전화번호: intro_info.infocenterculture 또는 기존 telno */}
+                    {(facility.telno || facility.intro_info?.infocenterculture) && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <span>{cleanIntroHtml(facility.telno || facility.intro_info?.infocenterculture)}</span>
+                      </div>
+                    )}
+                    
+                    {/* 주차시설: intro_info.parkingculture */}
+                    {facility.intro_info?.parkingculture && (
+                      <div className="info-item parking">
+                        <span>🅿️ {cleanIntroHtml(facility.intro_info.parkingculture)}</span>
+                      </div>
+                    )}
+                    
                     {facility.seatCo && facility.seatCo !== '-' && (
                       <div className="info-item">
                         <FiClock />

@@ -1756,6 +1756,31 @@ export { TABLE_CONFIGS }
 // ============================================================
 
 /**
+ * TourAPI 관광정보 단일 조회 (content_id로 조회)
+ * @param {string} contentId - 콘텐츠 ID
+ * @returns {Promise<Object>} { success, item }
+ */
+export const getTourSpotByContentId = async (contentId) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('*')
+      .eq('content_id', contentId)
+      .single()
+    
+    if (error) throw error
+    
+    return {
+      success: true,
+      item: data
+    }
+  } catch (err) {
+    console.error('TourSpot 단일 조회 에러:', err)
+    return { success: false, item: null }
+  }
+}
+
+/**
  * TourAPI 관광정보 조회 (tour_spots 테이블)
  * @param {string} contentTypeId - 관광타입 (12:관광지, 14:문화시설, 28:레포츠, 32:숙박, 38:쇼핑, 39:음식점)
  * @param {number} page - 페이지 번호 (1부터 시작)
@@ -2543,3 +2568,284 @@ export const getTourApiStats = async () => {
   }
 }
 
+
+// ==================== 조회수/좋아요/리뷰 관련 함수 ====================
+
+/**
+ * 관광지 조회수 증가 (페이지 방문 시 호출)
+ * @param {string} contentId - 관광지 ID
+ * @returns {Promise<Object>} { success, viewCount }
+ */
+export const incrementSpotViews = async (contentId) => {
+  try {
+    // 먼저 기존 레코드 확인
+    const { data: existing } = await supabase
+      .from('spot_stats')
+      .select('view_count')
+      .eq('content_id', contentId)
+      .single()
+    
+    if (existing) {
+      // 기존 레코드가 있으면 업데이트
+      const { data, error } = await supabase
+        .from('spot_stats')
+        .update({ 
+          view_count: existing.view_count + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('content_id', contentId)
+        .select('view_count')
+        .single()
+      
+      if (error) throw error
+      return { success: true, viewCount: data.view_count }
+    } else {
+      // 없으면 새로 생성
+      const { data, error } = await supabase
+        .from('spot_stats')
+        .insert({ 
+          content_id: contentId, 
+          view_count: 1,
+          like_count: 0
+        })
+        .select('view_count')
+        .single()
+      
+      if (error) throw error
+      return { success: true, viewCount: data.view_count }
+    }
+  } catch (err) {
+    console.error('조회수 증가 에러:', err)
+    return { success: false, viewCount: 0 }
+  }
+}
+
+/**
+ * 관광지 통계 조회 (조회수, 좋아요 수)
+ * @param {string} contentId - 관광지 ID
+ * @returns {Promise<Object>} { success, viewCount, likeCount }
+ */
+export const getSpotStats = async (contentId) => {
+  try {
+    const { data, error } = await supabase
+      .from('spot_stats')
+      .select('view_count, like_count')
+      .eq('content_id', contentId)
+      .single()
+    
+    if (error && error.code !== 'PGRST116') throw error  // PGRST116 = no rows
+    
+    return { 
+      success: true, 
+      viewCount: data?.view_count || 0,
+      likeCount: data?.like_count || 0
+    }
+  } catch (err) {
+    console.error('관광지 통계 조회 에러:', err)
+    return { success: false, viewCount: 0, likeCount: 0 }
+  }
+}
+
+/**
+ * 좋아요 토글 (로그인 필요)
+ * @param {string} contentId - 관광지 ID
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Object>} { success, isLiked, likeCount }
+ */
+export const toggleSpotLike = async (contentId, userId) => {
+  try {
+    if (!userId) {
+      return { success: false, message: '로그인이 필요합니다', isLiked: false }
+    }
+    
+    // 기존 좋아요 확인
+    const { data: existing } = await supabase
+      .from('spot_likes')
+      .select('id')
+      .eq('content_id', contentId)
+      .eq('user_id', userId)
+      .single()
+    
+    if (existing) {
+      // 좋아요 취소
+      await supabase
+        .from('spot_likes')
+        .delete()
+        .eq('id', existing.id)
+      
+      // spot_stats 좋아요 수 감소
+      await supabase.rpc('decrement_like_count', { p_content_id: contentId })
+      
+      const stats = await getSpotStats(contentId)
+      return { success: true, isLiked: false, likeCount: stats.likeCount }
+    } else {
+      // 좋아요 추가
+      await supabase
+        .from('spot_likes')
+        .insert({ content_id: contentId, user_id: userId })
+      
+      // spot_stats 좋아요 수 증가
+      await supabase.rpc('increment_like_count', { p_content_id: contentId })
+      
+      const stats = await getSpotStats(contentId)
+      return { success: true, isLiked: true, likeCount: stats.likeCount }
+    }
+  } catch (err) {
+    console.error('좋아요 토글 에러:', err)
+    return { success: false, isLiked: false, likeCount: 0 }
+  }
+}
+
+/**
+ * 사용자가 해당 관광지를 좋아요 했는지 확인
+ * @param {string} contentId - 관광지 ID
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<boolean>}
+ */
+export const checkSpotLiked = async (contentId, userId) => {
+  try {
+    if (!userId) return false
+    
+    const { data } = await supabase
+      .from('spot_likes')
+      .select('id')
+      .eq('content_id', contentId)
+      .eq('user_id', userId)
+      .single()
+    
+    return !!data
+  } catch {
+    return false
+  }
+}
+
+/**
+ * 리뷰 작성
+ * @param {Object} reviewData - { contentId, userId, rating, content }
+ * @returns {Promise<Object>} { success, review }
+ */
+export const createSpotReview = async ({ contentId, userId, rating, content }) => {
+  try {
+    if (!userId) {
+      return { success: false, message: '로그인이 필요합니다' }
+    }
+    
+    const { data, error } = await supabase
+      .from('spot_reviews')
+      .insert({
+        content_id: contentId,
+        user_id: userId,
+        rating: rating,
+        content: content
+      })
+      .select(`
+        *,
+        profiles:user_id (
+          nickname,
+          avatar_url
+        )
+      `)
+      .single()
+    
+    if (error) throw error
+    return { success: true, review: data }
+  } catch (err) {
+    console.error('리뷰 작성 에러:', err)
+    return { success: false, message: '리뷰 작성에 실패했습니다' }
+  }
+}
+
+/**
+ * 리뷰 목록 조회
+ * @param {string} contentId - 관광지 ID
+ * @param {number} page - 페이지 번호
+ * @param {number} pageSize - 페이지당 개수
+ * @returns {Promise<Object>} { success, reviews, totalCount, avgRating }
+ */
+export const getSpotReviews = async (contentId, page = 1, pageSize = 10) => {
+  try {
+    // 전체 개수 조회
+    const { count: totalCount } = await supabase
+      .from('spot_reviews')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_id', contentId)
+    
+    // 평균 평점 조회
+    const { data: avgData } = await supabase
+      .from('spot_reviews')
+      .select('rating')
+      .eq('content_id', contentId)
+    
+    const avgRating = avgData && avgData.length > 0
+      ? (avgData.reduce((sum, r) => sum + r.rating, 0) / avgData.length).toFixed(1)
+      : 0
+    
+    // 리뷰 목록 조회
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    
+    const { data: reviews, error } = await supabase
+      .from('spot_reviews')
+      .select('*')
+      .eq('content_id', contentId)
+      .order('created_at', { ascending: false })
+      .range(from, to)
+    
+    if (error) throw error
+    
+    // 각 리뷰에 대해 프로필 정보 별도 조회
+    const reviewsWithProfile = await Promise.all(
+      (reviews || []).map(async (review) => {
+        try {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('nickname, avatar_url')
+            .eq('id', review.user_id)
+            .single()
+          
+          return {
+            ...review,
+            profiles: profile || { nickname: '익명', avatar_url: null }
+          }
+        } catch {
+          return {
+            ...review,
+            profiles: { nickname: '익명', avatar_url: null }
+          }
+        }
+      })
+    )
+    
+    return { 
+      success: true, 
+      reviews: reviewsWithProfile,
+      totalCount: totalCount || 0,
+      avgRating: parseFloat(avgRating)
+    }
+  } catch (err) {
+    console.error('리뷰 조회 에러:', err)
+    return { success: false, reviews: [], totalCount: 0, avgRating: 0 }
+  }
+}
+
+/**
+ * 리뷰 삭제 (본인만 가능)
+ * @param {string} reviewId - 리뷰 ID
+ * @param {string} userId - 사용자 ID
+ * @returns {Promise<Object>} { success }
+ */
+export const deleteSpotReview = async (reviewId, userId) => {
+  try {
+    const { error } = await supabase
+      .from('spot_reviews')
+      .delete()
+      .eq('id', reviewId)
+      .eq('user_id', userId)
+    
+    if (error) throw error
+    return { success: true }
+  } catch (err) {
+    console.error('리뷰 삭제 에러:', err)
+    return { success: false }
+  }
+}

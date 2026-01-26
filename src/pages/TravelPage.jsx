@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiImage } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpotImage, getTourApiImages } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
+import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import TravelCard from '../components/TravelCard/TravelCard'
 import LicenseBadge from '../components/common/LicenseBadge'
 import './TravelPage.css'
@@ -23,6 +24,7 @@ const DISTRICTS = [
 const TravelPage = () => {
   const { language, t } = useLanguage()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [allSpots, setAllSpots] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -250,6 +252,7 @@ const TravelPage = () => {
             return {
               id: item.id || item.content_id || index + 1,
               contentId: item.content_id,
+              contentTypeId: item.content_type_id,
               title: item.title,
               location: district,
               address: item.addr1 || item.addr2,
@@ -258,7 +261,8 @@ const TravelPage = () => {
               image: getReliableImageUrl(item.firstimage || item.firstimage2, getTourSpotImage(item.title)),
               mapx: item.mapx,
               mapy: item.mapy,
-              homepage: item.homepage
+              homepage: item.homepage,
+              intro_info: item.intro_info // 소개정보 (이용시간, 주차 등)
             }
           })
           setAllSpots(formattedSpots)
@@ -365,7 +369,7 @@ const TravelPage = () => {
             
             <div className="spots-grid">
               {paginatedSpots.map((spot) => (
-                <div key={spot.id} className="spot-card-wrapper" onClick={() => openSpotDetail(spot)}>
+                <div key={spot.id} className="spot-card-wrapper" onClick={() => navigate(`/spot/${spot.contentId}`)}>
                   <div className="spot-card">
                     <div className="spot-image">
                       <img 
@@ -590,22 +594,41 @@ const TravelPage = () => {
                   </div>
                 )}
                 
-                {selectedSpot.time && (
+                {/* 운영시간: 기존 time 또는 intro_info.usetime */}
+                {(selectedSpot.time || selectedSpot.intro_info?.usetime) && (
                   <div className="info-item">
                     <FiClock />
                     <div>
                       <strong>{language === 'ko' ? '운영시간' : 'Hours'}</strong>
-                      <p>{selectedSpot.time.replace(/<br\s*\/?>/gi, ' ')}</p>
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedSpot.time || selectedSpot.intro_info?.usetime)
+                      }} />
                     </div>
                   </div>
                 )}
                 
-                {selectedSpot.phone && (
+                {/* 쉬는날 (intro_info에서만) */}
+                {selectedSpot.intro_info?.restdate && (
+                  <div className="info-item">
+                    <span className="icon-text">📅</span>
+                    <div>
+                      <strong>{language === 'ko' ? '쉬는날' : 'Closed'}</strong>
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedSpot.intro_info.restdate)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 전화번호: 기존 phone 또는 intro_info.infocenter */}
+                {(selectedSpot.phone || selectedSpot.intro_info?.infocenter) && (
                   <div className="info-item">
                     <FiPhone />
                     <div>
-                      <strong>{language === 'ko' ? '전화번호' : 'Phone'}</strong>
-                      <p>{selectedSpot.phone}</p>
+                      <strong>{language === 'ko' ? '문의처' : 'Contact'}</strong>
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedSpot.phone || selectedSpot.intro_info?.infocenter)
+                      }} />
                     </div>
                   </div>
                 )}
@@ -615,17 +638,44 @@ const TravelPage = () => {
                     <span className="icon-text">💰</span>
                     <div>
                       <strong>{language === 'ko' ? '이용요금' : 'Fee'}</strong>
-                      <p>{selectedSpot.fee}</p>
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedSpot.fee)
+                      }} />
                     </div>
                   </div>
                 )}
                 
-                {selectedSpot.parking && (
+                {/* 주차시설: 기존 parking 또는 intro_info.parking */}
+                {(selectedSpot.parking || selectedSpot.intro_info?.parking) && (
                   <div className="info-item">
                     <span className="icon-text">🅿️</span>
                     <div>
                       <strong>{language === 'ko' ? '주차시설' : 'Parking'}</strong>
-                      <p>{selectedSpot.parking}</p>
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedSpot.parking || selectedSpot.intro_info?.parking)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 유모차대여 (intro_info에서만) */}
+                {selectedSpot.intro_info?.chkbabycarriage && (
+                  <div className="info-item">
+                    <span className="icon-text">👶</span>
+                    <div>
+                      <strong>{language === 'ko' ? '유모차대여' : 'Stroller Rental'}</strong>
+                      <p>{cleanIntroHtml(selectedSpot.intro_info.chkbabycarriage)}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 애완동물 (intro_info에서만) */}
+                {selectedSpot.intro_info?.chkpet && (
+                  <div className="info-item">
+                    <span className="icon-text">🐕</span>
+                    <div>
+                      <strong>{language === 'ko' ? '애완동물' : 'Pets'}</strong>
+                      <p>{cleanIntroHtml(selectedSpot.intro_info.chkpet)}</p>
                     </div>
                   </div>
                 )}

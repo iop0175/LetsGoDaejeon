@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
-import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch, FiCamera, FiLoader } from 'react-icons/fi';
+import { FiMapPin, FiPhone, FiNavigation, FiStar, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
-import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
+import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import './AccommodationPage.css';
 
 // 대전시 구 목록
@@ -18,6 +19,7 @@ const DISTRICTS = [
 
 const AccommodationPage = () => {
   const { language } = useLanguage();
+  const navigate = useNavigate();
   const [allRooms, setAllRooms] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +96,7 @@ const AccommodationPage = () => {
           mapx: item.mapx,
           mapy: item.mapy,
           overview: item.overview,
+          intro_info: item.intro_info, // 소개정보 (체크인/아웃, 주차 등)
           _source: 'tourapi'
         }));
         setAllRooms(formattedItems);
@@ -295,7 +298,7 @@ const AccommodationPage = () => {
         ) : (
           <div className="accommodation-grid">
             {paginatedRooms.map((room, index) => (
-              <div key={index} className="accommodation-card">
+              <div key={index} className="accommodation-card" onClick={() => navigate(`/spot/${room.contentId}`)} style={{ cursor: 'pointer' }}>
                 <div className="accommodation-image">
                   <img 
                     src={room.imageUrl || '/images/no-image.svg'} 
@@ -329,23 +332,64 @@ const AccommodationPage = () => {
                         <span>{room.romsDtlAddr}</span>
                       </div>
                     )}
-                    {room.romsRefadNo && (
-                      <div className="info-item">
-                        <FiPhone />
-                        <a href={`tel:${room.romsRefadNo}`}>{room.romsRefadNo}</a>
+                    
+                    {/* 체크인/체크아웃: intro_info */}
+                    {(room.intro_info?.checkintime || room.intro_info?.checkouttime) && (
+                      <div className="info-item checkin-time">
+                        <FiClock />
+                        <span>
+                          {room.intro_info?.checkintime && `체크인 ${room.intro_info.checkintime}`}
+                          {room.intro_info?.checkintime && room.intro_info?.checkouttime && ' / '}
+                          {room.intro_info?.checkouttime && `체크아웃 ${room.intro_info.checkouttime}`}
+                        </span>
                       </div>
                     )}
-                    {room.romsHmpgAddr && (
-                      <a 
-                        href={room.romsHmpgAddr} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="homepage-link"
-                      >
-                        {language === 'ko' ? '홈페이지' : 'Website'}
-                      </a>
+                    
+                    {/* 전화번호: intro_info.infocenterlodging 또는 기존 romsRefadNo */}
+                    {(room.romsRefadNo || room.intro_info?.infocenterlodging) && (
+                      <div className="info-item">
+                        <FiPhone />
+                        <a href={`tel:${room.romsRefadNo || room.intro_info?.infocenterlodging}`}>
+                          {room.romsRefadNo || room.intro_info?.infocenterlodging}
+                        </a>
+                      </div>
+                    )}
+                    
+                    {/* 주차시설: intro_info.parkinglodging */}
+                    {room.intro_info?.parkinglodging && (
+                      <div className="info-item parking">
+                        <span>🅿️ {room.intro_info.parkinglodging}</span>
+                      </div>
                     )}
                   </div>
+                  
+                  {/* 예약/홈페이지 버튼 그룹 */}
+                  {(room.intro_info?.reservationurl || room.romsHmpgAddr) && (
+                    <div className="accommodation-action-links">
+                      {/* 예약 URL: intro_info.reservationurl */}
+                      {room.intro_info?.reservationurl && (
+                        <a 
+                          href={room.intro_info.reservationurl.match(/href="([^"]+)"/)?.[1] || room.intro_info.reservationurl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="reservation-link"
+                        >
+                          {language === 'ko' ? '예약하기' : 'Book Now'}
+                        </a>
+                      )}
+                      
+                      {room.romsHmpgAddr && (
+                        <a 
+                          href={room.romsHmpgAddr} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="homepage-link"
+                        >
+                          {language === 'ko' ? '홈페이지' : 'Website'}
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   <button 
                     className="navigate-btn"

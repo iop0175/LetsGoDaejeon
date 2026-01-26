@@ -6,15 +6,18 @@ import './TravelCard.css'
 
 const DEFAULT_IMAGE = '/images/no-image.svg'
 
-const TravelCard = memo(({ id, title, location, category, image, duration }) => {
+const TravelCard = memo(({ id, contentId, title, location, category, image, duration }) => {
   const { t } = useLanguage()
 
   const handleImageError = (e) => {
     e.target.src = DEFAULT_IMAGE
   }
 
+  // contentId가 있으면 상세 페이지로, 없으면 /travel/id로
+  const linkTo = contentId ? `/spot/${contentId}` : `/travel/${id}`
+
   return (
-    <Link to={`/travel/${id}`} className="travel-card">
+    <Link to={linkTo} className="travel-card">
       <div className="travel-card-image">
         <img 
           src={image || DEFAULT_IMAGE} 

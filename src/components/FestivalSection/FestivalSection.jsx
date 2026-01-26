@@ -83,8 +83,8 @@ const FestivalSection = () => {
 
   const fetchFestivals = async () => {
     try {
-      // tour_festivals에서 행사/축제 데이터 가져오기
-      const tourResult = await getTourFestivals(true, 1, 10)
+      // tour_festivals에서 행사/축제 데이터 가져오기 (더 많이 가져와서 랜덤 선택)
+      const tourResult = await getTourFestivals(true, 1, 30)
       
       if (tourResult.success && tourResult.items.length > 0) {
         // 현재 날짜 기준으로 종료되지 않은 축제만 필터링
@@ -94,14 +94,12 @@ const FestivalSection = () => {
           return item.event_end_date >= today
         })
         
-        // 시작일 가까운 순으로 정렬
-        const sortedItems = activeItems.sort((a, b) => {
-          const aBegin = a.event_start_date ? parseInt(a.event_start_date) : 99999999
-          const bBegin = b.event_start_date ? parseInt(b.event_start_date) : 99999999
-          return aBegin - bBegin
-        })
+        // 랜덤으로 섞기
+        const shuffled = [...activeItems].sort(() => Math.random() - 0.5)
+        // 랜덤으로 10개 선택
+        const selected = shuffled.slice(0, 10)
         
-        const formattedFestivals = sortedItems.slice(0, 10).map((item, idx) => {
+        const formattedFestivals = selected.map((item, idx) => {
           // 기간 포맷팅 (event_start_date ~ event_end_date)
           const formatPeriod = () => {
             if (!item.event_start_date) return ''
@@ -114,6 +112,7 @@ const FestivalSection = () => {
           
           return {
             id: idx + 1,
+            contentId: item.content_id,
             title: { ko: item.title, en: item.title },
             period: formatPeriod(),
             location: { ko: item.addr1 || '', en: item.addr1 || '' },
@@ -179,7 +178,7 @@ const FestivalSection = () => {
           >
             {festivals.map((festival) => (
               <SwiperSlide key={festival.id}>
-                <a href={`/festival`} className="festival-card">
+                <a href={festival.contentId ? `/spot/${festival.contentId}` : '/festival'} className="festival-card">
                   <div className="festival-image">
                     <img src={festival.image} alt={festival.title[language] || festival.title.ko} loading="lazy" />
                     <span className="festival-status">{festival.host || t.festivalSection.upcoming}</span>

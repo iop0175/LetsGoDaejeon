@@ -178,3 +178,66 @@ export const escapeHtml = (text) => {
   div.textContent = text
   return div.innerHTML
 }
+
+/**
+ * TourAPI intro_info의 HTML 태그를 정리
+ * <br> 태그를 줄바꿈으로 변환하고, 불필요한 HTML 태그 제거
+ * @param {string} htmlText - TourAPI에서 받은 HTML 포함 텍스트
+ * @param {string} separator - 줄바꿈 대체 문자 (기본: ' / ')
+ * @returns {string} 정리된 텍스트
+ */
+export const cleanIntroHtml = (htmlText, separator = ' / ') => {
+  if (!htmlText) return ''
+  
+  let text = htmlText
+  
+  // <br>, <br/>, <br /> 태그를 separator로 변환
+  text = text.replace(/<br\s*\/?>/gi, separator)
+  
+  // 나머지 HTML 태그 제거 (a, strong, em 등)
+  text = text.replace(/<[^>]+>/g, '')
+  
+  // HTML 엔티티 디코딩
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  text = textarea.value
+  
+  // 연속된 공백/separator 정리
+  text = text.replace(new RegExp(`(${separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})+`, 'g'), separator)
+  
+  // 시작과 끝의 separator 제거
+  text = text.replace(new RegExp(`^${separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}|${separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'g'), '')
+  
+  return text.trim()
+}
+
+/**
+ * TourAPI intro_info HTML을 안전한 HTML로 변환 (br 태그만 유지)
+ * @param {string} htmlText - TourAPI에서 받은 HTML 포함 텍스트
+ * @returns {string} br 태그만 포함된 안전한 HTML
+ */
+export const sanitizeIntroHtml = (htmlText) => {
+  if (!htmlText) return ''
+  
+  let text = htmlText
+  
+  // <br> 태그를 임시 placeholder로 대체
+  const brPlaceholder = '[[BR]]'
+  text = text.replace(/<br\s*\/?>/gi, brPlaceholder)
+  
+  // 나머지 HTML 태그 제거
+  text = text.replace(/<[^>]+>/g, '')
+  
+  // HTML 엔티티 디코딩
+  const textarea = document.createElement('textarea')
+  textarea.innerHTML = text
+  text = textarea.value
+  
+  // placeholder를 <br/> 태그로 복원
+  text = text.replace(new RegExp(brPlaceholder.replace(/[[\]]/g, '\\$&'), 'g'), '<br/>')
+  
+  // 연속된 <br/> 정리
+  text = text.replace(/(<br\s*\/?>)+/gi, '<br/>')
+  
+  return text.trim()
+}

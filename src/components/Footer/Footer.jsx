@@ -72,6 +72,9 @@ const Footer = memo(() => {
             </a>
           </div>
           <div className="footer-copyright">
+            <p className="footer-disclaimer">
+              {t.footer.disclaimer || '본 사이트는 대전광역시 공식 홈페이지가 아니며, 관광 정보 제공을 목적으로 운영되는 민간 사이트입니다.'}
+            </p>
             <p>{t.footer.copyright}</p>
             <p className="footer-data-source">{t.footer.dataSource}</p>
             <div className="footer-legal">

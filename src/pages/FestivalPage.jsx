@@ -1,13 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, FiExternalLink, FiMusic, FiCamera } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
-import { handleImageError, getReliableImageUrl } from '../utils/imageUtils'
+import { handleImageError, getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
   const { language, t } = useLanguage()
+  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('festival') // 'festival' or 'performance'
   
   // 축제/행사 상태
@@ -173,6 +175,7 @@ const FestivalPage = () => {
             overview: item.overview,
             mapx: item.mapx,
             mapy: item.mapy,
+            intro_info: item.intro_info, // 소개정보 (주최, 공연시간, 이용요금 등)
             _source: 'tourapi'
           }))
           setAllEvents(formattedEvents)
@@ -435,7 +438,7 @@ const FestivalPage = () => {
                     <div 
                       key={event.id} 
                       className="event-card"
-                      onClick={() => setSelectedEvent(event)}
+                      onClick={() => event.contentId ? navigate(`/spot/${event.contentId}`) : setSelectedEvent(event)}
                     >
                       <div className="event-image">
                         <img 
@@ -732,6 +735,107 @@ const FestivalPage = () => {
                     </div>
                     <div className="detail-value">
                       <p>{selectedEvent.management}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* intro_info에서 주최/주관 정보 */}
+                {selectedEvent.intro_info?.sponsor1 && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiInfo />
+                      {language === 'ko' ? '주최' : 'Sponsor'}
+                    </div>
+                    <div className="detail-value">
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedEvent.intro_info.sponsor1)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 공연/행사 시간 */}
+                {selectedEvent.intro_info?.playtime && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiClock />
+                      {language === 'ko' ? '공연시간' : 'Play Time'}
+                    </div>
+                    <div className="detail-value">
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedEvent.intro_info.playtime)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 이용요금 */}
+                {selectedEvent.intro_info?.usetimefestival && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <span>💰</span>
+                      {language === 'ko' ? '이용요금' : 'Fee'}
+                    </div>
+                    <div className="detail-value">
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedEvent.intro_info.usetimefestival)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 예매처 */}
+                {selectedEvent.intro_info?.bookingplace && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <span>🎫</span>
+                      {language === 'ko' ? '예매처' : 'Booking'}
+                    </div>
+                    <div className="detail-value">
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: sanitizeIntroHtml(selectedEvent.intro_info.bookingplace)
+                      }} />
+                    </div>
+                  </div>
+                )}
+                
+                {/* 관람 연령 제한 */}
+                {selectedEvent.intro_info?.agelimit && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiUser />
+                      {language === 'ko' ? '관람연령' : 'Age Limit'}
+                    </div>
+                    <div className="detail-value">
+                      <p>{cleanIntroHtml(selectedEvent.intro_info.agelimit)}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 주최/주관 연락처 */}
+                {(selectedEvent.tel || selectedEvent.intro_info?.sponsor1tel) && (
+                  <div className="detail-row">
+                    <div className="detail-label">
+                      <FiPhone />
+                      {language === 'ko' ? '문의' : 'Contact'}
+                    </div>
+                    <div className="detail-value">
+                      <p>{cleanIntroHtml(selectedEvent.tel || selectedEvent.intro_info?.sponsor1tel)}</p>
+                    </div>
+                  </div>
+                )}
+                
+                {/* 개요/설명 */}
+                {selectedEvent.overview && (
+                  <div className="detail-row overview-row">
+                    <div className="detail-label">
+                      <FiInfo />
+                      {language === 'ko' ? '행사소개' : 'About'}
+                    </div>
+                    <div className="detail-value">
+                      <p dangerouslySetInnerHTML={{ 
+                        __html: selectedEvent.overview.replace(/<br\s*\/?>/gi, '<br/>') 
+                      }} />
                     </div>
                   </div>
                 )}

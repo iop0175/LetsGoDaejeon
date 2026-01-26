@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { FiMap, FiCalendar, FiCamera, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
+import { FiMap, FiCalendar, FiActivity, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import './QuickMenu.css'
 
@@ -10,9 +10,9 @@ const QuickMenu = memo(() => {
     { icon: FiMap, label: t.quickMenu.travelCourse, link: '/travel' },
     { icon: FiCoffee, label: t.quickMenu.restaurant, link: '/food' },
     { icon: FiCalendar, label: t.quickMenu.festival, link: '/festival' },
-    { icon: FiCamera, label: t.quickMenu.photoSpot, link: '/travel' },
+    { icon: FiActivity, label: t.quickMenu.leisure || '레저', link: '/leisure' },
     { icon: FiSun, label: t.quickMenu.seasonTravel, link: '/travel' },
-    { icon: FiHeart, label: t.quickMenu.recommend, link: '/travel' },
+    { icon: FiHeart, label: t.quickMenu.recommend, link: '/shared-trips' },
   ]
 
   return (

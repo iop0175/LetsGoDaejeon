@@ -22,6 +22,7 @@ import SharedTripsPage from './pages/SharedTripsPage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import CopyrightPage from './pages/CopyrightPage'
+import SpotDetailPage from './pages/SpotDetailPage'
 import { recordPageVisitDB } from './services/dbService'
 import './styles/App.css'
 
@@ -82,6 +83,7 @@ function App() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/copyright" element={<CopyrightPage />} />
+          <Route path="/spot/:contentId" element={<SpotDetailPage />} />
         </Routes>
       </main>
       {!isAdminPage && <Footer />}

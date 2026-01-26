@@ -102,12 +102,18 @@ const FoodSection = () => {
 
   const fetchFoods = async () => {
     try {
-      // tour_spots에서 음식점(39) 데이터 가져오기
-      const tourResult = await getTourSpotsDb('39', 1, 4)
+      // tour_spots에서 음식점(39) 데이터 가져오기 (더 많이 가져와서 랜덤 선택)
+      const tourResult = await getTourSpotsDb('39', 1, 20)
       
       if (tourResult.success && tourResult.items.length > 0) {
-        const formattedFoods = tourResult.items.map((item, idx) => ({
+        // 랜덤으로 섞기
+        const shuffled = [...tourResult.items].sort(() => Math.random() - 0.5)
+        // 랜덤으로 4개 선택
+        const selected = shuffled.slice(0, 4)
+        
+        const formattedFoods = selected.map((item, idx) => ({
           id: idx + 1,
+          contentId: item.content_id,
           name: { ko: item.title, en: item.title },
           category: { ko: '맛집', en: 'Restaurant' },
           description: { 
@@ -145,7 +151,7 @@ const FoodSection = () => {
         ) : (
           <div className="food-grid">
             {foods.map((food) => (
-              <a key={food.id} href="/food" className="food-card">
+              <a key={food.id} href={food.contentId ? `/spot/${food.contentId}` : '/food'} className="food-card">
                 <div className="food-image">
                   <img src={food.image} alt={food.name[language] || food.name.ko} loading="lazy" />
                   <div className="food-rating">

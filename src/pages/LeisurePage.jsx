@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiSun } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { handleImageError, getReliableImageUrl } from '../utils/imageUtils'
+import { handleImageError, getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import './LeisurePage.css'
 
 // 대전시 구 목록
@@ -20,6 +21,7 @@ const DISTRICTS = [
 const LeisurePage = () => {
   const { language } = useLanguage()
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [allSpots, setAllSpots] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -163,7 +165,8 @@ const LeisurePage = () => {
             mapx: item.mapx,
             mapy: item.mapy,
             homepage: item.homepage,
-            contentTypeId: item.content_type_id
+            contentTypeId: item.content_type_id,
+            intro_info: item.intro_info // 소개정보 (이용시간, 이용요금, 주차 등)
           }))
           setAllSpots(formattedSpots)
         } else {
@@ -230,7 +233,7 @@ const LeisurePage = () => {
             {/* 레포츠 카드 그리드 */}
             <div className="leisure-grid">
               {paginatedSpots.map((spot) => (
-                <div key={spot.id} className="leisure-card" onClick={() => openSpotDetail(spot)}>
+                <div key={spot.id} className="leisure-card" onClick={() => navigate(`/spot/${spot.contentId}`)}>
                   <div className="leisure-card-image">
                     {spot.image ? (
                       <img 
@@ -350,10 +353,44 @@ const LeisurePage = () => {
                   <span>{selectedSpot.address || (language === 'ko' ? '주소 정보 없음' : 'No address')}</span>
                 </div>
                 
-                {selectedSpot.phone && (
+                {/* 이용시간: intro_info.usetimeleports */}
+                {selectedSpot.intro_info?.usetimeleports && (
+                  <div className="info-item">
+                    <FiClock className="info-icon" />
+                    <span>{cleanIntroHtml(selectedSpot.intro_info.usetimeleports, ' / ')}</span>
+                  </div>
+                )}
+                
+                {/* 쉬는날: intro_info.restdateleports */}
+                {selectedSpot.intro_info?.restdateleports && (
+                  <div className="info-item rest-day">
+                    <span>📅 {language === 'ko' ? '휴무' : 'Closed'}: </span>
+                    <span>{cleanIntroHtml(selectedSpot.intro_info.restdateleports, ', ')}</span>
+                  </div>
+                )}
+                
+                {/* 이용요금: intro_info.usefeeleports */}
+                {selectedSpot.intro_info?.usefeeleports && (
+                  <div className="info-item">
+                    <span>💰 </span>
+                    <span>{cleanIntroHtml(selectedSpot.intro_info.usefeeleports, ' / ')}</span>
+                  </div>
+                )}
+                
+                {/* 전화번호: intro_info.infocenterleports 또는 기존 phone */}
+                {(selectedSpot.phone || selectedSpot.intro_info?.infocenterleports) && (
                   <div className="info-item">
                     <FiPhone className="info-icon" />
-                    <a href={`tel:${selectedSpot.phone.replace(/-/g, '')}`}>{selectedSpot.phone}</a>
+                    <a href={`tel:${cleanIntroHtml(selectedSpot.phone || selectedSpot.intro_info?.infocenterleports).replace(/-/g, '')}`}>
+                      {cleanIntroHtml(selectedSpot.phone || selectedSpot.intro_info?.infocenterleports)}
+                    </a>
+                  </div>
+                )}
+                
+                {/* 주차시설: intro_info.parkingleports */}
+                {selectedSpot.intro_info?.parkingleports && (
+                  <div className="info-item parking">
+                    <span>🅿️ {cleanIntroHtml(selectedSpot.intro_info.parkingleports)}</span>
                   </div>
                 )}
                 
