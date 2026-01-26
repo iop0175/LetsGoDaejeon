@@ -72,7 +72,7 @@ const createRoutePolygon = (pathCoords, width = 0.002) => {
 
 const MyTripPage = () => {
   const { isDark } = useTheme()
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const { user, loginWithKakao, loading: authLoading } = useAuth()
   
   // 각 일차별 색상 (마커, 경로, 탭 모두 동일하게 사용)
@@ -257,12 +257,12 @@ const MyTripPage = () => {
   
   // 이동 방법 옵션
   const transportOptions = [
-    { id: 'walk', icon: FaWalking, labelKo: '도보', labelEn: 'Walk' },
-    { id: 'car', icon: FaCar, labelKo: '자동차', labelEn: 'Car' },
-    { id: 'bus', icon: FaBus, labelKo: '버스', labelEn: 'Bus' },
-    { id: 'subway', icon: FaSubway, labelKo: '지하철', labelEn: 'Subway' },
-    { id: 'taxi', icon: FaTaxi, labelKo: '택시', labelEn: 'Taxi' },
-    { id: 'bicycle', icon: FaBicycle, labelKo: '자전거', labelEn: 'Bicycle' }
+    { id: 'walk', icon: FaWalking, label: t.transport.walk },
+    { id: 'car', icon: FaCar, label: t.transport.car },
+    { id: 'bus', icon: FaBus, label: t.transport.bus },
+    { id: 'subway', icon: FaSubway, label: t.transport.subway },
+    { id: 'taxi', icon: FaTaxi, label: t.transport.taxi },
+    { id: 'bicycle', icon: FaBicycle, label: t.transport.bicycle }
   ]
   
   // URL 파라미터 (초대 코드)
@@ -391,9 +391,7 @@ const MyTripPage = () => {
     } else if (inviteCode && !user && !authLoading) {
       // 로그인이 필요함을 알림
       setPendingInvite(inviteCode)
-      alert(language === 'ko' 
-        ? '초대를 수락하려면 로그인이 필요합니다.' 
-        : 'Please login to accept the invitation.')
+      alert(t.trip.loginToAcceptInvite)
     }
   }, [searchParams, user, authLoading])
   
@@ -405,10 +403,10 @@ const MyTripPage = () => {
         setInviteInfo(result.invite)
         setShowInviteAcceptModal(true)
       } else {
-        alert(result.error || (language === 'ko' ? '유효하지 않은 초대 링크입니다.' : 'Invalid invite link.'))
+        alert(result.error || t.trip.invalidInviteLink)
       }
     } catch (err) {
-      alert(language === 'ko' ? '초대 정보를 불러오는데 실패했습니다.' : 'Failed to load invite info.')
+      alert(t.trip.loadInviteInfoFailed)
     }
   }
   
@@ -419,9 +417,7 @@ const MyTripPage = () => {
     try {
       const result = await acceptTripInvite(inviteInfo.invite_code)
       if (result.success) {
-        alert(language === 'ko' 
-          ? `'${result.planTitle}' 여행에 참여했습니다!` 
-          : `You have joined '${result.planTitle}'!`)
+        alert(`'${result.planTitle}' ${t.trip.joinedTrip}`)
         setShowInviteAcceptModal(false)
         setInviteInfo(null)
         loadTripPlans() // 목록 새로고침
@@ -429,7 +425,7 @@ const MyTripPage = () => {
         alert(result.error)
       }
     } catch (err) {
-      alert(language === 'ko' ? '초대 수락에 실패했습니다.' : 'Failed to accept invitation.')
+      alert(t.trip.acceptInviteFailed)
     }
   }
   
@@ -443,10 +439,10 @@ const MyTripPage = () => {
         setInvitingTripId(planId)
         setShowInviteModal(true)
       } else {
-        alert(result.error || (language === 'ko' ? '초대 링크 생성에 실패했습니다.' : 'Failed to create invite link.'))
+        alert(result.error || t.trip.inviteLinkFailed)
       }
     } catch (err) {
-      alert(language === 'ko' ? '초대 링크 생성에 실패했습니다.' : 'Failed to create invite link.')
+      alert(t.trip.inviteLinkFailed)
     }
     setInviteLoading(false)
   }
@@ -469,7 +465,7 @@ const MyTripPage = () => {
   
   // 협업자 제거
   const handleRemoveCollaborator = async (collaboratorId) => {
-    if (!confirm(language === 'ko' ? '정말 이 협업자를 제거하시겠습니까?' : 'Are you sure you want to remove this collaborator?')) {
+    if (!confirm(t.trip.removeCollaborator)) {
       return
     }
     
@@ -479,13 +475,13 @@ const MyTripPage = () => {
         setCollaborators(prev => prev.filter(c => c.id !== collaboratorId))
       }
     } catch (err) {
-      alert(language === 'ko' ? '협업자 제거에 실패했습니다.' : 'Failed to remove collaborator.')
+      alert(t.trip.removeCollaboratorFailed)
     }
   }
   
   // 협업 여행에서 나가기
   const handleLeaveTrip = async (planId) => {
-    if (!confirm(language === 'ko' ? '정말 이 여행에서 나가시겠습니까?' : 'Are you sure you want to leave this trip?')) {
+    if (!confirm(t.trip.leaveTrip)) {
       return
     }
     
@@ -495,7 +491,7 @@ const MyTripPage = () => {
         loadTripPlans() // 목록 새로고침
       }
     } catch (err) {
-      alert(language === 'ko' ? '여행 나가기에 실패했습니다.' : 'Failed to leave trip.')
+      alert(t.trip.leaveTripFailed)
     }
   }
   
@@ -503,7 +499,7 @@ const MyTripPage = () => {
   const handleCopyInviteLink = async () => {
     try {
       await navigator.clipboard.writeText(inviteUrl)
-      alert(language === 'ko' ? '초대 링크가 복사되었습니다!' : 'Invite link copied!')
+      alert(t.trip.inviteLinkCopied)
     } catch (err) {
       // fallback
       const textArea = document.createElement('textarea')
@@ -512,7 +508,7 @@ const MyTripPage = () => {
       textArea.select()
       document.execCommand('copy')
       document.body.removeChild(textArea)
-      alert(language === 'ko' ? '초대 링크가 복사되었습니다!' : 'Invite link copied!')
+      alert(t.trip.inviteLinkCopied)
     }
   }
   
@@ -523,8 +519,8 @@ const MyTripPage = () => {
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
-          title: language === 'ko' ? '함께 여행 계획을 만들어요!' : 'Let\'s plan a trip together!',
-          description: trip?.title || '대전 여행',
+          title: t.trip.letsPlantTogether,
+          description: trip?.title || t.trip.daejeonTrip,
           imageUrl: 'https://letsgodaejeon.kr/images/og-image.png',
           link: {
             mobileWebUrl: inviteUrl,
@@ -533,7 +529,7 @@ const MyTripPage = () => {
         },
         buttons: [
           {
-            title: language === 'ko' ? '여행 참여하기' : 'Join Trip',
+            title: t.trip.joinTrip,
             link: {
               mobileWebUrl: inviteUrl,
               webUrl: inviteUrl,
@@ -542,14 +538,14 @@ const MyTripPage = () => {
         ],
       })
     } else {
-      alert(language === 'ko' ? '카카오 공유를 사용할 수 없습니다.' : 'Kakao share is not available.')
+      alert(t.trip.kakaoShareNotAvailable)
     }
   }
   
   // 새 여행 계획 생성
   const handleCreateTrip = async () => {
     if (!newTripForm.title || !newTripForm.startDate || !newTripForm.endDate) {
-      alert(language === 'ko' ? '제목과 날짜를 입력해주세요' : 'Please enter title and dates')
+      alert(t.trip.enterTitleAndDates)
       return
     }
     
@@ -603,13 +599,13 @@ const MyTripPage = () => {
       }
     } catch (err) {
 
-      alert(language === 'ko' ? '여행 계획 생성에 실패했습니다' : 'Failed to create trip plan')
+      alert(t.trip.createTripFailed)
     }
   }
   
   // 여행 삭제
   const handleDeleteTrip = async (tripId) => {
-    if (!confirm(language === 'ko' ? '이 여행 계획을 삭제하시겠습니까?' : 'Delete this trip plan?')) {
+    if (!confirm(t.trip.deleteTrip)) {
       return
     }
     
@@ -639,7 +635,7 @@ const MyTripPage = () => {
   // 여행 정보 수정 저장
   const handleSaveTrip = async () => {
     if (!editTripForm.title) {
-      alert(language === 'ko' ? '제목을 입력해주세요' : 'Please enter a title')
+      alert(t.trip.enterTitle)
       return
     }
     
@@ -665,11 +661,11 @@ const MyTripPage = () => {
         ))
         
         setIsEditing(false)
-        alert(language === 'ko' ? '저장되었습니다!' : 'Saved!')
+        alert(t.trip.saved)
       }
     } catch (err) {
 
-      alert(language === 'ko' ? '저장에 실패했습니다' : 'Failed to save')
+      alert(t.trip.saveFailed2)
     }
   }
   
@@ -693,13 +689,13 @@ const MyTripPage = () => {
     // 이미지 파일 타입 확인
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
     if (!allowedTypes.includes(file.type)) {
-      alert(language === 'ko' ? '지원되지 않는 파일 형식입니다. (JPG, PNG, GIF, WebP만 가능)' : 'Unsupported file type. (JPG, PNG, GIF, WebP only)')
+      alert(t.trip.unsupportedFileType)
       return
     }
     
     // 파일 크기 확인 (최대 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert(language === 'ko' ? '파일 크기가 10MB를 초과합니다.' : 'File size exceeds 10MB.')
+      alert(t.trip.fileSizeExceeds)
       return
     }
     
@@ -736,7 +732,7 @@ const MyTripPage = () => {
         })
         
         if (!uploadResult.success) {
-          alert(uploadResult.error || (language === 'ko' ? '이미지 업로드 실패' : 'Image upload failed'))
+          alert(uploadResult.error || t.trip.imageUploadFailed)
           setIsUploading(false)
           return
         }
@@ -763,12 +759,12 @@ const MyTripPage = () => {
         setPublishingTripId(null)
         setThumbnailFile(null)
         setThumbnailPreview(null)
-        alert(language === 'ko' ? '여행 계획이 게시되었습니다!' : 'Trip plan published!')
+        alert(t.trip.tripPublished)
       } else {
-        alert(result.error || (language === 'ko' ? '게시 실패' : 'Publish failed'))
+        alert(result.error || t.trip.publishFailed)
       }
     } catch (err) {
-      alert(language === 'ko' ? '게시 중 오류가 발생했습니다.' : 'Error occurred while publishing.')
+      alert(t.trip.errorWhilePublishing)
     } finally {
       setIsUploading(false)
     }
@@ -776,7 +772,7 @@ const MyTripPage = () => {
   
   // 여행 게시 취소
   const handleUnpublishTrip = async (tripId) => {
-    if (!confirm(language === 'ko' ? '게시를 취소하시겠습니까?\n(업로드된 썸네일 이미지도 함께 삭제됩니다)' : 'Unpublish this trip?\n(Uploaded thumbnail image will also be deleted)')) {
+    if (!confirm(t.trip.unpublish)) {
       return
     }
     
@@ -791,10 +787,10 @@ const MyTripPage = () => {
         if (selectedTrip?.id === tripId) {
           setSelectedTrip(prev => ({ ...prev, isPublished: false, publishedAt: null }))
         }
-        alert(language === 'ko' ? '게시가 취소되었습니다.' : 'Unpublished.')
+        alert(t.trip.unpublished)
       }
     } catch (err) {
-      alert(language === 'ko' ? '취소 중 오류가 발생했습니다.' : 'Error occurred.')
+      alert(t.trip.errorOccurred)
     }
   }
   
@@ -1097,7 +1093,7 @@ const MyTripPage = () => {
   // 숙소 저장
   const handleSaveAccommodation = async () => {
     if (!accommodationForm.name || !accommodationForm.address) {
-      alert(language === 'ko' ? '숙소 이름과 주소를 입력해주세요' : 'Please enter accommodation name and address')
+      alert(t.trip.enterAccommodationInfo)
       return
     }
     
@@ -2854,7 +2850,7 @@ const MyTripPage = () => {
       await loginWithKakao('/my-trip')
     } catch (err) {
 
-      alert(language === 'ko' ? '로그인에 실패했습니다. 다시 시도해주세요.' : 'Login failed. Please try again.')
+      alert(t.trip.loginFailed)
     }
   }
   
@@ -2865,7 +2861,7 @@ const MyTripPage = () => {
         <div className="trip-login-required">
           <div className="auth-loading">
             <div className="loading-spinner"></div>
-            <p>{language === 'ko' ? '로그인 확인 중...' : 'Checking login status...'}</p>
+            <p>{t.trip.checkingLogin}</p>
           </div>
         </div>
       </div>
@@ -2878,13 +2874,13 @@ const MyTripPage = () => {
       <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
         <div className="trip-login-required">
           <FiMap className="login-icon" />
-          <h2>{language === 'ko' ? '로그인이 필요합니다' : 'Login Required'}</h2>
-          <p>{language === 'ko' ? '나만의 여행 계획을 만들려면 카카오 계정으로 로그인해주세요' : 'Please login with Kakao to create your trip plans'}</p>
+          <h2>{t.trip.loginRequired}</h2>
+          <p>{t.trip.loginWithKakaoDesc}</p>
           <button className="kakao-login-btn" onClick={handleKakaoLogin}>
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
               <path d="M12 3C6.477 3 2 6.463 2 10.71c0 2.754 1.826 5.168 4.568 6.528-.16.57-.622 2.234-.714 2.584-.112.43.158.424.332.308.137-.09 2.173-1.474 3.056-2.074.254.038.515.058.78.072h-.02c.332.02.665.03 1 .03 5.523 0 10-3.463 10-7.448S17.523 3 12 3z"/>
             </svg>
-            {language === 'ko' ? '카카오로 시작하기' : 'Continue with Kakao'}
+            {t.trip.continueWithKakao}
           </button>
         </div>
       </div>
@@ -2899,9 +2895,9 @@ const MyTripPage = () => {
           <div className="trip-header-content">
             <h1>
               <FiMap />
-              {language === 'ko' ? '나의 여행 계획' : 'My Trip Plans'}
+              {t.trip.myTripPlans}
             </h1>
-            <p>{language === 'ko' ? '대전에서의 특별한 여행을 계획해보세요' : 'Plan your special trip in Daejeon'}</p>
+            <p>{t.trip.planYourTrip}</p>
           </div>
           <div className="trip-header-actions">
             <div className="view-toggle">
@@ -2919,7 +2915,7 @@ const MyTripPage = () => {
               </button>
             </div>
             <button className="create-trip-btn" onClick={() => setIsCreating(true)}>
-              <FiPlus /> {language === 'ko' ? '새 여행 계획' : 'New Trip'}
+              <FiPlus /> {t.trip.createTrip}
             </button>
           </div>
         </header>
@@ -2929,24 +2925,24 @@ const MyTripPage = () => {
           <div className="trip-modal-overlay">
             <div className="trip-modal">
               <div className="modal-header">
-                <h2>{language === 'ko' ? '새 여행 계획 만들기' : 'Create New Trip'}</h2>
+                <h2>{t.trip.createTrip}</h2>
                 <button className="modal-close" onClick={() => setIsCreating(false)}>
                   <FiX />
                 </button>
               </div>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>{language === 'ko' ? '여행 제목' : 'Trip Title'}</label>
+                  <label>{t.trip.tripTitle}</label>
                   <input
                     type="text"
                     value={newTripForm.title}
                     onChange={(e) => setNewTripForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder={language === 'ko' ? '예: 대전 봄 여행' : 'e.g., Spring Trip to Daejeon'}
+                    placeholder={t.trip.tripTitlePlaceholder}
                   />
                 </div>
                 <div className="form-row">
                   <div className="form-group">
-                    <label>{language === 'ko' ? '시작일' : 'Start Date'}</label>
+                    <label>{t.trip.startDate}</label>
                     <input
                       type="date"
                       value={newTripForm.startDate}
@@ -2954,7 +2950,7 @@ const MyTripPage = () => {
                     />
                   </div>
                   <div className="form-group">
-                    <label>{language === 'ko' ? '종료일' : 'End Date'}</label>
+                    <label>{t.trip.endDate}</label>
                     <input
                       type="date"
                       value={newTripForm.endDate}
@@ -2964,21 +2960,21 @@ const MyTripPage = () => {
                   </div>
                 </div>
                 <div className="form-group">
-                  <label>{language === 'ko' ? '설명 (선택)' : 'Description (optional)'}</label>
+                  <label>{t.trip.tripDescription}</label>
                   <textarea
                     value={newTripForm.description}
                     onChange={(e) => setNewTripForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder={language === 'ko' ? '여행에 대한 간단한 설명...' : 'Brief description of your trip...'}
+                    placeholder={t.trip.tripDescPlaceholder}
                     rows={3}
                   />
                 </div>
               </div>
               <div className="modal-footer">
                 <button className="cancel-btn" onClick={() => setIsCreating(false)}>
-                  {language === 'ko' ? '취소' : 'Cancel'}
+                  {t.ui.cancel}
                 </button>
                 <button className="save-btn" onClick={handleCreateTrip}>
-                  <FiSave /> {language === 'ko' ? '생성하기' : 'Create'}
+                  <FiSave /> {t.ui.create}
                 </button>
               </div>
             </div>
@@ -2990,37 +2986,37 @@ const MyTripPage = () => {
           <div className="trip-modal-overlay">
             <div className="trip-modal">
               <div className="modal-header">
-                <h2>{language === 'ko' ? '여행 계획 수정' : 'Edit Trip'}</h2>
+                <h2>{t.trip.editTrip}</h2>
                 <button className="modal-close" onClick={() => setIsEditing(false)}>
                   <FiX />
                 </button>
               </div>
               <div className="modal-body">
                 <div className="form-group">
-                  <label>{language === 'ko' ? '여행 제목' : 'Trip Title'}</label>
+                  <label>{t.trip.tripTitle}</label>
                   <input
                     type="text"
                     value={editTripForm.title}
                     onChange={(e) => setEditTripForm(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder={language === 'ko' ? '예: 대전 봄 여행' : 'e.g., Spring Trip to Daejeon'}
+                    placeholder={t.trip.tripTitlePlaceholder}
                   />
                 </div>
                 <div className="form-group">
-                  <label>{language === 'ko' ? '설명 (선택)' : 'Description (optional)'}</label>
+                  <label>{t.trip.tripDescription}</label>
                   <textarea
                     value={editTripForm.description}
                     onChange={(e) => setEditTripForm(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder={language === 'ko' ? '여행에 대한 간단한 설명...' : 'Brief description of your trip...'}
+                    placeholder={t.trip.tripDescPlaceholder}
                     rows={3}
                   />
                 </div>
               </div>
               <div className="modal-footer">
                 <button className="cancel-btn" onClick={() => setIsEditing(false)}>
-                  {language === 'ko' ? '취소' : 'Cancel'}
+                  {t.ui.cancel}
                 </button>
                 <button className="save-btn" onClick={handleSaveTrip}>
-                  <FiSave /> {language === 'ko' ? '저장' : 'Save'}
+                  <FiSave /> {t.ui.save}
                 </button>
               </div>
             </div>
@@ -3034,7 +3030,7 @@ const MyTripPage = () => {
               <div className="modal-header">
                 <h2>
                   <FiHome />
-                  {language === 'ko' ? '숙소 설정' : 'Set Accommodation'}
+                  {t.trip.setAccommodation}
                 </h2>
                 <button className="modal-close" onClick={() => setShowAccommodationModal(false)}>
                   <FiX />
@@ -3043,14 +3039,14 @@ const MyTripPage = () => {
               <div className="modal-body">
                 {/* 숙소 검색 */}
                 <div className="form-group">
-                  <label>{language === 'ko' ? '숙소 검색' : 'Search Accommodation'}</label>
+                  <label>{t.trip.searchAccommodation}</label>
                   <div className="accommodation-search-wrapper">
                     <input
                       type="text"
                       value={accommodationSearchQuery}
                       onChange={(e) => setAccommodationSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearchAccommodation()}
-                      placeholder={language === 'ko' ? '숙소 이름 또는 주소 검색...' : 'Search by name or address...'}
+                      placeholder={t.trip.searchByNameOrAddress}
                     />
                     <button onClick={handleSearchAccommodation} disabled={isSearchingAccommodation}>
                       <FiSearch />
@@ -3078,34 +3074,34 @@ const MyTripPage = () => {
                 )}
                 
                 <div className="form-divider">
-                  <span>{language === 'ko' ? '또는 직접 입력' : 'or enter manually'}</span>
+                  <span>{t.trip.orEnterManually}</span>
                 </div>
                 
                 <div className="form-group">
-                  <label>{language === 'ko' ? '숙소 이름' : 'Accommodation Name'}</label>
+                  <label>{t.trip.accommodationName}</label>
                   <input
                     type="text"
                     value={accommodationForm.name}
                     onChange={(e) => setAccommodationForm(prev => ({ ...prev, name: e.target.value }))}
-                    placeholder={language === 'ko' ? '예: 대전 호텔' : 'e.g., Daejeon Hotel'}
+                    placeholder={t.trip.accommodationNamePlaceholder}
                   />
                 </div>
                 <div className="form-group">
-                  <label>{language === 'ko' ? '숙소 주소' : 'Address'}</label>
+                  <label>{t.trip.accommodationAddress}</label>
                   <input
                     type="text"
                     value={accommodationForm.address}
                     onChange={(e) => setAccommodationForm(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder={language === 'ko' ? '예: 대전시 중구 대종로 480' : 'e.g., 480 Daejong-ro, Jung-gu, Daejeon'}
+                    placeholder={t.trip.accommodationAddressPlaceholder}
                   />
                 </div>
               </div>
               <div className="modal-footer">
                 <button className="cancel-btn" onClick={() => setShowAccommodationModal(false)}>
-                  {language === 'ko' ? '취소' : 'Cancel'}
+                  {t.ui.cancel}
                 </button>
                 <button className="save-btn" onClick={handleSaveAccommodation}>
-                  <FiSave /> {language === 'ko' ? '저장' : 'Save'}
+                  <FiSave /> {t.ui.save}
                 </button>
               </div>
             </div>
@@ -3116,19 +3112,19 @@ const MyTripPage = () => {
         <div className="trip-main">
           {/* 왼쪽: 여행 목록 */}
           <aside className={`trip-sidebar ${selectedTrip ? 'collapsed' : ''}`}>
-            <h3>{language === 'ko' ? '내 여행 목록' : 'My Trips'}</h3>
+            <h3>{t.trip.tripList}</h3>
             
             {loading ? (
               <div className="trip-loading">
                 <div className="loading-spinner" />
-                <span>{language === 'ko' ? '로딩중...' : 'Loading...'}</span>
+                <span>{t.ui.loading}</span>
               </div>
             ) : tripPlans.length === 0 ? (
               <div className="no-trips">
                 <FiCalendar />
-                <p>{language === 'ko' ? '아직 여행 계획이 없습니다' : 'No trip plans yet'}</p>
+                <p>{t.trip.noTrips}</p>
                 <button onClick={() => setIsCreating(true)}>
-                  <FiPlus /> {language === 'ko' ? '첫 여행 만들기' : 'Create First Trip'}
+                  <FiPlus /> {t.trip.createFirstTrip}
                 </button>
               </div>
             ) : (
@@ -3157,7 +3153,7 @@ const MyTripPage = () => {
                         {trip.startDate} ~ {trip.endDate}
                       </span>
                       <span className="trip-duration">
-                        {getTripDuration(trip)}{language === 'ko' ? '일' : ' days'}
+                        {getTripDuration(trip)}{t.trip.days}
                       </span>
                     </div>
                     {trip.description && (
@@ -3167,7 +3163,7 @@ const MyTripPage = () => {
                       <span>
                         <FiMapPin />
                         {trip.days?.reduce((acc, day) => acc + (day.places?.length || 0), 0) || 0}
-                        {language === 'ko' ? '개 장소' : ' places'}
+                        {t.trip.places}
                       </span>
                     </div>
                     
@@ -3180,9 +3176,9 @@ const MyTripPage = () => {
                             e.stopPropagation()
                             handleUnpublishTrip(trip.id)
                           }}
-                          title={language === 'ko' ? '게시 취소' : 'Unpublish'}
+                          title={t.trip.unpublishTitle}
                         >
-                          <FiGlobe /> {language === 'ko' ? '게시됨' : 'Published'}
+                          <FiGlobe /> {t.trip.published}
                         </button>
                       ) : (
                         <button 
@@ -3191,10 +3187,10 @@ const MyTripPage = () => {
                             e.stopPropagation()
                             openPublishModal(trip)
                           }}
-                          title={language === 'ko' ? '게시하기' : 'Publish'}
+                          title={t.trip.publishTitle}
                           disabled={!user}
                         >
-                          <FiShare2 /> {language === 'ko' ? '게시' : 'Publish'}
+                          <FiShare2 /> {t.ui.publish}
                         </button>
                       )}
                       <button 
@@ -3203,10 +3199,10 @@ const MyTripPage = () => {
                           e.stopPropagation()
                           handleCreateInvite(trip.id)
                         }}
-                        title={language === 'ko' ? '같이 만들기' : 'Invite'}
+                        title={t.trip.inviteTitle}
                         disabled={!user}
                       >
-                        <FiUsers /> {language === 'ko' ? '초대' : 'Invite'}
+                        <FiUsers /> {t.trip.invite}
                       </button>
                     </div>
                   </div>
@@ -3219,7 +3215,7 @@ const MyTripPage = () => {
               <>
                 <div className="trip-section-divider">
                   <FiUsers />
-                  <span>{language === 'ko' ? '공유받은 여행' : 'Shared with me'}</span>
+                  <span>{t.trip.sharedWithMe}</span>
                 </div>
                 <div className={`trip-list ${viewMode}`}>
                   {collaboratedPlans.map(trip => (
@@ -3232,8 +3228,8 @@ const MyTripPage = () => {
                         <h4>{trip.title}</h4>
                         <span className="shared-badge">
                           <FiUsers /> {trip.myPermission === 'edit' 
-                            ? (language === 'ko' ? '편집' : 'Edit') 
-                            : (language === 'ko' ? '보기' : 'View')}
+                            ? t.trip.editPermission 
+                            : t.trip.viewPermission}
                         </span>
                       </div>
                       <div className="trip-card-info">
@@ -3242,7 +3238,7 @@ const MyTripPage = () => {
                           {trip.startDate} ~ {trip.endDate}
                         </span>
                         <span className="trip-duration">
-                          {getTripDuration(trip)}{language === 'ko' ? '일' : ' days'}
+                          {getTripDuration(trip)}{t.trip.days}
                         </span>
                       </div>
                       {trip.description && (
@@ -3252,7 +3248,7 @@ const MyTripPage = () => {
                         <span>
                           <FiMapPin />
                           {trip.days?.reduce((acc, day) => acc + (day.places?.length || 0), 0) || 0}
-                          {language === 'ko' ? '개 장소' : ' places'}
+                          {t.trip.places}
                         </span>
                       </div>
                       <div className="trip-card-actions">
@@ -3262,9 +3258,9 @@ const MyTripPage = () => {
                             e.stopPropagation()
                             handleLeaveTrip(trip.id)
                           }}
-                          title={language === 'ko' ? '나가기' : 'Leave'}
+                          title={t.trip.leaveTitle}
                         >
-                          <FiX /> {language === 'ko' ? '나가기' : 'Leave'}
+                          <FiX /> {t.trip.leave}
                         </button>
                       </div>
                     </div>
@@ -3284,15 +3280,15 @@ const MyTripPage = () => {
                   <span className="trip-period">
                     <FiCalendar />
                     {selectedTrip.startDate} ~ {selectedTrip.endDate}
-                    ({getTripDuration(selectedTrip)}{language === 'ko' ? '일' : ' days'})
+                    ({getTripDuration(selectedTrip)}{t.trip.days})
                   </span>
                   {/* 실시간 동기화 표시 */}
                   {(collaboratedPlans.some(p => p.id === selectedTrip.id) || (collaborators && collaborators.length > 0)) && (
                     <span className={`realtime-sync-indicator ${realtimeSyncing ? 'syncing' : ''}`}>
                       <FiRefreshCw className={realtimeSyncing ? 'spinning' : ''} />
                       {realtimeSyncing 
-                        ? (language === 'ko' ? '동기화 중...' : 'Syncing...') 
-                        : (language === 'ko' ? '실시간 동기화' : 'Real-time sync')}
+                        ? t.trip.syncingRealtime 
+                        : t.trip.realtimeSync}
                       {lastSyncTime && !realtimeSyncing && (
                         <span className="last-sync-time">
                           {new Date(lastSyncTime).toLocaleTimeString()}
@@ -3305,7 +3301,7 @@ const MyTripPage = () => {
                   )}
                 </div>
                 <div className="trip-detail-actions">
-                  <button className="edit-trip-btn" onClick={openEditModal} title={language === 'ko' ? '수정' : 'Edit'}>
+                  <button className="edit-trip-btn" onClick={openEditModal} title={t.ui.edit}>
                     <FiEdit2 />
                   </button>
                   <button className="close-detail" onClick={() => setSelectedTrip(null)}>
@@ -3319,15 +3315,15 @@ const MyTripPage = () => {
                 <div className="accommodation-header">
                   <h3>
                     <FiHome />
-                    {language === 'ko' ? '숙소' : 'Accommodation'}
+                    {t.trip.accommodation}
                   </h3>
                   <button 
                     className="accommodation-edit-btn"
                     onClick={openAccommodationModal}
                   >
                     {selectedTrip.accommodationName 
-                      ? <><FiEdit2 /> {language === 'ko' ? '수정' : 'Edit'}</>
-                      : <><FiPlus /> {language === 'ko' ? '설정' : 'Set'}</>
+                      ? <><FiEdit2 /> {t.ui.edit}</>
+                      : <><FiPlus /> {t.ui.set}</>
                     }
                   </button>
                 </div>
@@ -3338,7 +3334,7 @@ const MyTripPage = () => {
                   </div>
                 ) : (
                   <div className="accommodation-empty">
-                    <p>{language === 'ko' ? '숙소를 설정하면 2일차부터 숙소에서 출발합니다' : 'Set accommodation to start from hotel on Day 2+'}</p>
+                    <p>{t.trip.accommodationHint}</p>
                   </div>
                 )}
               </div>
@@ -3347,16 +3343,16 @@ const MyTripPage = () => {
               <div className="place-search-section">
                 <h3>
                   <FiMapPin />
-                  {language === 'ko' ? '장소 추가하기' : 'Add Places'}
+                  {t.trip.addPlace}
                 </h3>
                 <div className="search-controls">
                   <select 
                     value={searchCategory}
                     onChange={(e) => setSearchCategory(e.target.value)}
                   >
-                    <option value="travel">{language === 'ko' ? '관광지' : 'Tourist Spots'}</option>
-                    <option value="food">{language === 'ko' ? '맛집' : 'Restaurants'}</option>
-                    <option value="culture">{language === 'ko' ? '문화시설' : 'Culture'}</option>
+                    <option value="travel">{t.trip.touristSpots}</option>
+                    <option value="food">{t.trip.restaurants}</option>
+                    <option value="culture">{t.trip.culture}</option>
                   </select>
                   <div className="search-input-wrapper">
                     <input
@@ -3364,10 +3360,10 @@ const MyTripPage = () => {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && handleSearchPlaces()}
-                      placeholder={language === 'ko' ? '장소 검색...' : 'Search places...'}
+                      placeholder={t.trip.searchPlaces}
                     />
                     <button onClick={handleSearchPlaces} disabled={isSearching}>
-                      {isSearching ? '...' : language === 'ko' ? '검색' : 'Search'}
+                      {isSearching ? '...' : t.ui.search}
                     </button>
                   </div>
                 </div>
@@ -3396,7 +3392,7 @@ const MyTripPage = () => {
                                 onClick={() => setOpenDayDropdown(openDayDropdown === idx ? null : idx)}
                               >
                                 <FiPlus />
-                                <span>{language === 'ko' ? '일정 추가' : 'Add to Day'}</span>
+                                <span>{t.trip.addToDay}</span>
                                 <FiChevronDown className={openDayDropdown === idx ? 'rotated' : ''} />
                               </button>
                               {openDayDropdown === idx && (
@@ -3411,7 +3407,7 @@ const MyTripPage = () => {
                                       }}
                                     >
                                       <span className="day-badge">D{day.dayNumber}</span>
-                                      <span>{language === 'ko' ? `${day.dayNumber}일차` : `Day ${day.dayNumber}`}</span>
+                                      <span>{t.trip.dayNumber} {day.dayNumber}</span>
                                     </button>
                                   ))}
                                 </div>
@@ -3444,7 +3440,7 @@ const MyTripPage = () => {
                         <span className="day-number">Day {day.dayNumber}</span>
                         <span className="day-date">{day.date}</span>
                         <span className="day-place-count">
-                          ({day.places?.length || 0}{language === 'ko' ? '개 장소' : ' places'})
+                          ({day.places?.length || 0}{t.trip.places})
                         </span>
                       </div>
                       {expandedDays[day.id] ? <FiChevronUp /> : <FiChevronDown />}
@@ -3458,7 +3454,7 @@ const MyTripPage = () => {
                             <div className="accommodation-start-marker">
                               <FiHome className="accommodation-icon" />
                               <div className="accommodation-start-info">
-                                <span className="start-label">{language === 'ko' ? '출발' : 'Start'}</span>
+                                <span className="start-label">{t.trip.start}</span>
                                 <strong>{selectedTrip.accommodationName}</strong>
                                 <small>{selectedTrip.accommodationAddress}</small>
                               </div>
@@ -3470,7 +3466,7 @@ const MyTripPage = () => {
                                 {editingAccommodationTransport === day.id ? (
                                   <div className="transport-selector">
                                     <span className="transport-label">
-                                      {language === 'ko' ? '이동 방법:' : 'Transport:'}
+                                      {t.trip.transportMethod}
                                     </span>
                                     <div className="transport-options">
                                       {transportOptions.map(opt => {
@@ -3483,7 +3479,7 @@ const MyTripPage = () => {
                                               handleUpdateAccommodationTransport(day.id, opt.id)
                                               setEditingAccommodationTransport(null)
                                             }}
-                                            title={language === 'ko' ? opt.labelKo : opt.labelEn}
+                                            title={opt.label}
                                           >
                                             <IconComponent />
                                           </button>
@@ -3523,14 +3519,14 @@ const MyTripPage = () => {
                                                 <IconComponent className="transport-icon" />
                                                 <div className="transport-details">
                                                   <span className="transport-text">
-                                                    {language === 'ko' ? opt.labelKo : opt.labelEn}
+                                                    {opt.label}
                                                   </span>
                                                   {/* 버스/지하철 선택 시 노선이 없으면 "노선 없음"만 표시 */}
                                                   {(accommodationTransport[day.id]?.transport === 'subway' || accommodationTransport[day.id]?.transport === 'bus') && info?.noRoute ? (
                                                     <div className="no-route-message">
                                                       <span>{accommodationTransport[day.id]?.transport === 'subway' 
-                                                        ? (language === 'ko' ? '이용 가능한 지하철 노선이 없습니다' : 'No subway route available')
-                                                        : (language === 'ko' ? '이용 가능한 버스 노선이 없습니다' : 'No bus route available')
+                                                        ? t.trip.noSubwayRoute
+                                                        : t.trip.noBusRoute
                                                       }</span>
                                                     </div>
                                                   ) : (
@@ -3539,11 +3535,11 @@ const MyTripPage = () => {
                                                         <span className="transport-time loading">...</span>
                                                       ) : info?.duration ? (
                                                         <span className="transport-time">
-                                                          {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
+                                                          {info.isEstimate ? `${t.trip.about} ` : ''}{info.duration}{t.trip.minutes}
                                                           <small>({info.distance}km)</small>
                                                           {info.payment && !info.isEstimate && (
                                                             <small className="payment-info">
-                                                              {language === 'ko' ? ` / ${info.payment.toLocaleString()}원` : ` / ₩${info.payment.toLocaleString()}`}
+                                                              {` / ${language === 'ko' ? '' : '₩'}${info.payment.toLocaleString()}${language === 'ko' ? '원' : ''}`}
                                                             </small>
                                                           )}
                                                         </span>
@@ -3560,7 +3556,7 @@ const MyTripPage = () => {
                                                                   </span>
                                                                   <span className="route-stations">
                                                                     {detail.startStation} → {detail.endStation}
-                                                                    <small>({detail.stationCount}{language === 'ko' ? '정거장' : 'stops'})</small>
+                                                                    <small>({detail.stationCount}{t.trip.stops})</small>
                                                                   </span>
                                                                 </>
                                                               )}
@@ -3571,13 +3567,13 @@ const MyTripPage = () => {
                                                                   </span>
                                                                   <span className="route-stations">
                                                                     {detail.startStation} → {detail.endStation}
-                                                                    <small>({detail.stationCount}{language === 'ko' ? '역' : 'stations'})</small>
+                                                                    <small>({detail.stationCount}{t.trip.stations})</small>
                                                                   </span>
                                                                 </>
                                                               )}
                                                               {detail.type === 'walk' && (
                                                                 <span className="route-walk">
-                                                                  🚶 {language === 'ko' ? '도보' : 'Walk'} {detail.sectionTime}{language === 'ko' ? '분' : 'min'}
+                                                                  🚶 {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
                                                                 </span>
                                                               )}
                                                             </div>
@@ -3586,7 +3582,7 @@ const MyTripPage = () => {
                                                       )}
                                                       {info?.isEstimate && (accommodationTransport[day.id].transport === 'bus' || accommodationTransport[day.id].transport === 'subway') && (
                                                         <small className="estimate-note">
-                                                          {language === 'ko' ? ' (예상)' : ' (est.)'}
+                                                          {t.trip.estimate}
                                                         </small>
                                                       )}
                                                     </>
@@ -3599,7 +3595,7 @@ const MyTripPage = () => {
                                                     e.stopPropagation()
                                                     setEditingAccommodationTransport(day.id)
                                                   }}
-                                                  title={language === 'ko' ? '이동수단 변경' : 'Change transport'}
+                                                  title={t.trip.changeTransport}
                                                 >
                                                   <FiEdit2 />
                                                 </button>
@@ -3618,7 +3614,7 @@ const MyTripPage = () => {
                                             e.stopPropagation()
                                             setEditingAccommodationTransport(day.id)
                                           }}>
-                                            {language === 'ko' ? '이동 방법 추가' : 'Add transport'}
+                                            {t.trip.addTransport}
                                           </span>
                                         </>
                                       )}
@@ -3633,8 +3629,8 @@ const MyTripPage = () => {
                         
                         {day.places?.length === 0 ? (
                           <div className="no-places">
-                            <p>{language === 'ko' ? '아직 추가된 장소가 없습니다' : 'No places added yet'}</p>
-                            <small>{language === 'ko' ? '위에서 장소를 검색하여 추가해보세요' : 'Search and add places above'}</small>
+                            <p>{t.trip.noPlacesYet}</p>
+                            <small>{t.trip.searchAndAddPlaces}</small>
                           </div>
                         ) : (
                           <div className="places-list">
@@ -3651,7 +3647,7 @@ const MyTripPage = () => {
                                   onDragStart={(e) => handleDragStart(e, day.id, place.id, idx)}
                                   onDragEnd={handleDragEnd}
                                 >
-                                  <div className="drag-handle" title={language === 'ko' ? '드래그하여 순서 변경' : 'Drag to reorder'}>
+                                  <div className="drag-handle" title={t.trip.dragToReorder}>
                                     <FiGrid />
                                   </div>
                                   <div className="place-order">{idx + 1}</div>
@@ -3677,7 +3673,7 @@ const MyTripPage = () => {
                                     <button 
                                       className={`parking-btn ${expandedParking === place.id ? 'active' : ''}`}
                                       onClick={() => fetchNearbyParkings(place.id, place.placeAddress)}
-                                      title={language === 'ko' ? '주변 주차장' : 'Nearby Parking'}
+                                      title={t.trip.nearbyParking}
                                     >
                                       <FaParking />
                                     </button>
@@ -3695,13 +3691,13 @@ const MyTripPage = () => {
                                   <div className="parking-list">
                                     {nearbyParkings[place.id]?.loading ? (
                                       <div className="parking-loading">
-                                        <span>{language === 'ko' ? '주차장 검색 중...' : 'Searching parking...'}</span>
+                                        <span>{t.trip.searchingParking}</span>
                                       </div>
                                     ) : nearbyParkings[place.id]?.parkings?.length > 0 ? (
                                       <>
                                         <div className="parking-header">
                                           <FaParking />
-                                          <span>{language === 'ko' ? '5km 이내 주차장' : 'Parking within 5km'}</span>
+                                          <span>{t.trip.parkingWithin5km}</span>
                                           <button onClick={() => setExpandedParking(null)}>
                                             <FiX />
                                           </button>
@@ -3723,7 +3719,7 @@ const MyTripPage = () => {
                                               </span>
                                               {parking.totalLot && (
                                                 <span className="parking-capacity">
-                                                  {parking.totalLot}{language === 'ko' ? '면' : ' spots'}
+                                                  {parking.totalLot}{t.trip.spots}
                                                 </span>
                                               )}
                                             </div>
@@ -3736,7 +3732,7 @@ const MyTripPage = () => {
                                     ) : (
                                       <div className="parking-empty">
                                         <FaParking />
-                                        <span>{language === 'ko' ? '근처에 주차장이 없습니다' : 'No parking nearby'}</span>
+                                        <span>{t.trip.noParkingNearby}</span>
                                       </div>
                                     )}
                                   </div>
@@ -3748,7 +3744,7 @@ const MyTripPage = () => {
                                     {editingTransport?.dayId === day.id && editingTransport?.afterPlaceIndex === idx ? (
                                       <div className="transport-selector">
                                         <span className="transport-label">
-                                          {language === 'ko' ? '이동 방법:' : 'Transport:'}
+                                          {t.trip.transportMethod}
                                         </span>
                                         <div className="transport-options">
                                           {transportOptions.map(opt => {
@@ -3761,7 +3757,7 @@ const MyTripPage = () => {
                                                   handleUpdateTransport(day.id, place.id, opt.id)
                                                   setEditingTransport(null)
                                                 }}
-                                                title={language === 'ko' ? opt.labelKo : opt.labelEn}
+                                                title={opt.label}
                                               >
                                                 <IconComponent />
                                               </button>
@@ -3807,14 +3803,14 @@ const MyTripPage = () => {
                                                     <IconComponent className="transport-icon" />
                                                     <div className="transport-details">
                                                       <span className="transport-text">
-                                                        {language === 'ko' ? opt.labelKo : opt.labelEn}
+                                                        {opt.label}
                                                       </span>
                                                       {/* 버스/지하철 선택 시 노선이 없으면 "노선 없음"만 표시 */}
                                                       {(place.transportToNext === 'subway' || place.transportToNext === 'bus') && info?.noRoute ? (
                                                         <div className="no-route-message">
                                                           <span>{place.transportToNext === 'subway' 
-                                                            ? (language === 'ko' ? '이용 가능한 지하철 노선이 없습니다' : 'No subway route available')
-                                                            : (language === 'ko' ? '이용 가능한 버스 노선이 없습니다' : 'No bus route available')
+                                                            ? t.trip.noSubwayRoute
+                                                            : t.trip.noBusRoute
                                                           }</span>
                                                         </div>
                                                       ) : (
@@ -3823,11 +3819,11 @@ const MyTripPage = () => {
                                                             <span className="transport-time loading">...</span>
                                                           ) : info?.duration ? (
                                                             <span className="transport-time">
-                                                              {info.isEstimate ? '약 ' : ''}{info.duration}{language === 'ko' ? '분' : 'min'}
+                                                              {info.isEstimate ? `${t.trip.about} ` : ''}{info.duration}{t.trip.minutes}
                                                               <small>({info.distance}km)</small>
                                                               {info.payment && !info.isEstimate && (
                                                                 <small className="payment-info">
-                                                                  {language === 'ko' ? ` / ${info.payment.toLocaleString()}원` : ` / ₩${info.payment.toLocaleString()}`}
+                                                                  {` / ${language === 'ko' ? '' : '₩'}${info.payment.toLocaleString()}${language === 'ko' ? '원' : ''}`}
                                                                 </small>
                                                               )}
                                                             </span>
@@ -3844,13 +3840,13 @@ const MyTripPage = () => {
                                                                       </span>
                                                                       <span className="route-stations">
                                                                         {detail.startStation} → {detail.endStation}
-                                                                        <small>({detail.stationCount}{language === 'ko' ? '정거장' : 'stops'})</small>
+                                                                        <small>({detail.stationCount}{t.trip.stops})</small>
                                                                       </span>
                                                                       {/* 같은 구간에서 이용 가능한 다른 버스들 표시 */}
                                                                       {detail.availableBuses && detail.availableBuses.length > 1 && (
                                                                         <span className="available-buses">
                                                                           <small>
-                                                                            {language === 'ko' ? '또는 ' : 'or '}
+                                                                            {t.trip.orAlt} 
                                                                             {detail.availableBuses.slice(1, 4).map((bus, i) => (
                                                                               <span key={i} className="alt-bus" style={{ backgroundColor: getDayColor(day.dayNumber), opacity: 0.7 }}>
                                                                                 {bus.busNo}
@@ -3871,13 +3867,13 @@ const MyTripPage = () => {
                                                                       </span>
                                                                       <span className="route-stations">
                                                                         {detail.startStation} → {detail.endStation}
-                                                                        <small>({detail.stationCount}{language === 'ko' ? '역' : 'stations'})</small>
+                                                                        <small>({detail.stationCount}{t.trip.stations})</small>
                                                                       </span>
                                                                     </>
                                                                   )}
                                                                   {detail.type === 'walk' && (
                                                                     <span className="route-walk">
-                                                                      🚶 {language === 'ko' ? '도보' : 'Walk'} {detail.sectionTime}{language === 'ko' ? '분' : 'min'}
+                                                                      🚶 {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
                                                                     </span>
                                                                   )}
                                                                 </div>
@@ -3888,7 +3884,7 @@ const MyTripPage = () => {
                                                           {info?.allRoutes && info.allRoutes.length > 1 && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
                                                             <div className="route-alternatives">
                                                               <div className="route-alternatives-header">
-                                                                <small>{language === 'ko' ? '다른 경로' : 'Other routes'} ({info.allRoutes.length - 1})</small>
+                                                                <small>{t.trip.otherRoutes} ({info.allRoutes.length - 1})</small>
                                                               </div>
                                                               <div className="route-alternatives-list">
                                                                 {info.allRoutes.slice(0, 5).map((route, routeIdx) => (
@@ -3913,7 +3909,7 @@ const MyTripPage = () => {
                                                           )}
                                                           {info?.isEstimate && (place.transportToNext === 'bus' || place.transportToNext === 'subway') && (
                                                             <small className="estimate-note">
-                                                              {language === 'ko' ? ' (예상 시간)' : ' (estimated)'}
+                                                              {t.trip.estimate}
                                                             </small>
                                                           )}
                                                         </>
@@ -3926,7 +3922,7 @@ const MyTripPage = () => {
                                                         e.stopPropagation()
                                                         setEditingTransport({ dayId: day.id, afterPlaceIndex: idx })
                                                       }}
-                                                      title={language === 'ko' ? '이동수단 바꾸기' : 'Change transport'}
+                                                      title={t.trip.changeTransport}
                                                     >
                                                       <FiEdit2 />
                                                     </button>
@@ -3939,7 +3935,7 @@ const MyTripPage = () => {
                                             <>
                                               <FiPlus className="transport-add" />
                                               <span className="transport-hint">
-                                                {language === 'ko' ? '이동 방법 추가' : 'Add transport'}
+                                                {t.trip.addTransport}
                                               </span>
                                             </>
                                           )}
@@ -3966,20 +3962,20 @@ const MyTripPage = () => {
                 <div className="map-panel-header">
                   <h3>
                     <FiMap />
-                    {language === 'ko' ? '경로 지도' : 'Route Map'}
+                    {t.trip.routeMap}
                   </h3>
                   <div className="map-panel-actions">
                     <button 
                       className="map-toggle-btn"
                       onClick={() => setMapExpanded(!mapExpanded)}
-                      title={mapExpanded ? (language === 'ko' ? '축소' : 'Minimize') : (language === 'ko' ? '확대' : 'Expand')}
+                      title={mapExpanded ? t.ui.minimize : t.ui.expand}
                     >
                       {mapExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
                     </button>
                     <button 
                       className="map-close-btn"
                       onClick={() => setShowMap(false)}
-                      title={language === 'ko' ? '닫기' : 'Close'}
+                      title={t.ui.close}
                     >
                       <FiX />
                     </button>
@@ -3991,17 +3987,15 @@ const MyTripPage = () => {
                 <div className="map-legend">
                   <span className="legend-item">
                     <span className="legend-marker">1</span>
-                    {language === 'ko' ? '방문 순서' : 'Visit Order'}
+                    {t.trip.visitOrder}
                   </span>
                   <span className="legend-item">
                     <span className="legend-line"></span>
-                    {language === 'ko' ? '이동 경로' : 'Route'}
+                    {t.trip.routeLine}
                   </span>
                 </div>
                 <div className="map-tip">
-                  {language === 'ko' 
-                    ? '💡 일정을 펼치면 해당 날짜의 장소들이 지도에 표시됩니다' 
-                    : '💡 Expand a day to see its places on the map'}
+                  {t.trip.mapTip}
                 </div>
               </div>
             )}
@@ -4013,7 +4007,7 @@ const MyTripPage = () => {
                 onClick={() => setShowMap(true)}
               >
                 <FiMap />
-                {language === 'ko' ? '지도 보기' : 'Show Map'}
+                {t.trip.showMap}
               </button>
             )}
             </>
@@ -4023,8 +4017,8 @@ const MyTripPage = () => {
           {!selectedTrip && tripPlans.length > 0 && (
             <div className="trip-placeholder">
               <FiNavigation />
-              <h3>{language === 'ko' ? '여행을 선택해주세요' : 'Select a trip'}</h3>
-              <p>{language === 'ko' ? '왼쪽 목록에서 여행을 선택하면 상세 일정을 볼 수 있습니다' : 'Select a trip from the list to view details'}</p>
+              <h3>{t.trip.selectTrip}</h3>
+              <p>{t.trip.selectTripHint}</p>
             </div>
           )}
         </div>
@@ -4035,32 +4029,30 @@ const MyTripPage = () => {
         <div className="modal-overlay" onClick={() => !isUploading && setShowPublishModal(false)}>
           <div className="modal-content publish-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><FiShare2 /> {language === 'ko' ? '여행 계획 게시' : 'Publish Trip Plan'}</h3>
+              <h3><FiShare2 /> {t.trip.publishTrip}</h3>
               <button className="modal-close" onClick={() => !isUploading && setShowPublishModal(false)} disabled={isUploading}>
                 <FiX />
               </button>
             </div>
             <div className="modal-body">
               <p className="publish-info">
-                {language === 'ko' 
-                  ? '게시하면 다른 사용자들이 회원님의 여행 코스를 볼 수 있습니다. 수정은 불가능하며, 읽기만 가능합니다.'
-                  : 'Once published, other users can view your trip plan. They can only read, not edit.'}
+                {t.trip.publishInfo}
               </p>
               
               <div className="form-group">
-                <label>{language === 'ko' ? '작성자 닉네임' : 'Author Nickname'}</label>
+                <label>{t.trip.authorNickname}</label>
                 <input
                   type="text"
                   value={publishForm.nickname}
                   onChange={(e) => setPublishForm(prev => ({ ...prev, nickname: e.target.value }))}
-                  placeholder={language === 'ko' ? '닉네임 (선택사항)' : 'Nickname (optional)'}
+                  placeholder={t.trip.nicknamePlaceholder}
                   maxLength={20}
                   disabled={isUploading}
                 />
               </div>
               
               <div className="form-group">
-                <label>{language === 'ko' ? '썸네일 이미지' : 'Thumbnail Image'}</label>
+                <label>{t.trip.thumbnailImage}</label>
                 
                 {/* 이미지 업로드 영역 */}
                 {!thumbnailPreview && !publishForm.thumbnailUrl && (
@@ -4075,8 +4067,8 @@ const MyTripPage = () => {
                     />
                     <label htmlFor="thumbnail-file-input" className="thumbnail-upload-label">
                       <FiImage />
-                      <span>{language === 'ko' ? '이미지 선택' : 'Select Image'}</span>
-                      <small>{language === 'ko' ? '(JPG, PNG, GIF, WebP / 최대 10MB)' : '(JPG, PNG, GIF, WebP / Max 10MB)'}</small>
+                      <span>{t.trip.selectImage}</span>
+                      <small>{t.trip.imageHint}</small>
                     </label>
                   </div>
                 )}
@@ -4100,7 +4092,7 @@ const MyTripPage = () => {
                 {!thumbnailFile && (
                   <>
                     <div className="thumbnail-divider">
-                      <span>{language === 'ko' ? '또는 URL 직접 입력' : 'Or enter URL directly'}</span>
+                      <span>{t.trip.orEnterUrl}</span>
                     </div>
                     <input
                       type="url"
@@ -4115,13 +4107,13 @@ const MyTripPage = () => {
             </div>
             <div className="modal-footer">
               <button className="cancel-btn" onClick={() => setShowPublishModal(false)} disabled={isUploading}>
-                {language === 'ko' ? '취소' : 'Cancel'}
+                {t.ui.cancel}
               </button>
               <button className="publish-confirm-btn" onClick={handlePublishTrip} disabled={isUploading}>
                 {isUploading ? (
-                  <>{language === 'ko' ? '업로드 중...' : 'Uploading...'}</>
+                  <>{t.trip.uploading}</>
                 ) : (
-                  <><FiGlobe /> {language === 'ko' ? '게시하기' : 'Publish'}</>
+                  <><FiGlobe /> {t.trip.publish}</>
                 )}
               </button>
             </div>
@@ -4134,16 +4126,14 @@ const MyTripPage = () => {
         <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
           <div className="modal-content invite-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><FiUsers /> {language === 'ko' ? '같이 만들기' : 'Invite Friends'}</h3>
+              <h3><FiUsers /> {t.trip.inviteFriends}</h3>
               <button className="modal-close" onClick={() => setShowInviteModal(false)}>
                 <FiX />
               </button>
             </div>
             <div className="modal-body">
               <p className="invite-info">
-                {language === 'ko' 
-                  ? '아래 링크를 친구에게 공유하면 함께 여행 계획을 편집할 수 있습니다.'
-                  : 'Share this link with friends to plan the trip together.'}
+                {t.trip.inviteInfo}
               </p>
               
               <div className="invite-link-box">
@@ -4154,7 +4144,7 @@ const MyTripPage = () => {
                   onClick={(e) => e.target.select()}
                 />
                 <button onClick={handleCopyInviteLink} className="copy-btn">
-                  {language === 'ko' ? '복사' : 'Copy'}
+                  {t.trip.copy}
                 </button>
               </div>
               
@@ -4163,14 +4153,12 @@ const MyTripPage = () => {
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="#3C1E1E">
                     <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.47 1.607 4.647 4.042 5.877l-.992 3.682c-.052.194.017.4.175.514.158.114.37.123.537.023L10.1 17.77c.623.087 1.26.133 1.9.133 5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
                   </svg>
-                  {language === 'ko' ? '카카오톡으로 초대' : 'Invite via KakaoTalk'}
+                  {t.trip.inviteViaKakao}
                 </button>
               </div>
               
               <p className="invite-expire-info">
-                {language === 'ko' 
-                  ? '※ 초대 링크는 7일간 유효하며, 최대 10명까지 참여할 수 있습니다.'
-                  : '※ The invite link is valid for 7 days and can be used by up to 10 people.'}
+                {t.trip.inviteExpireInfo}
               </p>
             </div>
           </div>
@@ -4182,7 +4170,7 @@ const MyTripPage = () => {
         <div className="modal-overlay" onClick={() => setShowInviteAcceptModal(false)}>
           <div className="modal-content invite-accept-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><FiUsers /> {language === 'ko' ? '여행 초대' : 'Trip Invitation'}</h3>
+              <h3><FiUsers /> {t.trip.tripInvitation}</h3>
               <button className="modal-close" onClick={() => setShowInviteAcceptModal(false)}>
                 <FiX />
               </button>
@@ -4200,17 +4188,15 @@ const MyTripPage = () => {
               </div>
               
               <p className="invite-permission-info">
-                {language === 'ko' 
-                  ? `참여 시 '${inviteInfo.permission === 'edit' ? '편집' : '보기'}' 권한이 부여됩니다.`
-                  : `You will be granted '${inviteInfo.permission}' permission.`}
+                {t.trip.permissionNote}: {inviteInfo.permission === 'edit' ? t.trip.canEdit : t.trip.viewOnly}
               </p>
             </div>
             <div className="modal-footer">
               <button className="cancel-btn" onClick={() => setShowInviteAcceptModal(false)}>
-                {language === 'ko' ? '취소' : 'Cancel'}
+                {t.ui.cancel}
               </button>
               <button className="accept-invite-btn" onClick={handleAcceptInvite}>
-                <FiUsers /> {language === 'ko' ? '참여하기' : 'Join'}
+                <FiUsers /> {t.trip.join}
               </button>
             </div>
           </div>
@@ -4222,7 +4208,7 @@ const MyTripPage = () => {
         <div className="modal-overlay" onClick={() => setShowCollaboratorsModal(false)}>
           <div className="modal-content collaborators-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><FiUsers /> {language === 'ko' ? '함께하는 사람들' : 'Collaborators'}</h3>
+              <h3><FiUsers /> {t.trip.collaborators}</h3>
               <button className="modal-close" onClick={() => setShowCollaboratorsModal(false)}>
                 <FiX />
               </button>
@@ -4232,7 +4218,7 @@ const MyTripPage = () => {
                 <div className="loading-spinner" />
               ) : collaborators.length === 0 ? (
                 <p className="no-collaborators">
-                  {language === 'ko' ? '아직 함께하는 사람이 없습니다.' : 'No collaborators yet.'}
+                  {t.trip.noCollaborators}
                 </p>
               ) : (
                 <ul className="collaborators-list">
@@ -4250,17 +4236,17 @@ const MyTripPage = () => {
                           <span className="collaborator-name">{collab.userName}</span>
                           <span className="collaborator-permission">
                             {collab.permission === 'edit' 
-                              ? (language === 'ko' ? '편집 가능' : 'Can edit')
+                              ? t.trip.canEdit
                               : collab.permission === 'admin'
-                              ? (language === 'ko' ? '관리자' : 'Admin')
-                              : (language === 'ko' ? '보기만' : 'View only')}
+                              ? t.trip.admin
+                              : t.trip.viewOnly}
                           </span>
                         </div>
                       </div>
                       <button 
                         className="remove-collaborator-btn"
                         onClick={() => handleRemoveCollaborator(collab.id)}
-                        title={language === 'ko' ? '제거' : 'Remove'}
+                        title={t.ui.remove}
                       >
                         <FiX />
                       </button>
@@ -4276,7 +4262,7 @@ const MyTripPage = () => {
                   handleCreateInvite(invitingTripId)
                 }}
               >
-                <FiPlus /> {language === 'ko' ? '새로운 초대 링크 생성' : 'Create New Invite Link'}
+                <FiPlus /> {t.trip.createNewInviteLink}
               </button>
             </div>
           </div>

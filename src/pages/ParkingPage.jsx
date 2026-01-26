@@ -7,7 +7,7 @@ import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import './ParkingPage.css'
 
 const ParkingPage = () => {
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const [allParkingData, setAllParkingData] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -31,10 +31,10 @@ const ParkingPage = () => {
       if (result.success) {
         setAllParkingData(result.items)
       } else {
-        setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
+        setError(t.common.loadFailed)
       }
     } catch (err) {
-      setError(language === 'ko' ? '서버 연결 오류' : 'Server connection error')
+      setError(t.ui.error)
     }
     setLoading(false)
   }
@@ -46,8 +46,8 @@ const ParkingPage = () => {
 
   // 주차장 유형 변환 (typeNum: 2=노외, 그외=노상)
   const getParkingCategory = (typeNum) => {
-    if (typeNum === '2') return language === 'ko' ? '노외주차장' : 'Off-street'
-    if (typeNum === '1') return language === 'ko' ? '노상주차장' : 'On-street'
+    if (typeNum === '2') return t.pages.parking.offStreet
+    if (typeNum === '1') return t.pages.parking.onStreet
     return ''
   }
 
@@ -133,7 +133,7 @@ const ParkingPage = () => {
         <div className="hero-content">
           <h1>
             <FaParking className="hero-icon" />
-            {language === 'ko' ? '대전 주차장 안내' : 'Daejeon Parking Guide'}
+            {t.pages.parking.title}
           </h1>
           <p>
             {language === 'ko' 
@@ -150,19 +150,19 @@ const ParkingPage = () => {
             className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
           >
-            {language === 'ko' ? '전체' : 'All'}
+            {t.common.all}
           </button>
           <button 
             className={`filter-btn ${filter === 'public' ? 'active' : ''}`}
             onClick={() => setFilter('public')}
           >
-            {language === 'ko' ? '공영 주차장' : 'Public Parking'}
+            {t.pages.parking.publicParking}
           </button>
           <button 
             className={`filter-btn ${filter === 'private' ? 'active' : ''}`}
             onClick={() => setFilter('private')}
           >
-            {language === 'ko' ? '민영 주차장' : 'Private Parking'}
+            {t.pages.parking.privateParking}
           </button>
           
           {/* 구별 필터 드롭다운 */}
@@ -186,7 +186,7 @@ const ParkingPage = () => {
               onChange={(e) => setDongFilter(e.target.value)}
             >
               <option value="all">
-                {language === 'ko' ? '전체 동' : 'All Neighborhoods'}
+                {t.common.allDong}
               </option>
               {availableDongs.map(dong => (
                 <option key={dong} value={dong}>
@@ -204,13 +204,9 @@ const ParkingPage = () => {
             <div className="stat-info">
               <span className="stat-number">{filteredData.length}</span>
               <span className="stat-label">
-                {language === 'ko' 
-                  ? (districtFilter !== 'all' || dongFilter !== 'all' || filter !== 'all' 
-                      ? '필터 결과' 
-                      : '이 페이지 주차장')
-                  : (districtFilter !== 'all' || dongFilter !== 'all' || filter !== 'all' 
-                      ? 'Filtered Results' 
-                      : 'Parking on this page')}
+                {districtFilter !== 'all' || dongFilter !== 'all' || filter !== 'all' 
+                  ? t.pages.parking.filteredResults 
+                  : t.pages.parking.parkingOnPage}
               </span>
             </div>
           </div>
@@ -220,7 +216,7 @@ const ParkingPage = () => {
               <span className="stat-number">
                 {filteredData.filter(item => getParkingType(item.divideNum) === 'public').length}
               </span>
-              <span className="stat-label">{language === 'ko' ? '공영 주차장' : 'Public Parking'}</span>
+              <span className="stat-label">{t.pages.parking.publicParking}</span>
             </div>
           </div>
           <div className="stat-card">
@@ -229,7 +225,7 @@ const ParkingPage = () => {
               <span className="stat-number">
                 {filteredData.filter(item => getParkingType(item.divideNum) === 'private').length}
               </span>
-              <span className="stat-label">{language === 'ko' ? '민영 주차장' : 'Private Parking'}</span>
+              <span className="stat-label">{t.pages.parking.privateParking}</span>
             </div>
           </div>
         </div>
@@ -238,13 +234,13 @@ const ParkingPage = () => {
         {loading ? (
           <div className="loading-container">
             <FiLoader className="loading-spinner" />
-            <p>{language === 'ko' ? '주차장 정보를 불러오는 중...' : 'Loading parking information...'}</p>
+            <p>{t.pages.parking.loading}</p>
           </div>
         ) : error ? (
           <div className="error-container">
             <p>{error}</p>
             <button onClick={fetchAllParkingData}>
-              {language === 'ko' ? '다시 시도' : 'Retry'}
+              {t.common.retry}
             </button>
           </div>
         ) : (
@@ -256,8 +252,8 @@ const ParkingPage = () => {
                   <div className="parking-header">
                     <span className={`parking-type ${getParkingType(item.divideNum)}`}>
                       {item.parkingType || (getParkingType(item.divideNum) === 'public' 
-                        ? (language === 'ko' ? '공영' : 'Public')
-                        : (language === 'ko' ? '민영' : 'Private'))}
+                        ? t.pages.parking.public
+                        : t.pages.parking.private)}
                     </span>
                     <span className="parking-category">
                       {item.parkingCategory || getParkingCategory(item.typeNum)}
@@ -267,7 +263,7 @@ const ParkingPage = () => {
                         {item.chargeInfo}
                       </span>
                     )}
-                    <h3>{item.name || (language === 'ko' ? '주차장' : 'Parking Lot')}</h3>
+                    <h3>{item.name || t.pages.parking.parkingLot}</h3>
                   </div>
                   
                   <div className="parking-body">
@@ -282,9 +278,7 @@ const ParkingPage = () => {
                       <div className="parking-info">
                         <FaCar className="info-icon" />
                         <span>
-                          {language === 'ko' ? '주차 면수: ' : 'Capacity: '}
-                          <strong>{item.totalLot}</strong>
-                          {language === 'ko' ? '면' : ' spots'}
+                          {t.pages.parking.capacity}: <strong>{item.totalLot}</strong>{t.pages.parking.spots}
                         </span>
                       </div>
                     )}
@@ -293,8 +287,7 @@ const ParkingPage = () => {
                       <div className="parking-info">
                         <FiClock className="info-icon" />
                         <span>
-                          {language === 'ko' ? '평일: ' : 'Weekday: '}
-                          {item.weekdayOpen} ~ {item.weekdayClose}
+                          {t.pages.parking.weekday}: {item.weekdayOpen} ~ {item.weekdayClose}
                         </span>
                       </div>
                     )}
@@ -304,13 +297,12 @@ const ParkingPage = () => {
                         <FiInfo className="info-icon" />
                         <span>
                           {item.chargeInfo === '무료' ? (
-                            <strong>{language === 'ko' ? '무료' : 'Free'}</strong>
+                            <strong>{t.pages.parking.free}</strong>
                           ) : (
                             <>
-                              {language === 'ko' ? '기본: ' : 'Basic: '}
-                              <strong>{item.basicTime}분 {item.basicCharge}원</strong>
+                              {t.pages.parking.basic}: <strong>{item.basicTime}분 {item.basicCharge}원</strong>
                               {item.addCharge && (
-                                <> / {language === 'ko' ? '추가 ' : 'Add '}{item.addTime}분 {item.addCharge}원</>
+                                <> / {t.pages.parking.additional} {item.addTime}분 {item.addCharge}원</>
                               )}
                             </>
                           )}
@@ -321,7 +313,7 @@ const ParkingPage = () => {
                     {item.payMethod && (
                       <div className="parking-info">
                         <FiInfo className="info-icon" />
-                        <span>{language === 'ko' ? '결제: ' : 'Payment: '}{item.payMethod}</span>
+                        <span>{t.pages.parking.payment}: {item.payMethod}</span>
                       </div>
                     )}
                   </div>
@@ -334,7 +326,7 @@ const ParkingPage = () => {
                       className="parking-nav-btn"
                     >
                       <FiNavigation />
-                      {language === 'ko' ? '길찾기' : 'Navigate'}
+                      {t.common.navigate}
                     </a>
                   )}
                 </div>
@@ -344,7 +336,7 @@ const ParkingPage = () => {
             {filteredData.length === 0 && (
               <div className="no-data">
                 <FaParking className="no-data-icon" />
-                <p>{language === 'ko' ? '주차장 정보가 없습니다.' : 'No parking information available.'}</p>
+                <p>{t.pages.parking.noInfo}</p>
               </div>
             )}
 
@@ -355,14 +347,14 @@ const ParkingPage = () => {
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
                 >
-                  {language === 'ko' ? '이전' : 'Prev'}
+                  {t.ui.prev}
                 </button>
                 <span>{currentPage} / {totalPages}</span>
                 <button 
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
                 >
-                  {language === 'ko' ? '다음' : 'Next'}
+                  {t.ui.next}
                 </button>
               </div>
             )}

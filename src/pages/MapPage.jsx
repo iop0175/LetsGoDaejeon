@@ -7,7 +7,7 @@ import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import './MapPage.css'
 
 const MapPage = () => {
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const [activeTab, setActiveTab] = useState('tour')
   const [allPlaces, setAllPlaces] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
@@ -448,9 +448,9 @@ const MapPage = () => {
 
   // 탭 데이터
   const tabs = [
-    { id: 'tour', label: language === 'ko' ? '관광지' : 'Attractions', icon: '🏛️' },
-    { id: 'food', label: language === 'ko' ? '맛집' : 'Restaurants', icon: '🍽️' },
-    { id: 'parking', label: language === 'ko' ? '주차장' : 'Parking', icon: '🅿️' }
+    { id: 'tour', label: t.pages.search.attractions, icon: '🏛️' },
+    { id: 'food', label: t.pages.search.restaurants, icon: '🍽️' },
+    { id: 'parking', label: t.nav.parking, icon: '🅿️' }
   ]
 
   return (
@@ -472,7 +472,7 @@ const MapPage = () => {
       {/* 구/동 필터 버튼 */}
       <div className="map-filter-section">
         <div className="filter-group">
-          <span className="filter-label">{language === 'ko' ? '지역' : 'District'}</span>
+          <span className="filter-label">{t.pages.map.district}</span>
           <div className="filter-buttons">
             {DISTRICTS.map(district => (
               <button
@@ -488,13 +488,13 @@ const MapPage = () => {
         
         {districtFilter !== 'all' && availableDongs.length > 0 && (
           <div className="filter-group dong-group">
-            <span className="filter-label">{language === 'ko' ? '동' : 'Area'}</span>
+            <span className="filter-label">{t.pages.map.area}</span>
             <div className="filter-buttons">
               <button
                 className={`filter-btn ${dongFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setDongFilter('all')}
               >
-                {language === 'ko' ? '전체' : 'All'}
+                {t.common.all}
               </button>
               {availableDongs.map(dong => (
                 <button
@@ -515,7 +515,7 @@ const MapPage = () => {
         <div className={`map-sidebar ${showList ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h3>
-              {tabs.find(t => t.id === activeTab)?.label}
+              {tabs.find(tb => tb.id === activeTab)?.label}
               <span className="count">({places.length})</span>
             </h3>
             <button className="close-btn" onClick={() => setShowList(false)}>
@@ -538,13 +538,13 @@ const MapPage = () => {
                   <h4>{place.name}</h4>
                   <p className="place-address">
                     <FiMapPin />
-                    {place.address || (language === 'ko' ? '주소 정보 없음' : 'No address')}
+                    {place.address || t.common.noAddress}
                   </p>
                   {place.menu && (
                     <p className="place-menu">🍽️ {place.menu}</p>
                   )}
                   {place.capacity && (
-                    <p className="place-capacity">🚗 {place.capacity}{language === 'ko' ? '대' : ' spots'}</p>
+                    <p className="place-capacity">🚗 {place.capacity}{t.pages.parking.spots}</p>
                   )}
                 </div>
               ))
@@ -557,7 +557,7 @@ const MapPage = () => {
           {!showList && (
             <button className="list-toggle" onClick={() => setShowList(true)}>
               <FiList />
-              {language === 'ko' ? '목록 보기' : 'Show List'}
+              {t.pages.map.showList}
             </button>
           )}
           
@@ -573,7 +573,7 @@ const MapPage = () => {
           ) : !mapLoaded ? (
             <div className="map-placeholder">
               <FiLoader className="spinner" />
-              <p>{language === 'ko' ? '지도를 불러오는 중...' : 'Loading map...'}</p>
+              <p>{t.pages.map.loadingMap}</p>
               <p className="map-notice">
                 {language === 'ko' 
                   ? '카카오맵 API 키가 필요합니다. 카카오 개발자 사이트에서 발급받으세요.'
@@ -622,7 +622,7 @@ const MapPage = () => {
               {selectedPlace.capacity && (
                 <div className="info-row">
                   <span>🚗</span>
-                  <span>{selectedPlace.capacity}{language === 'ko' ? '대 주차 가능' : ' spots available'}</span>
+                  <span>{selectedPlace.capacity}{t.pages.map.spotsAvailable}</span>
                 </div>
               )}
               
@@ -642,7 +642,7 @@ const MapPage = () => {
                 className="nav-btn"
               >
                 <FiNavigation />
-                {language === 'ko' ? '길찾기' : 'Navigate'}
+                {t.common.navigate}
               </a>
             )}
           </div>

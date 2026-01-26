@@ -275,7 +275,7 @@ const FACILITY_ITEMS = [
 const SpotDetailPage = () => {
   const { contentId } = useParams()
   const navigate = useNavigate()
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   const { isDark } = useTheme()
   const { user } = useAuth()
   
@@ -358,11 +358,11 @@ const SpotDetailPage = () => {
             setAvgRating(reviewResult.avgRating)
           }
         } else {
-          setError(language === 'ko' ? '정보를 찾을 수 없습니다.' : 'Information not found.')
+          setError(t.detail.notFound)
         }
       } catch (err) {
         console.error('데이터 로드 실패:', err)
-        setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
+        setError(t.detail.loadFailed)
       }
       
       setLoading(false)
@@ -388,7 +388,7 @@ const SpotDetailPage = () => {
   // 좋아요 토글
   const handleToggleLike = async () => {
     if (!user) {
-      alert(language === 'ko' ? '로그인이 필요합니다' : 'Please login first')
+      alert(t.ui.loginRequired)
       return
     }
     
@@ -402,12 +402,12 @@ const SpotDetailPage = () => {
   // 리뷰 제출
   const handleSubmitReview = async () => {
     if (!user) {
-      alert(language === 'ko' ? '로그인이 필요합니다' : 'Please login first')
+      alert(t.ui.loginRequired)
       return
     }
     
     if (!newReviewContent.trim()) {
-      alert(language === 'ko' ? '리뷰 내용을 입력해주세요' : 'Please enter review content')
+      alert(t.detail.enterReview)
       return
     }
     
@@ -438,7 +438,7 @@ const SpotDetailPage = () => {
   
   // 리뷰 삭제
   const handleDeleteReview = async (reviewId) => {
-    if (!confirm(language === 'ko' ? '리뷰를 삭제하시겠습니까?' : 'Delete this review?')) return
+    if (!confirm(t.detail.deleteReview)) return
     
     const result = await deleteSpotReview(reviewId, user.id)
     if (result.success) {
@@ -539,7 +539,7 @@ const SpotDetailPage = () => {
     
     try {
       await navigator.clipboard.writeText(copyUrl)
-      alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
+      alert(t.detail.urlCopied)
     } catch (err) {
       // fallback
       const textArea = document.createElement('textarea')
@@ -548,14 +548,14 @@ const SpotDetailPage = () => {
       textArea.select()
       document.execCommand('copy')
       document.body.removeChild(textArea)
-      alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
+      alert(t.detail.urlCopied)
     }
     setShowShareModal(false)
   }
 
   const openAddModal = async () => {
     if (!user) {
-      alert(language === 'ko' ? '로그인이 필요합니다.' : 'Please login first.')
+      alert(t.ui.loginRequired)
       return
     }
     
@@ -593,13 +593,13 @@ const SpotDetailPage = () => {
       })
       
       if (result.success) {
-        alert(language === 'ko' ? '여행에 추가되었습니다!' : 'Added to your trip!')
+        alert(t.detail.addToTripSuccess)
         setShowAddModal(false)
       } else {
-        alert(result.error || (language === 'ko' ? '추가에 실패했습니다.' : 'Failed to add.'))
+        alert(result.error || t.detail.addToTripFailed)
       }
     } catch (err) {
-      alert(language === 'ko' ? '오류가 발생했습니다.' : 'An error occurred.')
+      alert(t.common.errorOccurred)
     }
     setAddingToTrip(false)
   }
@@ -627,7 +627,7 @@ const SpotDetailPage = () => {
       <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
         <div className="sdp__loading">
           <div className="sdp__spinner"></div>
-          <p>{language === 'ko' ? '정보를 불러오는 중...' : 'Loading...'}</p>
+          <p>{t.detail.loading}</p>
         </div>
       </div>
     )
@@ -638,9 +638,9 @@ const SpotDetailPage = () => {
       <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
         <div className="sdp__error">
           <span className="sdp__error-icon">😢</span>
-          <p>{error || (language === 'ko' ? '정보를 찾을 수 없습니다.' : 'Not found')}</p>
+          <p>{error || t.detail.notFound}</p>
           <button onClick={() => navigate(-1)} className="sdp__error-btn">
-            ← {language === 'ko' ? '뒤로 가기' : 'Go Back'}
+            ← {t.detail.goBack}
           </button>
         </div>
       </div>
@@ -712,7 +712,7 @@ const SpotDetailPage = () => {
           ) : (
             <div className="sdp__gallery-empty">
               <Icons.camera size={40} color="#999" />
-              <p>{language === 'ko' ? '이미지 없음' : 'No Image'}</p>
+              <p>{t.detail.noImage}</p>
             </div>
           )}
           {/* 이미지 카운터 */}
@@ -761,7 +761,7 @@ const SpotDetailPage = () => {
         <section className="sdp__section sdp__location">
           <div className="sdp__section-header">
             <span className="sdp__section-icon"><Icons.location size={18} /></span>
-            <h2 className="sdp__section-title">{language === 'ko' ? '위치/교통' : 'Location'}</h2>
+            <h2 className="sdp__section-title">{t.detail.location}</h2>
           </div>
           <div className="sdp__location-content">
             <p className="sdp__address">{spot.addr1} {spot.addr2}</p>
@@ -776,7 +776,7 @@ const SpotDetailPage = () => {
               className="sdp__map-btn sdp__map-btn--kakao"
             >
               <Icons.map size={16} />
-              <span>{language === 'ko' ? '카카오맵' : 'Kakao Map'}</span>
+              <span>{t.detail.kakaoMap}</span>
             </a>
             <a 
               href={`https://map.naver.com/v5/search/${encodeURIComponent(spot.addr1)}`}
@@ -784,7 +784,7 @@ const SpotDetailPage = () => {
               className="sdp__map-btn sdp__map-btn--naver"
             >
               <Icons.map size={16} />
-              <span>{language === 'ko' ? '네이버지도' : 'Naver Map'}</span>
+              <span>{t.detail.naverMap}</span>
             </a>
           </div>
         </section>
@@ -794,7 +794,7 @@ const SpotDetailPage = () => {
           <section className="sdp__section sdp__facilities">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.facilities size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '시설/서비스' : 'Facilities'}</h2>
+              <h2 className="sdp__section-title">{t.detail.facilities}</h2>
             </div>
             <div className="sdp__facilities-grid">
               {availableFacilities.map((item, idx) => {
@@ -815,7 +815,7 @@ const SpotDetailPage = () => {
           <section className="sdp__section sdp__overview">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.about size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '소개' : 'About'}</h2>
+              <h2 className="sdp__section-title">{t.detail.about}</h2>
             </div>
             <div className="sdp__overview-content" dangerouslySetInnerHTML={{ __html: sanitizeIntroHtml(spot.overview) }} />
           </section>
@@ -826,7 +826,7 @@ const SpotDetailPage = () => {
           <section className="sdp__section sdp__usage">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.info size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '이용 안내' : 'Information'}</h2>
+              <h2 className="sdp__section-title">{t.detail.usageInfo}</h2>
             </div>
             <div className="sdp__usage-list">
               {introFields.map(field => {
@@ -855,7 +855,7 @@ const SpotDetailPage = () => {
           <section className="sdp__section sdp__contact">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.phone size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '문의' : 'Contact'}</h2>
+              <h2 className="sdp__section-title">{t.detail.contact}</h2>
             </div>
             <a href={`tel:${spot.tel.replace(/[^0-9-]/g, '')}`} className="sdp__phone">
               <Icons.phone size={16} />
@@ -869,7 +869,7 @@ const SpotDetailPage = () => {
           <section className="sdp__section sdp__website">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.globe size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '홈페이지' : 'Website'}</h2>
+              <h2 className="sdp__section-title">{t.ui.website}</h2>
             </div>
             <a 
               href={spot.homepage.match(/href="([^"]+)"/)?.[1] || spot.homepage}
@@ -877,7 +877,7 @@ const SpotDetailPage = () => {
               className="sdp__website-link"
             >
               <Icons.globe size={16} />
-              {language === 'ko' ? '홈페이지 방문하기' : 'Visit Website'}
+              {t.detail.visitWebsite}
             </a>
           </section>
         )}
@@ -887,7 +887,7 @@ const SpotDetailPage = () => {
           <div className="sdp__section-header">
             <span className="sdp__section-icon"><Icons.review size={18} /></span>
             <h2 className="sdp__section-title">
-              {language === 'ko' ? '리뷰' : 'Reviews'}
+              {t.detail.reviews}
               {reviewCount > 0 && <span className="sdp__review-count">({reviewCount})</span>}
             </h2>
             {user && (
@@ -895,7 +895,7 @@ const SpotDetailPage = () => {
                 className="sdp__review-write-btn"
                 onClick={() => setShowReviewForm(!showReviewForm)}
               >
-                {showReviewForm ? '취소' : (language === 'ko' ? '리뷰 작성' : 'Write Review')}
+                {showReviewForm ? t.ui.cancel : t.detail.writeReview}
               </button>
             )}
           </div>
@@ -919,7 +919,7 @@ const SpotDetailPage = () => {
           {showReviewForm && (
             <div className="sdp__review-form">
               <div className="sdp__rating-input">
-                <span>{language === 'ko' ? '평점' : 'Rating'}:</span>
+                <span>{t.detail.rating}:</span>
                 <div className="sdp__rating-stars">
                   {[1, 2, 3, 4, 5].map(star => (
                     <button 
@@ -935,7 +935,7 @@ const SpotDetailPage = () => {
               </div>
               <textarea
                 className="sdp__review-textarea"
-                placeholder={language === 'ko' ? '리뷰를 작성해주세요...' : 'Write your review...'}
+                placeholder={t.detail.writeReviewPlaceholder}
                 value={newReviewContent}
                 onChange={(e) => setNewReviewContent(e.target.value)}
                 rows={4}
@@ -945,7 +945,7 @@ const SpotDetailPage = () => {
                 onClick={handleSubmitReview}
                 disabled={reviewSubmitting}
               >
-                {reviewSubmitting ? '등록 중...' : (language === 'ko' ? '리뷰 등록' : 'Submit Review')}
+                {reviewSubmitting ? t.detail.submitting : t.detail.submitReview}
               </button>
             </div>
           )}
@@ -997,7 +997,7 @@ const SpotDetailPage = () => {
             </div>
           ) : (
             <p className="sdp__review-empty">
-              {language === 'ko' ? '아직 리뷰가 없습니다. 첫 번째 리뷰를 작성해보세요!' : 'No reviews yet. Be the first to write a review!'}
+              {t.detail.noReviews}
             </p>
           )}
         </section>
@@ -1012,7 +1012,7 @@ const SpotDetailPage = () => {
       <div className="sdp__bottom">
         {user && (
           <button className="sdp__bottom-btn sdp__bottom-btn--primary" onClick={openAddModal}>
-            + {language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}
+            + {t.detail.addToTrip}
           </button>
         )}
         {spot.addr1 && (
@@ -1021,7 +1021,7 @@ const SpotDetailPage = () => {
             target="_blank" rel="noopener noreferrer"
             className="sdp__bottom-btn sdp__bottom-btn--secondary"
           >
-            🧭 {language === 'ko' ? '길찾기' : 'Directions'}
+            🧭 {t.ui.directions}
           </a>
         )}
       </div>
@@ -1061,7 +1061,7 @@ const SpotDetailPage = () => {
         <div className="sdp__modal-overlay" onClick={() => setShowShareModal(false)}>
           <div className="sdp__share-modal" onClick={e => e.stopPropagation()}>
             <div className="sdp__share-modal-header">
-              <h3>{language === 'ko' ? '공유하기' : 'Share'}</h3>
+              <h3>{t.detail.shareTo}</h3>
               <button className="sdp__share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
             </div>
             
@@ -1070,7 +1070,7 @@ const SpotDetailPage = () => {
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="#3C1E1E">
                   <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.47 1.607 4.647 4.042 5.877l-.992 3.682c-.052.194.017.4.175.514.158.114.37.123.537.023L10.1 17.77c.623.087 1.26.133 1.9.133 5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
                 </svg>
-                <span>{language === 'ko' ? '카카오톡' : 'KakaoTalk'}</span>
+                <span>{t.detail.kakaoTalk}</span>
               </button>
               
               <button className="sdp__share-option sdp__share-option--link" onClick={handleCopyLink}>
@@ -1078,7 +1078,7 @@ const SpotDetailPage = () => {
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
                 </svg>
-                <span>{language === 'ko' ? '링크 복사' : 'Copy Link'}</span>
+                <span>{t.detail.linkCopy}</span>
               </button>
             </div>
           </div>
@@ -1090,7 +1090,7 @@ const SpotDetailPage = () => {
         <div className="sdp__modal-overlay" onClick={() => setShowAddModal(false)}>
           <div className="sdp__trip-modal" onClick={e => e.stopPropagation()}>
             <div className="sdp__trip-modal-header">
-              <h3>{language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}</h3>
+              <h3>{t.detail.addToTrip}</h3>
               <button onClick={() => setShowAddModal(false)}>×</button>
             </div>
             
@@ -1111,13 +1111,13 @@ const SpotDetailPage = () => {
                 <div className="sdp__trip-loading"><div className="sdp__spinner"></div></div>
               ) : tripPlans.length === 0 ? (
                 <div className="sdp__trip-empty">
-                  <p>{language === 'ko' ? '여행 계획이 없습니다.' : 'No trip plans yet.'}</p>
-                  <Link to="/my-trip">{language === 'ko' ? '새 여행 만들기' : 'Create New Trip'}</Link>
+                  <p>{t.detail.noTripPlans}</p>
+                  <Link to="/my-trip">{t.detail.newTripCreate}</Link>
                 </div>
               ) : (
                 <>
                   <div className="sdp__trip-select">
-                    <label>{language === 'ko' ? '여행 선택' : 'Select Trip'}</label>
+                    <label>{t.detail.tripSelect}</label>
                     <div className="sdp__trip-list">
                       {tripPlans.map(trip => (
                         <button
@@ -1134,15 +1134,15 @@ const SpotDetailPage = () => {
 
                   {selectedTripId && (
                     <div className="sdp__day-select">
-                      <label>{language === 'ko' ? '일차 선택' : 'Select Day'}</label>
+                      <label>{t.detail.daySelect}</label>
                       <div className="sdp__day-list">
-                        {tripPlans.find(t => t.id === selectedTripId)?.days?.map(day => (
+                        {tripPlans.find(tp => tp.id === selectedTripId)?.days?.map(day => (
                           <button
                             key={day.id}
                             className={`sdp__day-option ${selectedDayId === day.id ? 'sdp__day-option--selected' : ''}`}
                             onClick={() => setSelectedDayId(day.id)}
                           >
-                            📅 {day.dayNumber}{language === 'ko' ? '일차' : ''}
+                            📅 {day.dayNumber}{t.trip.day}
                           </button>
                         ))}
                       </div>
@@ -1154,7 +1154,7 @@ const SpotDetailPage = () => {
 
             <div className="sdp__trip-modal-footer">
               <button className="sdp__trip-btn sdp__trip-btn--cancel" onClick={() => setShowAddModal(false)}>
-                {language === 'ko' ? '취소' : 'Cancel'}
+                {t.ui.cancel}
               </button>
               <button 
                 className="sdp__trip-btn sdp__trip-btn--add" 
@@ -1162,7 +1162,7 @@ const SpotDetailPage = () => {
                 disabled={!selectedDayId || addingToTrip}
               >
                 {addingToTrip ? <span className="sdp__spinner-small"></span> : '+'}
-                {language === 'ko' ? '추가하기' : 'Add'}
+                {t.ui.add}
               </button>
             </div>
           </div>

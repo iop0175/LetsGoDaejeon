@@ -9,7 +9,7 @@ import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
 import './ShoppingPage.css';
 
 const ShoppingPage = () => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const navigate = useNavigate();
   const [allShops, setAllShops] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
@@ -19,33 +19,6 @@ const ShoppingPage = () => {
   const [dongFilter, setDongFilter] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const itemsPerPage = 12;
-
-  const text = {
-    ko: {
-      title: '쇼핑',
-      subtitle: '대전의 쇼핑 명소를 만나보세요',
-      loading: '불러오는 중...',
-      noResults: '검색 결과가 없습니다',
-      searchPlaceholder: '쇼핑 명소 검색',
-      address: '주소',
-      phone: '전화',
-      navigate: '길찾기',
-      totalCount: '총 {count}개의 쇼핑 명소'
-    },
-    en: {
-      title: 'Shopping',
-      subtitle: 'Discover shopping destinations in Daejeon',
-      loading: 'Loading...',
-      noResults: 'No results found',
-      searchPlaceholder: 'Search shopping places',
-      address: 'Address',
-      phone: 'Phone',
-      navigate: 'Navigate',
-      totalCount: 'Total {count} shopping places'
-    }
-  };
-
-  const t = text[language];
 
   // 최초 1회 전체 데이터 로드
   useEffect(() => {
@@ -190,8 +163,8 @@ const ShoppingPage = () => {
     <div className="shopping-page">
       <div className="shopping-hero">
         <div className="container">
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
+          <h1>{t.pages.shopping.title}</h1>
+          <p>{t.pages.shopping.subtitle}</p>
         </div>
       </div>
 
@@ -201,7 +174,7 @@ const ShoppingPage = () => {
           <FiSearch />
           <input
             type="text"
-            placeholder={t.searchPlaceholder}
+            placeholder={t.pages.shopping.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -216,7 +189,7 @@ const ShoppingPage = () => {
                 className={`district-btn ${districtFilter === d.id ? 'active' : ''}`}
                 onClick={() => setDistrictFilter(d.id)}
               >
-                {language === 'ko' ? d.ko : d.en}
+                {d[language]}
               </button>
             ))}
           </div>
@@ -227,7 +200,7 @@ const ShoppingPage = () => {
                 className={`dong-btn ${dongFilter === 'all' ? 'active' : ''}`}
                 onClick={() => setDongFilter('all')}
               >
-                {language === 'ko' ? '전체 동' : 'All Dong'}
+                {t.common.allDong}
               </button>
               {availableDongs.map(dong => (
                 <button
@@ -249,24 +222,24 @@ const ShoppingPage = () => {
               className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
               onClick={() => setSortBy('name')}
             >
-              {language === 'ko' ? '가나다순' : 'Name'}
+              {t.ui.sortByName}
             </button>
             <button
               className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
               onClick={() => setSortBy('views')}
             >
-              {language === 'ko' ? '조회수순' : 'Views'}
+              {t.ui.sortByViews}
             </button>
           </div>
           <div className="shopping-count">
-            {t.totalCount.replace('{count}', filteredShops.length)}
+            {t.pages.shopping.totalCount.replace('{count}', filteredShops.length)}
           </div>
         </div>
 
         {loading ? (
-          <div className="loading">{t.loading}</div>
+          <div className="loading">{t.pages.shopping.loading}</div>
         ) : paginatedShops.length === 0 ? (
-          <div className="no-results">{t.noResults}</div>
+          <div className="no-results">{t.pages.shopping.noResults}</div>
         ) : (
           <div className="shopping-grid">
             {paginatedShops.map((shop, index) => (
@@ -285,9 +258,9 @@ const ShoppingPage = () => {
                       {getIcon(shop.shppgNm)}
                     </div>
                     <div className="shopping-title">
-                      <h3>{shop.shppgNm || '쇼핑 명소'}</h3>
+                      <h3>{shop.shppgNm || t.pages.shopping.defaultName}</h3>
                       {shop.salsTime && (
-                        <span className="shop-time">{language === 'ko' ? '영업: ' : 'Hours: '}{shop.salsTime}</span>
+                        <span className="shop-time">{t.pages.shopping.hoursPrefix}{shop.salsTime}</span>
                       )}
                     </div>
                   </div>
@@ -311,7 +284,7 @@ const ShoppingPage = () => {
                     {/* 쉬는날: intro_info.restdateshopping */}
                     {shop.intro_info?.restdateshopping && (
                       <div className="info-item rest-day">
-                        <span>📅 {language === 'ko' ? '휴무' : 'Closed'}: {cleanIntroHtml(shop.intro_info.restdateshopping)}</span>
+                        <span>📅 {t.detail.closed}: {cleanIntroHtml(shop.intro_info.restdateshopping)}</span>
                       </div>
                     )}
                     
@@ -342,7 +315,7 @@ const ShoppingPage = () => {
                         rel="noopener noreferrer"
                         className="homepage-link"
                       >
-                        {language === 'ko' ? '홈페이지' : 'Website'}
+                        {t.ui.website}
                       </a>
                     )}
                   </div>
@@ -352,7 +325,7 @@ const ShoppingPage = () => {
                     onClick={() => handleNavigate(shop)}
                   >
                     <FiNavigation />
-                    {t.navigate}
+                    {t.ui.navigate}
                   </button>
                 </div>
               </div>
@@ -366,14 +339,14 @@ const ShoppingPage = () => {
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
             >
-              이전
+              {t.ui.prev}
             </button>
             <span>{currentPage} / {totalPages}</span>
             <button 
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
             >
-              다음
+              {t.ui.next}
             </button>
           </div>
         )}

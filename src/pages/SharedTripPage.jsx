@@ -22,7 +22,7 @@ const DAY_COLORS = [
 const SharedTripPage = () => {
   const { tripId } = useParams()
   const navigate = useNavigate()
-  const { language } = useLanguage()
+  const { language, t } = useLanguage()
   
   const [trip, setTrip] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -352,7 +352,7 @@ const SharedTripPage = () => {
       // 클립보드에 복사
       try {
         await navigator.clipboard.writeText(shareUrl)
-        alert(language === 'ko' ? '링크가 복사되었습니다!' : 'Link copied!')
+        alert(t.common.linkCopied)
       } catch (err) {
         // 복사 실패
       }
@@ -597,7 +597,7 @@ const SharedTripPage = () => {
       <div className="shared-trip-page">
         <div className="shared-trip-loading">
           <div className="loading-spinner" />
-          <p>{language === 'ko' ? '여행 계획을 불러오는 중...' : 'Loading trip plan...'}</p>
+          <p>{t.common.loadingTrip}</p>
         </div>
       </div>
     )
@@ -607,10 +607,10 @@ const SharedTripPage = () => {
     return (
       <div className="shared-trip-page">
         <div className="shared-trip-error">
-          <h2>{language === 'ko' ? '오류' : 'Error'}</h2>
-          <p>{error || (language === 'ko' ? '여행 계획을 찾을 수 없습니다.' : 'Trip plan not found.')}</p>
+          <h2>{t.ui.error}</h2>
+          <p>{error || t.common.tripNotFound}</p>
           <Link to="/" className="back-home-btn">
-            <FiArrowLeft /> {language === 'ko' ? '홈으로 돌아가기' : 'Back to Home'}
+            <FiArrowLeft /> {t.common.backToHome}
           </Link>
         </div>
       </div>
@@ -630,7 +630,7 @@ const SharedTripPage = () => {
       >
         <button className="back-btn" onClick={() => navigate(-1)}>
           <FiArrowLeft />
-          {language === 'ko' ? '뒤로' : 'Back'}
+          {t.ui.back}
         </button>
         
         <div className="hero-content">
@@ -638,10 +638,10 @@ const SharedTripPage = () => {
           
           <div className="trip-meta">
             <span className="meta-item">
-              <FiUser /> {trip.authorNickname || (language === 'ko' ? '익명' : 'Anonymous')}
+              <FiUser /> {trip.authorNickname || t.ui.anonymous}
             </span>
             <span className="meta-item">
-              <FiCalendar /> {trip.days?.length || 1}{language === 'ko' ? '일' : ' day(s)'}
+              <FiCalendar /> {trip.days?.length || 1}{t.trip.days}
             </span>
             <span className="meta-item">
               <FiEye /> {trip.viewCount || 0}
@@ -659,7 +659,7 @@ const SharedTripPage = () => {
             </button>
             <button className="action-btn share-btn" onClick={handleShare}>
               <FiShare2 />
-              {language === 'ko' ? '공유' : 'Share'}
+              {t.ui.share}
             </button>
           </div>
         </div>
@@ -671,7 +671,7 @@ const SharedTripPage = () => {
           {/* 지도 섹션 */}
           <div className="trip-map-section">
             <div className="map-header">
-              <h2><FiMap /> {language === 'ko' ? '여행 경로' : 'Trip Route'}</h2>
+              <h2><FiMap /> {t.trip.route}</h2>
               <div className="day-selector">
                 {trip.days?.map((_, idx) => (
                   <button
@@ -682,7 +682,7 @@ const SharedTripPage = () => {
                     }}
                     onClick={() => setSelectedDay(idx)}
                   >
-                    {language === 'ko' ? `${idx + 1}일차` : `Day ${idx + 1}`}
+                    {language === 'ko' ? `${idx + 1}${t.trip.day}` : `Day ${idx + 1}`}
                   </button>
                 ))}
               </div>
@@ -693,7 +693,7 @@ const SharedTripPage = () => {
                 {trip.days?.map((day, idx) => (
                   <div key={idx} className="legend-item" style={{ opacity: selectedDay === idx ? 1 : 0.5 }}>
                     <span className="legend-color" style={{ backgroundColor: DAY_COLORS[idx % DAY_COLORS.length] }}></span>
-                    <span>{language === 'ko' ? `${idx + 1}일차` : `Day ${idx + 1}`} ({day.places?.length || 0}{language === 'ko' ? '곳' : ' places'})</span>
+                    <span>{language === 'ko' ? `${idx + 1}${t.trip.day}` : `Day ${idx + 1}`} ({day.places?.length || 0}{t.trip.places})</span>
                   </div>
                 ))}
               </div>
@@ -712,7 +712,7 @@ const SharedTripPage = () => {
                   >
                     <div className="day-header" style={{ '--day-color': DAY_COLORS[dayIndex % DAY_COLORS.length] }}>
                       <span className="day-number">
-                        {language === 'ko' ? `${dayIndex + 1}일차` : `Day ${dayIndex + 1}`}
+                        {language === 'ko' ? `${dayIndex + 1}${t.trip.day}` : `Day ${dayIndex + 1}`}
                       </span>
                       {day.date && (
                         <span className="day-date">
@@ -741,7 +741,7 @@ const SharedTripPage = () => {
                       ) : (
                         <div className="no-places">
                           <FiMapPin />
-                          <p>{language === 'ko' ? '이 날에는 장소가 없습니다.' : 'No places for this day.'}</p>
+                          <p>{t.trip.noPlaces}</p>
                         </div>
                       )}
                     </div>
@@ -750,7 +750,7 @@ const SharedTripPage = () => {
               ) : (
                 <div className="empty-trip">
                   <FiMapPin />
-                  <p>{language === 'ko' ? '아직 일정이 없습니다.' : 'No itinerary yet.'}</p>
+                  <p>{t.trip.noItinerary}</p>
                 </div>
               )}
             </div>
@@ -780,7 +780,7 @@ const SharedTripPage = () => {
                   {detailLoading && (
                     <div className="detail-loading">
                       <div className="loading-spinner small" />
-                      <span>{language === 'ko' ? '상세 정보 로딩 중...' : 'Loading details...'}</span>
+                      <span>{t.common.loadingDetails}</span>
                     </div>
                   )}
                   
@@ -796,42 +796,42 @@ const SharedTripPage = () => {
                       {placeDetail.tel && (
                         <div className="detail-row">
                           <FiInfo />
-                          <span>{language === 'ko' ? '전화' : 'Tel'}: {placeDetail.tel}</span>
+                          <span>{t.detail.phone}: {placeDetail.tel}</span>
                         </div>
                       )}
                       
                       {placeDetail.operatingHours && (
                         <div className="detail-row">
                           <FiClock />
-                          <span>{language === 'ko' ? '운영시간' : 'Hours'}: {placeDetail.operatingHours}</span>
+                          <span>{t.detail.hours}: {placeDetail.operatingHours}</span>
                         </div>
                       )}
                       
                       {placeDetail.closedDays && (
                         <div className="detail-row">
                           <FiCalendar />
-                          <span>{language === 'ko' ? '휴무일' : 'Closed'}: {placeDetail.closedDays}</span>
+                          <span>{t.detail.closed}: {placeDetail.closedDays}</span>
                         </div>
                       )}
                       
                       {(placeDetail.fee || placeDetail.price) && (
                         <div className="detail-row">
                           <FiInfo />
-                          <span>{language === 'ko' ? '요금/가격' : 'Price'}: {placeDetail.fee || placeDetail.price}</span>
+                          <span>{t.detail.fee}: {placeDetail.fee || placeDetail.price}</span>
                         </div>
                       )}
                       
                       {placeDetail.menu && (
                         <div className="detail-row">
                           <FiInfo />
-                          <span>{language === 'ko' ? '메뉴' : 'Menu'}: {placeDetail.menu}</span>
+                          <span>{t.detail.menu}: {placeDetail.menu}</span>
                         </div>
                       )}
                       
                       {placeDetail.period && (
                         <div className="detail-row">
                           <FiCalendar />
-                          <span>{language === 'ko' ? '기간' : 'Period'}: {placeDetail.period}</span>
+                          <span>{t.common.period}: {placeDetail.period}</span>
                         </div>
                       )}
                       
@@ -839,7 +839,7 @@ const SharedTripPage = () => {
                         <div className="detail-row">
                           <FiInfo />
                           <a href={placeDetail.homepage} target="_blank" rel="noopener noreferrer" className="detail-link">
-                            {language === 'ko' ? '홈페이지 방문' : 'Visit Website'}
+                            {t.common.visitWebsite}
                           </a>
                         </div>
                       )}
@@ -857,13 +857,13 @@ const SharedTripPage = () => {
                   {selectedPlace.stayDuration && (
                     <div className="detail-row">
                       <FiClock />
-                      <span>{selectedPlace.stayDuration}{language === 'ko' ? '분 예상' : ' min estimated'}</span>
+                      <span>{selectedPlace.stayDuration}{t.transport.minutes} {t.transport.estimated}</span>
                     </div>
                   )}
                   
                   {selectedPlace.memo && (
                     <div className="detail-memo">
-                      <strong>{language === 'ko' ? '메모' : 'Note'}</strong>
+                      <strong>{t.trip.memo}</strong>
                       <p>{selectedPlace.memo}</p>
                     </div>
                   )}
@@ -873,14 +873,14 @@ const SharedTripPage = () => {
                     onClick={() => handleDirection(selectedPlace)}
                   >
                     <FiNavigation />
-                    {language === 'ko' ? '카카오맵으로 길찾기' : 'Get Directions'}
+                    {t.common.getDirections}
                   </button>
                   
                   {/* 다음 장소로 이동하는 대중교통 정보 */}
                   {transitLoading && (
                     <div className="transit-loading">
                       <div className="loading-spinner small" />
-                      <span>{language === 'ko' ? '대중교통 정보 조회 중...' : 'Loading transit info...'}</span>
+                      <span>{t.transport.loadingTransit}</span>
                     </div>
                   )}
                   
@@ -889,8 +889,8 @@ const SharedTripPage = () => {
                       <h4 className="transit-title">
                         <FiNavigation />
                         {language === 'ko' 
-                          ? `${transitInfo.nextPlaceName}까지 이동`
-                          : `To ${transitInfo.nextPlaceName}`
+                          ? `${transitInfo.nextPlaceName}${t.transport.toPlace}`
+                          : `${t.transport.toPlace} ${transitInfo.nextPlaceName}`
                         }
                       </h4>
                       
@@ -899,9 +899,9 @@ const SharedTripPage = () => {
                         <div className="transit-card bus">
                           <div className="transit-header">
                             <FaBus className="transit-icon bus" />
-                            <span className="transit-type">{language === 'ko' ? '버스' : 'Bus'}</span>
+                            <span className="transit-type">{t.transport.bus}</span>
                             <span className="transit-time">
-                              {transitInfo.bus.totalTime}{language === 'ko' ? '분' : ' min'}
+                              {transitInfo.bus.totalTime}{t.transport.minutes}
                             </span>
                           </div>
                           
@@ -951,7 +951,7 @@ const SharedTripPage = () => {
                           {!transitInfo.bus.segments && !transitInfo.bus.routeDetails && transitInfo.bus.routes?.length > 0 && (
                             <div className="transit-routes">
                               <span className="routes-label">
-                                {language === 'ko' ? '이용 가능 노선' : 'Available routes'}:
+                                {t.transport.availableRoutes}:
                               </span>
                               <div className="bus-routes">
                                 {transitInfo.bus.routes.slice(0, 5).map((busNo, idx) => (
@@ -968,9 +968,9 @@ const SharedTripPage = () => {
                         <div className="transit-card subway">
                           <div className="transit-header">
                             <FaSubway className="transit-icon subway" />
-                            <span className="transit-type">{language === 'ko' ? '지하철' : 'Subway'}</span>
+                            <span className="transit-type">{t.transport.subway}</span>
                             <span className="transit-time">
-                              {transitInfo.subway.totalTime}{language === 'ko' ? '분' : ' min'}
+                              {transitInfo.subway.totalTime}{t.transport.minutes}
                             </span>
                           </div>
                           
@@ -1026,7 +1026,7 @@ const SharedTripPage = () => {
                           {!transitInfo.subway.segments && !transitInfo.subway.routeDetails && transitInfo.subway.lines?.length > 0 && (
                             <div className="transit-routes">
                               <span className="routes-label">
-                                {language === 'ko' ? '이용 노선' : 'Line'}:
+                                {t.transport.line}:
                               </span>
                               <div className="subway-lines">
                                 {transitInfo.subway.lines.map((line, idx) => (
@@ -1047,21 +1047,21 @@ const SharedTripPage = () => {
                             {transitInfo.transportType === 'walk' && <FaWalking className="transit-icon walk" />}
                             {transitInfo.transportType === 'bicycle' && <FaBicycle className="transit-icon bicycle" />}
                             <span className="transit-type">
-                              {transitInfo.transportType === 'taxi' && (language === 'ko' ? '택시' : 'Taxi')}
-                              {transitInfo.transportType === 'car' && (language === 'ko' ? '자가용' : 'Car')}
-                              {transitInfo.transportType === 'walk' && (language === 'ko' ? '도보' : 'Walk')}
-                              {transitInfo.transportType === 'bicycle' && (language === 'ko' ? '자전거' : 'Bicycle')}
+                              {transitInfo.transportType === 'taxi' && t.transport.taxi}
+                              {transitInfo.transportType === 'car' && t.transport.car}
+                              {transitInfo.transportType === 'walk' && t.transport.walk}
+                              {transitInfo.transportType === 'bicycle' && t.transport.bicycle}
                             </span>
                             {transitInfo.duration && (
                               <span className="transit-time">
-                                {transitInfo.duration}{language === 'ko' ? '분' : ' min'}
+                                {transitInfo.duration}{t.transport.minutes}
                               </span>
                             )}
                           </div>
                           {transitInfo.distance && (
                             <div className="transit-details">
                               <span className="transit-distance">
-                                {language === 'ko' ? '거리' : 'Distance'}: {typeof transitInfo.distance === 'number' && transitInfo.distance >= 1 
+                                {t.transport.distance}: {typeof transitInfo.distance === 'number' && transitInfo.distance >= 1 
                                   ? `${transitInfo.distance.toFixed(1)}km`
                                   : `${Math.round((transitInfo.distance || 0) * 1000)}m`}
                               </span>
@@ -1076,7 +1076,7 @@ const SharedTripPage = () => {
                        !['taxi', 'car', 'walk', 'bicycle'].includes(transitInfo.transportType) && (
                         <div className="no-transit">
                           <FaWalking />
-                          <span>{language === 'ko' ? '도보 또는 자가용 이용' : 'Walk or drive'}</span>
+                          <span>{t.transport.walkOrDrive}</span>
                         </div>
                       )}
                     </div>
@@ -1087,7 +1087,7 @@ const SharedTripPage = () => {
               {!selectedPlace && (
                 <div className="no-selection">
                   <FiInfo />
-                  <p>{language === 'ko' ? '장소를 클릭하면 상세 정보를 볼 수 있습니다' : 'Click a place to view details'}</p>
+                  <p>{t.trip.clickToViewDetails}</p>
                 </div>
               )}
             </div>
@@ -1098,9 +1098,9 @@ const SharedTripPage = () => {
       {/* 하단 CTA */}
       <div className="shared-trip-cta">
         <div className="container">
-          <p>{language === 'ko' ? '나만의 여행 계획을 만들어보세요!' : 'Create your own travel plan!'}</p>
+          <p>{t.trip.createYourOwn}</p>
           <Link to="/my-trip" className="create-trip-btn">
-            {language === 'ko' ? '내 여행 만들기' : 'Create My Trip'}
+            {t.trip.createMyTrip}
           </Link>
         </div>
       </div>

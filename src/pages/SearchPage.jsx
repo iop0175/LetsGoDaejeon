@@ -183,17 +183,17 @@ const SearchPage = () => {
   const totalResults = tourTotal + restaurantTotal + eventTotal
 
   const tabs = [
-    { id: 'all', label: language === 'ko' ? '전체' : 'All', count: totalResults },
-    { id: 'tour', label: language === 'ko' ? '관광지' : 'Attractions', count: tourTotal },
-    { id: 'food', label: language === 'ko' ? '맛집' : 'Restaurants', count: restaurantTotal },
-    { id: 'event', label: language === 'ko' ? '공연/행사' : 'Events', count: eventTotal }
+    { id: 'all', label: t.pages.search.all, count: totalResults },
+    { id: 'tour', label: t.pages.search.attractions, count: tourTotal },
+    { id: 'food', label: t.pages.search.restaurants, count: restaurantTotal },
+    { id: 'event', label: t.pages.search.events, count: eventTotal }
   ]
 
   return (
     <div className="search-page">
       <div className="search-hero">
         <div className="container">
-          <h1>{language === 'ko' ? '통합 검색' : 'Search'}</h1>
+          <h1>{t.pages.search.title}</h1>
           <form className="search-form" onSubmit={handleSearch}>
             <div className="search-input-wrapper">
               <FiSearch className="search-icon" />
@@ -201,7 +201,7 @@ const SearchPage = () => {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder={language === 'ko' ? '관광지, 맛집, 공연 검색...' : 'Search attractions, restaurants, events...'}
+                placeholder={t.pages.search.placeholder}
                 autoFocus
               />
               {query && (
@@ -211,7 +211,7 @@ const SearchPage = () => {
               )}
             </div>
             <button type="submit" className="search-submit">
-              {language === 'ko' ? '검색' : 'Search'}
+              {t.pages.search.searchButton}
             </button>
           </form>
           
@@ -220,7 +220,7 @@ const SearchPage = () => {
             <div className="popular-keywords">
               <div className="popular-label">
                 <FiTrendingUp />
-                {language === 'ko' ? '인기 검색어' : 'Popular Searches'}
+                {t.pages.search.popularSearches}
               </div>
               <div className="popular-tags">
                 {popularSearches.map((item, index) => (
@@ -243,13 +243,13 @@ const SearchPage = () => {
         {loading ? (
           <div className="loading-container">
             <FiLoader className="loading-spinner" />
-            <p>{language === 'ko' ? '검색 중...' : 'Searching...'}</p>
+            <p>{t.pages.search.searching}</p>
           </div>
         ) : searchTerm ? (
           <>
             <div className="search-summary">
-              <strong>"{searchTerm}"</strong> {language === 'ko' ? '검색 결과' : 'search results'}
-              <span className="result-count">{totalResults}{language === 'ko' ? '건' : ' results'}</span>
+              <strong>"{searchTerm}"</strong> {t.pages.search.searchResults}
+              <span className="result-count">{totalResults}{t.pages.search.results}</span>
             </div>
             
             <div className="search-tabs">
@@ -271,7 +271,7 @@ const SearchPage = () => {
                 <div className="result-section">
                   {activeTab === 'all' && (
                     <h2 className="section-title">
-                      {language === 'ko' ? '관광지' : 'Attractions'} 
+                      {t.pages.search.attractions} 
                       <span>({tourTotal})</span>
                     </h2>
                   )}
@@ -284,7 +284,7 @@ const SearchPage = () => {
                             alt={item.tourspotNm}
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
-                          <span className="result-badge tour">{language === 'ko' ? '관광지' : 'Attraction'}</span>
+                          <span className="result-badge tour">{t.pages.search.attractions}</span>
                         </div>
                         <div className="result-content">
                           <h3>{item.tourspotNm}</h3>
@@ -299,7 +299,7 @@ const SearchPage = () => {
                   </div>
                   {activeTab === 'all' && tourTotal > 4 && (
                     <button className="see-more-btn" onClick={() => setActiveTab('tour')}>
-                      {language === 'ko' ? '관광지 더보기' : 'See more attractions'} ({tourTotal - 4}+)
+                      {t.pages.search.seeMoreAttractions} ({tourTotal - 4}+)
                     </button>
                   )}
                 </div>
@@ -310,7 +310,7 @@ const SearchPage = () => {
                 <div className="result-section">
                   {activeTab === 'all' && (
                     <h2 className="section-title">
-                      {language === 'ko' ? '맛집' : 'Restaurants'}
+                      {t.pages.search.restaurants}
                       <span>({restaurantTotal})</span>
                     </h2>
                   )}
@@ -323,7 +323,7 @@ const SearchPage = () => {
                             alt={item.restrntNm}
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
-                          <span className="result-badge food">{language === 'ko' ? '맛집' : 'Restaurant'}</span>
+                          <span className="result-badge food">{t.pages.search.restaurants}</span>
                         </div>
                         <div className="result-content">
                           <h3>{item.restrntNm}</h3>
@@ -339,7 +339,7 @@ const SearchPage = () => {
                   </div>
                   {activeTab === 'all' && restaurantTotal > 4 && (
                     <button className="see-more-btn" onClick={() => setActiveTab('food')}>
-                      {language === 'ko' ? '맛집 더보기' : 'See more restaurants'} ({restaurantTotal - 4}+)
+                      {t.pages.search.seeMoreRestaurants} ({restaurantTotal - 4}+)
                     </button>
                   )}
                 </div>
@@ -350,7 +350,7 @@ const SearchPage = () => {
                 <div className="result-section">
                   {activeTab === 'all' && (
                     <h2 className="section-title">
-                      {language === 'ko' ? '공연/행사' : 'Events'}
+                      {t.pages.search.events}
                       <span>({eventTotal})</span>
                     </h2>
                   )}
@@ -363,7 +363,7 @@ const SearchPage = () => {
                             alt={item.title}
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
-                          <span className="result-badge event">{item.themeCdNm || (language === 'ko' ? '공연' : 'Event')}</span>
+                          <span className="result-badge event">{item.themeCdNm || t.pages.search.events}</span>
                         </div>
                         <div className="result-content">
                           <h3>{item.title}</h3>
@@ -381,7 +381,7 @@ const SearchPage = () => {
                   </div>
                   {activeTab === 'all' && eventTotal > 4 && (
                     <button className="see-more-btn" onClick={() => setActiveTab('event')}>
-                      {language === 'ko' ? '공연/행사 더보기' : 'See more events'} ({eventTotal - 4}+)
+                      {t.pages.search.seeMoreEvents} ({eventTotal - 4}+)
                     </button>
                   )}
                 </div>
@@ -391,12 +391,8 @@ const SearchPage = () => {
               {totalResults === 0 && (
                 <div className="no-results">
                   <div className="no-results-icon">🔍</div>
-                  <h3>{language === 'ko' ? '검색 결과가 없습니다' : 'No results found'}</h3>
-                  <p>
-                    {language === 'ko' 
-                      ? '다른 검색어로 다시 시도해보세요.'
-                      : 'Try searching with different keywords.'}
-                  </p>
+                  <h3>{t.pages.search.noResults}</h3>
+                  <p>{t.pages.search.noResultsHint}</p>
                 </div>
               )}
             </div>
@@ -404,14 +400,10 @@ const SearchPage = () => {
         ) : (
           <div className="search-placeholder">
             <div className="placeholder-icon">🔍</div>
-            <h3>{language === 'ko' ? '검색어를 입력해주세요' : 'Enter your search term'}</h3>
-            <p>
-              {language === 'ko' 
-                ? '대전의 관광지, 맛집, 공연/행사를 검색해보세요.'
-                : 'Search for attractions, restaurants, and events in Daejeon.'}
-            </p>
+            <h3>{t.pages.search.enterSearchTerm}</h3>
+            <p>{t.pages.search.searchDescription}</p>
             <div className="search-suggestions">
-              <span>{language === 'ko' ? '추천 검색어:' : 'Suggestions:'}</span>
+              <span>{t.pages.search.suggestions}</span>
               {['유성온천', '성심당', '엑스포', '칼국수', '대전예술의전당'].map(term => (
                 <button key={term} onClick={() => { setQuery(term); }}>
                   {term}

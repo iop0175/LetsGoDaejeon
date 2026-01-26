@@ -9,7 +9,7 @@ import './SharedTripsPage.css'
 const TRAVEL_PLACEHOLDER = '/images/travel-placeholder.svg'
 
 function SharedTripsPage() {
-  const { language } = useLanguage()
+  const { t } = useLanguage()
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -125,8 +125,8 @@ function SharedTripsPage() {
   return (
     <div className="shared-trips-page">
       <div className="shared-trips-header">
-        <h1>{language === 'ko' ? '여행코스' : 'Travel Courses'}</h1>
-        <p>{language === 'ko' ? '다른 여행자들의 대전 여행 코스를 둘러보세요' : 'Browse travel courses from other travelers'}</p>
+        <h1>{t.pages.sharedTrips.title}</h1>
+        <p>{t.pages.sharedTrips.subtitle}</p>
       </div>
       
       <div className="shared-trips-controls">
@@ -134,7 +134,7 @@ function SharedTripsPage() {
           <FaSearch />
           <input
             type="text"
-            placeholder={language === 'ko' ? '코스 검색...' : 'Search courses...'}
+            placeholder={t.pages.sharedTrips.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -144,19 +144,19 @@ function SharedTripsPage() {
             className={sortBy === 'latest' ? 'active' : ''}
             onClick={() => setSortBy('latest')}
           >
-            {language === 'ko' ? '최신순' : 'Latest'}
+            {t.pages.sharedTrips.latest}
           </button>
           <button 
             className={sortBy === 'popular' ? 'active' : ''}
             onClick={() => setSortBy('popular')}
           >
-            {language === 'ko' ? '인기순' : 'Popular'}
+            {t.pages.sharedTrips.popular}
           </button>
           <button 
             className={sortBy === 'likes' ? 'active' : ''}
             onClick={() => setSortBy('likes')}
           >
-            {language === 'ko' ? '좋아요순' : 'Most Liked'}
+            {t.pages.sharedTrips.mostLiked}
           </button>
         </div>
       </div>
@@ -164,7 +164,7 @@ function SharedTripsPage() {
       {loading ? (
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>{language === 'ko' ? '여행코스 불러오는 중...' : 'Loading travel courses...'}</p>
+          <p>{t.pages.sharedTrips.loadingCourses}</p>
         </div>
       ) : (
         <>
@@ -172,7 +172,7 @@ function SharedTripsPage() {
           {adminTrips.length > 0 && (
             <section className="trips-section recommended-section">
               <h2>
-                <FaStar /> {language === 'ko' ? '추천 여행코스' : 'Recommended Courses'}
+                <FaStar /> {t.pages.sharedTrips.recommended}
               </h2>
               <div className="trips-grid">
                 {adminTrips.map(trip => (
@@ -185,7 +185,7 @@ function SharedTripsPage() {
           {/* 사용자 여행 코스 */}
           {userTrips.length > 0 && (
             <section className="trips-section user-section">
-              <h2>{language === 'ko' ? '여행자 코스' : 'User Courses'}</h2>
+              <h2>{t.pages.sharedTrips.userCourses}</h2>
               <div className="trips-grid">
                 {userTrips.map(trip => (
                   <TripCard key={trip.id} trip={trip} />
@@ -197,7 +197,7 @@ function SharedTripsPage() {
           {filteredTrips.length === 0 && (
             <div className="no-trips">
               <FaMapMarkerAlt />
-              <p>{language === 'ko' ? '등록된 여행코스가 없습니다' : 'No travel courses found'}</p>
+              <p>{t.pages.sharedTrips.noTrips}</p>
             </div>
           )}
         </>
