@@ -480,6 +480,9 @@ const SpotDetailPage = () => {
     const shareImage = allImages?.[0] || spot?.firstimage || ''
     const shareDescription = spot?.overview?.substring(0, 100) || spot?.addr1 || '대전으로 떠나는 여행'
     
+    console.log('공유 URL:', shareUrl) // 디버깅용
+    console.log('isLocalhost:', isLocalhost) // 디버깅용
+    
     // 카카오 SDK 사용
     if (window.Kakao && window.Kakao.isInitialized()) {
       try {
