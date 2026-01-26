@@ -3,17 +3,8 @@ import { FiMapPin, FiList, FiX, FiNavigation, FiPhone, FiClock, FiLoader } from 
 import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
+import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import './MapPage.css'
-
-// 대전시 구 목록
-const DISTRICTS = [
-  { id: 'all', ko: '전체 지역', en: 'All Districts' },
-  { id: '동구', ko: '동구', en: 'Dong-gu' },
-  { id: '중구', ko: '중구', en: 'Jung-gu' },
-  { id: '서구', ko: '서구', en: 'Seo-gu' },
-  { id: '유성구', ko: '유성구', en: 'Yuseong-gu' },
-  { id: '대덕구', ko: '대덕구', en: 'Daedeok-gu' }
-]
 
 const MapPage = () => {
   const { language } = useLanguage()
@@ -43,18 +34,10 @@ const MapPage = () => {
   // 주소에서 구 추출
   const getDistrictFromAddr = (addr) => {
     if (!addr) return null
-    const districts = ['동구', '중구', '서구', '유성구', '대덕구']
-    for (const district of districts) {
+    for (const district of DISTRICT_NAMES) {
       if (addr.includes(district)) return district
     }
     return null
-  }
-
-  // 주소에서 동 추출
-  const getDongFromAddr = (addr) => {
-    if (!addr) return null
-    const dongMatch = addr.match(/([가-힣]+동)/)
-    return dongMatch ? dongMatch[1] : null
   }
 
   // 선택된 구에 해당하는 동 목록 추출 (중복 제거)

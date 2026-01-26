@@ -1,25 +1,15 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiImage } from 'react-icons/fi'
+import { FiMapPin, FiLoader, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpotImage, getTourApiImages } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
-import TravelCard from '../components/TravelCard/TravelCard'
+import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
 import LicenseBadge from '../components/common/LicenseBadge'
 import './TravelPage.css'
-
-// 대전시 구 목록
-const DISTRICTS = [
-  { id: 'all', ko: '전체 지역', en: 'All Districts' },
-  { id: '동구', ko: '동구', en: 'Dong-gu' },
-  { id: '중구', ko: '중구', en: 'Jung-gu' },
-  { id: '서구', ko: '서구', en: 'Seo-gu' },
-  { id: '유성구', ko: '유성구', en: 'Yuseong-gu' },
-  { id: '대덕구', ko: '대덕구', en: 'Daedeok-gu' }
-]
 
 const TravelPage = () => {
   const { language, t } = useLanguage()
@@ -48,32 +38,6 @@ const TravelPage = () => {
   const [selectedDayId, setSelectedDayId] = useState(null)
   const [tripsLoading, setTripsLoading] = useState(false)
   const [addingToTrip, setAddingToTrip] = useState(false)
-
-  // 지역 추출 함수
-  const extractDistrict = (address) => {
-    if (!address) return { ko: '대전', en: 'Daejeon', district: null }
-    // "대전광역시", "대전시", "대전" 모두 지원
-    const match = address.match(/대전\s*(광역시|시)?\s*(\S+구)/)
-    if (match) {
-      const district = match[2]
-      const districtMap = {
-        '유성구': 'Yuseong-gu',
-        '서구': 'Seo-gu',
-        '중구': 'Jung-gu',
-        '동구': 'Dong-gu',
-        '대덕구': 'Daedeok-gu'
-      }
-      return { ko: district, en: districtMap[district] || district, district }
-    }
-    return { ko: '대전', en: 'Daejeon', district: null }
-  }
-
-  // 주소에서 동 추출
-  const getDongFromAddr = (addr) => {
-    if (!addr) return null
-    const dongMatch = addr.match(/([가-힣]+동)/)
-    return dongMatch ? dongMatch[1] : null
-  }
 
   // 선택된 구에 해당하는 동 목록 추출 (중복 제거)
   const availableDongs = useMemo(() => {
@@ -400,6 +364,7 @@ const TravelPage = () => {
                       <img 
                         src={spot.ktoImage || spot.image} 
                         alt={spot.title}
+                        loading="lazy"
                         onError={(e) => {
                           e.target.src = '/images/no-image.svg'
                         }}

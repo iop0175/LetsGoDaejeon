@@ -290,6 +290,7 @@ const SpotDetailPage = () => {
   const [addressCopied, setAddressCopied] = useState(false)
   
   const [showAddModal, setShowAddModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [tripPlans, setTripPlans] = useState([])
   const [selectedTripId, setSelectedTripId] = useState(null)
   const [selectedDayId, setSelectedDayId] = useState(null)
@@ -462,23 +463,79 @@ const SpotDetailPage = () => {
     }
   }
   
-  const handleShare = async () => {
-    const shareData = {
-      title: spot?.title || '대전 관광지',
-      text: spot?.overview?.substring(0, 100) || '',
-      url: window.location.href
-    }
+  const handleShare = () => {
+    setShowShareModal(true)
+  }
+  
+  const handleKakaoShare = () => {
+    const shareUrl = window.location.href
+    const shareTitle = spot?.title || '대전 관광지'
+    const shareImage = allImages?.[0] || spot?.firstimage || ''
+    const shareDescription = spot?.overview?.substring(0, 100) || spot?.addr1 || '대전으로 떠나는 여행'
     
-    if (navigator.share) {
+    // 카카오 SDK 사용
+    if (window.Kakao && window.Kakao.isInitialized()) {
       try {
-        await navigator.share(shareData)
-      } catch (err) {}
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: shareTitle,
+            description: shareDescription,
+            imageUrl: shareImage || 'https://letsgodaejeon.vercel.app/images/og-image.png',
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          buttons: [
+            {
+              title: '자세히 보기',
+              link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl,
+              },
+            },
+          ],
+        })
+      } catch (err) {
+        console.error('카카오 공유 실패:', err)
+        // fallback: 링크 복사
+        handleCopyLink()
+        return
+      }
     } else {
-      try {
-        await navigator.clipboard.writeText(window.location.href)
-        alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
-      } catch (err) {}
+      // 카카오 SDK 미초기화 시 Web Share API 또는 링크 복사
+      if (navigator.share) {
+        navigator.share({
+          title: shareTitle,
+          text: `${shareTitle} - 대전으로에서 확인하세요!`,
+          url: shareUrl
+        }).catch(() => {
+          handleCopyLink()
+        })
+      } else {
+        handleCopyLink()
+        return
+      }
     }
+    setShowShareModal(false)
+  }
+  
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
+    } catch (err) {
+      // fallback
+      const textArea = document.createElement('textarea')
+      textArea.value = window.location.href
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
+    }
+    setShowShareModal(false)
   }
 
   const openAddModal = async () => {
@@ -979,6 +1036,35 @@ const SpotDetailPage = () => {
                   <img src={getReliableImageUrl(img)} alt="" onError={handleImageError} />
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공유 모달 */}
+      {showShareModal && (
+        <div className="sdp__modal-overlay" onClick={() => setShowShareModal(false)}>
+          <div className="sdp__share-modal" onClick={e => e.stopPropagation()}>
+            <div className="sdp__share-modal-header">
+              <h3>{language === 'ko' ? '공유하기' : 'Share'}</h3>
+              <button className="sdp__share-modal-close" onClick={() => setShowShareModal(false)}>×</button>
+            </div>
+            
+            <div className="sdp__share-modal-body">
+              <button className="sdp__share-option sdp__share-option--kakao" onClick={handleKakaoShare}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="#3C1E1E">
+                  <path d="M12 3C6.477 3 2 6.477 2 10.5c0 2.47 1.607 4.647 4.042 5.877l-.992 3.682c-.052.194.017.4.175.514.158.114.37.123.537.023L10.1 17.77c.623.087 1.26.133 1.9.133 5.523 0 10-3.477 10-7.5S17.523 3 12 3z"/>
+                </svg>
+                <span>{language === 'ko' ? '카카오톡' : 'KakaoTalk'}</span>
+              </button>
+              
+              <button className="sdp__share-option sdp__share-option--link" onClick={handleCopyLink}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+                </svg>
+                <span>{language === 'ko' ? '링크 복사' : 'Copy Link'}</span>
+              </button>
             </div>
           </div>
         </div>

@@ -5,6 +5,7 @@ import FestivalSection from '../components/FestivalSection/FestivalSection'
 import FoodSection from '../components/FoodSection/FoodSection'
 import TravelCourse from '../components/TravelCourse/TravelCourse'
 import WeatherWidget from '../components/WeatherWidget/WeatherWidget'
+import KakaoChannelButton from '../components/KakaoChannelButton/KakaoChannelButton'
 import './HomePage.css'
 
 const HomePage = () => {
@@ -21,6 +22,9 @@ const HomePage = () => {
       <div className="weather-sidebar">
         <WeatherWidget />
       </div>
+      
+      {/* 카카오톡 채널 플로팅 버튼 */}
+      <KakaoChannelButton channelUrl="http://pf.kakao.com/_xnxgxkAX" />
     </>
   )
 }

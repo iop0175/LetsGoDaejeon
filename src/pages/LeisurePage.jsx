@@ -1,22 +1,13 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiSun } from 'react-icons/fi'
+import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiNavigation, FiPlus, FiCalendar, FiCheck, FiSun } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
 import { getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
-import { handleImageError, getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils'
+import { DISTRICTS, extractDistrict } from '../utils/constants'
 import './LeisurePage.css'
-
-// 대전시 구 목록
-const DISTRICTS = [
-  { id: 'all', ko: '전체 지역', en: 'All Districts' },
-  { id: '동구', ko: '동구', en: 'Dong-gu' },
-  { id: '중구', ko: '중구', en: 'Jung-gu' },
-  { id: '서구', ko: '서구', en: 'Seo-gu' },
-  { id: '유성구', ko: '유성구', en: 'Yuseong-gu' },
-  { id: '대덕구', ko: '대덕구', en: 'Daedeok-gu' }
-]
 
 const LeisurePage = () => {
   const { language } = useLanguage()
@@ -41,13 +32,6 @@ const LeisurePage = () => {
   const [selectedDayId, setSelectedDayId] = useState(null)
   const [tripsLoading, setTripsLoading] = useState(false)
   const [addingToTrip, setAddingToTrip] = useState(false)
-
-  // 주소에서 구 추출
-  const extractDistrict = (address) => {
-    if (!address) return null
-    const match = address.match(/(동구|중구|서구|유성구|대덕구)/)
-    return match ? match[1] : null
-  }
 
   // 구/정렬 변경 시 페이지 리셋
   useEffect(() => {
@@ -265,6 +249,7 @@ const LeisurePage = () => {
                       <img 
                         src={spot.image} 
                         alt={spot.title} 
+                        loading="lazy"
                         onError={handleImageError}
                       />
                     ) : (
