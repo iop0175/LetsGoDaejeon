@@ -10,25 +10,25 @@ import './LicenseBadge.css'
 const LicenseBadge = ({ type = '1', source = null }) => {
   const { language } = useLanguage()
 
-  // 공공누리 유형별 정보
+  // 공공누리 유형별 정보 (로컬 이미지 사용)
   const koglTypes = {
     '1': {
-      image: 'https://www.kogl.or.kr/images/common/img_opentype01.png',
+      image: '/images/license/kogl-type1.png',
       name: { ko: '공공누리 제1유형: 출처표시', en: 'KOGL Type 1: Attribution' },
       link: 'https://www.kogl.or.kr/info/license.do#702'
     },
     '2': {
-      image: 'https://www.kogl.or.kr/images/common/img_opentype02.png',
+      image: '/images/license/kogl-type2.png',
       name: { ko: '공공누리 제2유형: 출처표시+상업적 이용금지', en: 'KOGL Type 2: Attribution + NonCommercial' },
       link: 'https://www.kogl.or.kr/info/license.do#702'
     },
     '3': {
-      image: 'https://www.kogl.or.kr/images/common/img_opentype03.png',
+      image: '/images/license/kogl-type3.png',
       name: { ko: '공공누리 제3유형: 출처표시+변경금지', en: 'KOGL Type 3: Attribution + NoDerivatives' },
       link: 'https://www.kogl.or.kr/info/license.do#702'
     },
     '4': {
-      image: 'https://www.kogl.or.kr/images/common/img_opentype04.png',
+      image: '/images/license/kogl-type4.png',
       name: { ko: '공공누리 제4유형: 출처표시+상업적 이용금지+변경금지', en: 'KOGL Type 4: Attribution + NonCommercial + NoDerivatives' },
       link: 'https://www.kogl.or.kr/info/license.do#702'
     }
