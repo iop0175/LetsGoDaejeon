@@ -196,13 +196,13 @@ const TravelPage = () => {
       })
       
       if (result.success) {
-        alert(language === 'ko' ? '여행에 추가되었습니다!' : 'Added to your trip!')
+        alert(t.common.addedToTrip)
         closeAddToTripModal()
       } else {
-        alert(result.error || (language === 'ko' ? '추가에 실패했습니다.' : 'Failed to add.'))
+        alert(result.error || t.common.addFailed)
       }
     } catch (err) {
-      alert(language === 'ko' ? '오류가 발생했습니다.' : 'An error occurred.')
+      alert(t.common.errorOccurred)
     }
     setAddingToTrip(false)
   }
@@ -263,19 +263,19 @@ const TravelPage = () => {
             })
             setAllSpots(formattedSpots)
           } else {
-            setError(language === 'ko' ? '관리자 페이지에서 TourAPI 데이터를 먼저 동기화해주세요.' : 'Please sync TourAPI data from admin page first.')
+            setError(t.common.syncRequired)
           }
         }
       } catch (err) {
         console.error('관광지 데이터 로드 실패:', err)
-        setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
+        setError(t.common.loadFailed)
       }
       
       setLoading(false)
     }
 
     loadSpots()
-  }, [language])
+  }, [language, t.common.syncRequired, t.common.loadFailed])
 
   const totalPages = Math.ceil(filteredSpots.length / itemsPerPage)
 
@@ -292,7 +292,7 @@ const TravelPage = () => {
         {loading ? (
           <div className="loading-container">
             <FiLoader className="loading-spinner" />
-            <p>{language === 'ko' ? '관광지 정보를 불러오는 중...' : 'Loading attractions...'}</p>
+            <p>{t.common.loadingAttractions}</p>
           </div>
         ) : error ? (
           <div className="error-container">
@@ -320,7 +320,7 @@ const TravelPage = () => {
                     className={`dong-btn ${dongFilter === 'all' ? 'active' : ''}`}
                     onClick={() => setDongFilter('all')}
                   >
-                    {language === 'ko' ? '전체 동' : 'All Dong'}
+                    {t.common.allDong}
                   </button>
                   {availableDongs.map(dong => (
                     <button
@@ -342,17 +342,17 @@ const TravelPage = () => {
                   className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
                   onClick={() => setSortBy('name')}
                 >
-                  {language === 'ko' ? '가나다순' : 'Name'}
+                  {t.ui.sortByName}
                 </button>
                 <button
                   className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
                   onClick={() => setSortBy('views')}
                 >
-                  {language === 'ko' ? '조회수순' : 'Views'}
+                  {t.ui.sortByViews}
                 </button>
               </div>
               <div className="spots-count">
-                {t.common.total} <strong>{filteredSpots.length}</strong>{language === 'ko' ? '개의 관광지' : ' attractions'}
+                {t.common.total} <strong>{filteredSpots.length}</strong> {t.common.attractions}
               </div>
             </div>
             
@@ -405,7 +405,7 @@ const TravelPage = () => {
                           className="spot-link"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {language === 'ko' ? '홈페이지 방문' : 'Visit Website'} →
+                          {t.common.visitWebsite} →
                         </a>
                       )}
                       
@@ -420,7 +420,7 @@ const TravelPage = () => {
                           }}
                         >
                           <FiPlus />
-                          {language === 'ko' ? '내 여행에 추가' : 'Add to Trip'}
+                          {t.common.addToTrip}
                         </button>
                         
                         {/* 길찾기 버튼 */}
@@ -433,7 +433,7 @@ const TravelPage = () => {
                             onClick={(e) => e.stopPropagation()}
                           >
                             <FiNavigation />
-                            {language === 'ko' ? '길찾기' : 'Directions'}
+                            {t.ui.directions}
                           </a>
                         )}
                       </div>
@@ -450,7 +450,7 @@ const TravelPage = () => {
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
               >
-                {language === 'ko' ? '이전' : 'Prev'}
+                {t.ui.prev}
               </button>
               
               <div className="page-numbers">
@@ -482,7 +482,7 @@ const TravelPage = () => {
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
               >
-                {language === 'ko' ? '다음' : 'Next'}
+                {t.ui.next}
               </button>
             </div>
           </>
@@ -578,7 +578,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <FiMapPin />
                     <div>
-                      <strong>{language === 'ko' ? '주소' : 'Address'}</strong>
+                      <strong>{t.detail.address}</strong>
                       <p>{selectedSpot.address}</p>
                     </div>
                   </div>
@@ -589,7 +589,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <FiClock />
                     <div>
-                      <strong>{language === 'ko' ? '운영시간' : 'Hours'}</strong>
+                      <strong>{t.detail.hours}</strong>
                       <p dangerouslySetInnerHTML={{ 
                         __html: sanitizeIntroHtml(selectedSpot.time || selectedSpot.intro_info?.usetime)
                       }} />
@@ -602,7 +602,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <span className="icon-text">📅</span>
                     <div>
-                      <strong>{language === 'ko' ? '쉬는날' : 'Closed'}</strong>
+                      <strong>{t.detail.closed}</strong>
                       <p dangerouslySetInnerHTML={{ 
                         __html: sanitizeIntroHtml(selectedSpot.intro_info.restdate)
                       }} />
@@ -615,7 +615,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <FiPhone />
                     <div>
-                      <strong>{language === 'ko' ? '문의처' : 'Contact'}</strong>
+                      <strong>{t.detail.contact}</strong>
                       <p dangerouslySetInnerHTML={{ 
                         __html: sanitizeIntroHtml(selectedSpot.phone || selectedSpot.intro_info?.infocenter)
                       }} />
@@ -627,7 +627,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <span className="icon-text">💰</span>
                     <div>
-                      <strong>{language === 'ko' ? '이용요금' : 'Fee'}</strong>
+                      <strong>{t.detail.fee}</strong>
                       <p dangerouslySetInnerHTML={{ 
                         __html: sanitizeIntroHtml(selectedSpot.fee)
                       }} />
@@ -640,7 +640,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <span className="icon-text">🅿️</span>
                     <div>
-                      <strong>{language === 'ko' ? '주차시설' : 'Parking'}</strong>
+                      <strong>{t.detail.parking}</strong>
                       <p dangerouslySetInnerHTML={{ 
                         __html: sanitizeIntroHtml(selectedSpot.parking || selectedSpot.intro_info?.parking)
                       }} />
@@ -653,7 +653,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <span className="icon-text">👶</span>
                     <div>
-                      <strong>{language === 'ko' ? '유모차대여' : 'Stroller Rental'}</strong>
+                      <strong>{t.detail.strollerRental}</strong>
                       <p>{cleanIntroHtml(selectedSpot.intro_info.chkbabycarriage)}</p>
                     </div>
                   </div>
@@ -664,7 +664,7 @@ const TravelPage = () => {
                   <div className="info-item">
                     <span className="icon-text">🐕</span>
                     <div>
-                      <strong>{language === 'ko' ? '애완동물' : 'Pets'}</strong>
+                      <strong>{t.detail.pets}</strong>
                       <p>{cleanIntroHtml(selectedSpot.intro_info.chkpet)}</p>
                     </div>
                   </div>
@@ -679,7 +679,7 @@ const TravelPage = () => {
                   className="modal-website-btn"
                 >
                   <FiExternalLink />
-                  {language === 'ko' ? '홈페이지 방문하기' : 'Visit Website'}
+                  {t.common.visitWebsite}
                 </a>
               )}
 
@@ -691,13 +691,13 @@ const TravelPage = () => {
                     <>
                       {selectedSpot.image_author && (
                         <span className="credit-author">
-                          {language === 'ko' ? '사진: ' : 'Photo by: '}{selectedSpot.image_author}
+                          {t.common.photoBy}{selectedSpot.image_author}
                         </span>
                       )}
                       {selectedSpot.image_author && selectedSpot.image_source && <span className="credit-divider">|</span>}
                       {selectedSpot.image_source && (
                         <span className="credit-source">
-                          {language === 'ko' ? '출처: ' : 'Source: '}
+                          {t.common.sourceBy}
                           {selectedSpot.image_source.startsWith('http') ? (
                             <a 
                               href={selectedSpot.image_source} 
@@ -715,11 +715,7 @@ const TravelPage = () => {
                       )}
                     </>
                   ) : (
-                    <span>
-                      {language === 'ko' 
-                        ? '사진 제공: 한국관광공사' 
-                        : 'Photos by: Korea Tourism Organization'}
-                    </span>
+                    <span>{t.common.photoByKTO}</span>
                   )}
                 </div>
               </div>
@@ -736,7 +732,7 @@ const TravelPage = () => {
         <div className="modal-overlay" onClick={closeAddToTripModal}>
           <div className="add-to-trip-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3><FiPlus /> {language === 'ko' ? '내 여행에 추가' : 'Add to My Trip'}</h3>
+              <h3><FiPlus /> {t.common.addToTrip}</h3>
               <button className="modal-close" onClick={closeAddToTripModal}>
                 <FiX />
               </button>
@@ -761,11 +757,11 @@ const TravelPage = () => {
               {tripsLoading ? (
                 <div className="loading-trips">
                   <FiLoader className="spinning" />
-                  <span>{language === 'ko' ? '여행 목록 불러오는 중...' : 'Loading trips...'}</span>
+                  <span>{t.common.loadingData}</span>
                 </div>
               ) : tripPlans.length === 0 ? (
                 <div className="no-trips">
-                  <p>{language === 'ko' ? '저장된 여행이 없습니다.' : 'No saved trips.'}</p>
+                  <p>{t.common.noTrips}</p>
                   <p className="hint">
                     {language === 'ko' 
                       ? '먼저 "나의 여행" 페이지에서 여행을 만들어주세요.' 
@@ -776,7 +772,7 @@ const TravelPage = () => {
                 <>
                   {/* 여행 선택 */}
                   <div className="trip-select-section">
-                    <label>{language === 'ko' ? '여행 선택' : 'Select Trip'}</label>
+                    <label>{t.common.selectTrip}</label>
                     <div className="trip-list">
                       {tripPlans.map(trip => (
                         <div 
@@ -803,7 +799,7 @@ const TravelPage = () => {
                   {/* 일차 선택 */}
                   {selectedTripId && selectedTripDays.length > 0 && (
                     <div className="day-select-section">
-                      <label>{language === 'ko' ? '일차 선택' : 'Select Day'}</label>
+                      <label>{t.common.selectDay}</label>
                       <div className="day-list">
                         {selectedTripDays.map(day => (
                           <div
@@ -837,7 +833,7 @@ const TravelPage = () => {
             
             <div className="modal-footer">
               <button className="cancel-btn" onClick={closeAddToTripModal}>
-                {language === 'ko' ? '취소' : 'Cancel'}
+                {t.ui.cancel}
               </button>
               <button 
                 className="add-btn"
@@ -845,9 +841,9 @@ const TravelPage = () => {
                 disabled={!selectedDayId || addingToTrip}
               >
                 {addingToTrip ? (
-                  <><FiLoader className="spinning" /> {language === 'ko' ? '추가 중...' : 'Adding...'}</>
+                  <><FiLoader className="spinning" /> {t.ui.loading}</>
                 ) : (
-                  <><FiPlus /> {language === 'ko' ? '추가하기' : 'Add'}</>
+                  <><FiPlus /> {t.ui.add}</>
                 )}
               </button>
             </div>

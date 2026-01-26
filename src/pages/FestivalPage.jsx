@@ -212,19 +212,19 @@ const FestivalPage = () => {
             }))
             setAllEvents(formattedEvents)
           } else {
-            setError(language === 'ko' ? '관리자 페이지에서 TourAPI 데이터를 먼저 동기화해주세요.' : 'Please sync TourAPI data from admin page first.')
+            setError(t.common.syncRequired)
           }
         }
       } catch (err) {
         console.error('행사 데이터 로드 실패:', err)
-        setError(language === 'ko' ? '데이터를 불러오는데 실패했습니다.' : 'Failed to load data.')
+        setError(t.common.loadFailed)
       }
       
       setLoading(false)
     }
 
     loadEvents()
-  }, [language])
+  }, [language, t.common.syncRequired, t.common.loadFailed])
   
   // DB에서 공연 데이터 로드
   useEffect(() => {
@@ -276,21 +276,21 @@ const FestivalPage = () => {
         } else {
           setPerformances([])
           if (performanceSearchQuery.length >= 2) {
-            setPerformanceError(language === 'ko' ? '검색 결과가 없습니다.' : 'No results found.')
+            setPerformanceError(t.common.noResults)
           } else {
             setPerformanceError(language === 'ko' ? '등록된 공연이 없습니다. 관리자에게 문의하세요.' : 'No performances available.')
           }
         }
       } catch (err) {
         console.error('공연 로드 실패:', err)
-        setPerformanceError(language === 'ko' ? '공연 정보를 불러오는데 실패했습니다.' : 'Failed to load performances.')
+        setPerformanceError(t.common.loadFailed)
       }
       
       setPerformanceLoading(false)
     }
     
     loadPerformances()
-  }, [activeTab, performanceSearchQuery, language])
+  }, [activeTab, performanceSearchQuery, language, t.common.noResults, t.common.loadFailed])
   
   // 탭 변경 시 페이지 리셋
   useEffect(() => {
@@ -359,14 +359,14 @@ const FestivalPage = () => {
             onClick={() => setActiveTab('festival')}
           >
             <FiCalendar />
-            {language === 'ko' ? '축제/행사' : 'Festivals'}
+            {t.pages.festival.festivals}
           </button>
           <button 
             className={`tab-btn ${activeTab === 'performance' ? 'active' : ''}`}
             onClick={() => setActiveTab('performance')}
           >
             <FiMusic />
-            {language === 'ko' ? '문화공연' : 'Performances'}
+            {t.pages.festival.performances}
           </button>
         </div>
         
@@ -376,7 +376,7 @@ const FestivalPage = () => {
             {loading ? (
               <div className="loading-container">
                 <FiLoader className="loading-spinner" />
-                <p>{language === 'ko' ? '공연/행사 정보를 불러오는 중...' : 'Loading events...'}</p>
+                <p>{t.pages.festival.loadingEvents}</p>
               </div>
             ) : error ? (
               <div className="error-container">
@@ -388,13 +388,13 @@ const FestivalPage = () => {
                 <div className="filter-section">
                   {availableThemes.length > 0 && (
                     <div className="theme-filters">
-                      <span className="filter-label">{language === 'ko' ? '테마:' : 'Theme:'}</span>
+                      <span className="filter-label">{t.pages.festival.theme}:</span>
                       <div className="theme-buttons">
                         <button
                           className={`festival-theme-btn ${themeFilter === 'all' ? 'active' : ''}`}
                           onClick={() => setThemeFilter('all')}
                         >
-                          {language === 'ko' ? '전체' : 'All'}
+                          {t.common.all}
                         </button>
                         {availableThemes.map((theme) => (
                           <button
@@ -411,13 +411,13 @@ const FestivalPage = () => {
                   
                   {availablePlaces.length > 0 && (
                     <div className="place-filters">
-                      <span className="filter-label">{language === 'ko' ? '장소:' : 'Place:'}</span>
+                      <span className="filter-label">{t.pages.festival.place}:</span>
                       <div className="place-buttons">
                         <button
                           className={`place-btn ${placeFilter === 'all' ? 'active' : ''}`}
                           onClick={() => setPlaceFilter('all')}
                         >
-                          {language === 'ko' ? '전체' : 'All'}
+                          {t.common.all}
                         </button>
                         {availablePlaces.map((place) => (
                           <button
@@ -440,24 +440,24 @@ const FestivalPage = () => {
                       className={`sort-btn ${sortBy === 'name' ? 'active' : ''}`}
                       onClick={() => setSortBy('name')}
                     >
-                      {language === 'ko' ? '가나다순' : 'Name'}
+                      {t.ui.sortByName}
                     </button>
                     <button
                       className={`sort-btn ${sortBy === 'views' ? 'active' : ''}`}
                       onClick={() => setSortBy('views')}
                     >
-                      {language === 'ko' ? '조회수순' : 'Views'}
+                      {t.ui.sortByViews}
                     </button>
                   </div>
                   <div className="events-count">
-                    {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연/행사' : ' events'}
+                    {t.common.total} <strong>{filteredEvents.length.toLocaleString()}</strong> {t.pages.festival.events}
                   </div>
                 </div>
                 
                 {filteredEvents.length === 0 ? (
                   <div className="events-empty">
                     <FiCalendar className="empty-icon" />
-                    <p>{language === 'ko' ? '현재 진행중인 행사가 없습니다.' : 'No events are currently available.'}</p>
+                    <p>{t.pages.festival.noEvents}</p>
                   </div>
                 ) : (
                   <div className="festival-grid">
@@ -477,11 +477,11 @@ const FestivalPage = () => {
                         <div className="event-badges">
                           <span className="theme-badge">{event.theme}</span>
                           {event.isHot && <span className="hot-badge">🔥 HOT</span>}
-                          {event.isRecommended && <span className="rec-badge">⭐ {language === 'ko' ? '추천' : 'Recommended'}</span>}
+                          {event.isRecommended && <span className="rec-badge">⭐ {t.ui.recommended}</span>}
                         </div>
                         <div className="event-overlay">
                           <FiInfo className="info-icon" />
-                          <span>{language === 'ko' ? '상세보기' : 'View Details'}</span>
+                          <span>{t.common.viewDetails}</span>
                         </div>
                       </div>
                       <div className="event-content">
@@ -511,7 +511,7 @@ const FestivalPage = () => {
                         </div>
                         {event.management && (
                           <p className="event-management">
-                            {language === 'ko' ? '주관' : 'Organized by'}: {event.management}
+                            {t.pages.festival.organizedBy}: {event.management}
                           </p>
                         )}
                       </div>
@@ -528,7 +528,7 @@ const FestivalPage = () => {
                       onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
                     >
-                      {language === 'ko' ? '이전' : 'Prev'}
+                      {t.ui.prev}
                     </button>
                     <div className="page-numbers">
                       {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
@@ -558,7 +558,7 @@ const FestivalPage = () => {
                       onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                       disabled={currentPage === totalPages}
                     >
-                      {language === 'ko' ? '다음' : 'Next'}
+                      {t.ui.next}
                     </button>
                   </div>
                 )}
@@ -573,7 +573,7 @@ const FestivalPage = () => {
             {performanceLoading ? (
               <div className="loading-container">
                 <FiLoader className="loading-spinner" />
-                <p>{language === 'ko' ? '공연 정보를 불러오는 중...' : 'Loading performances...'}</p>
+                <p>{t.pages.festival.loadingEvents}</p>
               </div>
             ) : performanceError ? (
               <div className="error-container">
@@ -587,7 +587,7 @@ const FestivalPage = () => {
                 </div>
                 
                 <div className="events-count">
-                  {t.common.total} <strong>{performances.length.toLocaleString()}</strong>{language === 'ko' ? '개의 공연' : ' performances'}
+                  {t.common.total} <strong>{performances.length.toLocaleString()}</strong> {t.pages.festival.performances}
                 </div>
                 
                 <div className="festival-grid">
