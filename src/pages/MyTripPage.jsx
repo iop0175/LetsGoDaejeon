@@ -310,46 +310,28 @@ const MyTripPage = () => {
       unsubscribeChannel(placesChannelRef.current)
     }
     
-    // 여행 계획 및 일정 변경 구독
-    realtimeChannelRef.current = subscribeTripPlanChanges(selectedTrip.id, async (change) => {
+    // 데이터 새로고침 함수
+    const refreshTripData = async () => {
       setRealtimeSyncing(true)
-      
-      // 변경 사항 처리
-      if (change.type === 'plan' && change.event === 'UPDATE') {
-        // 여행 계획 정보 업데이트
-        setSelectedTrip(prev => ({
-          ...prev,
-          title: change.data.title || prev.title,
-          description: change.data.description || prev.description,
-          accommodationName: change.data.accommodation_name || prev.accommodationName,
-          accommodationAddress: change.data.accommodation_address || prev.accommodationAddress,
-        }))
-      } else if (change.type === 'day') {
-        // 일정 변경시 전체 데이터 다시 로드
-        const result = await getTripPlanWithDetails(selectedTrip.id)
-        if (result.success) {
-          setSelectedTrip(result.plan)
-        }
+      const result = await getTripPlanWithDetails(selectedTrip.id)
+      if (result.success) {
+        setSelectedTrip(result.plan)
       }
-      
       setLastSyncTime(new Date())
       setTimeout(() => setRealtimeSyncing(false), 500)
+    }
+    
+    // 여행 계획 및 일정 변경 구독
+    realtimeChannelRef.current = subscribeTripPlanChanges(selectedTrip.id, async (change) => {
+      // 모든 변경사항에 대해 데이터 새로고침
+      await refreshTripData()
     })
     
     // 장소 변경 구독 (dayIds가 있을 때만)
-    if (selectedTrip.days && selectedTrip.days.length > 0) {
-      const dayIds = selectedTrip.days.map(d => d.id)
+    const dayIds = selectedTrip.days?.map(d => d.id) || []
+    if (dayIds.length > 0) {
       placesChannelRef.current = subscribeTripPlacesChanges(dayIds, async (change) => {
-        setRealtimeSyncing(true)
-        
-        // 장소 변경시 전체 데이터 다시 로드 (간단히 처리)
-        const result = await getTripPlanWithDetails(selectedTrip.id)
-        if (result.success) {
-          setSelectedTrip(result.plan)
-        }
-        
-        setLastSyncTime(new Date())
-        setTimeout(() => setRealtimeSyncing(false), 500)
+        await refreshTripData()
       })
     }
     
@@ -364,7 +346,7 @@ const MyTripPage = () => {
         placesChannelRef.current = null
       }
     }
-  }, [selectedTrip?.id, collaboratedPlans, collaborators])
+  }, [selectedTrip?.id, selectedTrip?.days?.length, collaboratedPlans, collaborators])
   
   // URL의 초대 코드 처리
   useEffect(() => {
