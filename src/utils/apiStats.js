@@ -37,35 +37,57 @@ const initStats = () => ({
 
 // 오늘 날짜 확인하고 필요시 리셋
 const checkAndResetStats = () => {
-  const savedDate = localStorage.getItem(DATE_KEY)
-  const today = getTodayString()
-  
-  if (savedDate !== today) {
-    // 날짜가 다르면 통계 리셋
-    localStorage.setItem(DATE_KEY, today)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initStats()))
+  try {
+    const savedDate = localStorage.getItem(DATE_KEY)
+    const today = getTodayString()
+    
+    if (savedDate !== today) {
+      // 날짜가 다르면 통계 리셋
+      localStorage.setItem(DATE_KEY, today)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initStats()))
+      return initStats()
+    }
+    
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (!saved) return initStats()
+    
+    try {
+      return JSON.parse(saved)
+    } catch {
+      // JSON 파싱 실패 시 초기화
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(initStats()))
+      return initStats()
+    }
+  } catch (err) {
+    // localStorage 접근 실패 시 메모리에만 저장
+    console.warn('localStorage access failed:', err.message)
     return initStats()
   }
-  
-  const saved = localStorage.getItem(STORAGE_KEY)
-  return saved ? JSON.parse(saved) : initStats()
 }
 
 // API 호출 기록
 export const recordApiCall = (apiName) => {
-  const stats = checkAndResetStats()
-  if (stats.hasOwnProperty(apiName)) {
-    stats[apiName] += 1
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats))
+  try {
+    const stats = checkAndResetStats()
+    if (stats.hasOwnProperty(apiName)) {
+      stats[apiName] += 1
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats))
+    }
+  } catch (err) {
+    // 실패해도 무시 (통계 기록 실패는 치명적이지 않음)
   }
 }
 
 // 페이지 방문 기록
 export const recordPageVisit = (pageName) => {
-  const stats = checkAndResetStats()
-  if (stats.pages && stats.pages.hasOwnProperty(pageName)) {
-    stats.pages[pageName] += 1
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stats))
+  try {
+    const stats = checkAndResetStats()
+    if (stats.pages && stats.pages.hasOwnProperty(pageName)) {
+      stats.pages[pageName] += 1
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stats))
+    }
+  } catch (err) {
+    // 실패해도 무시
   }
 }
 
@@ -76,10 +98,14 @@ export const getApiStats = () => {
 
 // 통계 데이터 리셋
 export const resetApiStats = () => {
-  const today = getTodayString()
-  localStorage.setItem(DATE_KEY, today)
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(initStats()))
-  return initStats()
+  try {
+    const today = getTodayString()
+    localStorage.setItem(DATE_KEY, today)
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(initStats()))
+    return initStats()
+  } catch (err) {
+    return initStats()
+  }
 }
 
 // API별 한글 이름

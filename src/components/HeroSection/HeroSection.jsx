@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useMemo } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules'
 import { FiArrowRight } from 'react-icons/fi'
@@ -10,13 +10,14 @@ import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
 import './HeroSection.css'
 
-const HeroSection = () => {
+const HeroSection = memo(() => {
   const { t, language } = useLanguage()
   const [slides, setSlides] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // 기본 슬라이드 (DB에 데이터가 없을 때 사용)
-  const defaultSlides = [
+  // 기본 슬라이드 (DB에 데이터가 없을 때 사용) - useMemo로 언어 변경 시 업데이트
+  const defaultSlides = useMemo(() => [
     {
       id: 1,
       title_ko: t.hero.slide1.title,
@@ -50,11 +51,12 @@ const HeroSection = () => {
       imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&h=1080&fit=crop',
       link: '/food'
     }
-  ]
+  ], [t])
 
   useEffect(() => {
     const fetchSlides = async () => {
       try {
+        setError(null)
         const result = await getHeroSlides(true) // 활성화된 슬라이드만 가져오기
         if (result.success && result.items.length > 0) {
           setSlides(result.items)
@@ -62,14 +64,15 @@ const HeroSection = () => {
           setSlides(defaultSlides)
         }
       } catch (err) {
-
+        console.warn('Hero slides fetch error:', err)
+        setError(err.message)
         setSlides(defaultSlides)
       }
       setLoading(false)
     }
 
     fetchSlides()
-  }, [])
+  }, [defaultSlides])
 
   // 언어에 따른 텍스트 가져오기
   const getLocalizedText = (slide, field) => {
@@ -117,6 +120,8 @@ const HeroSection = () => {
       </Swiper>
     </section>
   )
-}
+})
+
+HeroSection.displayName = 'HeroSection'
 
 export default HeroSection

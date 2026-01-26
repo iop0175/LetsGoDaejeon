@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
 import './LicenseBadge.css'
 
@@ -7,7 +8,7 @@ import './LicenseBadge.css'
  * @param {string} props.type - 라이선스 유형 (1, 2, 3, 4, '1+3', 'kcisa', 'kto', 'daejeon')
  * @param {string} props.source - 출처 텍스트 (선택)
  */
-const LicenseBadge = ({ type = '1', source = null }) => {
+const LicenseBadge = memo(({ type = '1', source = null }) => {
   const { language } = useLanguage()
 
   // 공공누리 유형별 정보 (로컬 이미지 사용)
@@ -118,6 +119,8 @@ const LicenseBadge = ({ type = '1', source = null }) => {
       </a>
     </div>
   )
-}
+})
+
+LicenseBadge.displayName = 'LicenseBadge'
 
 export default LicenseBadge

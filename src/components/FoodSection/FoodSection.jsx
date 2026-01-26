@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
@@ -91,7 +91,7 @@ const extractDistrict = (address) => {
   return match ? match[2] : '대전'
 }
 
-const FoodSection = () => {
+const FoodSection = memo(() => {
   const { language, t } = useLanguage()
   const [foods, setFoods] = useState([])
   const [loading, setLoading] = useState(true)
@@ -181,6 +181,8 @@ const FoodSection = () => {
       </div>
     </section>
   )
-}
+})
+
+FoodSection.displayName = 'FoodSection'
 
 export default FoodSection

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import TravelCard from '../TravelCard/TravelCard'
 import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
@@ -84,7 +84,7 @@ const extractDistrict = (address) => {
   return match ? match[2] : '대전'
 }
 
-const PopularSpots = () => {
+const PopularSpots = memo(() => {
   const { language, t } = useLanguage()
   const [spots, setSpots] = useState([])
   const [loading, setLoading] = useState(true)
@@ -163,6 +163,8 @@ const PopularSpots = () => {
       </div>
     </section>
   )
-}
+})
+
+PopularSpots.displayName = 'PopularSpots'
 
 export default PopularSpots

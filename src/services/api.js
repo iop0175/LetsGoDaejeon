@@ -1,9 +1,11 @@
 // 대전 공공데이터 API 서비스
 // API 키는 서버(Workers)를 통해 프록시되어 보호됩니다
 import { recordApiCall } from '../utils/apiStats';
+import { safeFetch } from '../utils/fetchUtils';
 
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev';
+const API_TIMEOUT = 15000; // 15초 타임아웃
 
 // 기본 이미지 (이미지 없을 때 사용)
 const DEFAULT_IMAGE = '/images/no-image.svg';
@@ -21,10 +23,11 @@ export const getTourSpotImage = (spotName) => {
 export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
   try {
     recordApiCall('parking');
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     // Workers에서 파싱된 JSON 응답을 처리
     if (data.success) {
@@ -32,8 +35,8 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('주차장 API 오류:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -41,10 +44,11 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
 export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
   try {
     recordApiCall('medical');
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/daejeon/medical?pageNo=${pageNo}&numOfRows=${numOfRows}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/daejeon/medical?pageNo=${pageNo}&numOfRows=${numOfRows}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === 'C00') {
       return {
@@ -55,8 +59,8 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
     }
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('의료기관 API 오류:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -82,10 +86,11 @@ export const getCulturalPerformances = async (options = {}) => {
     if (dtype) queryParams += `&dtype=${encodeURIComponent(dtype)}`;
     if (title) queryParams += `&title=${encodeURIComponent(title)}`;
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/kcisa/CNV_060?${queryParams}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/kcisa/CNV_060?${queryParams}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.success) {
       return {
@@ -96,7 +101,8 @@ export const getCulturalPerformances = async (options = {}) => {
     }
     return { success: false, items: [], totalCount: 0, message: data.resultMsg };
   } catch (error) {
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('문화공연 API 오류:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -124,7 +130,8 @@ export const getDaejeonPerformances = async (options = {}) => {
     }
     return result;
   } catch (error) {
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('대전공연 API 오류:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -159,15 +166,16 @@ export const getTourApiSpots = async (options = {}) => {
       params.append('contentTypeId', contentTypeId);
     }
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/areaBasedList2?${params.toString()}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/areaBasedList2?${params.toString()}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
       // 단일 객체인 경우 배열로 변환
-      const itemArray = Array.isArray(items) ? items : [items];
+      const itemArray = Array.isArray(items) ? items : (items ? [items] : []);
       
       return {
         success: true,
@@ -178,8 +186,8 @@ export const getTourApiSpots = async (options = {}) => {
     
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('TourAPI 조회 에러:', error);
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('TourAPI 조회 에러:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -212,14 +220,15 @@ export const getTourApiFestivals = async (options = {}) => {
       arrange: 'C'
     });
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/searchFestival2?${params.toString()}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/searchFestival2?${params.toString()}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
-      const itemArray = Array.isArray(items) ? items : [items];
+      const itemArray = Array.isArray(items) ? items : (items ? [items] : []);
       const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const filteredItems = itemArray.filter(item => {
         const endDate = item.eventenddate || '';
@@ -235,8 +244,8 @@ export const getTourApiFestivals = async (options = {}) => {
     
     return { success: false, items: [], totalCount: 0 };
   } catch (error) {
-    console.error('TourAPI 행사 조회 에러:', error);
-    return { success: false, items: [], totalCount: 0, error };
+    console.warn('TourAPI 행사 조회 에러:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
   }
 };
 
@@ -258,10 +267,11 @@ export const getTourApiDetail = async (contentId, includeOverview = true) => {
       overviewYN: includeOverview ? 'Y' : 'N'
     });
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/detailCommon2?${params.toString()}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/detailCommon2?${params.toString()}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
@@ -272,8 +282,8 @@ export const getTourApiDetail = async (contentId, includeOverview = true) => {
     
     return { success: false, item: null };
   } catch (error) {
-    console.error('TourAPI 상세정보 조회 에러:', error);
-    return { success: false, item: null, error };
+    console.warn('TourAPI 상세정보 조회 에러:', error.message);
+    return { success: false, item: null, error: error.message };
   }
 };
 
@@ -287,10 +297,11 @@ export const getTourApiIntro = async (contentId, contentTypeId) => {
   try {
     recordApiCall('tourapi');
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/detailIntro2?contentId=${contentId}&contentTypeId=${contentTypeId}`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/detailIntro2?contentId=${contentId}&contentTypeId=${contentTypeId}`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
@@ -301,8 +312,8 @@ export const getTourApiIntro = async (contentId, contentTypeId) => {
     
     return { success: false, item: null };
   } catch (error) {
-    console.error('TourAPI 소개정보 조회 에러:', error);
-    return { success: false, item: null, error };
+    console.warn('TourAPI 소개정보 조회 에러:', error.message);
+    return { success: false, item: null, error: error.message };
   }
 };
 
@@ -315,22 +326,23 @@ export const getTourApiImages = async (contentId) => {
   try {
     recordApiCall('tourapi');
     
-    const response = await fetch(
-      `${WORKERS_API_URL}/api/tour/detailImage2?contentId=${contentId}&imageYN=Y`
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/detailImage2?contentId=${contentId}&imageYN=Y`,
+      {},
+      API_TIMEOUT
     );
-    const data = await response.json();
     
     if (data.response?.header?.resultCode === '0000') {
       const items = data.response.body.items?.item || [];
-      const itemArray = Array.isArray(items) ? items : [items];
+      const itemArray = Array.isArray(items) ? items : (items ? [items] : []);
       
       return { success: true, items: itemArray };
     }
     
     return { success: false, items: [] };
   } catch (error) {
-    console.error('TourAPI 이미지 조회 에러:', error);
-    return { success: false, items: [], error };
+    console.warn('TourAPI 이미지 조회 에러:', error.message);
+    return { success: false, items: [], error: error.message };
   }
 };
 

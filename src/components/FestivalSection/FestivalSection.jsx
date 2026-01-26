@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
@@ -72,7 +72,7 @@ const getFestivalImage = (name) => {
   return festivalImages.default
 }
 
-const FestivalSection = () => {
+const FestivalSection = memo(() => {
   const { language, t } = useLanguage()
   const [festivals, setFestivals] = useState([])
   const [loading, setLoading] = useState(true)
@@ -215,6 +215,8 @@ const FestivalSection = () => {
       </div>
     </section>
   )
-}
+})
+
+FestivalSection.displayName = 'FestivalSection'
 
 export default FestivalSection

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { WiThermometer, WiHumidity, WiStrongWind, WiBarometer, WiDust, WiRefresh, WiDaySunny, WiCloudy, WiRain, WiSnow, WiFog } from 'react-icons/wi';
 import { FiMapPin, FiClock, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 import './WeatherWidget.css';
 
-const WeatherWidget = () => {
+const WeatherWidget = memo(() => {
   const { language } = useLanguage();
   const [weatherData, setWeatherData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -250,6 +250,8 @@ const WeatherWidget = () => {
       )}
     </div>
   );
-};
+});
+
+WeatherWidget.displayName = 'WeatherWidget';
 
 export default WeatherWidget;
