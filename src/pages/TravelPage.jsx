@@ -7,6 +7,7 @@ import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbServ
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError } from '../utils/imageUtils'
 import TravelCard from '../components/TravelCard/TravelCard'
+import LicenseBadge from '../components/common/LicenseBadge'
 import './TravelPage.css'
 
 // 대전시 구 목록
@@ -642,7 +643,7 @@ const TravelPage = () => {
                 </a>
               )}
 
-              {/* 사진 출처 안내 */}
+              {/* 사진 출처 및 저작권 안내 */}
               <div className="photo-credit">
                 <FiCamera />
                 <div className="photo-credit-content">
@@ -676,12 +677,15 @@ const TravelPage = () => {
                   ) : (
                     <span>
                       {language === 'ko' 
-                        ? '사진 제공: 한국관광공사 / 대전사진누리' 
-                        : 'Photos by: Korea Tourism Organization / Daejeon Photo'}
+                        ? '사진 제공: 한국관광공사' 
+                        : 'Photos by: Korea Tourism Organization'}
                     </span>
                   )}
                 </div>
               </div>
+              
+              {/* 저작권 라이선스 표시 */}
+              <LicenseBadge type="kto" />
             </div>
           </div>
         </div>

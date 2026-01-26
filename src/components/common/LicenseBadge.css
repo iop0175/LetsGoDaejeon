@@ -1,0 +1,79 @@
+/* 저작권 라이선스 배지 공통 스타일 */
+.license-badge {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+  border-radius: 8px;
+  border: 1px solid #dee2e6;
+}
+
+.kogl-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.kogl-link:hover {
+  color: var(--primary-color);
+}
+
+.kogl-image {
+  height: 24px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.license-text {
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.license-source {
+  color: var(--text-tertiary, #888);
+  font-weight: 400;
+}
+
+/* 다크모드 */
+.dark-mode .license-badge,
+.dark-theme .license-badge {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.02));
+  border-color: var(--border-color, rgba(255, 255, 255, 0.1));
+}
+
+.dark-mode .kogl-link,
+.dark-theme .kogl-link {
+  color: var(--text-secondary, #a0aec0);
+}
+
+.dark-mode .kogl-link:hover,
+.dark-theme .kogl-link:hover {
+  color: var(--primary-color, #64b5f6);
+}
+
+.dark-mode .license-source,
+.dark-theme .license-source {
+  color: var(--text-tertiary, #6b7280);
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .license-badge {
+    padding: 8px 10px;
+  }
+
+  .kogl-image {
+    height: 20px;
+  }
+
+  .license-text {
+    font-size: 0.75rem;
+  }
+  
+  .kogl-link {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+}

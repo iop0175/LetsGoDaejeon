@@ -3,6 +3,7 @@ import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, 
 import { useLanguage } from '../context/LanguageContext'
 import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
 import { handleImageError, getReliableImageUrl } from '../utils/imageUtils'
+import LicenseBadge from '../components/common/LicenseBadge'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
@@ -735,6 +736,10 @@ const FestivalPage = () => {
                   </div>
                 )}
               </div>
+              
+              {/* 저작권 라이선스 표시 */}
+              <LicenseBadge type="kto" />
+              
               <div className="modal-actions">
                 <button className="btn-primary">
                   {language === 'ko' ? '예매하기' : 'Book Now'}
@@ -839,6 +844,10 @@ const FestivalPage = () => {
                   </div>
                 )}
               </div>
+              
+              {/* 저작권 라이선스 표시 - KCISA */}
+              <LicenseBadge type="kcisa" />
+              
               <div className="modal-actions">
                 {selectedPerformance.url && (
                   <a 
