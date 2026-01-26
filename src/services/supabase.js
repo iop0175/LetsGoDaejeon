@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js'
 
 // Supabase URL과 키는 환경변수에서 로드 (.env 파일 참조)
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
+// trim()으로 불필요한 공백/개행 제거
+const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
+const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
