@@ -1198,36 +1198,141 @@
   justify-content: flex-end;
 }
 
-/* Day 버튼이 많을 때 드롭다운 스타일 */
-.day-select-dropdown {
-  padding: 8px 12px;
+/* 커스텀 Day 드롭다운 */
+.custom-day-dropdown {
+  position: relative;
+}
+
+.day-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
   border: none;
-  background: #e0f2fe;
-  color: #0284c7;
-  border-radius: 6px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 10px;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  min-width: 100px;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
 }
 
-.day-select-dropdown:hover {
-  background: #bae6fd;
+.day-dropdown-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
 }
 
-.day-select-dropdown:focus {
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.3);
+.day-dropdown-trigger svg {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s ease;
 }
 
-.dark-theme .day-select-dropdown {
-  background: #1e3a5f;
-  color: #7dd3fc;
+.day-dropdown-trigger svg.rotated {
+  transform: rotate(180deg);
 }
 
-.dark-theme .day-select-dropdown:hover {
-  background: #0c4a6e;
+.day-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  min-width: 160px;
+  max-height: 280px;
+  overflow-y: auto;
+  z-index: 100;
+  padding: 8px;
+  animation: dropdownSlide 0.2s ease;
+}
+
+@keyframes dropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.day-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.day-dropdown-item:hover {
+  background: #f0f9ff;
+  color: #2563eb;
+}
+
+.day-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* 다크 테마 */
+.dark-theme .day-dropdown-trigger {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+}
+
+.dark-theme .day-dropdown-menu {
+  background: #1f2937;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+.dark-theme .day-dropdown-item {
+  color: #e5e7eb;
+}
+
+.dark-theme .day-dropdown-item:hover {
+  background: #374151;
+  color: #60a5fa;
+}
+
+.dark-theme .day-badge {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+/* 스크롤바 스타일 */
+.day-dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.day-dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.day-dropdown-menu::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.dark-theme .day-dropdown-menu::-webkit-scrollbar-thumb {
+  background: #4b5563;
 }
 
 .add-to-day-btn {

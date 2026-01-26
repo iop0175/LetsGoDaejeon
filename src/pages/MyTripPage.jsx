@@ -144,6 +144,9 @@ const MyTripPage = () => {
   const realtimeChannelRef = useRef(null) // Realtime 채널 참조
   const placesChannelRef = useRef(null) // Places Realtime 채널 참조
   
+  // Day 선택 드롭다운 상태
+  const [openDayDropdown, setOpenDayDropdown] = useState(null) // 열린 드롭다운 ID
+  
   // 이동 방법 편집 상태
   const [editingTransport, setEditingTransport] = useState(null) // { dayId, afterPlaceIndex }
   
@@ -365,6 +368,17 @@ const MyTripPage = () => {
       }
     }
   }, [selectedTrip?.id, selectedTrip?.days?.length, collaboratedPlans, collaborators])
+  
+  // Day 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (openDayDropdown !== null && !e.target.closest('.custom-day-dropdown')) {
+        setOpenDayDropdown(null)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [openDayDropdown])
   
   // URL의 초대 코드 처리
   useEffect(() => {
@@ -3376,25 +3390,33 @@ const MyTripPage = () => {
                         </div>
                         <div className="result-actions">
                           {selectedTrip.days?.length > 5 ? (
-                            <select
-                              className="day-select-dropdown"
-                              onChange={(e) => {
-                                if (e.target.value) {
-                                  handleAddPlace(parseInt(e.target.value), place)
-                                  e.target.value = ''
-                                }
-                              }}
-                              defaultValue=""
-                            >
-                              <option value="" disabled>
-                                {language === 'ko' ? 'Day 선택' : 'Select Day'}
-                              </option>
-                              {selectedTrip.days?.map(day => (
-                                <option key={day.id} value={day.id}>
-                                  Day {day.dayNumber}
-                                </option>
-                              ))}
-                            </select>
+                            <div className="custom-day-dropdown">
+                              <button 
+                                className="day-dropdown-trigger"
+                                onClick={() => setOpenDayDropdown(openDayDropdown === idx ? null : idx)}
+                              >
+                                <FiPlus />
+                                <span>{language === 'ko' ? '일정 추가' : 'Add to Day'}</span>
+                                <FiChevronDown className={openDayDropdown === idx ? 'rotated' : ''} />
+                              </button>
+                              {openDayDropdown === idx && (
+                                <div className="day-dropdown-menu">
+                                  {selectedTrip.days?.map(day => (
+                                    <button
+                                      key={day.id}
+                                      className="day-dropdown-item"
+                                      onClick={() => {
+                                        handleAddPlace(day.id, place)
+                                        setOpenDayDropdown(null)
+                                      }}
+                                    >
+                                      <span className="day-badge">D{day.dayNumber}</span>
+                                      <span>{language === 'ko' ? `${day.dayNumber}일차` : `Day ${day.dayNumber}`}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
                           ) : (
                             selectedTrip.days?.map(day => (
                               <button
