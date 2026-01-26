@@ -982,6 +982,56 @@
   font-size: 0.95rem;
 }
 
+/* 실시간 동기화 표시 */
+.realtime-sync-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  margin-left: 8px;
+  transition: all 0.3s ease;
+}
+
+.realtime-sync-indicator.syncing {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.realtime-sync-indicator svg {
+  font-size: 0.85rem;
+}
+
+.realtime-sync-indicator svg.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.realtime-sync-indicator .last-sync-time {
+  font-size: 0.7rem;
+  color: #94a3b8;
+  margin-left: 4px;
+}
+
+.dark-theme .realtime-sync-indicator {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.dark-theme .realtime-sync-indicator.syncing {
+  background: rgba(245, 158, 11, 0.2);
+}
+
 .close-detail {
   padding: 8px;
   border: none;

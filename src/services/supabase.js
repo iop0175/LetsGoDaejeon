@@ -86,3 +86,93 @@ export const exchangeCodeForSession = async () => {
   
   return { data: null, error: null }
 }
+
+// 실시간 구독 헬퍼 함수
+
+// 여행 계획 실시간 구독 (특정 계획의 변경 감지)
+export const subscribeTripPlanChanges = (planId, onUpdate) => {
+  const channel = supabase
+    .channel(`trip_plan_${planId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'trip_plans',
+        filter: `id=eq.${planId}`
+      },
+      (payload) => {
+        onUpdate({ type: 'plan', event: payload.eventType, data: payload.new, old: payload.old })
+      }
+    )
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'trip_days',
+        filter: `plan_id=eq.${planId}`
+      },
+      (payload) => {
+        onUpdate({ type: 'day', event: payload.eventType, data: payload.new, old: payload.old })
+      }
+    )
+    .subscribe()
+
+  return channel
+}
+
+// 여행 장소 실시간 구독 (일차별 장소 변경 감지)
+export const subscribeTripPlacesChanges = (dayIds, onUpdate) => {
+  if (!dayIds || dayIds.length === 0) return null
+  
+  const channel = supabase
+    .channel(`trip_places_${dayIds.join('_')}`)
+  
+  // 각 일차에 대해 구독 추가
+  dayIds.forEach(dayId => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'trip_places',
+        filter: `day_id=eq.${dayId}`
+      },
+      (payload) => {
+        onUpdate({ type: 'place', event: payload.eventType, data: payload.new, old: payload.old, dayId })
+      }
+    )
+  })
+  
+  channel.subscribe()
+  return channel
+}
+
+// 협업자 변경 구독
+export const subscribeCollaboratorChanges = (planId, onUpdate) => {
+  const channel = supabase
+    .channel(`trip_collaborators_${planId}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'trip_collaborators',
+        filter: `plan_id=eq.${planId}`
+      },
+      (payload) => {
+        onUpdate({ type: 'collaborator', event: payload.eventType, data: payload.new, old: payload.old })
+      }
+    )
+    .subscribe()
+
+  return channel
+}
+
+// 구독 해제
+export const unsubscribeChannel = (channel) => {
+  if (channel) {
+    supabase.removeChannel(channel)
+  }
+}

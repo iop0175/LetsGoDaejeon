@@ -3,6 +3,63 @@ import { deleteImage } from './blobService'
 
 // ===== 여행 계획 (Trip Plans) =====
 
+// 특정 여행 계획 상세 정보 가져오기 (실시간 동기화용)
+export const getTripPlanWithDetails = async (planId) => {
+  try {
+    const { data, error } = await supabase
+      .from('trip_plans')
+      .select(`
+        *,
+        trip_days (
+          *,
+          trip_places (*)
+        )
+      `)
+      .eq('id', planId)
+      .single()
+    
+    if (error) throw error
+    
+    // 데이터 형식 변환
+    const plan = {
+      id: data.id,
+      userId: data.user_id,
+      title: data.title,
+      startDate: data.start_date,
+      endDate: data.end_date,
+      description: data.description,
+      accommodationName: data.accommodation_name,
+      accommodationAddress: data.accommodation_address,
+      createdAt: data.created_at,
+      isPublished: data.is_published,
+      sharedId: data.shared_id,
+      days: data.trip_days?.sort((a, b) => a.day_number - b.day_number).map(day => ({
+        id: day.id,
+        planId: day.plan_id,
+        dayNumber: day.day_number,
+        date: day.date,
+        places: day.trip_places?.sort((a, b) => a.order_index - b.order_index).map(place => ({
+          id: place.id,
+          dayId: place.day_id,
+          placeType: place.place_type,
+          placeName: place.place_name,
+          placeAddress: place.place_address,
+          placeDescription: place.place_description,
+          placeImage: place.place_image,
+          orderIndex: place.order_index,
+          visitTime: place.visit_time,
+          memo: place.memo,
+          transportToNext: place.transport_to_next
+        })) || []
+      })) || []
+    }
+    
+    return { success: true, plan }
+  } catch (err) {
+    return { success: false, error: err.message }
+  }
+}
+
 // 사용자의 여행 계획 목록 가져오기
 export const getUserTripPlans = async (userId) => {
   try {

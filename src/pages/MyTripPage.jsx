@@ -4,7 +4,8 @@ import {
   FiPlus, FiTrash2, FiEdit2, FiMapPin, FiCalendar, FiClock, 
   FiChevronDown, FiChevronUp, FiSave, FiX, FiMap, FiCoffee,
   FiStar, FiNavigation, FiUsers, FiGrid, FiList, FiShare2,
-  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart, FiImage, FiUser
+  FiMaximize2, FiMinimize2, FiHome, FiSearch, FiGlobe, FiEye, FiHeart, FiImage, FiUser,
+  FiRefreshCw
 } from 'react-icons/fi'
 import { 
   FaCar, FaBus, FaSubway, FaWalking, FaTaxi, FaBicycle, FaParking 
@@ -19,8 +20,12 @@ import {
   addTripPlace, updateTripPlace, deleteTripPlace,
   publishTripPlan, unpublishTripPlan, updatePlaceTransitInfo,
   createTripInvite, getTripInviteByCode, acceptTripInvite,
-  getTripCollaborators, removeCollaborator, leaveTrip, getAllMyTrips
+  getTripCollaborators, removeCollaborator, leaveTrip, getAllMyTrips,
+  getTripPlanWithDetails
 } from '../services/tripService'
+import { 
+  subscribeTripPlanChanges, subscribeTripPlacesChanges, subscribeCollaboratorChanges, unsubscribeChannel 
+} from '../services/supabase'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { uploadResizedImage } from '../services/blobService'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
@@ -132,6 +137,12 @@ const MyTripPage = () => {
   const [pendingInvite, setPendingInvite] = useState(null) // URL로 전달받은 초대 코드
   const [showInviteAcceptModal, setShowInviteAcceptModal] = useState(false) // 초대 수락 모달
   const [inviteInfo, setInviteInfo] = useState(null) // 초대 정보
+  
+  // 실시간 동기화 관련 상태
+  const [realtimeSyncing, setRealtimeSyncing] = useState(false) // 실시간 동기화 중
+  const [lastSyncTime, setLastSyncTime] = useState(null) // 마지막 동기화 시간
+  const realtimeChannelRef = useRef(null) // Realtime 채널 참조
+  const placesChannelRef = useRef(null) // Places Realtime 채널 참조
   
   // 이동 방법 편집 상태
   const [editingTransport, setEditingTransport] = useState(null) // { dayId, afterPlaceIndex }
@@ -277,6 +288,83 @@ const MyTripPage = () => {
   useEffect(() => {
     loadTripPlans()
   }, [loadTripPlans])
+  
+  // 실시간 동기화 구독 (선택한 여행 계획)
+  useEffect(() => {
+    // 선택된 여행이 없거나 로컬 데이터면 실시간 동기화 안 함
+    if (!selectedTrip || selectedTrip.id.toString().startsWith('local_')) {
+      return
+    }
+    
+    // 협업 여행일 때만 실시간 동기화 활성화
+    const isCollaborative = collaboratedPlans.some(p => p.id === selectedTrip.id) ||
+      (collaborators && collaborators.length > 0)
+    
+    if (!isCollaborative) return
+    
+    // 기존 구독 해제
+    if (realtimeChannelRef.current) {
+      unsubscribeChannel(realtimeChannelRef.current)
+    }
+    if (placesChannelRef.current) {
+      unsubscribeChannel(placesChannelRef.current)
+    }
+    
+    // 여행 계획 및 일정 변경 구독
+    realtimeChannelRef.current = subscribeTripPlanChanges(selectedTrip.id, async (change) => {
+      setRealtimeSyncing(true)
+      
+      // 변경 사항 처리
+      if (change.type === 'plan' && change.event === 'UPDATE') {
+        // 여행 계획 정보 업데이트
+        setSelectedTrip(prev => ({
+          ...prev,
+          title: change.data.title || prev.title,
+          description: change.data.description || prev.description,
+          accommodationName: change.data.accommodation_name || prev.accommodationName,
+          accommodationAddress: change.data.accommodation_address || prev.accommodationAddress,
+        }))
+      } else if (change.type === 'day') {
+        // 일정 변경시 전체 데이터 다시 로드
+        const result = await getTripPlanWithDetails(selectedTrip.id)
+        if (result.success) {
+          setSelectedTrip(result.plan)
+        }
+      }
+      
+      setLastSyncTime(new Date())
+      setTimeout(() => setRealtimeSyncing(false), 500)
+    })
+    
+    // 장소 변경 구독 (dayIds가 있을 때만)
+    if (selectedTrip.days && selectedTrip.days.length > 0) {
+      const dayIds = selectedTrip.days.map(d => d.id)
+      placesChannelRef.current = subscribeTripPlacesChanges(dayIds, async (change) => {
+        setRealtimeSyncing(true)
+        
+        // 장소 변경시 전체 데이터 다시 로드 (간단히 처리)
+        const result = await getTripPlanWithDetails(selectedTrip.id)
+        if (result.success) {
+          setSelectedTrip(result.plan)
+        }
+        
+        setLastSyncTime(new Date())
+        setTimeout(() => setRealtimeSyncing(false), 500)
+      })
+    }
+    
+    // 컴포넌트 언마운트 또는 selectedTrip 변경시 구독 해제
+    return () => {
+      if (realtimeChannelRef.current) {
+        unsubscribeChannel(realtimeChannelRef.current)
+        realtimeChannelRef.current = null
+      }
+      if (placesChannelRef.current) {
+        unsubscribeChannel(placesChannelRef.current)
+        placesChannelRef.current = null
+      }
+    }
+  }, [selectedTrip?.id, collaboratedPlans, collaborators])
   
   // URL의 초대 코드 처리
   useEffect(() => {
@@ -3184,6 +3272,20 @@ const MyTripPage = () => {
                     {selectedTrip.startDate} ~ {selectedTrip.endDate}
                     ({getTripDuration(selectedTrip)}{language === 'ko' ? '일' : ' days'})
                   </span>
+                  {/* 실시간 동기화 표시 */}
+                  {(collaboratedPlans.some(p => p.id === selectedTrip.id) || (collaborators && collaborators.length > 0)) && (
+                    <span className={`realtime-sync-indicator ${realtimeSyncing ? 'syncing' : ''}`}>
+                      <FiRefreshCw className={realtimeSyncing ? 'spinning' : ''} />
+                      {realtimeSyncing 
+                        ? (language === 'ko' ? '동기화 중...' : 'Syncing...') 
+                        : (language === 'ko' ? '실시간 동기화' : 'Real-time sync')}
+                      {lastSyncTime && !realtimeSyncing && (
+                        <span className="last-sync-time">
+                          {new Date(lastSyncTime).toLocaleTimeString()}
+                        </span>
+                      )}
+                    </span>
+                  )}
                   {selectedTrip.description && (
                     <p className="trip-description-text">{selectedTrip.description}</p>
                   )}
