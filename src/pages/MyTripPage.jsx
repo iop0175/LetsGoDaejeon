@@ -321,7 +321,7 @@ const MyTripPage = () => {
       setTimeout(() => setRealtimeSyncing(false), 500)
     }
     
-    // 여행 계획 및 일정 변경 구독
+    // 여행 계획 및 일정 변경 구독 (브로드캐스트 포함)
     realtimeChannelRef.current = subscribeTripPlanChanges(selectedTrip.id, async (change) => {
       // 모든 변경사항에 대해 데이터 새로고침
       await refreshTripData()
@@ -335,8 +335,25 @@ const MyTripPage = () => {
       })
     }
     
+    // 폴링 백업: 5초마다 데이터 확인 (RLS로 인한 실시간 누락 대비)
+    const pollInterval = setInterval(async () => {
+      const result = await getTripPlanWithDetails(selectedTrip.id)
+      if (result.success) {
+        // 장소 개수가 변경되었으면 업데이트
+        const currentPlaceCount = selectedTrip.days?.reduce((sum, d) => sum + (d.places?.length || 0), 0) || 0
+        const newPlaceCount = result.plan.days?.reduce((sum, d) => sum + (d.places?.length || 0), 0) || 0
+        if (currentPlaceCount !== newPlaceCount) {
+          setRealtimeSyncing(true)
+          setSelectedTrip(result.plan)
+          setLastSyncTime(new Date())
+          setTimeout(() => setRealtimeSyncing(false), 500)
+        }
+      }
+    }, 5000)
+    
     // 컴포넌트 언마운트 또는 selectedTrip 변경시 구독 해제
     return () => {
+      clearInterval(pollInterval)
       if (realtimeChannelRef.current) {
         unsubscribeChannel(realtimeChannelRef.current)
         realtimeChannelRef.current = null

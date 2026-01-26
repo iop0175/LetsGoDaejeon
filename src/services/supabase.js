@@ -91,9 +91,15 @@ export const exchangeCodeForSession = async () => {
 // 실시간 구독 헬퍼 함수
 
 // 여행 계획 실시간 구독 (특정 계획의 변경 감지)
+// postgres_changes 대신 broadcast 채널 사용으로 RLS 우회
 export const subscribeTripPlanChanges = (planId, onUpdate) => {
   const channel = supabase
     .channel(`trip_plan_${planId}`)
+    // 브로드캐스트 채널 구독 (협업자간 직접 통신)
+    .on('broadcast', { event: 'trip_update' }, (payload) => {
+      onUpdate({ type: payload.payload.type, event: payload.payload.event, data: payload.payload.data })
+    })
+    // postgres_changes도 유지 (소유자 변경 감지)
     .on(
       'postgres_changes',
       {
@@ -121,6 +127,16 @@ export const subscribeTripPlanChanges = (planId, onUpdate) => {
     .subscribe()
 
   return channel
+}
+
+// 여행 변경사항 브로드캐스트 (협업자가 변경 알림을 보낼 때 사용)
+export const broadcastTripUpdate = async (planId, updateType, eventType, data) => {
+  const channel = supabase.channel(`trip_plan_${planId}`)
+  await channel.send({
+    type: 'broadcast',
+    event: 'trip_update',
+    payload: { type: updateType, event: eventType, data }
+  })
 }
 
 // 여행 장소 실시간 구독 (일차별 장소 변경 감지)
