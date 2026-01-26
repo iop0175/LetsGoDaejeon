@@ -1312,32 +1312,45 @@ export const createTripInvite = async (planId, permission = 'edit') => {
 // 초대 코드로 초대 정보 조회
 export const getTripInviteByCode = async (inviteCode) => {
   try {
-    const { data, error } = await supabase
+    // 1단계: 초대 정보만 조회
+    const { data: invite, error: inviteError } = await supabase
       .from('trip_invites')
-      .select(`
-        *,
-        trip_plans (
-          id,
-          title,
-          start_date,
-          end_date,
-          description,
-          user_id
-        )
-      `)
+      .select('*')
       .eq('invite_code', inviteCode)
       .eq('is_active', true)
       .gt('expires_at', new Date().toISOString())
       .single()
     
-    if (error) throw error
+    if (inviteError) throw inviteError
     
     // 사용 횟수 확인
-    if (data.max_uses && data.use_count >= data.max_uses) {
+    if (invite.max_uses && invite.use_count >= invite.max_uses) {
       return { success: false, error: '초대 링크 사용 횟수가 초과되었습니다.' }
     }
     
-    return { success: true, invite: data }
+    // 2단계: 여행 계획 정보 조회 (RLS 우회)
+    const { data: plan, error: planError } = await supabase
+      .from('trip_plans')
+      .select('id, title, start_date, end_date, description, user_id')
+      .eq('id', invite.plan_id)
+      .single()
+    
+    if (planError) {
+      console.warn('Plan fetch error (may be RLS):', planError)
+      // RLS 정책 때문에 접근 못할 수 있으므로 기본 정보로 대체
+      invite.trip_plans = {
+        id: invite.plan_id,
+        title: '여행 계획',
+        start_date: null,
+        end_date: null,
+        description: null,
+        user_id: invite.created_by
+      }
+    } else {
+      invite.trip_plans = plan
+    }
+    
+    return { success: true, invite }
   } catch (err) {
     console.error('getTripInviteByCode error:', err)
     return { success: false, error: '유효하지 않은 초대 링크입니다.' }
