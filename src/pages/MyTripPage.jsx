@@ -3375,15 +3375,37 @@ const MyTripPage = () => {
                           </div>
                         </div>
                         <div className="result-actions">
-                          {selectedTrip.days?.map(day => (
-                            <button
-                              key={day.id}
-                              className="add-to-day-btn"
-                              onClick={() => handleAddPlace(day.id, place)}
+                          {selectedTrip.days?.length > 5 ? (
+                            <select
+                              className="day-select-dropdown"
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  handleAddPlace(parseInt(e.target.value), place)
+                                  e.target.value = ''
+                                }
+                              }}
+                              defaultValue=""
                             >
-                              Day {day.dayNumber}
-                            </button>
-                          ))}
+                              <option value="" disabled>
+                                {language === 'ko' ? 'Day 선택' : 'Select Day'}
+                              </option>
+                              {selectedTrip.days?.map(day => (
+                                <option key={day.id} value={day.id}>
+                                  Day {day.dayNumber}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            selectedTrip.days?.map(day => (
+                              <button
+                                key={day.id}
+                                className="add-to-day-btn"
+                                onClick={() => handleAddPlace(day.id, place)}
+                              >
+                                Day {day.dayNumber}
+                              </button>
+                            ))
+                          )}
                         </div>
                       </div>
                     ))}
