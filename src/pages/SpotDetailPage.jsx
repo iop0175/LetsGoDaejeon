@@ -468,7 +468,14 @@ const SpotDetailPage = () => {
   }
   
   const handleKakaoShare = () => {
-    const shareUrl = window.location.href
+    // 프로덕션 도메인 사용 (localhost인 경우 실제 도메인으로 변환)
+    const currentUrl = window.location.href
+    const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
+    const productionDomain = 'https://letsgodaejeon.kr'
+    const shareUrl = isLocalhost 
+      ? `${productionDomain}/spot/${contentId}` 
+      : currentUrl
+    
     const shareTitle = spot?.title || '대전 관광지'
     const shareImage = allImages?.[0] || spot?.firstimage || ''
     const shareDescription = spot?.overview?.substring(0, 100) || spot?.addr1 || '대전으로 떠나는 여행'
@@ -522,13 +529,21 @@ const SpotDetailPage = () => {
   }
   
   const handleCopyLink = async () => {
+    // 프로덕션 도메인 사용 (localhost인 경우 실제 도메인으로 변환)
+    const currentUrl = window.location.href
+    const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
+    const productionDomain = 'https://letsgodaejeon.kr'
+    const copyUrl = isLocalhost 
+      ? `${productionDomain}/spot/${contentId}` 
+      : currentUrl
+    
     try {
-      await navigator.clipboard.writeText(window.location.href)
+      await navigator.clipboard.writeText(copyUrl)
       alert(language === 'ko' ? 'URL이 복사되었습니다!' : 'URL copied!')
     } catch (err) {
       // fallback
       const textArea = document.createElement('textarea')
-      textArea.value = window.location.href
+      textArea.value = copyUrl
       document.body.appendChild(textArea)
       textArea.select()
       document.execCommand('copy')
