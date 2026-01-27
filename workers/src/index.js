@@ -100,7 +100,7 @@ function errorResponse(message, status = 500, origin = null, rateLimit = null) {
 }
 
 // ODSay API 프록시
-async function handleOdsay(request, env, pathname) {
+async function handleOdsay(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/odsay', '');
@@ -131,15 +131,15 @@ async function handleOdsay(request, env, pathname) {
     });
     const data = await response.json();
     
-    return jsonResponse(data);
+    return jsonResponse(data, 200, origin);
   } catch (error) {
 
-    return errorResponse('ODSay API 요청 실패: ' + error.message, 500);
+    return errorResponse('ODSay API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // 카카오 API 프록시
-async function handleKakao(request, env, pathname) {
+async function handleKakao(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     // /api/kakao 제거하고 나머지 경로 사용
@@ -172,15 +172,15 @@ async function handleKakao(request, env, pathname) {
     });
     
     const data = await response.json();
-    return jsonResponse(data);
+    return jsonResponse(data, 200, origin);
   } catch (error) {
 
-    return errorResponse('카카오 API 요청 실패: ' + error.message, 500);
+    return errorResponse('카카오 API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // 대전시 공공데이터 API 프록시
-async function handleDaejeonApi(request, env, pathname) {
+async function handleDaejeonApi(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/daejeon', '');
@@ -191,7 +191,7 @@ async function handleDaejeonApi(request, env, pathname) {
     // 특수 경로 처리
     if (apiPath === '/parking') {
       // 주차장 API (XML 응답을 JSON으로 파싱)
-      return handleDaejeonParking(request, env);
+      return handleDaejeonParking(request, env, origin);
     }
     
     if (apiPath === '/medical') {
@@ -209,7 +209,7 @@ async function handleDaejeonApi(request, env, pathname) {
         headers: { 'Accept': 'application/json' }
       });
       const data = await response.json();
-      return jsonResponse(data);
+      return jsonResponse(data, 200, origin);
     }
     
     // 대전시 API URL 구성
@@ -240,14 +240,14 @@ async function handleDaejeonApi(request, env, pathname) {
     });
     
     const data = await response.json();
-    return jsonResponse(data);
+    return jsonResponse(data, 200, origin);
   } catch (error) {
-    return errorResponse('대전시 API 요청 실패: ' + error.message, 500);
+    return errorResponse('대전시 API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // 대전시 주차장 API (XML을 JSON으로 변환)
-async function handleDaejeonParking(request, env) {
+async function handleDaejeonParking(request, env, origin) {
   try {
     const url = new URL(request.url);
     const apiKey = env.DAEJEON_API_KEY ? env.DAEJEON_API_KEY.trim() : '';
@@ -310,17 +310,17 @@ async function handleDaejeonParking(request, env) {
         success: true,
         totalCount: totalCount || items.length,
         items: items
-      });
+      }, 200, origin);
     }
     
-    return jsonResponse({ success: false, items: [], totalCount: 0 });
+    return jsonResponse({ success: false, items: [], totalCount: 0 }, 200, origin);
   } catch (error) {
-    return errorResponse('주차장 API 요청 실패: ' + error.message, 500);
+    return errorResponse('주차장 API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // 한국관광공사 API 프록시
-async function handleKtoApi(request, env, pathname) {
+async function handleKtoApi(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/kto', '');
@@ -349,14 +349,14 @@ async function handleKtoApi(request, env, pathname) {
     });
     
     const data = await response.json();
-    return jsonResponse(data);
+    return jsonResponse(data, 200, origin);
   } catch (error) {
-    return errorResponse('한국관광공사 API 요청 실패: ' + error.message, 500);
+    return errorResponse('한국관광공사 API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // KCISA 문화예술 공연 API 프록시 (XML → JSON 변환)
-async function handleKcisaApi(request, env, pathname) {
+async function handleKcisaApi(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/kcisa', '');
@@ -412,7 +412,7 @@ async function handleKcisaApi(request, env, pathname) {
         resultMsg,
         totalCount: items.length,
         items: items
-      });
+      }, 200, origin);
     }
     
     return jsonResponse({ 
@@ -421,14 +421,14 @@ async function handleKcisaApi(request, env, pathname) {
       resultMsg,
       items: [], 
       totalCount: 0 
-    });
+    }, 200, origin);
   } catch (error) {
-    return errorResponse('KCISA API 요청 실패: ' + error.message, 500);
+    return errorResponse('KCISA API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // TourAPI 4.0 (한국관광공사 국문 관광정보 서비스) 프록시
-async function handleTourApi(request, env, pathname) {
+async function handleTourApi(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/tour', '');
@@ -473,18 +473,18 @@ async function handleTourApi(request, env, pathname) {
     // JSON 파싱 시도
     try {
       const data = JSON.parse(text);
-      return jsonResponse(data);
+      return jsonResponse(data, 200, origin);
     } catch (parseError) {
       // JSON 파싱 실패시 원본 텍스트와 함께 에러 반환
-      return errorResponse('TourAPI 응답 파싱 실패: ' + text.substring(0, 200), 500);
+      return errorResponse('TourAPI 응답 파싱 실패: ' + text.substring(0, 200), 500, origin);
     }
   } catch (error) {
-    return errorResponse('TourAPI 요청 실패: ' + error.message, 500);
+    return errorResponse('TourAPI 요청 실패: ' + error.message, 500, origin);
   }
 }
 
 // KCISA 전시정보 API (API_CCA_145) - 필드명이 대문자
-async function handleKcisaExhibitionApi(request, env, pathname) {
+async function handleKcisaExhibitionApi(request, env, pathname, origin) {
   try {
     const url = new URL(request.url);
     const apiPath = pathname.replace('/api/kcisa-exhibition', '');
@@ -552,7 +552,7 @@ async function handleKcisaExhibitionApi(request, env, pathname) {
         resultMsg,
         totalCount,
         items: items
-      });
+      }, 200, origin);
     }
     
     return jsonResponse({ 
@@ -561,9 +561,9 @@ async function handleKcisaExhibitionApi(request, env, pathname) {
       resultMsg,
       items: [], 
       totalCount: 0 
-    });
+    }, 200, origin);
   } catch (error) {
-    return errorResponse('KCISA 전시 API 요청 실패: ' + error.message, 500);
+    return errorResponse('KCISA 전시 API 요청 실패: ' + error.message, 500, origin);
   }
 }
 
@@ -638,34 +638,34 @@ export default {
 
     // API 라우팅
     if (pathname.startsWith('/api/odsay')) {
-      return handleOdsay(request, env, pathname);
+      return handleOdsay(request, env, pathname, origin);
     }
     
     if (pathname.startsWith('/api/kakao')) {
-      return handleKakao(request, env, pathname);
+      return handleKakao(request, env, pathname, origin);
     }
     
     if (pathname.startsWith('/api/daejeon')) {
-      return handleDaejeonApi(request, env, pathname);
+      return handleDaejeonApi(request, env, pathname, origin);
     }
     
     if (pathname.startsWith('/api/kto')) {
-      return handleKtoApi(request, env, pathname);
+      return handleKtoApi(request, env, pathname, origin);
     }
     
     // TourAPI 4.0 (한국관광공사 국문 관광정보 서비스)
     if (pathname.startsWith('/api/tour')) {
-      return handleTourApi(request, env, pathname);
+      return handleTourApi(request, env, pathname, origin);
     }
     
     // KCISA 전시 API (API_CCA_145) - 먼저 체크 (더 구체적인 경로)
     if (pathname.startsWith('/api/kcisa-exhibition')) {
-      return handleKcisaExhibitionApi(request, env, pathname);
+      return handleKcisaExhibitionApi(request, env, pathname, origin);
     }
     
     // KCISA 공연 API (CNV_060)
     if (pathname.startsWith('/api/kcisa')) {
-      return handleKcisaApi(request, env, pathname);
+      return handleKcisaApi(request, env, pathname, origin);
     }
 
     // 404

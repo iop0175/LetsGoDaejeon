@@ -1,0 +1,422 @@
+/* 프로필 페이지 */
+.profile-page {
+  min-height: calc(100vh - 80px);
+  padding: 2rem;
+  background: #f8fafc;
+}
+
+.profile-page.dark {
+  background: #0f172a;
+}
+
+/* 컨테이너 */
+.profile-container {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* 헤더 */
+.profile-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.profile-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.profile-page.dark .profile-header h1 {
+  color: #f1f5f9;
+}
+
+.profile-header p {
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+.profile-page.dark .profile-header p {
+  color: #94a3b8;
+}
+
+/* 로딩 */
+.profile-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  gap: 1rem;
+}
+
+.profile-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.profile-loading p {
+  color: #64748b;
+}
+
+/* 로그인 필요 */
+.profile-login-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  text-align: center;
+  gap: 1rem;
+}
+
+.profile-login-icon {
+  font-size: 4rem;
+  opacity: 0.5;
+}
+
+.profile-login-required h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.profile-page.dark .profile-login-required h2 {
+  color: #f1f5f9;
+}
+
+.profile-login-required p {
+  color: #64748b;
+  margin-bottom: 1rem;
+}
+
+.profile-kakao-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #fee500;
+  color: #191919;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.profile-kakao-login-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(254, 229, 0, 0.4);
+}
+
+/* 메시지 */
+.profile-message {
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.profile-message--success {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #86efac;
+}
+
+.profile-page.dark .profile-message--success {
+  background: #14532d;
+  color: #86efac;
+  border-color: #22c55e;
+}
+
+.profile-message--error {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fca5a5;
+}
+
+.profile-page.dark .profile-message--error {
+  background: #7f1d1d;
+  color: #fca5a5;
+  border-color: #ef4444;
+}
+
+/* 카드 */
+.profile-card {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 1.5rem;
+}
+
+.profile-page.dark .profile-card {
+  background: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.profile-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1rem;
+}
+
+.profile-page.dark .profile-card h3 {
+  color: #f1f5f9;
+}
+
+.profile-card--danger {
+  border: 1px solid #fee2e2;
+}
+
+.profile-page.dark .profile-card--danger {
+  border-color: #7f1d1d;
+}
+
+/* 아바타 섹션 */
+.profile-avatar-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.profile-avatar-wrapper {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 4px solid #e2e8f0;
+}
+
+.profile-page.dark .profile-avatar {
+  border-color: #334155;
+}
+
+.profile-avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--bg-gradient);
+  background-image: linear-gradient(135deg, rgb(0, 102, 204) 0%, rgb(0, 180, 216) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: 600;
+  color: white;
+}
+
+/* 정보 섹션 */
+.profile-info-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.profile-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.profile-page.dark .profile-field label {
+  color: #94a3b8;
+}
+
+.profile-field-value {
+  font-size: 1rem;
+  color: #1e293b;
+  padding: 0.75rem 1rem;
+  background: #f1f5f9;
+  border-radius: 8px;
+}
+
+.profile-page.dark .profile-field-value {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.profile-field-readonly {
+  color: #64748b;
+}
+
+.profile-page.dark .profile-field-readonly {
+  color: #94a3b8;
+}
+
+.profile-input {
+  padding: 0.75rem 1rem;
+  font-size: 1rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  background: white;
+  color: #1e293b;
+  transition: border-color 0.2s;
+}
+
+.profile-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.profile-page.dark .profile-input {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+.profile-page.dark .profile-input:focus {
+  border-color: #3b82f6;
+}
+
+.profile-field-hint {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin-top: 0.25rem;
+}
+
+/* 프로바이더 배지 */
+.profile-provider-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.profile-provider-kakao {
+  background: #fee500;
+  color: #191919;
+}
+
+/* 액션 버튼 */
+.profile-actions {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.profile-page.dark .profile-actions {
+  border-top-color: #334155;
+}
+
+.profile-btn {
+  flex: 1;
+  padding: 0.875rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.profile-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-btn--primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.profile-btn--primary:hover:not(:disabled) {
+  background: #2563eb;
+}
+
+.profile-btn--secondary {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.profile-btn--secondary:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.profile-page.dark .profile-btn--secondary {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.profile-page.dark .profile-btn--secondary:hover:not(:disabled) {
+  background: #475569;
+}
+
+.profile-btn--danger {
+  background: #ef4444;
+  color: white;
+}
+
+.profile-btn--danger:hover:not(:disabled) {
+  background: #dc2626;
+}
+
+/* 계정 관리 */
+.profile-account-actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.profile-account-actions .profile-btn {
+  flex: none;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+  .profile-page {
+    padding: 1rem;
+  }
+  
+  .profile-card {
+    padding: 1.5rem;
+  }
+  
+  .profile-avatar-wrapper {
+    width: 100px;
+    height: 100px;
+  }
+  
+  .profile-avatar-placeholder {
+    font-size: 2.5rem;
+  }
+  
+  .profile-actions {
+    flex-direction: column;
+  }
+  
+  .profile-btn {
+    width: 100%;
+  }
+}

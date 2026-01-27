@@ -1,6 +1,6 @@
 import { useState, useEffect, memo } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { FiMenu, FiX, FiSearch, FiMapPin, FiGlobe, FiSun, FiMoon, FiUser, FiLogOut } from 'react-icons/fi'
+import { FiMenu, FiX, FiSearch, FiMapPin, FiGlobe, FiSun, FiMoon, FiUser, FiLogOut, FiSettings } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
@@ -179,6 +179,10 @@ const Header = memo(() => {
                   <Link to="/my-trip" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
                     <FiMapPin />
                     {language === 'ko' ? '나의 여행' : 'My Trip'}
+                  </Link>
+                  <Link to="/profile" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
+                    <FiSettings />
+                    {language === 'ko' ? '프로필 설정' : 'Profile Settings'}
                   </Link>
                   <button className="user-dropdown-item logout-btn" onClick={handleLogout}>
                     <FiLogOut />

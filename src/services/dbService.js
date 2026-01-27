@@ -2578,12 +2578,16 @@ export const getTourApiStats = async () => {
  */
 export const incrementSpotViews = async (contentId) => {
   try {
-    // 먼저 기존 레코드 확인
-    const { data: existing } = await supabase
+    // 먼저 기존 레코드 확인 (maybeSingle 사용)
+    const { data: existing, error: selectError } = await supabase
       .from('spot_stats')
       .select('view_count')
       .eq('content_id', contentId)
-      .single()
+      .maybeSingle()
+    
+    if (selectError) {
+      console.error('spot_stats 조회 에러:', selectError)
+    }
     
     if (existing) {
       // 기존 레코드가 있으면 업데이트
@@ -2631,9 +2635,11 @@ export const getSpotStats = async (contentId) => {
       .from('spot_stats')
       .select('view_count, like_count')
       .eq('content_id', contentId)
-      .single()
+      .maybeSingle()
     
-    if (error && error.code !== 'PGRST116') throw error  // PGRST116 = no rows
+    if (error) {
+      console.error('통계 조회 에러:', error)
+    }
     
     return { 
       success: true, 
@@ -2732,10 +2738,10 @@ export const checkSpotLiked = async (contentId, userId) => {
 
 /**
  * 리뷰 작성
- * @param {Object} reviewData - { contentId, userId, rating, content }
+ * @param {Object} reviewData - { contentId, userId, rating, content, userMetadata }
  * @returns {Promise<Object>} { success, review }
  */
-export const createSpotReview = async ({ contentId, userId, rating, content }) => {
+export const createSpotReview = async ({ contentId, userId, rating, content, userMetadata }) => {
   try {
     if (!userId) {
       return { success: false, message: '로그인이 필요합니다' }
@@ -2755,20 +2761,42 @@ export const createSpotReview = async ({ contentId, userId, rating, content }) =
     
     if (error) throw error
     
-    // 프로필 정보 별도 조회 (외래 키 관계가 없을 수 있으므로)
+    // 프로필 정보 조회 또는 생성
     let profile = { nickname: '익명', avatar_url: null }
     try {
       const { data: profileData } = await supabase
         .from('profiles')
         .select('nickname, avatar_url')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
       
-      if (profileData) {
+      if (profileData && profileData.nickname) {
         profile = profileData
+      } else {
+        // 프로필이 없거나 닉네임이 없으면 user_metadata에서 생성
+        const nickname = userMetadata?.name || userMetadata?.full_name || userMetadata?.email?.split('@')[0] || '사용자'
+        const avatar_url = userMetadata?.avatar_url || userMetadata?.picture || null
+        
+        // 프로필 upsert
+        const { data: newProfile, error: profileError } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            nickname: nickname,
+            avatar_url: avatar_url,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' })
+          .select('nickname, avatar_url')
+          .maybeSingle()
+        
+        if (!profileError && newProfile) {
+          profile = newProfile
+        } else {
+          profile = { nickname, avatar_url }
+        }
       }
     } catch {
-      // 프로필 조회 실패 시 기본값 사용
+      // 프로필 조회/생성 실패 시 기본값 사용
     }
     
     return { 
@@ -2844,7 +2872,7 @@ export const getSpotReviews = async (contentId, options = {}) => {
             .from('profiles')
             .select('nickname, avatar_url')
             .eq('id', review.user_id)
-            .single()
+            .maybeSingle()
           
           return {
             ...review,

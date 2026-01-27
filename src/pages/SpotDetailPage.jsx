@@ -10,6 +10,15 @@ import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtm
 import LicenseBadge from '../components/common/LicenseBadge'
 import './SpotDetailPage.css'
 
+// 닉네임 마스킹 함수 (첫 글자만 표시, 나머지는 **)
+const maskNickname = (nickname) => {
+  if (!nickname || nickname === '익명') return '익명'
+  if (nickname.length === 1) return nickname
+  if (nickname.length === 2) return nickname[0] + '*'
+  // 3글자 이상: 첫 글자 + **
+  return nickname[0] + '**'
+}
+
 // SVG 아이콘 컴포넌트들 (모던 심플 스타일)
 const Icons = {
   location: ({ size = 20, color = 'currentColor' }) => (
@@ -460,7 +469,8 @@ const SpotDetailPage = () => {
       contentId,
       userId: user.id,
       rating: newRating,
-      content: newReviewContent
+      content: newReviewContent,
+      userMetadata: user.user_metadata
     })
     
     if (result.success) {
@@ -1021,7 +1031,7 @@ const SpotDetailPage = () => {
                           <div className="sdp__review-avatar sdp__review-avatar--default"></div>
                         )}
                         <span className="sdp__review-nickname">
-                          {review.profiles?.nickname || '익명'}
+                          {maskNickname(review.profiles?.nickname)}
                         </span>
                       </div>
                       <div className="sdp__review-meta">

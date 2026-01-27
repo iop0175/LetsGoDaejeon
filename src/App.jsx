@@ -19,6 +19,7 @@ import AdminPage from './pages/AdminPage'
 import MyTripPage from './pages/MyTripPage'
 import SharedTripPage from './pages/SharedTripPage'
 import SharedTripsPage from './pages/SharedTripsPage'
+import ProfilePage from './pages/ProfilePage'
 import PrivacyPage from './pages/PrivacyPage'
 import TermsPage from './pages/TermsPage'
 import CopyrightPage from './pages/CopyrightPage'
@@ -79,6 +80,7 @@ function App() {
           <Route path="/my-trip" element={<MyTripPage />} />
           <Route path="/shared-trips" element={<SharedTripsPage />} />
           <Route path="/trip/shared/:tripId" element={<SharedTripPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
