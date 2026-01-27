@@ -6,7 +6,7 @@ import {
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
   FiNavigation, FiEye, FiToggleLeft, FiToggleRight, FiMusic, FiDownload,
-  FiGlobe, FiSun, FiInfo
+  FiGlobe, FiSun, FiInfo, FiServer, FiArrowUp, FiArrowDown
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -14,7 +14,11 @@ import { useTheme } from '../context/ThemeContext'
 import { 
   getMedicalFacilities, getDaejeonParking,
   getCulturalPerformances,
-  getTourApiSpots, getTourApiFestivals, getTourApiCounts
+  getTourApiSpots, getTourApiFestivals, getTourApiCounts,
+  getTourApiDetail,
+  getTourApiSpotsEng,
+  getTourApiDetailEng,
+  CONTENT_TYPE_KOR_TO_ENG
 } from '../services/api'
 import { 
   getAllDbCounts, getHeroSlides, createHeroSlide, updateHeroSlide, 
@@ -27,7 +31,11 @@ import {
   saveTourSpots, deleteTourSpots, getTourSpotsCount,
   saveTourFestivals, deleteAllTourFestivals, deleteExpiredTourFestivals, getTourFestivalsCount,
   getTourApiStats, syncTourSpotsOverview, getTourSpotsWithoutOverviewCount,
-  syncTourSpotsIntroInfo, getTourSpotsWithoutIntroCount
+  syncTourSpotsIntroInfo, getTourSpotsWithoutIntroCount,
+  syncTourSpotsEnglish, getTourSpotsWithoutEngCount,
+  syncTourSpotsRoomInfo, getTourSpotsWithoutRoomCount,
+  getTourSpotsWithoutEng, mapTourSpotEnglish, clearTourSpotEnglish,
+  getMappedEngContentIds
 } from '../services/dbService'
 import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
@@ -36,6 +44,7 @@ import {
 import { uploadResizedImage, deleteImage } from '../services/blobService'
 import { PAGE_NAMES } from '../utils/apiStats'
 import { StatCard, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
+import Icons from '../components/common/Icons'
 import './AdminPage.css'
 
 // 페이지 관리 설정 (TourAPI에 없는 데이터만 유지)
@@ -142,6 +151,41 @@ const AdminPage = () => {
   const [searchStats, setSearchStats] = useState(null)
   const [searchStatsLoading, setSearchStatsLoading] = useState(false)
   
+  // 사용자 활동 통계 (리뷰, 좋아요, 프로필)
+  const [userActivityStats, setUserActivityStats] = useState({
+    totalProfiles: 0,
+    totalReviews: 0,
+    totalLikes: 0,
+    todayReviews: 0,
+    todayLikes: 0,
+    recentReviews: [],
+    topRatedSpots: []
+  })
+  const [userActivityLoading, setUserActivityLoading] = useState(false)
+  
+  // 리뷰 관리 상태
+  const [allReviews, setAllReviews] = useState([])
+  const [reviewsLoading, setReviewsLoading] = useState(false)
+  const [reviewsPage, setReviewsPage] = useState(1)
+  const [reviewsTotalCount, setReviewsTotalCount] = useState(0)
+  const [reviewsFilter, setReviewsFilter] = useState('all') // all, recent, low-rating
+  const [deletingReviewId, setDeletingReviewId] = useState(null)
+  
+  // 프로필 관리 상태
+  const [allProfiles, setAllProfiles] = useState([])
+  const [profilesLoading, setProfilesLoading] = useState(false)
+  const [profilesPage, setProfilesPage] = useState(1)
+  const [profilesTotalCount, setProfilesTotalCount] = useState(0)
+  const [profileSearch, setProfileSearch] = useState('')
+  
+  // 페이지 방문 통계 관리 상태
+  const [pageVisits, setPageVisits] = useState([])
+  const [pageVisitsLoading, setPageVisitsLoading] = useState(false)
+  const [pageVisitsPage, setPageVisitsPage] = useState(1)
+  const [pageVisitsTotalCount, setPageVisitsTotalCount] = useState(0)
+  const [pageVisitsPeriod, setPageVisitsPeriod] = useState('today')
+  const [pageVisitsSummary, setPageVisitsSummary] = useState({}) // 페이지별 요약
+  
   // 추천 여행 코스 관리
   const [publishedTrips, setPublishedTrips] = useState([])
   const [tripsLoading, setTripsLoading] = useState(false)
@@ -176,6 +220,38 @@ const AdminPage = () => {
   const [introSyncLoading, setIntroSyncLoading] = useState(false) // intro_info 동기화 로딩
   const [introSyncProgress, setIntroSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 진행 상태
   const [noIntroCount, setNoIntroCount] = useState(0) // intro_info 없는 항목 개수
+  const [roomSyncLoading, setRoomSyncLoading] = useState(false) // room_info 동기화 로딩
+  const [roomSyncProgress, setRoomSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 진행 상태
+  const [noRoomCount, setNoRoomCount] = useState(0) // room_info 없는 숙박 항목 개수
+  const [engSyncLoading, setEngSyncLoading] = useState(false) // 영문 데이터 동기화 로딩
+  const [engSyncProgress, setEngSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 영문 동기화 진행
+  const [noEngCount, setNoEngCount] = useState(0) // 영문 데이터 없는 항목 개수
+  
+  // 영문 수동 매핑 상태
+  const [engMappingData, setEngMappingData] = useState([]) // 영문 없는 국문 데이터 목록
+  const [engMappingLoading, setEngMappingLoading] = useState(false)
+  const [engApiData, setEngApiData] = useState([]) // 영문 API 데이터 목록
+  const [engApiLoading, setEngApiLoading] = useState(false)
+  const [engMappingSelectedKor, setEngMappingSelectedKor] = useState(null) // 선택된 국문 항목
+  const [engMappingSelectedEng, setEngMappingSelectedEng] = useState(null) // 선택된 영문 항목
+  const [engMappingSearchKor, setEngMappingSearchKor] = useState('') // 국문 검색어
+  const [engMappingSearchEng, setEngMappingSearchEng] = useState('') // 영문 검색어
+  const [engApiSelectedType, setEngApiSelectedType] = useState('76') // 선택된 영문 타입
+  const [korApiSelectedType, setKorApiSelectedType] = useState('') // 선택된 국문 타입 (빈값=전체)
+  
+  // TourAPI DB 데이터 관리 상태
+  const [tourDbData, setTourDbData] = useState([])
+  const [tourDbDataLoading, setTourDbDataLoading] = useState(false)
+  const [tourDbDataPage, setTourDbDataPage] = useState(1)
+  const [tourDbDataTotalCount, setTourDbDataTotalCount] = useState(0)
+  const [tourDbSelectedType, setTourDbSelectedType] = useState('12') // 기본 관광지
+  const [tourDbSearchQuery, setTourDbSearchQuery] = useState('')
+  const [tourDbEditItem, setTourDbEditItem] = useState(null) // 편집 중인 아이템
+  const [tourDbViewMode, setTourDbViewMode] = useState('sync') // 'sync' 또는 'manage'
+  const [tourDbSortField, setTourDbSortField] = useState('updated_at') // 정렬 필드
+  const [tourDbSortOrder, setTourDbSortOrder] = useState('desc') // 'asc' 또는 'desc'
+  const [tourDbEngFilter, setTourDbEngFilter] = useState('all') // 'all', 'hasEng', 'noEng'
+  
   const TOUR_CONTENT_TYPES = {
     '12': { name: '관광지', icon: FiMap, color: '#0066cc' },
     '14': { name: '문화시설', icon: FiActivity, color: '#2196f3' },
@@ -393,6 +469,474 @@ const AdminPage = () => {
     }
     setSearchStatsLoading(false)
   }, [])
+  
+  // 사용자 활동 통계 로드 (프로필, 리뷰, 좋아요)
+  const loadUserActivityStats = useCallback(async () => {
+    setUserActivityLoading(true)
+    try {
+      // 프로필 수
+      const { count: profileCount } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+      
+      // 리뷰 수
+      const { count: reviewCount } = await supabase
+        .from('spot_reviews')
+        .select('*', { count: 'exact', head: true })
+      
+      // 좋아요 수
+      const { count: likeCount } = await supabase
+        .from('spot_likes')
+        .select('*', { count: 'exact', head: true })
+      
+      // 오늘 리뷰 수
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const { count: todayReviewCount } = await supabase
+        .from('spot_reviews')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today.toISOString())
+      
+      // 오늘 좋아요 수
+      const { count: todayLikeCount } = await supabase
+        .from('spot_likes')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', today.toISOString())
+      
+      // 최근 리뷰 5개 - 기본 컬럼만 조회
+      const { data: recentReviews, error: reviewError } = await supabase
+        .from('spot_reviews')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(5)
+      
+      if (reviewError) {
+        console.error('최근 리뷰 조회 실패:', reviewError)
+      }
+      
+      // 조회수 높은 장소 TOP 5 (spot_stats 기준)
+      const { data: topViewed, error: statsError } = await supabase
+        .from('spot_stats')
+        .select('content_id, view_count, like_count')
+        .gt('view_count', 0)
+        .order('view_count', { ascending: false })
+        .limit(5)
+      
+      if (statsError) {
+        console.error('통계 조회 실패:', statsError)
+      }
+      
+      // 장소명 가져오기 (DB tour_spots 또는 tour_festivals에서 조회)
+      let topViewedWithNames = topViewed || []
+      if (topViewed && topViewed.length > 0) {
+        const contentIds = topViewed.map(s => s.content_id)
+        
+        // tour_spots에서 먼저 조회
+        const { data: spotNames } = await supabase
+          .from('tour_spots')
+          .select('content_id, title')
+          .in('content_id', contentIds)
+        
+        // tour_festivals에서도 조회
+        const { data: festivalNames } = await supabase
+          .from('tour_festivals')
+          .select('content_id, title')
+          .in('content_id', contentIds)
+        
+        const nameMap = {}
+        if (spotNames) {
+          spotNames.forEach(s => {
+            nameMap[s.content_id] = s.title
+          })
+        }
+        if (festivalNames) {
+          festivalNames.forEach(s => {
+            if (!nameMap[s.content_id]) {
+              nameMap[s.content_id] = s.title
+            }
+          })
+        }
+        
+        // 없는 것은 API에서 조회 시도
+        const missingIds = contentIds.filter(id => !nameMap[id])
+        if (missingIds.length > 0) {
+          for (const id of missingIds) {
+            try {
+              const { success, item } = await getTourApiDetail(id, false)
+              if (success && item?.title) {
+                nameMap[id] = item.title
+              }
+            } catch {
+              // 무시
+            }
+          }
+        }
+        
+        topViewedWithNames = topViewed.map(spot => ({
+          ...spot,
+          title: nameMap[spot.content_id] || `ID: ${spot.content_id}`
+        }))
+      }
+      
+      setUserActivityStats({
+        totalProfiles: profileCount || 0,
+        totalReviews: reviewCount || 0,
+        totalLikes: likeCount || 0,
+        todayReviews: todayReviewCount || 0,
+        todayLikes: todayLikeCount || 0,
+        recentReviews: recentReviews || [],
+        topRatedSpots: topViewedWithNames
+      })
+    } catch (err) {
+      console.error('사용자 활동 통계 로드 실패:', err)
+    }
+    setUserActivityLoading(false)
+  }, [supabase])
+  
+  // 모든 리뷰 로드 (관리용)
+  const loadAllReviews = useCallback(async (page = 1, filter = 'all') => {
+    setReviewsLoading(true)
+    setReviewsPage(page)
+    setReviewsFilter(filter)
+    
+    try {
+      const itemsPerPage = 20
+      const offset = (page - 1) * itemsPerPage
+      
+      // 총 개수 가져오기
+      const { count } = await supabase
+        .from('spot_reviews')
+        .select('*', { count: 'exact', head: true })
+      
+      setReviewsTotalCount(count || 0)
+      
+      // 리뷰 데이터 가져오기 (foreign key 관계가 없으므로 단순 조회)
+      let query = supabase
+        .from('spot_reviews')
+        .select('*')
+        .range(offset, offset + itemsPerPage - 1)
+      
+      // 필터 적용
+      if (filter === 'recent') {
+        const weekAgo = new Date()
+        weekAgo.setDate(weekAgo.getDate() - 7)
+        query = query.gte('created_at', weekAgo.toISOString())
+      } else if (filter === 'low-rating') {
+        query = query.lte('rating', 2)
+      }
+      
+      query = query.order('created_at', { ascending: false })
+      
+      const { data: reviews, error } = await query
+      
+      if (error) throw error
+      
+      // 리뷰 작성자들의 프로필 정보 가져오기
+      if (reviews && reviews.length > 0) {
+        const userIds = [...new Set(reviews.map(r => r.user_id).filter(Boolean))]
+        
+        if (userIds.length > 0) {
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('id, nickname, avatar_url')
+            .in('id', userIds)
+          
+          // 프로필 맵 생성
+          const profileMap = {}
+          if (profiles) {
+            profiles.forEach(p => {
+              profileMap[p.id] = { nickname: p.nickname, avatar_url: p.avatar_url }
+            })
+          }
+          
+          // 리뷰에 프로필 정보 추가
+          const reviewsWithProfiles = reviews.map(r => ({
+            ...r,
+            profiles: profileMap[r.user_id] || null
+          }))
+          
+          setAllReviews(reviewsWithProfiles)
+        } else {
+          setAllReviews(reviews)
+        }
+      } else {
+        setAllReviews([])
+      }
+    } catch (err) {
+      console.error('리뷰 로드 실패:', err)
+      setAllReviews([])
+    }
+    setReviewsLoading(false)
+  }, [supabase])
+  
+  // 리뷰 삭제 (관리자)
+  const handleDeleteReview = useCallback(async (reviewId) => {
+    if (!confirm(language === 'ko' ? '이 리뷰를 삭제하시겠습니까?' : 'Delete this review?')) {
+      return
+    }
+    
+    setDeletingReviewId(reviewId)
+    try {
+      const { error } = await supabase
+        .from('spot_reviews')
+        .delete()
+        .eq('id', reviewId)
+      
+      if (error) throw error
+      
+      // 목록에서 제거
+      setAllReviews(prev => prev.filter(r => r.id !== reviewId))
+      setReviewsTotalCount(prev => prev - 1)
+      
+      alert(language === 'ko' ? '리뷰가 삭제되었습니다.' : 'Review deleted.')
+    } catch (err) {
+      console.error('리뷰 삭제 실패:', err)
+      alert(language === 'ko' ? '삭제 실패' : 'Delete failed')
+    }
+    setDeletingReviewId(null)
+  }, [supabase, language])
+  
+  // 모든 프로필 로드 (관리용)
+  const loadAllProfiles = useCallback(async (page = 1, search = '') => {
+    setProfilesLoading(true)
+    setProfilesPage(page)
+    setProfileSearch(search)
+    
+    try {
+      const itemsPerPage = 20
+      const offset = (page - 1) * itemsPerPage
+      
+      // 검색어가 있으면 필터링
+      let countQuery = supabase.from('profiles').select('*', { count: 'exact', head: true })
+      let dataQuery = supabase.from('profiles').select('*')
+      
+      if (search) {
+        countQuery = countQuery.ilike('nickname', `%${search}%`)
+        dataQuery = dataQuery.ilike('nickname', `%${search}%`)
+      }
+      
+      const { count } = await countQuery
+      setProfilesTotalCount(count || 0)
+      
+      const { data, error } = await dataQuery
+        .order('created_at', { ascending: false })
+        .range(offset, offset + itemsPerPage - 1)
+      
+      if (error) throw error
+      setAllProfiles(data || [])
+    } catch (err) {
+      console.error('프로필 로드 실패:', err)
+      setAllProfiles([])
+    }
+    setProfilesLoading(false)
+  }, [supabase])
+  
+  // 페이지 방문 통계 로드
+  const loadPageVisits = useCallback(async (page = 1, period = 'today') => {
+    setPageVisitsLoading(true)
+    setPageVisitsPage(page)
+    setPageVisitsPeriod(period)
+    
+    try {
+      const itemsPerPage = 20
+      const offset = (page - 1) * itemsPerPage
+      
+      // 기간에 따라 날짜 필터 설정
+      let dateFilter = null
+      const now = new Date()
+      
+      switch (period) {
+        case 'today':
+          dateFilter = new Date(now.setHours(0, 0, 0, 0)).toISOString()
+          break
+        case 'week':
+          dateFilter = new Date(now.setDate(now.getDate() - 7)).toISOString()
+          break
+        case 'month':
+          dateFilter = new Date(now.setMonth(now.getMonth() - 1)).toISOString()
+          break
+        default:
+          dateFilter = null
+      }
+      
+      // 총 개수 조회
+      let countQuery = supabase.from('page_visits').select('*', { count: 'exact', head: true })
+      if (dateFilter) {
+        countQuery = countQuery.gte('visited_at', dateFilter)
+      }
+      const { count } = await countQuery
+      setPageVisitsTotalCount(count || 0)
+      
+      // 데이터 조회
+      let dataQuery = supabase.from('page_visits').select('*')
+      if (dateFilter) {
+        dataQuery = dataQuery.gte('visited_at', dateFilter)
+      }
+      
+      const { data, error } = await dataQuery
+        .order('visited_at', { ascending: false })
+        .range(offset, offset + itemsPerPage - 1)
+      
+      if (error) throw error
+      setPageVisits(data || [])
+      
+      // 페이지별 방문 수 요약 조회 (전체 기간 데이터로)
+      let summaryQuery = supabase.from('page_visits').select('page_name')
+      if (dateFilter) {
+        summaryQuery = summaryQuery.gte('visited_at', dateFilter)
+      }
+      const { data: summaryData } = await summaryQuery
+      
+      // 페이지별로 그룹화
+      const summary = {}
+      if (summaryData) {
+        summaryData.forEach(visit => {
+          const pageName = visit.page_name || 'unknown'
+          summary[pageName] = (summary[pageName] || 0) + 1
+        })
+      }
+      setPageVisitsSummary(summary)
+    } catch (err) {
+      console.error('페이지 방문 통계 로드 실패:', err)
+      setPageVisits([])
+    }
+    setPageVisitsLoading(false)
+  }, [supabase])
+  
+  // TourAPI DB 데이터 로드 (tour_spots 또는 tour_festivals)
+  const loadTourDbData = useCallback(async (typeId = '12', page = 1, search = '', sortField = 'updated_at', sortOrder = 'desc', engFilter = 'all') => {
+    setTourDbDataLoading(true)
+    setTourDbDataPage(page)
+    setTourDbSelectedType(typeId)
+    setTourDbSearchQuery(search)
+    setTourDbSortField(sortField)
+    setTourDbSortOrder(sortOrder)
+    setTourDbEngFilter(engFilter)
+    
+    try {
+      const itemsPerPage = 20
+      const offset = (page - 1) * itemsPerPage
+      const tableName = typeId === '15' ? 'tour_festivals' : 'tour_spots'
+      
+      // 총 개수 조회
+      let countQuery = supabase.from(tableName).select('*', { count: 'exact', head: true })
+      
+      if (typeId !== '15') {
+        countQuery = countQuery.eq('content_type_id', typeId)
+      }
+      
+      if (search.trim()) {
+        countQuery = countQuery.or(`title.ilike.%${search}%,addr1.ilike.%${search}%`)
+      }
+      
+      // 영문 필터 적용
+      if (engFilter === 'hasEng' && typeId !== '15') {
+        countQuery = countQuery.not('title_en', 'is', null)
+      } else if (engFilter === 'noEng' && typeId !== '15') {
+        countQuery = countQuery.is('title_en', null)
+      }
+      
+      const { count } = await countQuery
+      setTourDbDataTotalCount(count || 0)
+      
+      // 데이터 조회
+      let dataQuery = supabase.from(tableName).select('*')
+      
+      if (typeId !== '15') {
+        dataQuery = dataQuery.eq('content_type_id', typeId)
+      }
+      
+      if (search.trim()) {
+        dataQuery = dataQuery.or(`title.ilike.%${search}%,addr1.ilike.%${search}%`)
+      }
+      
+      // 영문 필터 적용
+      if (engFilter === 'hasEng' && typeId !== '15') {
+        dataQuery = dataQuery.not('title_en', 'is', null)
+      } else if (engFilter === 'noEng' && typeId !== '15') {
+        dataQuery = dataQuery.is('title_en', null)
+      }
+      
+      const { data, error } = await dataQuery
+        .order(sortField, { ascending: sortOrder === 'asc' })
+        .range(offset, offset + itemsPerPage - 1)
+      
+      if (error) throw error
+      setTourDbData(data || [])
+    } catch (err) {
+      console.error('TourAPI DB 데이터 로드 실패:', err)
+      setTourDbData([])
+    }
+    setTourDbDataLoading(false)
+  }, [supabase])
+  
+  // 정렬 토글 함수
+  const handleTourDbSort = useCallback((field) => {
+    const newOrder = (tourDbSortField === field && tourDbSortOrder === 'desc') ? 'asc' : 'desc'
+    loadTourDbData(tourDbSelectedType, 1, tourDbSearchQuery, field, newOrder, tourDbEngFilter)
+  }, [tourDbSortField, tourDbSortOrder, tourDbSelectedType, tourDbSearchQuery, tourDbEngFilter, loadTourDbData])
+  
+  // TourAPI DB 아이템 삭제
+  const handleDeleteTourDbItem = useCallback(async (item) => {
+    if (!confirm(language === 'ko' 
+      ? `"${item.title}" 항목을 삭제하시겠습니까?` 
+      : `Delete "${item.title}"?`)) {
+      return
+    }
+    
+    try {
+      const tableName = tourDbSelectedType === '15' ? 'tour_festivals' : 'tour_spots'
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('content_id', item.content_id)
+      
+      if (error) throw error
+      
+      // 목록에서 제거
+      setTourDbData(prev => prev.filter(i => i.content_id !== item.content_id))
+      setTourDbDataTotalCount(prev => prev - 1)
+      
+      alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
+    } catch (err) {
+      console.error('TourAPI DB 아이템 삭제 실패:', err)
+      alert(language === 'ko' ? '삭제 실패' : 'Delete failed')
+    }
+  }, [supabase, language, tourDbSelectedType])
+  
+  // TourAPI DB 아이템 수정
+  const handleUpdateTourDbItem = useCallback(async (item) => {
+    if (!tourDbEditItem) return
+    
+    try {
+      const tableName = tourDbSelectedType === '15' ? 'tour_festivals' : 'tour_spots'
+      const { error } = await supabase
+        .from(tableName)
+        .update({
+          title: tourDbEditItem.title,
+          addr1: tourDbEditItem.addr1,
+          tel: tourDbEditItem.tel,
+          overview: tourDbEditItem.overview,
+          updated_at: new Date().toISOString()
+        })
+        .eq('content_id', item.content_id)
+      
+      if (error) throw error
+      
+      // 목록 업데이트
+      setTourDbData(prev => prev.map(i => 
+        i.content_id === item.content_id 
+          ? { ...i, ...tourDbEditItem, updated_at: new Date().toISOString() }
+          : i
+      ))
+      
+      setTourDbEditItem(null)
+      alert(language === 'ko' ? '수정되었습니다.' : 'Updated.')
+    } catch (err) {
+      console.error('TourAPI DB 아이템 수정 실패:', err)
+      alert(language === 'ko' ? '수정 실패' : 'Update failed')
+    }
+  }, [supabase, language, tourDbSelectedType, tourDbEditItem])
   
   // 추천 여행 코스 로드
   const loadPublishedTrips = useCallback(async () => {
@@ -747,6 +1291,14 @@ const AdminPage = () => {
       // intro_info 없는 항목 개수 가져오기
       const noIntro = await getTourSpotsWithoutIntroCount()
       setNoIntroCount(noIntro)
+      
+      // room_info 없는 숙박 항목 개수 가져오기
+      const noRoom = await getTourSpotsWithoutRoomCount()
+      setNoRoomCount(noRoom)
+      
+      // 영문 데이터 없는 항목 개수 가져오기
+      const noEng = await getTourSpotsWithoutEngCount()
+      setNoEngCount(noEng)
     } catch (err) {
       console.error('TourAPI 통계 로드 실패:', err)
     }
@@ -1001,6 +1553,189 @@ const AdminPage = () => {
     setIntroSyncLoading(false)
     setIntroSyncProgress({ current: 0, total: 0, item: '' })
   }, [language, noIntroCount, loadTourApiStats])
+  
+  // TourAPI 숙박 객실정보(room_info) 동기화
+  const handleSyncRoomInfo = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? `${noRoomCount}개 숙박시설의 객실정보를 가져오시겠습니까?\n(시간이 오래 걸릴 수 있습니다)`
+      : `Fetch room info for ${noRoomCount} accommodations?\n(This may take a while)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setRoomSyncLoading(true)
+    setRoomSyncProgress({ current: 0, total: noRoomCount, item: '' })
+    
+    try {
+      const result = await syncTourSpotsRoomInfo((current, total, item) => {
+        setRoomSyncProgress({ current, total, item })
+      })
+      
+      if (result.success) {
+        let alertMsg = language === 'ko'
+          ? `객실정보 동기화 완료!\n- 성공: ${result.updatedCount}개\n- 실패: ${result.failedCount}개`
+          : `Room info sync complete!\n- Success: ${result.updatedCount}\n- Failed: ${result.failedCount}`
+        
+        if (result.failedItems && result.failedItems.length > 0) {
+          console.group('🔴 객실정보 동기화 실패 항목')
+          result.failedItems.forEach(item => {
+            console.warn(`${item.title} (content_id: ${item.content_id})`)
+            console.log(`  └ 이유: ${item.reason}`)
+          })
+          console.groupEnd()
+          
+          alertMsg += language === 'ko' 
+            ? `\n\n실패 항목 상세는 개발자 도구(F12) 콘솔에서 확인하세요.`
+            : `\n\nSee browser console (F12) for failed item details.`
+        }
+        
+        alert(alertMsg)
+      } else {
+        alert(result.error || 'Sync failed')
+      }
+      
+      await loadTourApiStats()
+    } catch (err) {
+      console.error('Room info 동기화 실패:', err)
+      alert(language === 'ko'
+        ? `객실정보 동기화 중 오류: ${err.message}`
+        : `Error syncing room info: ${err.message}`)
+    }
+    
+    setRoomSyncLoading(false)
+    setRoomSyncProgress({ current: 0, total: 0, item: '' })
+  }, [language, noRoomCount, loadTourApiStats])
+  
+  // TourAPI 영문 데이터 동기화
+  const handleSyncEnglish = useCallback(async () => {
+    const confirmMsg = language === 'ko'
+      ? `${noEngCount}개 항목의 영문 데이터를 가져오시겠습니까?\n(이름 매칭 방식으로 동기화됩니다)`
+      : `Fetch English data for ${noEngCount} items?\n(Will use name matching)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setEngSyncLoading(true)
+    setEngSyncProgress({ current: 0, total: noEngCount, item: '' })
+    
+    try {
+      const result = await syncTourSpotsEnglish(null, (current, total, item) => {
+        setEngSyncProgress({ current, total, item })
+      })
+      
+      if (result.success) {
+        let alertMsg = language === 'ko'
+          ? `영문 데이터 동기화 완료!\n- 매칭 성공: ${result.updatedCount}개\n- 매칭 실패: ${result.failedCount}개`
+          : `English sync complete!\n- Matched: ${result.updatedCount}\n- Unmatched: ${result.failedCount}`
+        
+        if (result.matchedItems && result.matchedItems.length > 0) {
+          console.group('✅ 영문 데이터 매칭 결과')
+          result.matchedItems.forEach(item => {
+            console.log(`${item.korTitle} → ${item.engTitle}`)
+          })
+          console.groupEnd()
+        }
+        
+        alert(alertMsg)
+      } else {
+        alert(result.error || 'Sync failed')
+      }
+      
+      // 통계 새로고침
+      await loadTourApiStats()
+    } catch (err) {
+      console.error('영문 데이터 동기화 실패:', err)
+      alert(language === 'ko'
+        ? `영문 데이터 동기화 중 오류: ${err.message}`
+        : `Error syncing English data: ${err.message}`)
+    }
+    
+    setEngSyncLoading(false)
+    setEngSyncProgress({ current: 0, total: 0, item: '' })
+  }, [language, noEngCount, loadTourApiStats])
+  
+  // 영문 매핑 - 국문 데이터 로드
+  const loadEngMappingData = useCallback(async (typeId = '') => {
+    setEngMappingLoading(true)
+    try {
+      const result = await getTourSpotsWithoutEng(typeId || null, engMappingSearchKor, 100)
+      if (result.success) {
+        setEngMappingData(result.items)
+      }
+    } catch (err) {
+      console.error('영문 매핑 데이터 로드 실패:', err)
+    }
+    setEngMappingLoading(false)
+  }, [engMappingSearchKor])
+  
+  // 영문 매핑 - 영문 API 데이터 로드 (이미 매핑된 항목 제외)
+  const loadEngApiData = useCallback(async (typeId = '76') => {
+    setEngApiLoading(true)
+    try {
+      // 이미 매핑된 영문 content_id 목록 조회
+      const mappedResult = await getMappedEngContentIds(typeId)
+      const mappedIds = mappedResult.success ? mappedResult.ids : []
+      
+      // 영문 API 데이터 조회
+      const result = await getTourApiSpotsEng({ contentTypeId: typeId, numOfRows: 200 })
+      if (result.success) {
+        // 이미 매핑된 항목 필터링
+        const filteredItems = (result.items || []).filter(
+          item => !mappedIds.includes(String(item.contentid))
+        )
+        setEngApiData(filteredItems)
+        console.log(`영문 데이터 로드: ${result.items?.length || 0}개 중 ${filteredItems.length}개 표시 (${mappedIds.length}개 이미 매핑됨)`)
+      }
+    } catch (err) {
+      console.error('영문 API 데이터 로드 실패:', err)
+    }
+    setEngApiLoading(false)
+  }, [])
+  
+  // 영문 매핑 - 수동 매핑 수행
+  const handleEngMapping = useCallback(async () => {
+    if (!engMappingSelectedKor || !engMappingSelectedEng) {
+      alert(language === 'ko' ? '국문 항목과 영문 항목을 모두 선택하세요.' : 'Select both Korean and English items.')
+      return
+    }
+    
+    const confirmMsg = language === 'ko'
+      ? `"${engMappingSelectedKor.title}"을(를)\n"${engMappingSelectedEng.title}"와 매핑하시겠습니까?`
+      : `Map "${engMappingSelectedKor.title}" to\n"${engMappingSelectedEng.title}"?`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      // 영문 상세정보 조회
+      const detailResult = await getTourApiDetailEng(engMappingSelectedEng.contentid)
+      const engDetail = detailResult.success ? detailResult.item : engMappingSelectedEng
+      
+      const mappedEngContentId = engMappingSelectedEng.contentid
+      const mappedKorId = engMappingSelectedKor.id
+      
+      const result = await mapTourSpotEnglish(mappedKorId, {
+        content_id_en: mappedEngContentId,
+        title_en: engMappingSelectedEng.title,
+        addr1_en: engMappingSelectedEng.addr1 || '',
+        overview_en: engDetail?.overview || '',
+        homepage_en: engDetail?.homepage || ''
+      })
+      
+      if (result.success) {
+        alert(language === 'ko' ? '매핑 완료!' : 'Mapping complete!')
+        // 국문 목록에서 제거
+        setEngMappingData(prev => prev.filter(item => item.id !== mappedKorId))
+        // 영문 목록에서도 제거
+        setEngApiData(prev => prev.filter(item => item.contentid !== mappedEngContentId))
+        // 선택 해제
+        setEngMappingSelectedKor(null)
+        setEngMappingSelectedEng(null)
+      } else {
+        alert(result.error || 'Mapping failed')
+      }
+    } catch (err) {
+      console.error('영문 매핑 실패:', err)
+      alert(err.message)
+    }
+  }, [language, engMappingSelectedKor, engMappingSelectedEng])
   
   // Hero 슬라이드 로드
   const loadHeroSlides = useCallback(async () => {
@@ -1607,8 +2342,9 @@ const AdminPage = () => {
       loadSupabaseUsage()
       loadPageVisitStats(visitStatsPeriod)
       loadSearchStats()
+      loadUserActivityStats() // 사용자 활동 통계 추가
     }
-  }, [user, activeSection, loadDbStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, visitStatsPeriod])
+  }, [user, activeSection, loadDbStats, loadSupabaseUsage, loadPageVisitStats, loadSearchStats, loadUserActivityStats, visitStatsPeriod])
   
   // 페이지 선택 시 저장된 아이템 로드
   useEffect(() => {
@@ -1656,7 +2392,7 @@ const AdminPage = () => {
         <div className="admin-login-container">
           <div className="admin-login-card">
             <div className="login-header">
-              <h1>🏛️ {language === 'ko' ? '관리자 로그인' : 'Admin Login'}</h1>
+              <h1><Icons.admin size={24} /> {language === 'ko' ? '관리자 로그인' : 'Admin Login'}</h1>
               <p>{language === 'ko' ? '대전 관광 포털 관리 시스템' : 'Daejeon Tourism Portal Admin'}</p>
             </div>
             
@@ -1752,7 +2488,7 @@ const AdminPage = () => {
       {/* 사이드바 */}
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : 'closed'}`}>
         <div className="sidebar-header">
-          <h2>🏛️ Admin</h2>
+          <h2><Icons.admin size={20} /> Admin</h2>
           <button 
             className="sidebar-toggle"
             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -1819,6 +2555,43 @@ const AdminPage = () => {
             <span>{language === 'ko' ? 'TourAPI 관리' : 'TourAPI'}</span>
           </button>
           
+          <button 
+            className={`nav-item ${activeSection === 'engmapping' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('engmapping')
+              loadEngMappingData()
+            }}
+          >
+            <FiGlobe style={{ color: activeSection === 'engmapping' ? 'white' : '#1976d2' }} />
+            <span>{language === 'ko' ? '영문 매핑' : 'Eng Mapping'}</span>
+          </button>
+          
+          <div className="nav-section-title">
+            {language === 'ko' ? '사용자 관리' : 'Users'}
+          </div>
+          
+          <button 
+            className={`nav-item ${activeSection === 'reviews' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('reviews')
+              loadAllReviews()
+            }}
+          >
+            <FiEdit2 style={{ color: activeSection === 'reviews' ? 'white' : '#f59e0b' }} />
+            <span>{language === 'ko' ? '리뷰 관리' : 'Reviews'}</span>
+          </button>
+          
+          <button 
+            className={`nav-item ${activeSection === 'profiles' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('profiles')
+              loadAllProfiles()
+            }}
+          >
+            <FiUsers style={{ color: activeSection === 'profiles' ? 'white' : '#3b82f6' }} />
+            <span>{language === 'ko' ? '프로필 관리' : 'Profiles'}</span>
+          </button>
+          
           <div className="nav-section-title">
             {language === 'ko' ? '페이지 관리' : 'Pages'}
           </div>
@@ -1843,6 +2616,17 @@ const AdminPage = () => {
           <div className="nav-section-title">
             {language === 'ko' ? '시스템' : 'System'}
           </div>
+          
+          <button 
+            className={`nav-item ${activeSection === 'analytics' ? 'active' : ''}`}
+            onClick={() => {
+              setActiveSection('analytics')
+              loadPageVisits()
+            }}
+          >
+            <FiActivity style={{ color: activeSection === 'analytics' ? 'white' : '#10b981' }} />
+            <span>{language === 'ko' ? '방문 통계' : 'Analytics'}</span>
+          </button>
           
           <button 
             className={`nav-item ${activeSection === 'database' ? 'active' : ''}`}
@@ -1887,6 +2671,9 @@ const AdminPage = () => {
             {activeSection === 'courses' && (language === 'ko' ? '추천 여행 코스 관리' : 'Travel Courses')}
             {activeSection === 'performances' && (language === 'ko' ? '공연 관리' : 'Performances')}
             {activeSection === 'tourapi' && (language === 'ko' ? 'TourAPI 관리' : 'TourAPI Management')}
+            {activeSection === 'reviews' && (language === 'ko' ? '리뷰 관리' : 'Review Management')}
+            {activeSection === 'profiles' && (language === 'ko' ? '프로필 관리' : 'Profile Management')}
+            {activeSection === 'analytics' && (language === 'ko' ? '방문 통계' : 'Analytics')}
             {activeSection === 'database' && 'Supabase'}
             {activeSection === 'settings' && (language === 'ko' ? '설정' : 'Settings')}
             {activeSection.startsWith('page-') && PAGE_CONFIGS[activeSection.replace('page-', '')]?.title[language]}
@@ -1917,6 +2704,107 @@ const AdminPage = () => {
           {/* 대시보드 섹션 */}
           {activeSection === 'dashboard' && (
             <div className="dashboard-section">
+              {/* 실시간 활동 요약 카드 */}
+              <div className="activity-summary-section">
+                <h3>
+                  <FiActivity />
+                  {language === 'ko' ? '실시간 활동 요약' : 'Activity Summary'}
+                  {userActivityLoading && <FiLoader className="loading-icon spinning" />}
+                </h3>
+                <div className="activity-cards">
+                  <div className="activity-card users">
+                    <div className="activity-icon"><FiUsers /></div>
+                    <div className="activity-info">
+                      <span className="activity-label">{language === 'ko' ? '등록 사용자' : 'Registered Users'}</span>
+                      <span className="activity-value">{userActivityStats.totalProfiles.toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <div className="activity-card reviews">
+                    <div className="activity-icon"><FiEdit2 /></div>
+                    <div className="activity-info">
+                      <span className="activity-label">{language === 'ko' ? '총 리뷰' : 'Total Reviews'}</span>
+                      <span className="activity-value">{userActivityStats.totalReviews.toLocaleString()}</span>
+                      {userActivityStats.todayReviews > 0 && (
+                        <span className="activity-today">+{userActivityStats.todayReviews} today</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="activity-card likes">
+                    <div className="activity-icon"><FiHeart /></div>
+                    <div className="activity-info">
+                      <span className="activity-label">{language === 'ko' ? '총 좋아요' : 'Total Likes'}</span>
+                      <span className="activity-value">{userActivityStats.totalLikes.toLocaleString()}</span>
+                      {userActivityStats.todayLikes > 0 && (
+                        <span className="activity-today">+{userActivityStats.todayLikes} today</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="activity-card visits">
+                    <div className="activity-icon"><FiEye /></div>
+                    <div className="activity-info">
+                      <span className="activity-label">{language === 'ko' ? '오늘 방문' : 'Today Visits'}</span>
+                      <span className="activity-value">{Object.values(todayVisitStats).reduce((a, b) => a + b, 0).toLocaleString()}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 최근 리뷰 & 인기 장소 */}
+              <div className="recent-activity-grid">
+                {/* 최근 리뷰 */}
+                <div className="recent-reviews-card">
+                  <h4>
+                    <FiEdit2 />
+                    {language === 'ko' ? '최근 리뷰' : 'Recent Reviews'}
+                  </h4>
+                  {userActivityStats.recentReviews.length > 0 ? (
+                    <ul className="recent-list">
+                      {userActivityStats.recentReviews.map((review) => (
+                        <li key={review.id} className="recent-item">
+                          <div className="recent-rating">
+                            {[...Array(Math.min(review.rating || 0, 5))].map((_, i) => (
+                              <FiSun key={i} className="star-icon filled" />
+                            ))}
+                          </div>
+                          <div className="recent-content">
+                            {review.content?.substring(0, 50) || '-'}
+                            {review.content?.length > 50 && '...'}
+                          </div>
+                          <div className="recent-date">
+                            {new Date(review.created_at).toLocaleDateString('ko-KR')}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="no-data-text">{language === 'ko' ? '최근 리뷰가 없습니다.' : 'No recent reviews.'}</p>
+                  )}
+                </div>
+
+                {/* 인기 장소 (조회수 기준) */}
+                <div className="top-rated-card">
+                  <h4>
+                    <FiTrendingUp />
+                    {language === 'ko' ? '인기 장소 (조회수)' : 'Popular Spots (Views)'}
+                  </h4>
+                  {userActivityStats.topRatedSpots.length > 0 ? (
+                    <ul className="top-list">
+                      {userActivityStats.topRatedSpots.map((spot, idx) => (
+                        <li key={spot.content_id} className="top-item">
+                          <span className="top-rank">#{idx + 1}</span>
+                          <span className="top-title">{spot.title}</span>
+                          <span className="top-rating">
+                            <FiEye /> {spot.view_count || 0} <FiHeart /> {spot.like_count || 0}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="no-data-text">{language === 'ko' ? '데이터가 없습니다.' : 'No data.'}</p>
+                  )}
+                </div>
+              </div>
+
               {/* API 조회 버튼 섹션 */}
               <div className="api-fetch-section">
                 <div className="api-fetch-info">
@@ -2780,137 +3668,647 @@ const AdminPage = () => {
           {/* TourAPI 관리 섹션 */}
           {activeSection === 'tourapi' && (
             <div className="tourapi-management">
-              {/* 헤더 및 전체 동기화 버튼 */}
-              <div className="tourapi-header">
-                <div className="tourapi-info">
-                  <h3><FiGlobe /> {language === 'ko' ? '한국관광공사 TourAPI 4.0' : 'Korea Tourism TourAPI 4.0'}</h3>
-                  <p className="tourapi-desc">
-                    {language === 'ko' 
-                      ? '대전 지역 관광정보를 API에서 가져와 DB에 저장합니다.'
-                      : 'Fetch Daejeon tourism data from API and save to DB.'}
-                  </p>
-                </div>
-                <div className="tourapi-actions">
-                  <button 
-                    className="btn-refresh"
-                    onClick={loadTourApiStats}
-                    disabled={tourApiLoading}
-                  >
-                    {tourApiLoading ? (
-                      <><FiLoader className="spinning" /> {language === 'ko' ? '조회 중...' : 'Loading...'}</>
-                    ) : (
-                      <><FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}</>
-                    )}
-                  </button>
-                  <button 
-                    className="btn-sync-all"
-                    onClick={handleSyncAllTourData}
-                    disabled={tourApiLoading || Object.values(tourSyncLoading).some(v => v)}
-                  >
-                    <FiDownload /> {language === 'ko' ? '전체 동기화' : 'Sync All'}
-                  </button>
-                  <button 
-                    className="btn-sync-overview"
-                    onClick={handleSyncOverview}
-                    disabled={tourApiLoading || overviewSyncLoading || noOverviewCount === 0}
-                    title={language === 'ko' ? '상세정보(overview) 동기화' : 'Sync overview details'}
-                  >
-                    {overviewSyncLoading ? (
-                      <><FiLoader className="spinning" /> {overviewSyncProgress.current}/{overviewSyncProgress.total}</>
-                    ) : (
-                      <><FiActivity /> {language === 'ko' ? `상세정보 (${noOverviewCount})` : `Overview (${noOverviewCount})`}</>
-                    )}
-                  </button>
-                  <button 
-                    className="btn-sync-intro"
-                    onClick={handleSyncIntroInfo}
-                    disabled={tourApiLoading || introSyncLoading || noIntroCount === 0}
-                    title={language === 'ko' ? '소개정보(이용시간/주차 등) 동기화' : 'Sync intro info (hours/parking)'}
-                  >
-                    {introSyncLoading ? (
-                      <><FiLoader className="spinning" /> {introSyncProgress.current}/{introSyncProgress.total}</>
-                    ) : (
-                      <><FiInfo /> {language === 'ko' ? `소개정보 (${noIntroCount})` : `Intro (${noIntroCount})`}</>
-                    )}
-                  </button>
-                </div>
+              {/* 탭 전환 */}
+              <div className="tourapi-tabs">
+                <button 
+                  className={`tourapi-tab ${tourDbViewMode === 'sync' ? 'active' : ''}`}
+                  onClick={() => setTourDbViewMode('sync')}
+                >
+                  <FiCloud /> {language === 'ko' ? 'API 동기화' : 'API Sync'}
+                </button>
+                <button 
+                  className={`tourapi-tab ${tourDbViewMode === 'manage' ? 'active' : ''}`}
+                  onClick={() => {
+                    setTourDbViewMode('manage')
+                    loadTourDbData(tourDbSelectedType, 1, '')
+                  }}
+                >
+                  <FiDatabase /> {language === 'ko' ? 'DB 관리' : 'DB Management'}
+                </button>
               </div>
               
-              {/* 콘텐츠 타입별 카드 */}
-              <div className="tourapi-cards">
-                {Object.entries(TOUR_CONTENT_TYPES).map(([typeId, typeInfo]) => {
-                  const Icon = typeInfo.icon
-                  const apiCount = tourApiCounts[typeId]?.count || 0
-                  const dbCount = typeId === '15' 
-                    ? tourDbCounts.festivals || 0 
-                    : tourDbCounts.spots?.[typeId]?.count || 0
-                  const isLoading = tourSyncLoading[typeId]
+              {tourDbViewMode === 'sync' && (
+                <>
+                  {/* 헤더 및 전체 동기화 버튼 */}
+                  <div className="tourapi-header">
+                    <div className="tourapi-info">
+                      <h3><FiGlobe /> {language === 'ko' ? '한국관광공사 TourAPI 4.0' : 'Korea Tourism TourAPI 4.0'}</h3>
+                      <p className="tourapi-desc">
+                        {language === 'ko' 
+                          ? '대전 지역 관광정보를 API에서 가져와 DB에 저장합니다.'
+                          : 'Fetch Daejeon tourism data from API and save to DB.'}
+                      </p>
+                    </div>
+                    <div className="tourapi-actions">
+                      <button 
+                        className="btn-refresh"
+                        onClick={loadTourApiStats}
+                        disabled={tourApiLoading}
+                      >
+                        {tourApiLoading ? (
+                          <><FiLoader className="spinning" /> {language === 'ko' ? '조회 중...' : 'Loading...'}</>
+                        ) : (
+                          <><FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}</>
+                        )}
+                      </button>
+                      <button 
+                        className="btn-sync-all"
+                        onClick={handleSyncAllTourData}
+                        disabled={tourApiLoading || Object.values(tourSyncLoading).some(v => v)}
+                      >
+                        <FiDownload /> {language === 'ko' ? '전체 동기화' : 'Sync All'}
+                      </button>
+                      <button 
+                        className="btn-sync-overview"
+                        onClick={handleSyncOverview}
+                        disabled={tourApiLoading || overviewSyncLoading || noOverviewCount === 0}
+                        title={language === 'ko' ? '상세정보(overview) 동기화' : 'Sync overview details'}
+                      >
+                        {overviewSyncLoading ? (
+                          <><FiLoader className="spinning" /> {overviewSyncProgress.current}/{overviewSyncProgress.total}</>
+                        ) : (
+                          <><FiActivity /> {language === 'ko' ? `상세정보 (${noOverviewCount})` : `Overview (${noOverviewCount})`}</>
+                        )}
+                      </button>
+                      <button 
+                        className="btn-sync-intro"
+                        onClick={handleSyncIntroInfo}
+                        disabled={tourApiLoading || introSyncLoading || noIntroCount === 0}
+                        title={language === 'ko' ? '소개정보(이용시간/주차 등) 동기화' : 'Sync intro info (hours/parking)'}
+                      >
+                        {introSyncLoading ? (
+                          <><FiLoader className="spinning" /> {introSyncProgress.current}/{introSyncProgress.total}</>
+                        ) : (
+                          <><FiInfo /> {language === 'ko' ? `소개정보 (${noIntroCount})` : `Intro (${noIntroCount})`}</>
+                        )}
+                      </button>
+                      <button 
+                        className="btn-sync-room"
+                        onClick={handleSyncRoomInfo}
+                        disabled={tourApiLoading || roomSyncLoading || noRoomCount === 0}
+                        title={language === 'ko' ? '숙박시설 객실정보 동기화' : 'Sync accommodation room info'}
+                      >
+                        {roomSyncLoading ? (
+                          <><FiLoader className="spinning" /> {roomSyncProgress.current}/{roomSyncProgress.total}</>
+                        ) : (
+                          <><FiHome /> {language === 'ko' ? `객실정보 (${noRoomCount})` : `Rooms (${noRoomCount})`}</>
+                        )}
+                      </button>
+                      <button 
+                        className="btn-sync-english"
+                        onClick={handleSyncEnglish}
+                        disabled={tourApiLoading || engSyncLoading || noEngCount === 0}
+                        title={language === 'ko' ? '영문 데이터(EngService) 동기화' : 'Sync English data'}
+                      >
+                        {engSyncLoading ? (
+                          <><FiLoader className="spinning" /> {engSyncProgress.current}/{engSyncProgress.total}</>
+                        ) : (
+                          <><FiGlobe /> {language === 'ko' ? `영문 (${noEngCount})` : `English (${noEngCount})`}</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                   
-                  return (
-                    <div key={typeId} className="tourapi-card">
-                      <div className="tourapi-card-header" style={{ borderColor: typeInfo.color }}>
-                        <div className="tourapi-card-icon" style={{ backgroundColor: typeInfo.color }}>
-                          <Icon />
+                  {/* 콘텐츠 타입별 카드 */}
+                  <div className="tourapi-cards">
+                    {Object.entries(TOUR_CONTENT_TYPES).map(([typeId, typeInfo]) => {
+                      const Icon = typeInfo.icon
+                      const apiCount = tourApiCounts[typeId]?.count || 0
+                      const dbCount = typeId === '15' 
+                        ? tourDbCounts.festivals || 0 
+                        : tourDbCounts.spots?.[typeId]?.count || 0
+                      const hasEngCount = typeId === '15' ? 0 : tourDbCounts.spots?.[typeId]?.hasEngCount || 0
+                      const isLoading = tourSyncLoading[typeId]
+                      
+                      return (
+                        <div key={typeId} className="tourapi-card">
+                          <div className="tourapi-card-header" style={{ borderColor: typeInfo.color }}>
+                            <div className="tourapi-card-icon" style={{ backgroundColor: typeInfo.color }}>
+                              <Icon />
+                            </div>
+                            <div className="tourapi-card-title">
+                              <h4>{typeInfo.name}</h4>
+                              <span className="content-type-id">contentTypeId: {typeId}</span>
+                            </div>
+                          </div>
+                          
+                          <div className="tourapi-card-stats">
+                            <div className="stat-row">
+                              <span className="stat-label"><FiCloud /> API</span>
+                              <span className="stat-value">{apiCount.toLocaleString()}개</span>
+                            </div>
+                            <div className="stat-row">
+                              <span className="stat-label"><FiDatabase /> DB</span>
+                              <span className="stat-value">{dbCount.toLocaleString()}개</span>
+                            </div>
+                            {typeId !== '15' && (
+                              <div className="stat-row eng">
+                                <span className="stat-label"><FiGlobe /> {language === 'ko' ? '영문' : 'Eng'}</span>
+                                <span className={`stat-value ${hasEngCount === dbCount ? 'complete' : hasEngCount > 0 ? 'partial' : ''}`}>
+                                  {hasEngCount.toLocaleString()}/{dbCount.toLocaleString()}
+                                </span>
+                              </div>
+                            )}
+                            <div className="stat-row diff">
+                              <span className="stat-label">{language === 'ko' ? '차이' : 'Diff'}</span>
+                              <span className={`stat-value ${apiCount - dbCount > 0 ? 'positive' : apiCount - dbCount < 0 ? 'negative' : ''}`}>
+                                {apiCount - dbCount > 0 ? '+' : ''}{(apiCount - dbCount).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="tourapi-card-actions">
+                            <button 
+                              className="btn-sync-type"
+                              onClick={() => handleSyncTourData(typeId)}
+                              disabled={isLoading}
+                              style={{ backgroundColor: typeInfo.color }}
+                            >
+                              {isLoading ? (
+                                <><FiLoader className="spinning" /> {language === 'ko' ? '동기화 중...' : 'Syncing...'}</>
+                              ) : (
+                                <><FiDownload /> {language === 'ko' ? 'DB 동기화' : 'Sync to DB'}</>
+                              )}
+                            </button>
+                            {typeId === '15' && (
+                              <button 
+                                className="btn-delete-expired"
+                                onClick={handleDeleteExpiredTourFestivals}
+                                title={language === 'ko' ? '만료된 행사 삭제' : 'Delete expired'}
+                              >
+                                <FiTrash2 /> {language === 'ko' ? '만료 삭제' : 'Del Expired'}
+                              </button>
+                            )}
+                          </div>
                         </div>
-                        <div className="tourapi-card-title">
-                          <h4>{typeInfo.name}</h4>
-                          <span className="content-type-id">contentTypeId: {typeId}</span>
-                        </div>
+                      )
+                    })}
+                  </div>
+                  
+                  {/* 안내 문구 */}
+                  <div className="tourapi-notice">
+                    <FiActivity />
+                    <p>
+                      {language === 'ko'
+                        ? '동기화 시 해당 타입의 기존 데이터는 삭제되고 새 데이터로 대체됩니다. 행사/축제는 종료일이 지나지 않은 것만 가져옵니다.'
+                        : 'Sync will delete existing data of that type and replace with new data. Festivals only include those not yet ended.'}
+                    </p>
+                  </div>
+                </>
+              )}
+              
+              {tourDbViewMode === 'manage' && (
+                <div className="tourdb-manage-section">
+                  {/* 타입 선택 버튼 그룹 */}
+                  <div className="tourdb-type-buttons">
+                    {Object.entries(TOUR_CONTENT_TYPES).map(([typeId, typeInfo]) => {
+                      const TypeIcon = typeInfo.icon
+                      return (
+                        <button 
+                          key={typeId}
+                          className={`tourdb-type-btn ${tourDbSelectedType === typeId ? 'active' : ''}`}
+                          onClick={() => loadTourDbData(typeId, 1, '', tourDbSortField, tourDbSortOrder, tourDbEngFilter)}
+                          style={{ 
+                            '--btn-color': typeInfo.color,
+                            '--btn-bg': tourDbSelectedType === typeId ? typeInfo.color : 'transparent'
+                          }}
+                        >
+                          <TypeIcon />
+                          <span>{typeInfo.name}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                  
+                  {/* 검색 및 필터 */}
+                  <div className="tourdb-manage-header">
+                    <div className="tourdb-search-wrapper">
+                      <FiSearch />
+                      <input 
+                        type="text"
+                        placeholder={language === 'ko' ? '제목 또는 주소 검색...' : 'Search title or address...'}
+                        value={tourDbSearchQuery}
+                        onChange={(e) => setTourDbSearchQuery(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && loadTourDbData(tourDbSelectedType, 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, tourDbEngFilter)}
+                      />
+                    </div>
+                    {tourDbSelectedType !== '15' && (
+                      <select 
+                        className="tourdb-eng-filter"
+                        value={tourDbEngFilter}
+                        onChange={(e) => loadTourDbData(tourDbSelectedType, 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, e.target.value)}
+                      >
+                        <option value="all">{language === 'ko' ? '전체' : 'All'}</option>
+                        <option value="hasEng">{language === 'ko' ? '🌐 영문 있음' : '🌐 Has English'}</option>
+                        <option value="noEng">{language === 'ko' ? '❌ 영문 없음' : '❌ No English'}</option>
+                      </select>
+                    )}
+                    <button 
+                      className="tourdb-search-btn"
+                      onClick={() => loadTourDbData(tourDbSelectedType, 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, tourDbEngFilter)}
+                    >
+                      <FiSearch /> {language === 'ko' ? '검색' : 'Search'}
+                    </button>
+                    <span className="tourdb-count">
+                      {language === 'ko' ? '총' : 'Total'} {tourDbDataTotalCount.toLocaleString()}{language === 'ko' ? '개' : ''}
+                    </span>
+                  </div>
+                  
+                  {/* 데이터 테이블 */}
+                  {tourDbDataLoading ? (
+                    <div className="loading-container">
+                      <FiLoader className="spinning" />
+                      <p>{language === 'ko' ? '데이터 로딩 중...' : 'Loading data...'}</p>
+                    </div>
+                  ) : tourDbData.length > 0 ? (
+                    <>
+                      <div className="tourdb-table-container">
+                        <table className="tourdb-table">
+                          <thead>
+                            <tr>
+                              <th style={{ width: '80px' }}>{language === 'ko' ? '이미지' : 'Image'}</th>
+                              <th 
+                                className="sortable-th"
+                                onClick={() => handleTourDbSort('title')}
+                              >
+                                {language === 'ko' ? '제목' : 'Title'}
+                                {tourDbSortField === 'title' && (
+                                  <span className="sort-icon">
+                                    {tourDbSortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />}
+                                  </span>
+                                )}
+                              </th>
+                              <th 
+                                className="sortable-th"
+                                onClick={() => handleTourDbSort('title_en')}
+                                style={{ width: '200px' }}
+                              >
+                                <FiGlobe /> {language === 'ko' ? '영문 제목' : 'English Title'}
+                                {tourDbSortField === 'title_en' && (
+                                  <span className="sort-icon">
+                                    {tourDbSortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />}
+                                  </span>
+                                )}
+                              </th>
+                              <th 
+                                className="sortable-th"
+                                onClick={() => handleTourDbSort('addr1')}
+                              >
+                                {language === 'ko' ? '주소' : 'Address'}
+                                {tourDbSortField === 'addr1' && (
+                                  <span className="sort-icon">
+                                    {tourDbSortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />}
+                                  </span>
+                                )}
+                              </th>
+                              <th 
+                                style={{ width: '100px' }}
+                                className="sortable-th"
+                                onClick={() => handleTourDbSort('updated_at')}
+                              >
+                                {language === 'ko' ? '수정일' : 'Updated'}
+                                {tourDbSortField === 'updated_at' && (
+                                  <span className="sort-icon">
+                                    {tourDbSortOrder === 'asc' ? <FiArrowUp /> : <FiArrowDown />}
+                                  </span>
+                                )}
+                              </th>
+                              <th style={{ width: '100px' }}>{language === 'ko' ? '관리' : 'Actions'}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {tourDbData.map((item) => (
+                              <tr key={item.content_id}>
+                                <td>
+                                  {item.firstimage ? (
+                                    <img 
+                                      src={item.firstimage} 
+                                      alt={item.title}
+                                      className="tourdb-thumb"
+                                    />
+                                  ) : (
+                                    <div className="tourdb-no-image"><FiImage /></div>
+                                  )}
+                                </td>
+                                <td>
+                                  <span className="tourdb-title">{item.title}</span>
+                                  <span className="tourdb-content-id">ID: {item.content_id}</span>
+                                </td>
+                                <td>
+                                  {item.title_en ? (
+                                    <span className="tourdb-title-en has-eng">{item.title_en}</span>
+                                  ) : (
+                                    <span className="tourdb-title-en no-eng">-</span>
+                                  )}
+                                  {item.content_id_en && (
+                                    <span className="tourdb-content-id-en">EN ID: {item.content_id_en}</span>
+                                  )}
+                                </td>
+                                <td>
+                                  <span className="tourdb-addr">{item.addr1 || '-'}</span>
+                                </td>
+                                <td>
+                                  <span className="tourdb-date">
+                                    {item.updated_at ? new Date(item.updated_at).toLocaleDateString('ko-KR') : '-'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <div className="tourdb-actions">
+                                    <button 
+                                      className="tourdb-edit-btn"
+                                      onClick={() => setTourDbEditItem({
+                                        content_id: item.content_id,
+                                        title: item.title,
+                                        addr1: item.addr1,
+                                        tel: item.tel,
+                                        overview: item.overview
+                                      })}
+                                      title={language === 'ko' ? '수정' : 'Edit'}
+                                    >
+                                      <FiEdit2 />
+                                    </button>
+                                    <button 
+                                      className="tourdb-delete-btn"
+                                      onClick={() => handleDeleteTourDbItem(item)}
+                                      title={language === 'ko' ? '삭제' : 'Delete'}
+                                    >
+                                      <FiTrash2 />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
                       
-                      <div className="tourapi-card-stats">
-                        <div className="stat-row">
-                          <span className="stat-label"><FiCloud /> API</span>
-                          <span className="stat-value">{apiCount.toLocaleString()}개</span>
+                      {/* 페이지네이션 */}
+                      {tourDbDataTotalCount > 20 && (
+                        <div className="pagination">
+                          <button 
+                            disabled={tourDbDataPage === 1}
+                            onClick={() => loadTourDbData(tourDbSelectedType, tourDbDataPage - 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, tourDbEngFilter)}
+                          >
+                            {language === 'ko' ? '이전' : 'Prev'}
+                          </button>
+                          <span className="page-info">
+                            {tourDbDataPage} / {Math.ceil(tourDbDataTotalCount / 20)}
+                          </span>
+                          <button 
+                            disabled={tourDbDataPage >= Math.ceil(tourDbDataTotalCount / 20)}
+                            onClick={() => loadTourDbData(tourDbSelectedType, tourDbDataPage + 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, tourDbEngFilter)}
+                          >
+                            {language === 'ko' ? '다음' : 'Next'}
+                          </button>
                         </div>
-                        <div className="stat-row">
-                          <span className="stat-label"><FiDatabase /> DB</span>
-                          <span className="stat-value">{dbCount.toLocaleString()}개</span>
+                      )}
+                    </>
+                  ) : (
+                    <div className="no-data-message">
+                      <FiDatabase size={48} />
+                      <p>{language === 'ko' ? '데이터가 없습니다.' : 'No data found.'}</p>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {/* 편집 모달 */}
+              {tourDbEditItem && (
+                <div className="tourdb-edit-modal-overlay" onClick={() => setTourDbEditItem(null)}>
+                  <div className="tourdb-edit-modal" onClick={(e) => e.stopPropagation()}>
+                    <div className="tourdb-edit-header">
+                      <h3><FiEdit2 /> {language === 'ko' ? '항목 수정' : 'Edit Item'}</h3>
+                      <button onClick={() => setTourDbEditItem(null)}><FiX /></button>
+                    </div>
+                    <div className="tourdb-edit-body">
+                      <div className="tourdb-edit-field">
+                        <label>{language === 'ko' ? '제목' : 'Title'}</label>
+                        <input 
+                          type="text"
+                          value={tourDbEditItem.title || ''}
+                          onChange={(e) => setTourDbEditItem(prev => ({ ...prev, title: e.target.value }))}
+                        />
+                      </div>
+                      <div className="tourdb-edit-field">
+                        <label>{language === 'ko' ? '주소' : 'Address'}</label>
+                        <input 
+                          type="text"
+                          value={tourDbEditItem.addr1 || ''}
+                          onChange={(e) => setTourDbEditItem(prev => ({ ...prev, addr1: e.target.value }))}
+                        />
+                      </div>
+                      <div className="tourdb-edit-field">
+                        <label>{language === 'ko' ? '전화번호' : 'Phone'}</label>
+                        <input 
+                          type="text"
+                          value={tourDbEditItem.tel || ''}
+                          onChange={(e) => setTourDbEditItem(prev => ({ ...prev, tel: e.target.value }))}
+                        />
+                      </div>
+                      <div className="tourdb-edit-field">
+                        <label>{language === 'ko' ? '설명 (overview)' : 'Overview'}</label>
+                        <textarea 
+                          rows={5}
+                          value={tourDbEditItem.overview || ''}
+                          onChange={(e) => setTourDbEditItem(prev => ({ ...prev, overview: e.target.value }))}
+                        />
+                      </div>
+                    </div>
+                    <div className="tourdb-edit-footer">
+                      <button className="btn-cancel" onClick={() => setTourDbEditItem(null)}>
+                        <FiXCircle /> {language === 'ko' ? '취소' : 'Cancel'}
+                      </button>
+                      <button 
+                        className="btn-save"
+                        onClick={() => handleUpdateTourDbItem({ content_id: tourDbEditItem.content_id })}
+                      >
+                        <FiSave /> {language === 'ko' ? '저장' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {/* 영문 매핑 섹션 */}
+          {activeSection === 'engmapping' && (
+            <div className="eng-mapping-section">
+              <div className="eng-mapping-header">
+                <h3><FiGlobe /> {language === 'ko' ? '영문 데이터 수동 매핑' : 'Manual English Mapping'}</h3>
+                <p className="eng-mapping-desc">
+                  {language === 'ko' 
+                    ? '왼쪽에서 국문 항목을 선택하고, 오른쪽에서 대응되는 영문 항목을 선택한 후 매핑 버튼을 클릭하세요.'
+                    : 'Select Korean item on the left, English item on the right, then click Map button.'}
+                </p>
+              </div>
+              
+              {/* 매핑 버튼 영역 (상단) */}
+              <div className="eng-mapping-top-bar">
+                <button 
+                  className="eng-mapping-btn"
+                  onClick={handleEngMapping}
+                  disabled={!engMappingSelectedKor || !engMappingSelectedEng}
+                >
+                  <FiArrowUp className="arrow-icon" />
+                  <span>{language === 'ko' ? '매핑' : 'Map'}</span>
+                  <FiArrowDown className="arrow-icon" />
+                </button>
+                {engMappingSelectedKor && engMappingSelectedEng && (
+                  <div className="mapping-preview horizontal">
+                    <span className="preview-kor">{engMappingSelectedKor.title}</span>
+                    <span className="preview-arrow">↔</span>
+                    <span className="preview-eng">{engMappingSelectedEng.title}</span>
+                  </div>
+                )}
+              </div>
+              
+              <div className="eng-mapping-container">
+                {/* 국문 데이터 목록 (왼쪽) */}
+                <div className="eng-mapping-panel kor-panel">
+                  <div className="eng-mapping-panel-header">
+                    <h4>🇰🇷 {language === 'ko' ? '국문 데이터 (영문 없음)' : 'Korean Data (No English)'}</h4>
+                    <select 
+                      className="eng-type-select"
+                      value={korApiSelectedType}
+                      onChange={(e) => {
+                        setKorApiSelectedType(e.target.value)
+                        loadEngMappingData(e.target.value)
+                      }}
+                    >
+                      <option value="">{language === 'ko' ? '전체' : 'All'}</option>
+                      <option value="12">관광지 (12)</option>
+                      <option value="14">문화시설 (14)</option>
+                      <option value="15">행사/축제 (15)</option>
+                      <option value="28">레포츠 (28)</option>
+                      <option value="32">숙박 (32)</option>
+                      <option value="38">쇼핑 (38)</option>
+                      <option value="39">음식점 (39)</option>
+                    </select>
+                    <span className="count-badge">{engMappingData.length}개</span>
+                  </div>
+                  <div className="eng-mapping-search">
+                    <input
+                      type="text"
+                      placeholder={language === 'ko' ? '검색어 입력...' : 'Search...'}
+                      value={engMappingSearchKor}
+                      onChange={(e) => setEngMappingSearchKor(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && loadEngMappingData(korApiSelectedType)}
+                    />
+                    <button onClick={() => loadEngMappingData(korApiSelectedType)} disabled={engMappingLoading}>
+                      {engMappingLoading ? <FiLoader className="spinning" /> : <FiSearch />}
+                    </button>
+                  </div>
+                  <div className="eng-mapping-list">
+                    {[...engMappingData]
+                      .sort((a, b) => Number(a.content_id) - Number(b.content_id))
+                      .map(item => (
+                      <div 
+                        key={item.id}
+                        className={`eng-mapping-item ${engMappingSelectedKor?.id === item.id ? 'selected' : ''}`}
+                        onClick={() => {
+                          setEngMappingSelectedKor(item)
+                          // 해당 타입에 맞는 영문 API 자동 로드
+                          const engType = CONTENT_TYPE_KOR_TO_ENG[item.content_type_id] || '76'
+                          if (engType !== engApiSelectedType) {
+                            setEngApiSelectedType(engType)
+                            loadEngApiData(engType)
+                          }
+                        }}
+                      >
+                        <div className="eng-mapping-item-image">
+                          {item.firstimage ? (
+                            <img src={item.firstimage} alt="" />
+                          ) : (
+                            <div className="no-image"><FiImage /></div>
+                          )}
                         </div>
-                        <div className="stat-row diff">
-                          <span className="stat-label">{language === 'ko' ? '차이' : 'Diff'}</span>
-                          <span className={`stat-value ${apiCount - dbCount > 0 ? 'positive' : apiCount - dbCount < 0 ? 'negative' : ''}`}>
-                            {apiCount - dbCount > 0 ? '+' : ''}{(apiCount - dbCount).toLocaleString()}
+                        <div className="eng-mapping-item-info">
+                          <span className="item-title">{item.title}</span>
+                          <span className="item-addr">{item.addr1 || '-'}</span>
+                          <span className="item-meta">
+                            <span className="type-badge">{TOUR_CONTENT_TYPES[item.content_type_id]?.name || item.content_type_id}</span>
+                            <span className="zip-code">📮 {item.zipcode || '-'}</span>
                           </span>
                         </div>
                       </div>
-                      
-                      <div className="tourapi-card-actions">
-                        <button 
-                          className="btn-sync-type"
-                          onClick={() => handleSyncTourData(typeId)}
-                          disabled={isLoading}
-                          style={{ backgroundColor: typeInfo.color }}
-                        >
-                          {isLoading ? (
-                            <><FiLoader className="spinning" /> {language === 'ko' ? '동기화 중...' : 'Syncing...'}</>
-                          ) : (
-                            <><FiDownload /> {language === 'ko' ? 'DB 동기화' : 'Sync to DB'}</>
-                          )}
-                        </button>
-                        {typeId === '15' && (
-                          <button 
-                            className="btn-delete-expired"
-                            onClick={handleDeleteExpiredTourFestivals}
-                            title={language === 'ko' ? '만료된 행사 삭제' : 'Delete expired'}
-                          >
-                            <FiTrash2 /> {language === 'ko' ? '만료 삭제' : 'Del Expired'}
-                          </button>
-                        )}
+                    ))}
+                    {engMappingData.length === 0 && !engMappingLoading && (
+                      <div className="eng-mapping-empty">
+                        {language === 'ko' ? '영문 데이터가 없는 항목이 없습니다.' : 'No items without English data.'}
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-              
-              {/* 안내 문구 */}
-              <div className="tourapi-notice">
-                <FiActivity />
-                <p>
-                  {language === 'ko'
-                    ? '동기화 시 해당 타입의 기존 데이터는 삭제되고 새 데이터로 대체됩니다. 행사/축제는 종료일이 지나지 않은 것만 가져옵니다.'
-                    : 'Sync will delete existing data of that type and replace with new data. Festivals only include those not yet ended.'}
-                </p>
+                    )}
+                  </div>
+                </div>
+                
+                {/* 영문 데이터 목록 (오른쪽) */}
+                <div className="eng-mapping-panel eng-panel">
+                  <div className="eng-mapping-panel-header">
+                    <h4>🇺🇸 {language === 'ko' ? '영문 API 데이터' : 'English API Data'}</h4>
+                    <select 
+                      className="eng-type-select"
+                      value={engApiSelectedType}
+                      onChange={(e) => {
+                        setEngApiSelectedType(e.target.value)
+                        loadEngApiData(e.target.value)
+                      }}
+                    >
+                      <option value="76">Tourist Destination (관광지)</option>
+                      <option value="78">Cultural Facility (문화시설)</option>
+                      <option value="85">Festival/Event (행사/축제)</option>
+                      <option value="75">Leisure (레포츠)</option>
+                      <option value="80">Accommodation (숙박)</option>
+                      <option value="79">Shopping (쇼핑)</option>
+                      <option value="82">Restaurant (음식점)</option>
+                    </select>
+                  </div>
+                  <div className="eng-mapping-search">
+                    <input
+                      type="text"
+                      placeholder={language === 'ko' ? '영문 검색...' : 'Search English...'}
+                      value={engMappingSearchEng}
+                      onChange={(e) => setEngMappingSearchEng(e.target.value)}
+                    />
+                    <button onClick={() => loadEngApiData(engApiSelectedType)} disabled={engApiLoading}>
+                      {engApiLoading ? <FiLoader className="spinning" /> : <FiRefreshCw />}
+                    </button>
+                  </div>
+                  <div className="eng-mapping-list">
+                    {[...engApiData]
+                      .sort((a, b) => Number(a.contentid) - Number(b.contentid))
+                      .filter(item => !engMappingSearchEng || 
+                        item.title?.toLowerCase().includes(engMappingSearchEng.toLowerCase()) ||
+                        item.addr1?.toLowerCase().includes(engMappingSearchEng.toLowerCase())
+                      )
+                      .map(item => (
+                      <div 
+                        key={item.contentid}
+                        className={`eng-mapping-item ${engMappingSelectedEng?.contentid === item.contentid ? 'selected' : ''}`}
+                        onClick={() => setEngMappingSelectedEng(item)}
+                      >
+                        <div className="eng-mapping-item-image">
+                          {item.firstimage ? (
+                            <img src={item.firstimage} alt="" />
+                          ) : (
+                            <div className="no-image"><FiImage /></div>
+                          )}
+                        </div>
+                        <div className="eng-mapping-item-info">
+                          <span className="item-title">{item.title}</span>
+                          <span className="item-addr">{item.addr1 || '-'}</span>
+                          <span className="item-meta">
+                            <span className="zip-code">📮 {item.zipcode || '-'}</span>
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                    {engApiData.length === 0 && !engApiLoading && (
+                      <div className="eng-mapping-empty">
+                        {language === 'ko' ? '영문 타입을 선택하고 새로고침하세요.' : 'Select type and refresh.'}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -3056,13 +4454,23 @@ const AdminPage = () => {
               <div className="table-selector">
                 <h3>{language === 'ko' ? 'Supabase 테이블' : 'Supabase Tables'}</h3>
                 <div className="table-buttons">
-                  {['users', 'places', 'events', 'favorites', 'reviews'].map(table => (
+                  {[
+                    { name: 'profiles', label: '프로필', Icon: FiUsers },
+                    { name: 'spot_reviews', label: '리뷰', Icon: FiEdit2 },
+                    { name: 'spot_likes', label: '좋아요', Icon: FiHeart },
+                    { name: 'spot_stats', label: '통계', Icon: FiBarChart2 },
+                    { name: 'page_visits', label: '방문기록', Icon: FiEye },
+                    { name: 'hero_slides', label: '히어로', Icon: FiImage },
+                    { name: 'admin_users', label: '관리자', Icon: FiSettings }
+                  ].map(table => (
                     <button
-                      key={table}
-                      className={`table-btn ${selectedTable === table ? 'active' : ''}`}
-                      onClick={() => loadTableData(table)}
+                      key={table.name}
+                      className={`table-btn ${selectedTable === table.name ? 'active' : ''}`}
+                      onClick={() => loadTableData(table.name)}
+                      title={table.label}
                     >
-                      {table}
+                      <table.Icon className="table-icon-svg" />
+                      {table.name}
                     </button>
                   ))}
                 </div>
@@ -3123,42 +4531,350 @@ const AdminPage = () => {
             </div>
           )}
           
-          {/* 사용자 관리 섹션 */}
-          {activeSection === 'users' && (
-            <div className="users-section">
+          {/* 리뷰 관리 섹션 */}
+          {activeSection === 'reviews' && (
+            <div className="reviews-management-section">
               <div className="section-header">
-                <h2>{language === 'ko' ? '사용자 목록' : 'User List'}</h2>
+                <h2>
+                  <FiEdit2 /> {language === 'ko' ? '리뷰 관리' : 'Review Management'}
+                  <span className="count-badge">{reviewsTotalCount.toLocaleString()}</span>
+                </h2>
+                <div className="section-actions">
+                  <select 
+                    value={reviewsFilter} 
+                    onChange={(e) => loadAllReviews(1, e.target.value)}
+                    className="filter-select"
+                  >
+                    <option value="all">{language === 'ko' ? '전체' : 'All'}</option>
+                    <option value="recent">{language === 'ko' ? '최근 7일' : 'Recent 7 days'}</option>
+                    <option value="low-rating">{language === 'ko' ? '낮은 평점 (1-2점)' : 'Low Rating (1-2)'}</option>
+                  </select>
+                  <button className="refresh-btn" onClick={() => loadAllReviews(reviewsPage, reviewsFilter)}>
+                    <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
+                  </button>
+                </div>
               </div>
-              <div className="coming-soon">
-                <FiUsers size={48} />
-                <p>{language === 'ko' ? '사용자 관리 기능이 준비 중입니다.' : 'User management is coming soon.'}</p>
-              </div>
+              
+              {reviewsLoading ? (
+                <div className="loading-container">
+                  <FiLoader className="spinning" />
+                  <p>{language === 'ko' ? '리뷰 로딩 중...' : 'Loading reviews...'}</p>
+                </div>
+              ) : allReviews.length > 0 ? (
+                <>
+                  <div className="reviews-list">
+                    {allReviews.map((review) => (
+                      <div key={review.id} className="review-item-card">
+                        <div className="review-header">
+                          <div className="review-user">
+                            {review.profiles?.avatar_url ? (
+                              <img src={review.profiles.avatar_url} alt="" className="user-avatar" />
+                            ) : (
+                              <div className="user-avatar-placeholder"><FiUsers /></div>
+                            )}
+                            <span className="user-nickname">{review.profiles?.nickname || 'Unknown'}</span>
+                          </div>
+                          <div className="review-rating">
+                            {[...Array(5)].map((_, i) => (
+                              <FiSun 
+                                key={i} 
+                                className={`star-icon ${i < review.rating ? 'filled' : ''}`} 
+                              />
+                            ))}
+                          </div>
+                        </div>
+                        <div className="review-content">
+                          <p>{review.content}</p>
+                        </div>
+                        <div className="review-meta">
+                          <span className="review-spot">
+                            ID: {review.content_id} (Type: {review.content_type})
+                          </span>
+                          <span className="review-date">
+                            {new Date(review.created_at).toLocaleString('ko-KR')}
+                          </span>
+                        </div>
+                        <div className="review-actions">
+                          <a 
+                            href={`/spot/${review.content_type}/${review.content_id}`} 
+                            target="_blank" 
+                            className="view-spot-btn"
+                          >
+                            <FiExternalLink /> {language === 'ko' ? '장소 보기' : 'View Spot'}
+                          </a>
+                          <button 
+                            className="delete-review-btn"
+                            onClick={() => handleDeleteReview(review.id)}
+                            disabled={deletingReviewId === review.id}
+                          >
+                            {deletingReviewId === review.id ? (
+                              <FiLoader className="spinning" />
+                            ) : (
+                              <><FiTrash2 /> {language === 'ko' ? '삭제' : 'Delete'}</>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* 페이지네이션 */}
+                  {reviewsTotalCount > 20 && (
+                    <div className="pagination">
+                      <button 
+                        disabled={reviewsPage === 1}
+                        onClick={() => loadAllReviews(reviewsPage - 1, reviewsFilter)}
+                      >
+                        {language === 'ko' ? '이전' : 'Prev'}
+                      </button>
+                      <span className="page-info">
+                        {reviewsPage} / {Math.ceil(reviewsTotalCount / 20)}
+                      </span>
+                      <button 
+                        disabled={reviewsPage >= Math.ceil(reviewsTotalCount / 20)}
+                        onClick={() => loadAllReviews(reviewsPage + 1, reviewsFilter)}
+                      >
+                        {language === 'ko' ? '다음' : 'Next'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="no-data-message">
+                  <FiEdit2 size={48} />
+                  <p>{language === 'ko' ? '리뷰가 없습니다.' : 'No reviews found.'}</p>
+                </div>
+              )}
             </div>
           )}
           
-          {/* 장소 관리 섹션 */}
-          {activeSection === 'places' && (
-            <div className="places-section">
+          {/* 프로필 관리 섹션 */}
+          {activeSection === 'profiles' && (
+            <div className="profiles-management-section">
               <div className="section-header">
-                <h2>{language === 'ko' ? '장소 관리' : 'Place Management'}</h2>
+                <h2>
+                  <FiUsers /> {language === 'ko' ? '프로필 관리' : 'Profile Management'}
+                  <span className="count-badge">{profilesTotalCount.toLocaleString()}</span>
+                </h2>
+                <div className="section-actions">
+                  <div className="search-input-wrapper">
+                    <FiSearch />
+                    <input 
+                      type="text"
+                      placeholder={language === 'ko' ? '닉네임 검색...' : 'Search nickname...'}
+                      value={profileSearch}
+                      onChange={(e) => setProfileSearch(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && loadAllProfiles(1, profileSearch)}
+                    />
+                  </div>
+                  <button className="refresh-btn" onClick={() => loadAllProfiles(profilesPage, profileSearch)}>
+                    <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
+                  </button>
+                </div>
               </div>
-              <div className="coming-soon">
-                <FiMap size={48} />
-                <p>{language === 'ko' ? '장소 관리 기능이 준비 중입니다.' : 'Place management is coming soon.'}</p>
-              </div>
+              
+              {profilesLoading ? (
+                <div className="loading-container">
+                  <FiLoader className="spinning" />
+                  <p>{language === 'ko' ? '프로필 로딩 중...' : 'Loading profiles...'}</p>
+                </div>
+              ) : allProfiles.length > 0 ? (
+                <>
+                  <div className="profiles-grid">
+                    {allProfiles.map((profile) => (
+                      <div key={profile.id || Math.random()} className="profile-card">
+                        <div className="profile-avatar" style={{ width: '56px', height: '56px', flexShrink: 0 }}>
+                          {profile.avatar_url ? (
+                            <img 
+                              src={profile.avatar_url} 
+                              alt={profile.nickname || 'User'} 
+                              style={{ 
+                                width: '56px', 
+                                height: '56px', 
+                                borderRadius: '50%', 
+                                objectFit: 'cover',
+                                display: 'block'
+                              }}
+                            />
+                          ) : (
+                            <div style={{ 
+                              width: '56px', 
+                              height: '56px', 
+                              borderRadius: '50%', 
+                              overflow: 'hidden',
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'center',
+                              background: 'linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%)',
+                              color: '#94a3b8',
+                              fontSize: '1.5rem'
+                            }}>
+                              <FiUsers />
+                            </div>
+                          )}
+                        </div>
+                        <div className="profile-info">
+                          <h4 className="profile-nickname">{profile.nickname || 'Unknown'}</h4>
+                          <p className="profile-id">ID: {profile.id ? profile.id.substring(0, 8) + '...' : '-'}</p>
+                          <p className="profile-date">
+                            {language === 'ko' ? '가입일: ' : 'Joined: '}
+                            {profile.created_at ? new Date(profile.created_at).toLocaleDateString('ko-KR') : '-'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  {/* 페이지네이션 */}
+                  {profilesTotalCount > 20 && (
+                    <div className="pagination">
+                      <button 
+                        disabled={profilesPage === 1}
+                        onClick={() => loadAllProfiles(profilesPage - 1, profileSearch)}
+                      >
+                        {language === 'ko' ? '이전' : 'Prev'}
+                      </button>
+                      <span className="page-info">
+                        {profilesPage} / {Math.ceil(profilesTotalCount / 20)}
+                      </span>
+                      <button 
+                        disabled={profilesPage >= Math.ceil(profilesTotalCount / 20)}
+                        onClick={() => loadAllProfiles(profilesPage + 1, profileSearch)}
+                      >
+                        {language === 'ko' ? '다음' : 'Next'}
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="no-data-message">
+                  <FiUsers size={48} />
+                  <p>{language === 'ko' ? '프로필이 없습니다.' : 'No profiles found.'}</p>
+                </div>
+              )}
             </div>
           )}
           
-          {/* 행사 관리 섹션 */}
-          {activeSection === 'events' && (
-            <div className="events-section">
+          {/* 방문 통계 섹션 */}
+          {activeSection === 'analytics' && (
+            <div className="analytics-section">
               <div className="section-header">
-                <h2>{language === 'ko' ? '행사 관리' : 'Event Management'}</h2>
+                <h2>
+                  <FiActivity /> {language === 'ko' ? '방문 통계' : 'Analytics'}
+                  <span className="count-badge">{pageVisitsTotalCount.toLocaleString()}</span>
+                </h2>
+                <div className="section-actions">
+                  <select 
+                    className="period-select"
+                    value={pageVisitsPeriod}
+                    onChange={(e) => loadPageVisits(1, e.target.value)}
+                  >
+                    <option value="today">{language === 'ko' ? '오늘' : 'Today'}</option>
+                    <option value="week">{language === 'ko' ? '최근 7일' : 'Last 7 days'}</option>
+                    <option value="month">{language === 'ko' ? '최근 30일' : 'Last 30 days'}</option>
+                    <option value="all">{language === 'ko' ? '전체' : 'All time'}</option>
+                  </select>
+                  <button className="refresh-btn" onClick={() => loadPageVisits(pageVisitsPage, pageVisitsPeriod)}>
+                    <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
+                  </button>
+                </div>
               </div>
-              <div className="coming-soon">
-                <FiCalendar size={48} />
-                <p>{language === 'ko' ? '행사 관리 기능이 준비 중입니다.' : 'Event management is coming soon.'}</p>
-              </div>
+              
+              {pageVisitsLoading ? (
+                <div className="loading-container">
+                  <FiLoader className="spinning" />
+                  <p>{language === 'ko' ? '방문 기록 로딩 중...' : 'Loading visits...'}</p>
+                </div>
+              ) : (
+                <>
+                  {/* 페이지별 방문 통계 요약 */}
+                  {Object.keys(pageVisitsSummary).length > 0 && (
+                    <div className="page-stats-summary">
+                      <h3>
+                        <FiBarChart2 />
+                        {language === 'ko' ? '페이지별 방문 수' : 'Visits by Page'}
+                      </h3>
+                      <div className="page-stats-grid">
+                        {Object.entries(pageVisitsSummary)
+                          .sort((a, b) => b[1] - a[1])
+                          .map(([pageName, count]) => (
+                            <div key={pageName} className="page-stat-card">
+                              <span className="page-stat-name">{PAGE_NAMES[pageName] || pageName}</span>
+                              <span className="page-stat-count">{count.toLocaleString()}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {pageVisits.length > 0 ? (
+                    <>
+                      <div className="visits-table-container">
+                        <table className="admin-table visits-table">
+                          <thead>
+                            <tr>
+                              <th>{language === 'ko' ? '페이지' : 'Page'}</th>
+                              <th>{language === 'ko' ? '방문 시간' : 'Visit Time'}</th>
+                              <th>{language === 'ko' ? '이전 페이지' : 'Referrer'}</th>
+                              <th>{language === 'ko' ? '세션 ID' : 'Session'}</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {pageVisits.map((visit) => (
+                              <tr key={visit.id}>
+                                <td>
+                                  <span className="page-name">
+                                    {PAGE_NAMES[visit.page_name] || visit.page_name || '-'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="visit-time">
+                                    {new Date(visit.visited_at).toLocaleString('ko-KR')}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="referrer" title={visit.referrer}>
+                                    {visit.referrer ? (visit.referrer.length > 30 ? visit.referrer.substring(0, 30) + '...' : visit.referrer) : '-'}
+                                  </span>
+                                </td>
+                                <td>
+                                  <span className="session-id">{visit.session_id?.substring(0, 8) || '-'}...</span>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      
+                      {/* 페이지네이션 */}
+                      {pageVisitsTotalCount > 20 && (
+                        <div className="pagination">
+                          <button 
+                            disabled={pageVisitsPage === 1}
+                            onClick={() => loadPageVisits(pageVisitsPage - 1, pageVisitsPeriod)}
+                          >
+                            {language === 'ko' ? '이전' : 'Prev'}
+                          </button>
+                          <span className="page-info">
+                            {pageVisitsPage} / {Math.ceil(pageVisitsTotalCount / 20)}
+                          </span>
+                          <button 
+                            disabled={pageVisitsPage >= Math.ceil(pageVisitsTotalCount / 20)}
+                            onClick={() => loadPageVisits(pageVisitsPage + 1, pageVisitsPeriod)}
+                          >
+                            {language === 'ko' ? '다음' : 'Next'}
+                          </button>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="no-data-message">
+                      <FiActivity size={48} />
+                      <p>{language === 'ko' ? '방문 기록이 없습니다.' : 'No visits found.'}</p>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           )}
           
@@ -3170,10 +4886,65 @@ const AdminPage = () => {
               </div>
               <div className="settings-content">
                 <div className="setting-item">
-                  <h3>{language === 'ko' ? '계정 정보' : 'Account Info'}</h3>
-                  <p><strong>Email:</strong> {user.email}</p>
-                  <p><strong>ID:</strong> {user.id}</p>
-                  <p><strong>{language === 'ko' ? '마지막 로그인' : 'Last Sign In'}:</strong> {new Date(user.last_sign_in_at).toLocaleString()}</p>
+                  <h3><FiUsers /> {language === 'ko' ? '내 계정 정보' : 'My Account Info'}</h3>
+                  <div className="account-info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Email</span>
+                      <span className="info-value">{user.email}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">User ID</span>
+                      <span className="info-value code">{user.id}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">{language === 'ko' ? '마지막 로그인' : 'Last Sign In'}</span>
+                      <span className="info-value">{new Date(user.last_sign_in_at).toLocaleString('ko-KR')}</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">{language === 'ko' ? '계정 생성일' : 'Account Created'}</span>
+                      <span className="info-value">{user.created_at ? new Date(user.created_at).toLocaleDateString('ko-KR') : '-'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="setting-item">
+                  <h3><FiExternalLink /> {language === 'ko' ? '빠른 링크' : 'Quick Links'}</h3>
+                  <div className="quick-links">
+                    <a href="https://supabase.com/dashboard/project/geczvsuzwpvdxiwbxqtf" target="_blank" rel="noopener noreferrer" className="quick-link">
+                      <FiDatabase /> Supabase Dashboard
+                    </a>
+                    <a href="https://dash.cloudflare.com/" target="_blank" rel="noopener noreferrer" className="quick-link">
+                      <FiCloud /> Cloudflare Dashboard
+                    </a>
+                    <a href="https://vercel.com/dashboard" target="_blank" rel="noopener noreferrer" className="quick-link">
+                      <FiServer /> Vercel Dashboard
+                    </a>
+                    <a href="https://api.visitkorea.or.kr/" target="_blank" rel="noopener noreferrer" className="quick-link">
+                      <FiGlobe /> TourAPI Portal
+                    </a>
+                  </div>
+                </div>
+
+                <div className="setting-item">
+                  <h3><FiBarChart2 /> {language === 'ko' ? '시스템 정보' : 'System Info'}</h3>
+                  <div className="system-info-grid">
+                    <div className="info-row">
+                      <span className="info-label">Frontend</span>
+                      <span className="info-value">React + Vite</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Database</span>
+                      <span className="info-value">Supabase (PostgreSQL)</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">API Proxy</span>
+                      <span className="info-value">Cloudflare Workers</span>
+                    </div>
+                    <div className="info-row">
+                      <span className="info-label">Hosting</span>
+                      <span className="info-value">Vercel</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

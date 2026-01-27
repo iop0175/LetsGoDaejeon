@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import { FiCloud, FiDatabase, FiActivity, FiRefreshCw, FiExternalLink } from 'react-icons/fi'
+import { FiCloud, FiDatabase, FiActivity, FiRefreshCw, FiExternalLink, FiInfo } from 'react-icons/fi'
 
 /**
  * Supabase 사용량 통계 컴포넌트
@@ -78,7 +78,7 @@ const SupabaseUsageStats = memo(({
           
           {/* Free Plan 안내 */}
           <div className="free-plan-notice">
-            <span>ℹ️ </span>
+            <span><FiInfo /> </span>
             {language === 'ko' 
               ? 'Supabase Free Plan: 500MB DB 스토리지, 2GB 대역폭/월' 
               : 'Supabase Free Plan: 500MB DB storage, 2GB bandwidth/month'

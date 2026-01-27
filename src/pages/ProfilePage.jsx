@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../services/supabase'
+import Icons from '../components/common/Icons'
 import './ProfilePage.css'
 
 const ProfilePage = () => {
@@ -65,23 +66,52 @@ const ProfilePage = () => {
     setMessage({ type: '', text: '' })
 
     try {
+      const trimmedNickname = profile.nickname.trim()
+      
       // 닉네임 유효성 검사
-      if (!profile.nickname.trim()) {
+      if (!trimmedNickname) {
         setMessage({ type: 'error', text: '닉네임을 입력해주세요.' })
         setIsSaving(false)
         return
       }
 
-      if (profile.nickname.trim().length < 2) {
+      if (trimmedNickname.length < 2) {
         setMessage({ type: 'error', text: '닉네임은 2글자 이상이어야 합니다.' })
         setIsSaving(false)
         return
       }
 
-      if (profile.nickname.trim().length > 20) {
+      if (trimmedNickname.length > 20) {
         setMessage({ type: 'error', text: '닉네임은 20글자 이하여야 합니다.' })
         setIsSaving(false)
         return
+      }
+      
+      // 닉네임 허용 문자 검사 (한글, 영문, 숫자, 공백만 허용)
+      const nicknameRegex = /^[가-힣a-zA-Z0-9\s]+$/
+      if (!nicknameRegex.test(trimmedNickname)) {
+        setMessage({ type: 'error', text: '닉네임은 한글, 영문, 숫자만 사용 가능합니다.' })
+        setIsSaving(false)
+        return
+      }
+      
+      // 아바타 URL 유효성 검사
+      let validAvatarUrl = profile.avatar_url?.trim() || ''
+      if (validAvatarUrl) {
+        // https:// 프로토콜만 허용
+        if (!validAvatarUrl.startsWith('https://')) {
+          setMessage({ type: 'error', text: '프로필 이미지 URL은 https://로 시작해야 합니다.' })
+          setIsSaving(false)
+          return
+        }
+        // URL 형식 검사
+        try {
+          new URL(validAvatarUrl)
+        } catch {
+          setMessage({ type: 'error', text: '올바른 이미지 URL을 입력해주세요.' })
+          setIsSaving(false)
+          return
+        }
       }
 
       // upsert로 프로필 저장 (없으면 생성, 있으면 업데이트)
@@ -89,8 +119,8 @@ const ProfilePage = () => {
         .from('profiles')
         .upsert({
           id: user.id,
-          nickname: profile.nickname.trim(),
-          avatar_url: profile.avatar_url,
+          nickname: trimmedNickname,
+          avatar_url: validAvatarUrl || null,
           updated_at: new Date().toISOString()
         }, { onConflict: 'id' })
 
@@ -143,7 +173,7 @@ const ProfilePage = () => {
     return (
       <div className={`profile-page ${isDark ? 'dark' : ''}`}>
         <div className="profile-login-required">
-          <div className="profile-login-icon">👤</div>
+          <div className="profile-login-icon"><Icons.user size={48} /></div>
           <h2>로그인이 필요합니다</h2>
           <p>프로필 설정을 위해 로그인해주세요.</p>
           <button 
@@ -171,7 +201,7 @@ const ProfilePage = () => {
         {/* 메시지 표시 */}
         {message.text && (
           <div className={`profile-message profile-message--${message.type}`}>
-            {message.type === 'success' ? '✓' : '⚠'} {message.text}
+            {message.type === 'success' ? <Icons.check size={16} /> : <Icons.warning size={16} />} {message.text}
           </div>
         )}
 

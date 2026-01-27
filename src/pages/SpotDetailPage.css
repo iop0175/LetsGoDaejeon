@@ -638,6 +638,115 @@
   color: #d0d0d5;
 }
 
+/* 객실 정보 (숙박) */
+.sdp__rooms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sdp__room-card {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.sdp--dark .sdp__room-card {
+  background: #2a2d35;
+  border-color: #3a3d45;
+}
+
+.sdp__room-image {
+  flex-shrink: 0;
+  width: 120px;
+  height: 90px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sdp__room-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sdp__room-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.sdp__room-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.sdp--dark .sdp__room-title {
+  color: #f0f0f5;
+}
+
+.sdp__room-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.sdp__room-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #666;
+}
+
+.sdp--dark .sdp__room-detail {
+  color: #a0a0a5;
+}
+
+.sdp__room-price {
+  font-weight: 600;
+  color: #1a73e8 !important;
+}
+
+.sdp--dark .sdp__room-price {
+  color: #5da0ff !important;
+}
+
+.sdp__room-amenities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sdp__room-amenity {
+  padding: 4px 10px;
+  background: #e8f0fe;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #1a73e8;
+}
+
+.sdp--dark .sdp__room-amenity {
+  background: #2a3a4f;
+  color: #5da0ff;
+}
+
+@media (max-width: 600px) {
+  .sdp__room-card {
+    flex-direction: column;
+  }
+  
+  .sdp__room-image {
+    width: 100%;
+    height: 140px;
+  }
+}
+
 /* 전화번호 */
 .sdp__phone {
   display: inline-flex;

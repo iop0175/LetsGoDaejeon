@@ -23,11 +23,23 @@ const RATE_LIMIT = {
 // 메모리 기반 Rate Limit 저장소 (Worker 인스턴스 단위)
 // 주의: 여러 Worker 인스턴스 간에 공유되지 않음
 const rateLimitStore = new Map();
+let lastCleanup = Date.now();
 
 // Rate Limit 체크 함수
 function checkRateLimit(clientIP) {
   const now = Date.now();
   const key = clientIP;
+  
+  // 주기적으로 오래된 엔트리 정리 (5분마다)
+  if (now - lastCleanup > 5 * 60 * 1000) {
+    const expireTime = now - RATE_LIMIT.windowMs;
+    for (const [k, v] of rateLimitStore) {
+      if (v.windowStart < expireTime) {
+        rateLimitStore.delete(k);
+      }
+    }
+    lastCleanup = now;
+  }
   
   // 기존 데이터 조회
   let data = rateLimitStore.get(key);
@@ -41,8 +53,8 @@ function checkRateLimit(clientIP) {
   data.count++;
   rateLimitStore.set(key, data);
   
-  // 오래된 엔트리 정리 (메모리 관리)
-  if (rateLimitStore.size > 10000) {
+  // 긴급 메모리 정리 (5000개 초과 시)
+  if (rateLimitStore.size > 5000) {
     const expireTime = now - RATE_LIMIT.windowMs;
     for (const [k, v] of rateLimitStore) {
       if (v.windowStart < expireTime) {
@@ -59,10 +71,10 @@ function checkRateLimit(clientIP) {
   };
 }
 
-// Origin 검증 함수
+// Origin 검증 함수 (정확한 일치만 허용)
 function isAllowedOrigin(origin) {
   if (!origin) return false;
-  return ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed));
+  return ALLOWED_ORIGINS.includes(origin);
 }
 
 // CORS 헤더 생성 (동적으로 Origin 설정)
@@ -483,6 +495,62 @@ async function handleTourApi(request, env, pathname, origin) {
   }
 }
 
+// TourAPI 영문 서비스 (EngService2) 프록시
+async function handleTourApiEng(request, env, pathname, origin) {
+  try {
+    const url = new URL(request.url);
+    const apiPath = pathname.replace('/api/tour-en', '');
+    
+    // API 키 (환경변수에서 가져옴 - 국문/영문 동일 키 사용)
+    const apiKey = env.TOURAPI_KEY ? env.TOURAPI_KEY.trim() : '';
+    
+    // TourAPI 영문 URL 구성 (EngService2)
+    const tourUrl = new URL(`https://apis.data.go.kr/B551011/EngService2${apiPath}`);
+    
+    // 서비스 키 추가
+    tourUrl.searchParams.set('serviceKey', apiKey);
+    
+    // 필수 파라미터 기본값 설정
+    if (!url.searchParams.has('MobileOS')) {
+      tourUrl.searchParams.set('MobileOS', 'ETC');
+    }
+    if (!url.searchParams.has('MobileApp')) {
+      tourUrl.searchParams.set('MobileApp', 'LetsGoDaejeon');
+    }
+    if (!url.searchParams.has('_type')) {
+      tourUrl.searchParams.set('_type', 'json');
+    }
+    
+    // 기존 쿼리 파라미터 복사 (serviceKey 제외)
+    url.searchParams.forEach((value, key) => {
+      if (key !== 'serviceKey') {
+        tourUrl.searchParams.set(key, value);
+      }
+    });
+    
+    const response = await fetch(tourUrl.toString(), {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+      }
+    });
+    
+    // 응답 텍스트를 먼저 확인
+    const text = await response.text();
+    
+    // JSON 파싱 시도
+    try {
+      const data = JSON.parse(text);
+      return jsonResponse(data, 200, origin);
+    } catch (parseError) {
+      // JSON 파싱 실패시 원본 텍스트와 함께 에러 반환
+      return errorResponse('TourAPI (EN) 응답 파싱 실패: ' + text.substring(0, 200), 500, origin);
+    }
+  } catch (error) {
+    return errorResponse('TourAPI (EN) 요청 실패: ' + error.message, 500, origin);
+  }
+}
+
 // KCISA 전시정보 API (API_CCA_145) - 필드명이 대문자
 async function handleKcisaExhibitionApi(request, env, pathname, origin) {
   try {
@@ -651,6 +719,11 @@ export default {
     
     if (pathname.startsWith('/api/kto')) {
       return handleKtoApi(request, env, pathname, origin);
+    }
+    
+    // TourAPI 영문 서비스 (EngService2) - 국문보다 먼저 체크
+    if (pathname.startsWith('/api/tour-en')) {
+      return handleTourApiEng(request, env, pathname, origin);
     }
     
     // TourAPI 4.0 (한국관광공사 국문 관광정보 서비스)

@@ -2113,6 +2113,426 @@ export const getTourSpotsWithoutOverviewCount = async (contentTypeId = null) => 
 }
 
 /**
+ * 영문 데이터가 없는 tour_spots 개수 조회
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @returns {Promise<number>} 개수
+ */
+export const getTourSpotsWithoutEngCount = async (contentTypeId = null) => {
+  try {
+    // 전체 개수
+    let totalQuery = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+    
+    if (contentTypeId) {
+      totalQuery = totalQuery.eq('content_type_id', contentTypeId)
+    }
+    
+    const { count: totalCount } = await totalQuery
+    
+    // 영문 있는 개수 (title_en이 null이 아닌)
+    let engQuery = supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+      .not('title_en', 'is', null)
+    
+    if (contentTypeId) {
+      engQuery = engQuery.eq('content_type_id', contentTypeId)
+    }
+    
+    const { count: engCount } = await engQuery
+    
+    const noEngCount = (totalCount || 0) - (engCount || 0)
+    console.log(`[getTourSpotsWithoutEngCount] 전체: ${totalCount}, 영문있음: ${engCount}, 영문없음: ${noEngCount}`)
+    
+    return noEngCount
+  } catch (err) {
+    console.error('영문 데이터 없는 항목 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * 이미 매핑된 영문 content_id 목록 조회
+ * @param {string} engContentTypeId - 영문 관광타입
+ * @returns {Promise<Object>} { success, ids: ['123', '456', ...] }
+ */
+export const getMappedEngContentIds = async (engContentTypeId = null) => {
+  try {
+    // 영문 타입에 해당하는 국문 타입 찾기
+    const engToKor = {
+      '76': '12', // 관광지
+      '78': '14', // 문화시설
+      '85': '15', // 행사/축제
+      '75': '28', // 레포츠
+      '80': '32', // 숙박
+      '79': '38', // 쇼핑
+      '82': '39'  // 음식점
+    }
+    const korContentTypeId = engContentTypeId ? engToKor[engContentTypeId] : null
+    
+    console.log('[getMappedEngContentIds] 영문 타입:', engContentTypeId, '-> 국문 타입:', korContentTypeId)
+    
+    let query = supabase
+      .from('tour_spots')
+      .select('content_id_en')
+      .not('content_id_en', 'is', null)
+    
+    if (korContentTypeId) {
+      query = query.eq('content_type_id', korContentTypeId)
+    }
+    
+    const { data, error } = await query
+    if (error) throw error
+    
+    const ids = (data || []).map(item => String(item.content_id_en))
+    console.log('[getMappedEngContentIds] 매핑된 영문 ID 개수:', ids.length, '샘플:', ids.slice(0, 5))
+    return { success: true, ids }
+  } catch (err) {
+    console.error('매핑된 영문 content_id 조회 에러:', err)
+    return { success: false, ids: [], error: err.message }
+  }
+}
+
+/**
+ * 영문 데이터가 없는 tour_spots 목록 조회
+ * @param {string} contentTypeId - 관광타입 (null이면 전체)
+ * @param {string} searchQuery - 검색어
+ * @param {number} limit - 조회 개수
+ * @returns {Promise<Object>} { success, items }
+ */
+export const getTourSpotsWithoutEng = async (contentTypeId = null, searchQuery = '', limit = 50) => {
+  try {
+    let query = supabase
+      .from('tour_spots')
+      .select('id, content_id, content_type_id, title, addr1, zipcode, firstimage, mapx, mapy')
+      .is('title_en', null)
+      .order('title', { ascending: true })
+      .limit(limit)
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    if (searchQuery) {
+      query = query.ilike('title', `%${searchQuery}%`)
+    }
+    
+    const { data, error } = await query
+    if (error) throw error
+    
+    return { success: true, items: data || [] }
+  } catch (err) {
+    console.error('영문 데이터 없는 항목 목록 조회 에러:', err)
+    return { success: false, items: [], error: err.message }
+  }
+}
+
+/**
+ * 단일 tour_spot에 영문 데이터 수동 매핑
+ * @param {number} spotId - tour_spots.id
+ * @param {Object} engData - 영문 데이터 { content_id_en, title_en, addr1_en, overview_en, homepage_en }
+ * @returns {Promise<Object>} { success, error }
+ */
+export const mapTourSpotEnglish = async (spotId, engData) => {
+  try {
+    const { error } = await supabase
+      .from('tour_spots')
+      .update({
+        content_id_en: engData.content_id_en,
+        title_en: engData.title_en,
+        addr1_en: engData.addr1_en || '',
+        overview_en: engData.overview_en || '',
+        homepage_en: engData.homepage_en || '',
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', spotId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('영문 데이터 수동 매핑 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * tour_spot 영문 데이터 삭제 (초기화)
+ * @param {number} spotId - tour_spots.id
+ * @returns {Promise<Object>} { success, error }
+ */
+export const clearTourSpotEnglish = async (spotId) => {
+  try {
+    const { error } = await supabase
+      .from('tour_spots')
+      .update({
+        content_id_en: null,
+        title_en: null,
+        addr1_en: null,
+        overview_en: null,
+        homepage_en: null,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', spotId)
+    
+    if (error) throw error
+    
+    return { success: true }
+  } catch (err) {
+    console.error('영문 데이터 삭제 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 한글 제목 정규화 (공백, 특수문자 제거)
+ */
+const normalizeKorTitle = (title) => {
+  if (!title) return ''
+  return title
+    .replace(/\([^)]*\)/g, '')  // 괄호 내용 제거
+    .replace(/\s+/g, '')        // 공백 제거
+    .replace(/[^\uAC00-\uD7AF\u1100-\u11FF\u3130-\u318F가-힣a-zA-Z0-9]/g, '') // 한글,영문,숫자만
+    .toLowerCase()
+    .trim()
+}
+
+/**
+ * 영문 제목에서 한글 이름 추출 (괄호 안 또는 전체 한글)
+ */
+const extractKorNameFromEng = (engTitle) => {
+  if (!engTitle) return null
+  // 1. 괄호 안 한글 추출: "Daejeon Expo Park (대전 엑스포과학공원)"
+  const match = engTitle.match(/\(([^)]*[가-힣]+[^)]*)\)/)
+  if (match) {
+    return normalizeKorTitle(match[1])
+  }
+  // 2. 전체 제목에서 한글 부분만 추출
+  const korChars = engTitle.match(/[가-힣]+/g)
+  return korChars ? normalizeKorTitle(korChars.join('')) : null
+}
+
+/**
+ * TourAPI 영문 데이터 동기화 (다단계 매칭 방식)
+ * 1차: 장소명 매칭 (영문 제목 내 한글명)
+ * 2차: zipcode 매칭 (우편번호 동일)
+ * 3차: firstimage 매칭 (이미지 URL 동일)
+ * @param {string} contentTypeId - 국문 관광타입 (12, 14 등)
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @returns {Promise<Object>} { success, updatedCount, failedCount, matchedItems }
+ */
+export const syncTourSpotsEnglish = async (contentTypeId = null, onProgress = null) => {
+  try {
+    // 1. DB에서 국문 데이터 조회 (영문 데이터 없는 것)
+    let query = supabase
+      .from('tour_spots')
+      .select('id, content_id, content_type_id, title, zipcode, firstimage')
+      .is('title_en', null)
+      .order('id', { ascending: true })
+    
+    if (contentTypeId) {
+      query = query.eq('content_type_id', contentTypeId)
+    }
+    
+    const { data: korItems, error: selectError } = await query
+    if (selectError) throw selectError
+    
+    if (!korItems || korItems.length === 0) {
+      return { success: true, updatedCount: 0, failedCount: 0, message: 'No items need English sync' }
+    }
+    
+    // 2. 영문 API에서 데이터 가져오기
+    const { getTourApiSpotsEng, getTourApiDetailEng, CONTENT_TYPE_KOR_TO_ENG } = await import('./api.js')
+    
+    const korContentTypes = contentTypeId ? [contentTypeId] : ['12', '14', '28', '32', '38', '39']
+    
+    // 매칭 인덱스 생성
+    const engByKorName = new Map()     // 정규화된 한글명 → engItem
+    const engByZipcode = new Map()     // zipcode → engItem[]
+    const engByImage = new Map()       // firstimage → engItem
+    const allEngItems = []
+    
+    for (const korTypeId of korContentTypes) {
+      const engTypeId = CONTENT_TYPE_KOR_TO_ENG[korTypeId]
+      if (!engTypeId) continue
+      
+      if (onProgress) onProgress(0, korItems.length, `영문 데이터 조회 중... (타입: ${korTypeId} → ${engTypeId})`)
+      
+      const result = await getTourApiSpotsEng({ contentTypeId: engTypeId, numOfRows: 1000 })
+      if (result.success && result.items) {
+        for (const engItem of result.items) {
+          allEngItems.push(engItem)
+          
+          // 1. 한글명 인덱스
+          const korName = extractKorNameFromEng(engItem.title)
+          if (korName) {
+            engByKorName.set(korName, engItem)
+          }
+          
+          // 2. zipcode 인덱스 (배열로 저장 - 같은 우편번호에 여러 장소 가능)
+          if (engItem.zipcode) {
+            if (!engByZipcode.has(engItem.zipcode)) {
+              engByZipcode.set(engItem.zipcode, [])
+            }
+            engByZipcode.get(engItem.zipcode).push(engItem)
+          }
+          
+          // 3. firstimage 인덱스
+          if (engItem.firstimage) {
+            engByImage.set(engItem.firstimage, engItem)
+          }
+        }
+      }
+      await new Promise(r => setTimeout(r, 200))
+    }
+    
+    console.log(`[EngSync] 영문 데이터 로드: 총 ${allEngItems.length}개`)
+    console.log(`[EngSync] 인덱스: 한글명 ${engByKorName.size}개, 우편번호 ${engByZipcode.size}개, 이미지 ${engByImage.size}개`)
+    
+    // 3. 다단계 매칭 수행
+    let updatedCount = 0
+    let failedCount = 0
+    const matchedItems = []
+    const unmatchedItems = []
+    const total = korItems.length
+    
+    console.group('🔄 영문 데이터 매칭 진행')
+    
+    for (let i = 0; i < korItems.length; i++) {
+      const korItem = korItems[i]
+      const normalizedKorTitle = normalizeKorTitle(korItem.title)
+      
+      let engItem = null
+      let matchMethod = ''
+      
+      // 1차: 장소명 완전일치 매칭 (정규화 후 비교)
+      engItem = engByKorName.get(normalizedKorTitle)
+      if (engItem) matchMethod = '장소명완전일치'
+      
+      // 2차: zipcode + 명칭 완전일치 매칭
+      if (!engItem && korItem.zipcode) {
+        const candidates = engByZipcode.get(korItem.zipcode)
+        if (candidates && candidates.length > 0) {
+          // zipcode 동일한 것들 중 이름 완전일치 체크
+          for (const candidate of candidates) {
+            const candidateKorName = extractKorNameFromEng(candidate.title)
+            // 완전 일치만 허용
+            if (candidateKorName && candidateKorName === normalizedKorTitle) {
+              engItem = candidate
+              matchMethod = 'zipcode+명칭완전일치'
+              break
+            }
+          }
+        }
+      }
+      
+      // 3차: firstimage 완전일치 매칭 (이미지 URL이 동일하면 같은 장소)
+      if (!engItem && korItem.firstimage) {
+        engItem = engByImage.get(korItem.firstimage)
+        if (engItem) matchMethod = '이미지완전일치'
+      }
+      
+      if (engItem) {
+        // 매칭 성공 로그
+        console.log(`[OK] [${matchMethod}] ${korItem.title} → ${engItem.title}`)
+        
+        // 영문 상세정보 조회 (overview 포함)
+        const detailResult = await getTourApiDetailEng(engItem.contentid)
+        const engDetail = detailResult.success ? detailResult.item : engItem
+        
+        // DB 업데이트
+        const { error: updateError } = await supabase
+          .from('tour_spots')
+          .update({
+            content_id_en: engItem.contentid,
+            title_en: engItem.title,
+            addr1_en: engItem.addr1 || '',
+            overview_en: engDetail?.overview || '',
+            homepage_en: engDetail?.homepage || '',
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', korItem.id)
+        
+        if (updateError) {
+          console.error(`[EngSync] 업데이트 실패: ${korItem.title}`, updateError)
+          failedCount++
+        } else {
+          updatedCount++
+          matchedItems.push({
+            korTitle: korItem.title,
+            engTitle: engItem.title,
+            content_id: korItem.content_id,
+            content_id_en: engItem.contentid,
+            method: matchMethod
+          })
+        }
+        
+        await new Promise(r => setTimeout(r, 100))
+      } else {
+        failedCount++
+        unmatchedItems.push({
+          id: korItem.id,
+          title: korItem.title,
+          content_id: korItem.content_id,
+          content_type_id: korItem.content_type_id,
+          zipcode: korItem.zipcode
+        })
+      }
+      
+      if (onProgress) {
+        onProgress(i + 1, total, korItem.title)
+      }
+    }
+    
+    console.groupEnd() // 영문 데이터 매칭 진행 그룹 종료
+    
+    console.log(`[EngSync] 완료: ${updatedCount}개 매칭, ${failedCount}개 미매칭`)
+    
+    // 매칭 결과 상세 로그
+    if (matchedItems.length > 0) {
+      console.group('[SUCCESS] 영문 매칭 성공 (매칭 방법별)')
+      const byMethod = {}
+      matchedItems.forEach(item => {
+        if (!byMethod[item.method]) byMethod[item.method] = []
+        byMethod[item.method].push(item)
+      })
+      Object.entries(byMethod).forEach(([method, items]) => {
+        console.log(`[${method}] ${items.length}개`)
+        items.slice(0, 5).forEach(item => console.log(`  - ${item.korTitle} → ${item.engTitle}`))
+        if (items.length > 5) console.log(`  ... 외 ${items.length - 5}개`)
+      })
+      console.groupEnd()
+    }
+    
+    // 미매칭 항목 로그
+    if (unmatchedItems.length > 0) {
+      console.group('[FAIL] 영문 매칭 실패 항목 (최대 30개)')
+      unmatchedItems.slice(0, 30).forEach(item => {
+        console.log(`[${item.content_type_id}] ${item.title} (zipcode: ${item.zipcode || '-'})`)
+      })
+      if (unmatchedItems.length > 30) {
+        console.log(`... 외 ${unmatchedItems.length - 30}개`)
+      }
+      console.groupEnd()
+    }
+    
+    return {
+      success: true,
+      updatedCount,
+      failedCount,
+      total,
+      matchedItems,
+      unmatchedItems,
+      message: `Updated ${updatedCount}/${total} items with English data`
+    }
+  } catch (err) {
+    console.error('영문 데이터 동기화 에러:', err)
+    return { success: false, updatedCount: 0, failedCount: 0, error: err.message }
+  }
+}
+
+/**
  * TourAPI 소개정보(intro_info) 동기화
  * DB에 저장된 tour_spots 항목들의 소개정보를 TourAPI에서 가져와 업데이트
  * @param {string} contentTypeId - 관광타입 (null이면 전체)
@@ -2255,6 +2675,149 @@ export const getTourSpotsWithoutIntroCount = async (contentTypeId = null) => {
     return count || 0
   } catch (err) {
     console.error('Intro info 없는 항목 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * TourAPI 숙박 객실정보(room_info) 동기화
+ * DB에 저장된 숙박(32) 항목들의 객실정보를 TourAPI에서 가져와 업데이트
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @returns {Promise<Object>} { success, updatedCount, failedCount }
+ */
+export const syncTourSpotsRoomInfo = async (onProgress = null) => {
+  try {
+    // room_info가 없는 숙박 항목 조회
+    const { data: items, error: selectError } = await supabase
+      .from('tour_spots')
+      .select('id, content_id, content_type_id, title')
+      .eq('content_type_id', '32') // 숙박만
+      .is('room_info', null)
+      .order('id', { ascending: true })
+    
+    if (selectError) throw selectError
+    
+    if (!items || items.length === 0) {
+      return { success: true, updatedCount: 0, failedCount: 0, message: 'No items need room info sync', failedItems: [] }
+    }
+    
+    let updatedCount = 0
+    let failedCount = 0
+    const failedItems = []
+    const total = items.length
+    
+    // 동적 import (순환 참조 방지)
+    const { getTourApiRoomInfo } = await import('./api.js')
+    
+    // 각 항목에 대해 객실정보 조회 및 업데이트
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      
+      try {
+        // TourAPI 반복정보 조회 (객실정보)
+        const result = await getTourApiRoomInfo(item.content_id, '32')
+        
+        if (result.success && result.items && result.items.length > 0) {
+          // room_info 업데이트 (배열을 JSONB로 저장)
+          const { error: updateError } = await supabase
+            .from('tour_spots')
+            .update({ 
+              room_info: result.items,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id)
+          
+          if (updateError) {
+            console.error(`Update failed for ${item.title}:`, updateError)
+            failedCount++
+            failedItems.push({
+              id: item.id,
+              content_id: item.content_id,
+              title: item.title,
+              reason: `DB update error: ${updateError.message}`
+            })
+          } else {
+            updatedCount++
+          }
+        } else {
+          // 객실정보가 없는 경우 빈 배열로 저장 (재조회 방지)
+          await supabase
+            .from('tour_spots')
+            .update({ 
+              room_info: [],
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', item.id)
+          
+          console.warn(`[RoomSync] No room data for: ${item.title} (content_id: ${item.content_id})`)
+          failedCount++
+          failedItems.push({
+            id: item.id,
+            content_id: item.content_id,
+            title: item.title,
+            reason: 'API returned no room data'
+          })
+        }
+        
+        // 진행 콜백 호출
+        if (onProgress) {
+          onProgress(i + 1, total, item.title)
+        }
+        
+        // API 호출 간격 (rate limit 방지)
+        await new Promise(resolve => setTimeout(resolve, 100))
+        
+      } catch (err) {
+        console.error(`Error syncing room info for ${item.title}:`, err)
+        failedCount++
+        failedItems.push({
+          id: item.id,
+          content_id: item.content_id,
+          title: item.title,
+          reason: err.message
+        })
+      }
+    }
+    
+    // 실패 항목 요약 로그
+    if (failedItems.length > 0) {
+      console.warn(`[RoomSync] Failed items (${failedItems.length}):`)
+      failedItems.forEach(item => {
+        console.warn(`  - ${item.title} (${item.content_id}): ${item.reason}`)
+      })
+    }
+    
+    return { 
+      success: true, 
+      updatedCount, 
+      failedCount, 
+      total,
+      failedItems,
+      message: `Updated ${updatedCount}/${total} items` 
+    }
+  } catch (err) {
+    console.error('Room info 동기화 에러:', err)
+    return { success: false, updatedCount: 0, failedCount: 0, error: err.message, failedItems: [] }
+  }
+}
+
+/**
+ * room_info가 없는 숙박 tour_spots 개수 조회
+ * @returns {Promise<number>} 개수
+ */
+export const getTourSpotsWithoutRoomCount = async () => {
+  try {
+    const { count, error } = await supabase
+      .from('tour_spots')
+      .select('*', { count: 'exact', head: true })
+      .eq('content_type_id', '32') // 숙박만
+      .is('room_info', null)
+    
+    if (error) throw error
+    
+    return count || 0
+  } catch (err) {
+    console.error('Room info 없는 항목 개수 조회 에러:', err)
     return 0
   }
 }
@@ -2553,7 +3116,17 @@ export const getTourApiStats = async () => {
     for (const typeId of contentTypes) {
       const count = await getTourSpotsCount(typeId)
       console.log(`[DEBUG] getTourApiStats - spots[${typeId}]:`, count)
-      stats.spots[typeId] = { name: typeNames[typeId], count }
+      
+      // 영문 데이터 있는 항목 개수 조회
+      const { count: engCount, error: engError } = await supabase
+        .from('tour_spots')
+        .select('*', { count: 'exact', head: true })
+        .eq('content_type_id', typeId)
+        .not('title_en', 'is', null)
+      
+      const hasEngCount = engError ? 0 : (engCount || 0)
+      
+      stats.spots[typeId] = { name: typeNames[typeId], count, hasEngCount }
     }
     
     // 행사/축제 개수 (전체 - 종료된 것 포함)
@@ -2747,14 +3320,34 @@ export const createSpotReview = async ({ contentId, userId, rating, content, use
       return { success: false, message: '로그인이 필요합니다' }
     }
     
+    // 입력 유효성 검사
+    if (!contentId) {
+      return { success: false, message: '관광지 정보가 없습니다' }
+    }
+    
+    // rating 유효성 검사 (1-5 정수)
+    const validRating = Math.floor(Number(rating))
+    if (isNaN(validRating) || validRating < 1 || validRating > 5) {
+      return { success: false, message: '별점은 1~5 사이여야 합니다' }
+    }
+    
+    // content 유효성 검사 (10-1000자)
+    const trimmedContent = String(content || '').trim()
+    if (trimmedContent.length < 10) {
+      return { success: false, message: '리뷰는 최소 10자 이상이어야 합니다' }
+    }
+    if (trimmedContent.length > 1000) {
+      return { success: false, message: '리뷰는 1000자를 초과할 수 없습니다' }
+    }
+    
     // 리뷰 삽입
     const { data, error } = await supabase
       .from('spot_reviews')
       .insert({
         content_id: contentId,
         user_id: userId,
-        rating: rating,
-        content: content
+        rating: validRating,
+        content: trimmedContent
       })
       .select('*')
       .single()

@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom'
 import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX, FiTrendingUp } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { recordSearchQuery, getPopularSearchQueries, getAllDbData } from '../services/dbService'
+import Icons from '../components/common/Icons'
 import './SearchPage.css'
 
 const SearchPage = () => {
@@ -328,7 +329,7 @@ const SearchPage = () => {
                         <div className="result-content">
                           <h3>{item.restrntNm}</h3>
                           <p className="result-summary">{item.restrntSumm}</p>
-                          {item.rprsFod && <p className="result-menu">🍽️ {item.rprsFod}</p>}
+                          {item.rprsFod && <p className="result-menu"><Icons.food size={14} /> {item.rprsFod}</p>}
                           <div className="result-meta">
                             <FiMapPin />
                             <span>{extractDistrict(item.restrntAddr)}</span>
@@ -390,7 +391,7 @@ const SearchPage = () => {
               {/* 결과 없음 */}
               {totalResults === 0 && (
                 <div className="no-results">
-                  <div className="no-results-icon">🔍</div>
+                  <div className="no-results-icon"><Icons.search size={48} /></div>
                   <h3>{t.pages.search.noResults}</h3>
                   <p>{t.pages.search.noResultsHint}</p>
                 </div>
@@ -399,7 +400,7 @@ const SearchPage = () => {
           </>
         ) : (
           <div className="search-placeholder">
-            <div className="placeholder-icon">🔍</div>
+            <div className="placeholder-icon"><Icons.search size={48} /></div>
             <h3>{t.pages.search.enterSearchTerm}</h3>
             <p>{t.pages.search.searchDescription}</p>
             <div className="search-suggestions">

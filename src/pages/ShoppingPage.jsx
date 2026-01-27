@@ -6,6 +6,7 @@ import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiL
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import Icons from '../components/common/Icons';
 import './ShoppingPage.css';
 
 const ShoppingPage = () => {
@@ -36,9 +37,13 @@ const ShoppingPage = () => {
         // TourAPI 데이터를 기존 형식으로 변환
         const formattedItems = tourResult.items.map(item => ({
           shppgNm: item.title,
+          shppgNm_en: item.title_en, // 영어 이름
           shppgAddr: item.addr1 || item.addr2,
+          shppgAddr_en: item.addr1_en, // 영어 주소
           shppgIntro: item.overview || '',
+          shppgIntro_en: item.overview_en || '', // 영어 설명
           telNo: item.tel,
+          contentId: item.content_id,
           imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
@@ -247,7 +252,7 @@ const ShoppingPage = () => {
                 <div className="shopping-image">
                   <img 
                     src={shop.imageUrl || '/images/no-image.svg'} 
-                    alt={shop.shppgNm} 
+                    alt={language === 'en' && shop.shppgNm_en ? shop.shppgNm_en : shop.shppgNm} 
                     loading="lazy"
                     onError={(e) => { e.target.src = '/images/no-image.svg' }}
                   />
@@ -258,7 +263,7 @@ const ShoppingPage = () => {
                       {getIcon(shop.shppgNm)}
                     </div>
                     <div className="shopping-title">
-                      <h3>{shop.shppgNm || t.pages.shopping.defaultName}</h3>
+                      <h3>{language === 'en' && shop.shppgNm_en ? shop.shppgNm_en : (shop.shppgNm || t.pages.shopping.defaultName)}</h3>
                       {shop.salsTime && (
                         <span className="shop-time">{t.pages.shopping.hoursPrefix}{shop.salsTime}</span>
                       )}
@@ -269,7 +274,7 @@ const ShoppingPage = () => {
                     {shop.shppgAddr && (
                       <div className="info-item">
                         <FiMapPin />
-                        <span>{shop.shppgAddr}</span>
+                        <span>{language === 'en' && shop.shppgAddr_en ? shop.shppgAddr_en : shop.shppgAddr}</span>
                       </div>
                     )}
                     
@@ -284,7 +289,7 @@ const ShoppingPage = () => {
                     {/* 쉬는날: intro_info.restdateshopping */}
                     {shop.intro_info?.restdateshopping && (
                       <div className="info-item rest-day">
-                        <span>📅 {t.detail.closed}: {cleanIntroHtml(shop.intro_info.restdateshopping)}</span>
+                        <span><Icons.calendar size={14} /> {t.detail.closed}: {cleanIntroHtml(shop.intro_info.restdateshopping)}</span>
                       </div>
                     )}
                     
@@ -301,7 +306,7 @@ const ShoppingPage = () => {
                     {/* 주차시설: intro_info.parkingshopping */}
                     {shop.intro_info?.parkingshopping && (
                       <div className="info-item parking">
-                        <span>🅿️ {cleanIntroHtml(shop.intro_info.parkingshopping)}</span>
+                        <span><Icons.parking size={14} /> {cleanIntroHtml(shop.intro_info.parkingshopping)}</span>
                       </div>
                     )}
                     

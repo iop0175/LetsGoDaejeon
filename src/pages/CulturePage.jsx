@@ -6,6 +6,7 @@ import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 're
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import Icons from '../components/common/Icons';
 import './CulturePage.css';
 
 const CulturePage = () => {
@@ -80,14 +81,18 @@ const CulturePage = () => {
         // TourAPI 데이터를 기존 형식으로 변환
         const formattedItems = tourResult.items.map(item => ({
           fcltyNm: item.title,
+          fcltyNm_en: item.title_en, // 영어 제목
           locplc: item.addr1 || item.addr2,
+          locplc_en: item.addr1_en, // 영어 주소
           fcltyKnd: '', // TourAPI에는 시설종류가 없음
           operTime: '',
           telno: item.tel,
           imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
+          contentId: item.content_id,
           overview: item.overview,
+          overview_en: item.overview_en, // 영어 설명
           intro_info: item.intro_info, // 소개정보 (이용시간, 쉬는날, 이용요금 등)
           _source: 'tourapi'
         }));
@@ -295,7 +300,7 @@ const CulturePage = () => {
                 <div className="culture-image">
                   <img 
                     src={facility.imageUrl || '/images/no-image.svg'} 
-                    alt={facility.fcltyNm} 
+                    alt={language === 'en' && facility.fcltyNm_en ? facility.fcltyNm_en : facility.fcltyNm} 
                     loading="lazy"
                     onError={(e) => { e.target.src = '/images/no-image.svg' }}
                   />
@@ -306,7 +311,7 @@ const CulturePage = () => {
                       {getIcon(facility.fcltyKnd)}
                     </div>
                     <div className="culture-title">
-                      <h3>{facility.fcltyNm || '문화시설'}</h3>
+                      <h3>{language === 'en' && facility.fcltyNm_en ? facility.fcltyNm_en : (facility.fcltyNm || '문화시설')}</h3>
                       {facility.fcltyKnd && (
                         <span className="facility-type">{facility.fcltyKnd}</span>
                       )}
@@ -317,7 +322,7 @@ const CulturePage = () => {
                     {facility.locplc && (
                       <div className="info-item">
                         <FiMapPin />
-                        <span>{facility.signgu} {facility.locplc}</span>
+                        <span>{facility.signgu} {language === 'en' && facility.locplc_en ? facility.locplc_en : facility.locplc}</span>
                       </div>
                     )}
                     
@@ -332,7 +337,7 @@ const CulturePage = () => {
                     {/* 쉬는날: intro_info.restdateculture */}
                     {facility.intro_info?.restdateculture && (
                       <div className="info-item rest-day">
-                        <span>📅 {language === 'ko' ? '휴관' : 'Closed'}: </span>
+                        <span><Icons.calendar size={14} /> {language === 'ko' ? '휴관' : 'Closed'}: </span>
                         <span>{cleanIntroHtml(facility.intro_info.restdateculture, ', ')}</span>
                       </div>
                     )}
@@ -340,7 +345,7 @@ const CulturePage = () => {
                     {/* 이용요금: intro_info.usefee */}
                     {facility.intro_info?.usefee && (
                       <div className="info-item">
-                        <span>💰 </span>
+                        <span><Icons.money size={14} /> </span>
                         <span>{cleanIntroHtml(facility.intro_info.usefee, ' / ')}</span>
                       </div>
                     )}
@@ -356,7 +361,7 @@ const CulturePage = () => {
                     {/* 주차시설: intro_info.parkingculture */}
                     {facility.intro_info?.parkingculture && (
                       <div className="info-item parking">
-                        <span>🅿️ {cleanIntroHtml(facility.intro_info.parkingculture)}</span>
+                        <span><Icons.parking size={14} /> {cleanIntroHtml(facility.intro_info.parkingculture)}</span>
                       </div>
                     )}
                     

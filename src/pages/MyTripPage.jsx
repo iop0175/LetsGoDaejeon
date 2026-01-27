@@ -31,6 +31,7 @@ import { uploadResizedImage } from '../services/blobService'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
 import { getPublicTransitRoute } from '../services/odsayService'
 import { getDaejeonParking } from '../services/api'
+import Icons from '../components/common/Icons'
 import './MyTripPage.css'
 
 // Polyline 좌표를 두꺼운 Polygon으로 변환하는 함수 (클릭 영역 확대용)
@@ -2041,7 +2042,7 @@ const MyTripPage = () => {
                           ">
                             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
                               <div style="display:flex;align-items:center;gap:6px;color:#6B7280;font-weight:600;">
-                                🚶 도보 이동
+                                도보 이동
                               </div>
                               <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
                             </div>
@@ -2174,11 +2175,11 @@ const MyTripPage = () => {
                             <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
                           </div>
                           <div style="color:#333;line-height:1.6;">
-                            <div>🚏 승차: ${escapeHtml(detail.startStation || '')}</div>
-                            <div>🚏 하차: ${escapeHtml(detail.endStation || '')}</div>
+                            <div>승차: ${escapeHtml(detail.startStation || '')}</div>
+                            <div>하차: ${escapeHtml(detail.endStation || '')}</div>
                           </div>
                           <div style="color:#888;font-size:12px;margin-top:8px;padding-top:8px;border-top:1px solid #eee;">
-                            📍 ${detail.stationCount}정거장 · ⏱ ${detail.sectionTime}분
+                            ${detail.stationCount}정거장 · ${detail.sectionTime}분
                           </div>
                         </div>`,
                         position: new window.kakao.maps.LatLng(
@@ -2262,9 +2263,7 @@ const MyTripPage = () => {
                     
                     // 선택된 이동수단 가져오기
                     const selectedTransport = transportType || 'car'
-                    const transportIcons = { car: '🚗', bus: '🚌', subway: '🚇', walk: '🚶' }
                     const transportLabels = { car: '자동차', bus: '버스', subway: '지하철', walk: '도보' }
-                    const transportIcon = transportIcons[selectedTransport] || '🚗'
                     const transportLabel = transportLabels[selectedTransport] || '자동차'
                     // 일차별 + 이동수단별 경로 색상 적용
                     const routeColor = getRouteColor(Number(dayNum), selectedTransport)
@@ -2342,17 +2341,17 @@ const MyTripPage = () => {
                         ">
                           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
                             <div style="display:flex;align-items:center;gap:6px;color:${routeColor};font-weight:600;">
-                              ${transportIcon} ${transportLabel} 이동
+                              ${transportLabel} 이동
                             </div>
                             <span style="color:#aaa;font-size:10px;">클릭하여 닫기</span>
                           </div>
                           <div style="color:#333;font-size:12px;line-height:1.6;">
-                            <div>📍 ${escapeHtml(fromName)}</div>
+                            <div>${escapeHtml(fromName)}</div>
                             <div style="color:#888;padding-left:8px;">↓</div>
-                            <div>📍 ${escapeHtml(toName)}</div>
+                            <div>${escapeHtml(toName)}</div>
                           </div>
                           <div style="color:#666;margin-top:10px;padding-top:8px;border-top:1px solid #eee;font-size:12px;">
-                            ${duration > 0 ? `⏱ 약 ${duration}분` : ''}${duration > 0 && distance > 0 ? ' · ' : ''}${distance > 0 ? `📏 ${(distance/1000).toFixed(1)}km` : ''}
+                            ${duration > 0 ? `약 ${duration}분` : ''}${duration > 0 && distance > 0 ? ' · ' : ''}${distance > 0 ? `${(distance/1000).toFixed(1)}km` : ''}
                           </div>
                         </div>`,
                         position: routeResult.path[midIdx] 
@@ -2513,9 +2512,7 @@ const MyTripPage = () => {
                     
                     // 이동수단 정보
                     const errorTransport = transportType || 'car'
-                    const errorTransportIcons = { car: '🚗', bus: '🚌', subway: '🚇', walk: '🚶' }
                     const errorTransportLabels = { car: '자동차', bus: '버스', subway: '지하철', walk: '도보' }
-                    const errorIcon = errorTransportIcons[errorTransport] || '🚗'
                     const errorLabel = errorTransportLabels[errorTransport] || '자동차'
                     const errorColor = getRouteColor(Number(dayNum), errorTransport)
                     
@@ -3573,7 +3570,7 @@ const MyTripPage = () => {
                                                               )}
                                                               {detail.type === 'walk' && (
                                                                 <span className="route-walk">
-                                                                  🚶 {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
+                                                                  <FaWalking /> {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
                                                                 </span>
                                                               )}
                                                             </div>
@@ -3873,7 +3870,7 @@ const MyTripPage = () => {
                                                                   )}
                                                                   {detail.type === 'walk' && (
                                                                     <span className="route-walk">
-                                                                      🚶 {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
+                                                                      <FaWalking /> {t.trip.walk} {detail.sectionTime}{t.trip.minutes}
                                                                     </span>
                                                                   )}
                                                                 </div>

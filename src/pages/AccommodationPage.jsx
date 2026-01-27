@@ -6,6 +6,7 @@ import { FiMapPin, FiPhone, FiNavigation, FiSearch, FiCamera, FiLoader, FiClock 
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import Icons from '../components/common/Icons';
 import './AccommodationPage.css';
 
 const AccommodationPage = () => {
@@ -81,14 +82,19 @@ const AccommodationPage = () => {
         // TourAPI 데이터를 기존 형식으로 변환
         const formattedItems = tourResult.items.map(item => ({
           romsNm: item.title,
+          romsNm_en: item.title_en, // 영어 이름
           romsAddr: item.addr1 || item.addr2,
+          romsAddr_en: item.addr1_en, // 영어 주소
           romsScl: '', // TourAPI에는 숙소유형이 없음
           romsRefadNo: item.tel,
+          contentId: item.content_id,
           imageUrl: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
           mapx: item.mapx,
           mapy: item.mapy,
           overview: item.overview,
+          overview_en: item.overview_en, // 영어 설명
           intro_info: item.intro_info, // 소개정보 (체크인/아웃, 주차 등)
+          room_info: item.room_info, // 객실정보 (객실명, 인원, 시설 등)
           _source: 'tourapi'
         }));
         setAllRooms(formattedItems);
@@ -310,7 +316,7 @@ const AccommodationPage = () => {
                 <div className="accommodation-image">
                   <img 
                     src={room.imageUrl || '/images/no-image.svg'} 
-                    alt={room.romsNm} 
+                    alt={language === 'en' && room.romsNm_en ? room.romsNm_en : room.romsNm} 
                     loading="lazy"
                     onError={(e) => { e.target.src = '/images/no-image.svg' }}
                   />
@@ -321,7 +327,7 @@ const AccommodationPage = () => {
                       {getIcon(room.romsNm)}
                     </div>
                     <div className="accommodation-title">
-                      <h3>{room.romsNm || '숙박시설'}</h3>
+                      <h3>{language === 'en' && room.romsNm_en ? room.romsNm_en : (room.romsNm || '숙박시설')}</h3>
                       {room.romsScl && (
                         <span className="room-type">{room.romsScl}</span>
                       )}
@@ -332,7 +338,7 @@ const AccommodationPage = () => {
                     {room.romsAddr && (
                       <div className="info-item">
                         <FiMapPin />
-                        <span>{room.romsAddr}</span>
+                        <span>{language === 'en' && room.romsAddr_en ? room.romsAddr_en : room.romsAddr}</span>
                       </div>
                     )}
                     {room.romsDtlAddr && room.romsDtlAddr !== room.romsAddr && (
@@ -366,7 +372,7 @@ const AccommodationPage = () => {
                     {/* 주차시설: intro_info.parkinglodging */}
                     {room.intro_info?.parkinglodging && (
                       <div className="info-item parking">
-                        <span>🅿️ {room.intro_info.parkinglodging}</span>
+                        <span><Icons.parking size={14} /> {room.intro_info.parkinglodging}</span>
                       </div>
                     )}
                   </div>

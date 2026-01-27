@@ -7,6 +7,7 @@ import { getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict } from '../utils/constants'
+import Icons from '../components/common/Icons'
 import './LeisurePage.css'
 
 const LeisurePage = () => {
@@ -152,8 +153,11 @@ const LeisurePage = () => {
             id: item.id || item.content_id || index + 1,
             contentId: item.content_id,
             title: item.title,
+            title_en: item.title_en, // 영어 제목
             address: item.addr1 || item.addr2 || '',
+            address_en: item.addr1_en, // 영어 주소
             overview: item.overview || '',
+            overview_en: item.overview_en || '', // 영어 설명
             phone: item.tel,
             image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
             mapx: item.mapx,
@@ -246,7 +250,7 @@ const LeisurePage = () => {
                     {spot.image ? (
                       <img 
                         src={spot.image} 
-                        alt={spot.title} 
+                        alt={language === 'en' && spot.title_en ? spot.title_en : spot.title} 
                         loading="lazy"
                         onError={handleImageError}
                       />
@@ -258,10 +262,10 @@ const LeisurePage = () => {
                     )}
                   </div>
                   <div className="leisure-card-content">
-                    <h3>{spot.title}</h3>
+                    <h3>{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h3>
                     <p className="spot-address">
                       <FiMapPin />
-                      <span>{spot.address || t.common.noAddress}</span>
+                      <span>{language === 'en' && spot.address_en ? spot.address_en : (spot.address || t.common.noAddress)}</span>
                     </p>
                     {spot.phone && (
                       <p className="leisure-phone">
@@ -373,7 +377,7 @@ const LeisurePage = () => {
                 {/* 쉬는날: intro_info.restdateleports */}
                 {selectedSpot.intro_info?.restdateleports && (
                   <div className="info-item rest-day">
-                    <span>📅 {t.pages.leisure.closed}: </span>
+                    <span><Icons.calendar size={14} /> {t.pages.leisure.closed}: </span>
                     <span>{cleanIntroHtml(selectedSpot.intro_info.restdateleports, ', ')}</span>
                   </div>
                 )}
@@ -381,7 +385,7 @@ const LeisurePage = () => {
                 {/* 이용요금: intro_info.usefeeleports */}
                 {selectedSpot.intro_info?.usefeeleports && (
                   <div className="info-item">
-                    <span>💰 </span>
+                    <span><Icons.money size={14} /> </span>
                     <span>{cleanIntroHtml(selectedSpot.intro_info.usefeeleports, ' / ')}</span>
                   </div>
                 )}
@@ -399,7 +403,7 @@ const LeisurePage = () => {
                 {/* 주차시설: intro_info.parkingleports */}
                 {selectedSpot.intro_info?.parkingleports && (
                   <div className="info-item parking">
-                    <span>🅿️ {cleanIntroHtml(selectedSpot.intro_info.parkingleports)}</span>
+                    <span><Icons.parking size={14} /> {cleanIntroHtml(selectedSpot.intro_info.parkingleports)}</span>
                   </div>
                 )}
                 

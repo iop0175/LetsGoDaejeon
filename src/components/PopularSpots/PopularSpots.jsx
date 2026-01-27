@@ -107,12 +107,13 @@ const PopularSpots = memo(() => {
         const formattedSpots = selected.map((item, idx) => ({
           id: idx + 1,
           contentId: item.content_id,
-          title: { ko: item.title, en: item.title },
-          location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) },
+          title: { ko: item.title, en: item.title_en || item.title },
+          location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1_en || item.addr1) },
           category: { ko: '관광지', en: 'Attraction' },
           image: getReliableImageUrl(item.firstimage || item.firstimage2, DEFAULT_IMAGE),
           duration: { ko: '1-2시간', en: '1-2 hours' },
-          summary: item.overview
+          summary: item.overview,
+          summary_en: item.overview_en
         }))
         setSpots(formattedSpots)
       } else {

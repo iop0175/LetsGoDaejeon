@@ -106,14 +106,14 @@ const checkThresholdWarning = (stats) => {
   
   // 임계값 초과 체크
   if (totalCalls >= API_THRESHOLDS.total) {
-    console.warn(`⚠️ [API 사용량 경고] 오늘 총 ${totalCalls}회의 API 호출이 발생했습니다.`)
+    console.warn(`[API 사용량 경고] 오늘 총 ${totalCalls}회의 API 호출이 발생했습니다.`)
     localStorage.setItem(WARNING_SHOWN_KEY, today)
   }
   
   // 단일 API 임계값 초과 체크
   Object.entries(stats).forEach(([key, count]) => {
     if (key !== 'pages' && typeof count === 'number' && count >= API_THRESHOLDS.single) {
-      console.warn(`⚠️ [API 사용량 경고] ${key} API가 ${count}회 호출되었습니다.`)
+      console.warn(`[API 사용량 경고] ${key} API가 ${count}회 호출되었습니다.`)
     }
   })
 }

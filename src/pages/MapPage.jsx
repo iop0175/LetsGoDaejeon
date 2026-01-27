@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
+import Icons from '../components/common/Icons'
 import './MapPage.css'
 
 const MapPage = () => {
@@ -430,8 +431,8 @@ const MapPage = () => {
             <div style="padding: 10px; min-width: 200px; max-width: 280px;">
               <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333;">${place.name}</h4>
               ${place.address ? `<p style="margin: 0; font-size: 12px; color: #666; line-height: 1.4;">${place.address}</p>` : ''}
-              ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🍽️ ${place.menu}</p>` : ''}
-              ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🚗 ${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
+              ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">${place.menu}</p>` : ''}
+              ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
               ${place.parkingType ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #4f46e5; font-weight: 500;">${place.parkingType}</p>` : ''}
             </div>
           `
@@ -448,9 +449,9 @@ const MapPage = () => {
 
   // 탭 데이터
   const tabs = [
-    { id: 'tour', label: t.pages.search.attractions, icon: '🏛️' },
-    { id: 'food', label: t.pages.search.restaurants, icon: '🍽️' },
-    { id: 'parking', label: t.nav.parking, icon: '🅿️' }
+    { id: 'tour', label: t.pages.search.attractions, icon: <Icons.building size={16} /> },
+    { id: 'food', label: t.pages.search.restaurants, icon: <Icons.food size={16} /> },
+    { id: 'parking', label: t.nav.parking, icon: <Icons.parking size={16} /> }
   ]
 
   return (
@@ -541,10 +542,10 @@ const MapPage = () => {
                     {place.address || t.common.noAddress}
                   </p>
                   {place.menu && (
-                    <p className="place-menu">🍽️ {place.menu}</p>
+                    <p className="place-menu"><Icons.food size={14} /> {place.menu}</p>
                   )}
                   {place.capacity && (
-                    <p className="place-capacity">🚗 {place.capacity}{t.pages.parking.spots}</p>
+                    <p className="place-capacity"><Icons.car size={14} /> {place.capacity}{t.pages.parking.spots}</p>
                   )}
                 </div>
               ))
@@ -563,7 +564,7 @@ const MapPage = () => {
           
           {mapError ? (
             <div className="map-placeholder">
-              <p style={{color: '#ef4444'}}>⚠️ {mapError}</p>
+              <p style={{color: '#ef4444'}}><Icons.warning size={16} /> {mapError}</p>
               <p className="map-notice">
                 {language === 'ko' 
                   ? '카카오 개발자 사이트에서 도메인(localhost:3001)을 등록해주세요.'
@@ -607,7 +608,7 @@ const MapPage = () => {
               
               {selectedPlace.menu && (
                 <div className="info-row">
-                  <span>🍽️</span>
+                  <span><Icons.food size={14} /></span>
                   <span>{selectedPlace.menu}</span>
                 </div>
               )}
@@ -621,14 +622,14 @@ const MapPage = () => {
               
               {selectedPlace.capacity && (
                 <div className="info-row">
-                  <span>🚗</span>
+                  <span><Icons.car size={14} /></span>
                   <span>{selectedPlace.capacity}{t.pages.map.spotsAvailable}</span>
                 </div>
               )}
               
               {selectedPlace.fee && (
                 <div className="info-row fee">
-                  <span>💰</span>
+                  <span><Icons.money size={14} /></span>
                   <span>{selectedPlace.fee}</span>
                 </div>
               )}

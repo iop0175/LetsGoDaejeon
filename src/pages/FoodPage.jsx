@@ -7,6 +7,7 @@ import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbServ
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
+import Icons from '../components/common/Icons'
 import './FoodPage.css'
 
 const FoodPage = () => {
@@ -112,14 +113,18 @@ const FoodPage = () => {
               id: item.id || item.content_id || index + 1,
               contentId: item.content_id,
               name: item.title,
+              name_en: item.title_en, // 영어 이름
               location: district,
               address: item.addr1 || item.addr2,
+              address_en: item.addr1_en, // 영어 주소
               summary: item.overview || '',
+              summary_en: item.overview_en || '', // 영어 설명
               phone: item.tel,
               image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
               mapx: item.mapx,
               mapy: item.mapy,
               homepage: item.homepage,
+              homepage_en: item.homepage_en, // 영어 홈페이지
               intro_info: item.intro_info, // 소개정보 (영업시간, 쉬는날, 대표메뉴 등)
               _source: 'tourapi'
             }
@@ -313,7 +318,7 @@ const FoodPage = () => {
                   <div className="food-image-wrapper">
                     <img 
                       src={restaurant.image || '/images/no-image.svg'} 
-                      alt={restaurant.name} 
+                      alt={language === 'en' && restaurant.name_en ? restaurant.name_en : restaurant.name} 
                       loading="lazy"
                       onError={(e) => {
                         e.target.src = '/images/no-image.svg'
@@ -323,13 +328,12 @@ const FoodPage = () => {
                   <div className="food-info-wrapper">
                     <div className="food-header-section">
                       <span className="food-location-badge">{restaurant.location[language]}</span>
-                      <h3>{restaurant.name}</h3>
+                      <h3>{language === 'en' && restaurant.name_en ? restaurant.name_en : restaurant.name}</h3>
                     </div>
-                    <p className="food-summary">{restaurant.summary}</p>
                     
                     {restaurant.menu && (
                       <div className="food-menu">
-                        <strong>🍽️ {t.detail.signature}: </strong>
+                        <strong><Icons.food size={16} /> {t.detail.signature}: </strong>
                         {restaurant.menu}
                       </div>
                     )}
@@ -337,7 +341,7 @@ const FoodPage = () => {
                     {/* intro_info에서 대표메뉴/인기메뉴 표시 */}
                     {!restaurant.menu && restaurant.intro_info?.firstmenu && (
                       <div className="food-menu">
-                        <strong>🍽️ {t.detail.signature}: </strong>
+                        <strong><Icons.food size={16} /> {t.detail.signature}: </strong>
                         <span>{cleanIntroHtml(restaurant.intro_info.firstmenu, ', ')}</span>
                       </div>
                     )}
@@ -345,7 +349,7 @@ const FoodPage = () => {
                     {/* intro_info에서 취급메뉴 표시 */}
                     {restaurant.intro_info?.treatmenu && (
                       <div className="food-menu treat-menu">
-                        <strong>📋 {t.detail.menu}: </strong>
+                        <strong><Icons.menu size={16} /> {t.detail.menu}: </strong>
                         <span>{cleanIntroHtml(restaurant.intro_info.treatmenu, ', ')}</span>
                       </div>
                     )}
@@ -353,7 +357,7 @@ const FoodPage = () => {
                     <div className="food-details">
                       <div className="detail-item">
                         <FiMapPin />
-                        <span>{restaurant.address}</span>
+                        <span>{language === 'en' && restaurant.address_en ? restaurant.address_en : restaurant.address}</span>
                       </div>
                       
                       {/* 영업시간: intro_info.opentimefood 우선 */}
@@ -367,7 +371,7 @@ const FoodPage = () => {
                       {/* 쉬는날: intro_info.restdatefood */}
                       {restaurant.intro_info?.restdatefood && (
                         <div className="detail-item holiday">
-                          <span>📅 {t.detail.closed}: {cleanIntroHtml(restaurant.intro_info.restdatefood)}</span>
+                          <span><Icons.calendar size={14} /> {t.detail.closed}: {cleanIntroHtml(restaurant.intro_info.restdatefood)}</span>
                         </div>
                       )}
                       
@@ -389,14 +393,14 @@ const FoodPage = () => {
                       {/* 포장가능 여부 */}
                       {restaurant.intro_info?.packing && (
                         <div className="detail-item packing">
-                          <span>📦 {t.detail.takeout}: {cleanIntroHtml(restaurant.intro_info.packing)}</span>
+                          <span><Icons.takeout size={14} /> {t.detail.takeout}: {cleanIntroHtml(restaurant.intro_info.packing)}</span>
                         </div>
                       )}
                       
                       {/* 주차 정보 */}
                       {restaurant.intro_info?.parkingfood && (
                         <div className="detail-item parking">
-                          <span>🅿️ {cleanIntroHtml(restaurant.intro_info.parkingfood)}</span>
+                          <span><Icons.parking size={14} /> {cleanIntroHtml(restaurant.intro_info.parkingfood)}</span>
                         </div>
                       )}
                     </div>
@@ -504,7 +508,7 @@ const FoodPage = () => {
                   <h4>{restaurantToAdd?.name}</h4>
                   <p><FiMapPin /> {restaurantToAdd?.address}</p>
                   {restaurantToAdd?.menu && (
-                    <p className="menu-info">🍽️ {restaurantToAdd.menu}</p>
+                    <p className="menu-info"><Icons.food size={14} /> {restaurantToAdd.menu}</p>
                   )}
                 </div>
               </div>

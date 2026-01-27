@@ -1,6 +1,6 @@
 import { memo, useState, useEffect } from 'react'
-import { FiActivity, FiRefreshCw, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiDatabase, FiCloud, FiZap } from 'react-icons/fi'
-import { FaMap, FaBus } from 'react-icons/fa'
+import { FiActivity, FiRefreshCw, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiDatabase, FiCloud, FiZap, FiBarChart2, FiMap, FiCamera } from 'react-icons/fi'
+import { FaMap, FaBus, FaCar, FaLandmark } from 'react-icons/fa'
 import { getKakaoApiStats } from '../../services/kakaoMobilityService'
 import { getOdsayApiStats } from '../../services/odsayService'
 import { getTodayApiStats, getApiCallSummary, getApiStatsByPeriod, API_TYPES } from '../../services/dbService'
@@ -100,7 +100,7 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
       {/* 7일간 통계 */}
       {dbSummary?.success && dbSummary.week && (
         <div className="week-stats-bar">
-          <span className="week-label">📊 {language === 'ko' ? '최근 7일' : 'Last 7 Days'}:</span>
+          <span className="week-label"><FiBarChart2 /> {language === 'ko' ? '최근 7일' : 'Last 7 Days'}:</span>
           <span className="week-stat">{language === 'ko' ? '총' : 'Total'} <strong>{dbSummary.week.totalCalls}</strong></span>
           <span className="week-stat">{language === 'ko' ? '캐시' : 'Cache'} <strong>{dbSummary.week.cacheHits}</strong></span>
           <span className="week-stat">{language === 'ko' ? '실제' : 'Actual'} <strong>{dbSummary.week.actualApiCalls}</strong></span>
@@ -117,11 +117,11 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
               <div key={apiType} className={`api-detail-card ${apiType.replace('_', '-')}`}>
                 <div className="api-detail-header">
                   <span className="api-type-name">
-                    {apiType === 'kakao_geocoding' && '🗺️ Kakao 좌표'}
-                    {apiType === 'kakao_route' && '🚗 Kakao 경로'}
-                    {apiType === 'odsay_transit' && '🚌 ODsay 대중교통'}
-                    {apiType === 'tour_api' && '🏛️ 관광 API'}
-                    {apiType === 'kto_photo' && '📸 사진 API'}
+                    {apiType === 'kakao_geocoding' && <><FiMap /> Kakao 좌표</>}
+                    {apiType === 'kakao_route' && <><FaCar /> Kakao 경로</>}
+                    {apiType === 'odsay_transit' && <><FaBus /> ODsay 대중교통</>}
+                    {apiType === 'tour_api' && <><FaLandmark /> 관광 API</>}
+                    {apiType === 'kto_photo' && <><FiCamera /> 사진 API</>}
                     {!['kakao_geocoding', 'kakao_route', 'odsay_transit', 'tour_api', 'kto_photo'].includes(apiType) && apiType}
                   </span>
                 </div>
@@ -231,11 +231,11 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
                       {language === 'ko' ? '엔드포인트별' : 'By Endpoint'}
                     </span>
                     <div className="endpoint-row">
-                      <span>🗺️ {language === 'ko' ? '좌표검색' : 'Geocoding'}</span>
+                      <span><FiMap /> {language === 'ko' ? '좌표검색' : 'Geocoding'}</span>
                       <span>{kakaoGeocoding.total}</span>
                     </div>
                     <div className="endpoint-row">
-                      <span>🚗 {language === 'ko' ? '경로검색' : 'Route'}</span>
+                      <span><FaCar /> {language === 'ko' ? '경로검색' : 'Route'}</span>
                       <span>{kakaoRoute.total}</span>
                     </div>
                   </div>

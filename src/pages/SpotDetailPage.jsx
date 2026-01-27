@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
+import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
@@ -10,13 +11,21 @@ import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtm
 import LicenseBadge from '../components/common/LicenseBadge'
 import './SpotDetailPage.css'
 
+// XSS 방지를 위한 텍스트 새니타이징 함수
+const sanitizeText = (text) => {
+  if (!text) return ''
+  // HTML 태그 제거하고 텍스트만 반환
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+}
+
 // 닉네임 마스킹 함수 (첫 글자만 표시, 나머지는 **)
 const maskNickname = (nickname) => {
-  if (!nickname || nickname === '익명') return '익명'
-  if (nickname.length === 1) return nickname
-  if (nickname.length === 2) return nickname[0] + '*'
+  const sanitized = sanitizeText(nickname)
+  if (!sanitized || sanitized === '익명') return '익명'
+  if (sanitized.length === 1) return sanitized
+  if (sanitized.length === 2) return sanitized[0] + '*'
   // 3글자 이상: 첫 글자 + **
-  return nickname[0] + '**'
+  return sanitized[0] + '**'
 }
 
 // SVG 아이콘 컴포넌트들 (모던 심플 스타일)
@@ -25,6 +34,12 @@ const Icons = {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
       <circle cx="12" cy="10" r="3"/>
+    </svg>
+  ),
+  home: ({ size = 20, color = 'currentColor' }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
     </svg>
   ),
   facilities: ({ size = 20, color = 'currentColor' }) => (
@@ -459,8 +474,27 @@ const SpotDetailPage = () => {
       return
     }
     
-    if (!newReviewContent.trim()) {
+    const trimmedContent = newReviewContent.trim()
+    
+    if (!trimmedContent) {
       alert(t.detail.enterReview)
+      return
+    }
+    
+    // 리뷰 길이 제한 (최소 10자, 최대 1000자)
+    if (trimmedContent.length < 10) {
+      alert('리뷰는 최소 10자 이상 작성해주세요.')
+      return
+    }
+    
+    if (trimmedContent.length > 1000) {
+      alert('리뷰는 1000자를 초과할 수 없습니다.')
+      return
+    }
+    
+    // rating 유효성 검사
+    if (newRating < 1 || newRating > 5 || !Number.isInteger(newRating)) {
+      alert('별점은 1~5 사이의 정수여야 합니다.')
       return
     }
     
@@ -469,7 +503,7 @@ const SpotDetailPage = () => {
       contentId,
       userId: user.id,
       rating: newRating,
-      content: newReviewContent,
+      content: trimmedContent,
       userMetadata: user.user_metadata
     })
     
@@ -726,7 +760,7 @@ const SpotDetailPage = () => {
               <div className="sdp__gallery-item sdp__gallery-item--main">
                 <img 
                   src={getReliableImageUrl(allImages[0])} 
-                  alt={spot.title} 
+                  alt={language === 'en' && spot.title_en ? spot.title_en : spot.title} 
                   onError={handleImageError} 
                 />
               </div>
@@ -778,7 +812,7 @@ const SpotDetailPage = () => {
           <span className="sdp__badge" style={{ backgroundColor: contentConfig.color }}>
             {contentConfig.name?.[language]}
           </span>
-          <h1 className="sdp__title">{spot.title}</h1>
+          <h1 className="sdp__title">{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h1>
           
           {/* 통계 정보 (조회수, 좋아요, 리뷰, 평점) */}
           <div className="sdp__stats">
@@ -810,9 +844,9 @@ const SpotDetailPage = () => {
             <h2 className="sdp__section-title">{t.detail.location}</h2>
           </div>
           <div className="sdp__location-content">
-            <p className="sdp__address">{spot.addr1} {spot.addr2}</p>
+            <p className="sdp__address">{language === 'en' && spot.addr1_en ? spot.addr1_en : spot.addr1} {spot.addr2}</p>
             <button className="sdp__copy-btn" onClick={copyAddress}>
-              {addressCopied ? '✓ 복사됨' : '주소복사'}
+              {addressCopied ? <><Icons.check size={14} /> {language === 'ko' ? '복사됨' : 'Copied'}</> : (language === 'ko' ? '주소복사' : 'Copy')}
             </button>
           </div>
           <div className="sdp__map-btns">
@@ -857,13 +891,13 @@ const SpotDetailPage = () => {
         )}
 
         {/* 소개 */}
-        {spot.overview && (
+        {(spot.overview || spot.overview_en) && (
           <section className="sdp__section sdp__overview">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.about size={18} /></span>
               <h2 className="sdp__section-title">{t.detail.about}</h2>
             </div>
-            <div className="sdp__overview-content" dangerouslySetInnerHTML={{ __html: sanitizeIntroHtml(spot.overview) }} />
+            <div className="sdp__overview-content" dangerouslySetInnerHTML={{ __html: sanitizeIntroHtml(language === 'en' && spot.overview_en ? spot.overview_en : spot.overview) }} />
           </section>
         )}
 
@@ -892,6 +926,61 @@ const SpotDetailPage = () => {
                   </div>
                 )
               })}
+            </div>
+          </section>
+        )}
+
+        {/* 객실정보 (숙박만) */}
+        {spot.content_type_id === '32' && spot.room_info && spot.room_info.length > 0 && (
+          <section className="sdp__section sdp__rooms">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.home size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '객실 정보' : 'Room Information'}</h2>
+            </div>
+            <div className="sdp__rooms-list">
+              {spot.room_info.map((room, index) => (
+                <div key={index} className="sdp__room-card">
+                  {room.roomimg1 && (
+                    <div className="sdp__room-image">
+                      <img src={room.roomimg1} alt={room.roomtitle || `Room ${index + 1}`} />
+                    </div>
+                  )}
+                  <div className="sdp__room-info">
+                    <h3 className="sdp__room-title">{room.roomtitle || `${language === 'ko' ? '객실' : 'Room'} ${index + 1}`}</h3>
+                    <div className="sdp__room-details">
+                      {room.roomsize1 && (
+                        <span className="sdp__room-detail">
+                          <Icons.about size={14} />
+                          {room.roomsize1}㎡
+                        </span>
+                      )}
+                      {(room.roombasecount || room.roommaxcount) && (
+                        <span className="sdp__room-detail">
+                          <Icons.user size={14} />
+                          {language === 'ko' 
+                            ? `기준 ${room.roombasecount || '-'}명 / 최대 ${room.roommaxcount || '-'}명`
+                            : `${room.roombasecount || '-'} / max ${room.roommaxcount || '-'}`}
+                        </span>
+                      )}
+                      {room.roomoffseasonminfee1 && (
+                        <span className="sdp__room-detail sdp__room-price">
+                          <Icons.ticket size={14} />
+                          {Number(room.roomoffseasonminfee1).toLocaleString()}{language === 'ko' ? '원~' : ' KRW~'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="sdp__room-amenities">
+                      {room.roomaircondition === 'Y' && <span className="sdp__room-amenity">{language === 'ko' ? '에어컨' : 'AC'}</span>}
+                      {room.roomtv === 'Y' && <span className="sdp__room-amenity">TV</span>}
+                      {room.roominternet === 'Y' && <span className="sdp__room-amenity">{language === 'ko' ? '인터넷' : 'Internet'}</span>}
+                      {room.roomrefrigerator === 'Y' && <span className="sdp__room-amenity">{language === 'ko' ? '냉장고' : 'Fridge'}</span>}
+                      {room.roomhairdryer === 'Y' && <span className="sdp__room-amenity">{language === 'ko' ? '드라이기' : 'Dryer'}</span>}
+                      {room.roompc === 'Y' && <span className="sdp__room-amenity">PC</span>}
+                      {room.roomcook === 'Y' && <span className="sdp__room-amenity">{language === 'ko' ? '취사' : 'Kitchen'}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
         )}
@@ -1055,7 +1144,7 @@ const SpotDetailPage = () => {
                         )}
                       </div>
                     </div>
-                    <p className="sdp__review-content">{review.content}</p>
+                    <p className="sdp__review-content">{sanitizeText(review.content)}</p>
                   </div>
                 ))}
               </div>
@@ -1214,7 +1303,7 @@ const SpotDetailPage = () => {
                           onClick={() => { setSelectedTripId(trip.id); setSelectedDayId(null); }}
                         >
                           {trip.title}
-                          {selectedTripId === trip.id && <span>✓</span>}
+                          {selectedTripId === trip.id && <span><Icons.check size={14} /></span>}
                         </button>
                       ))}
                     </div>
@@ -1230,7 +1319,7 @@ const SpotDetailPage = () => {
                             className={`sdp__day-option ${selectedDayId === day.id ? 'sdp__day-option--selected' : ''}`}
                             onClick={() => setSelectedDayId(day.id)}
                           >
-                            📅 {day.dayNumber}{t.trip.day}
+                            <Icons.calendar size={14} /> {day.dayNumber}{t.trip.day}
                           </button>
                         ))}
                       </div>

@@ -113,11 +113,12 @@ const FestivalSection = memo(() => {
           return {
             id: idx + 1,
             contentId: item.content_id,
-            title: { ko: item.title, en: item.title },
+            title: { ko: item.title, en: item.title_en || item.title },
             period: formatPeriod(),
-            location: { ko: item.addr1 || '', en: item.addr1 || '' },
+            location: { ko: item.addr1 || '', en: item.addr1_en || item.addr1 || '' },
             image: getReliableImageUrl(item.firstimage || item.firstimage2, getFestivalImage(item.title)),
             summary: item.overview || '',
+            summary_en: item.overview_en || '',
             theme: ''
           }
         })

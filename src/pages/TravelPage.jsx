@@ -9,6 +9,7 @@ import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
 import LicenseBadge from '../components/common/LicenseBadge'
+import Icons from '../components/common/Icons'
 import './TravelPage.css'
 
 const TravelPage = () => {
@@ -226,14 +227,18 @@ const TravelPage = () => {
               contentId: item.content_id,
               contentTypeId: item.content_type_id,
               title: item.title,
+              title_en: item.title_en, // 영어 제목
               location: district,
               address: item.addr1 || item.addr2,
+              address_en: item.addr1_en, // 영어 주소
               summary: item.overview || '',
+              summary_en: item.overview_en || '', // 영어 설명
               phone: item.tel,
               image: getReliableImageUrl(item.firstimage || item.firstimage2, getTourSpotImage(item.title)),
               mapx: item.mapx,
               mapy: item.mapy,
               homepage: item.homepage,
+              homepage_en: item.homepage_en, // 영어 홈페이지
               intro_info: item.intro_info // 소개정보 (이용시간, 주차 등)
             }
           })
@@ -363,7 +368,7 @@ const TravelPage = () => {
                     <div className="spot-image">
                       <img 
                         src={spot.ktoImage || spot.image} 
-                        alt={spot.title}
+                        alt={language === 'en' && spot.title_en ? spot.title_en : spot.title}
                         loading="lazy"
                         onError={(e) => {
                           e.target.src = '/images/no-image.svg'
@@ -377,8 +382,7 @@ const TravelPage = () => {
                       )}
                     </div>
                     <div className="spot-content">
-                      <h3 className="spot-title">{spot.title}</h3>
-                      <p className="spot-summary">{spot.summary}</p>
+                      <h3 className="spot-title">{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h3>
                       <div className="spot-info">
                         <span className="spot-location">
                           <FiMapPin />
@@ -392,10 +396,10 @@ const TravelPage = () => {
                         )}
                       </div>
                       {spot.address && (
-                        <p className="spot-address">{spot.address}</p>
+                        <p className="spot-address">{language === 'en' && spot.address_en ? spot.address_en : spot.address}</p>
                       )}
                       {spot.phone && (
-                        <p className="spot-phone">📞 {spot.phone}</p>
+                        <p className="spot-phone"><Icons.phone size={14} /> {spot.phone}</p>
                       )}
                       {spot.url && (
                         <a 
@@ -600,7 +604,7 @@ const TravelPage = () => {
                 {/* 쉬는날 (intro_info에서만) */}
                 {selectedSpot.intro_info?.restdate && (
                   <div className="info-item">
-                    <span className="icon-text">📅</span>
+                    <span className="icon-text"><Icons.calendar size={18} /></span>
                     <div>
                       <strong>{t.detail.closed}</strong>
                       <p dangerouslySetInnerHTML={{ 
@@ -625,7 +629,7 @@ const TravelPage = () => {
                 
                 {selectedSpot.fee && (
                   <div className="info-item">
-                    <span className="icon-text">💰</span>
+                    <span className="icon-text"><Icons.money size={18} /></span>
                     <div>
                       <strong>{t.detail.fee}</strong>
                       <p dangerouslySetInnerHTML={{ 
@@ -638,7 +642,7 @@ const TravelPage = () => {
                 {/* 주차시설: 기존 parking 또는 intro_info.parking */}
                 {(selectedSpot.parking || selectedSpot.intro_info?.parking) && (
                   <div className="info-item">
-                    <span className="icon-text">🅿️</span>
+                    <span className="icon-text"><Icons.parking size={18} /></span>
                     <div>
                       <strong>{t.detail.parking}</strong>
                       <p dangerouslySetInnerHTML={{ 
@@ -651,7 +655,7 @@ const TravelPage = () => {
                 {/* 유모차대여 (intro_info에서만) */}
                 {selectedSpot.intro_info?.chkbabycarriage && (
                   <div className="info-item">
-                    <span className="icon-text">👶</span>
+                    <span className="icon-text"><Icons.stroller size={18} /></span>
                     <div>
                       <strong>{t.detail.strollerRental}</strong>
                       <p>{cleanIntroHtml(selectedSpot.intro_info.chkbabycarriage)}</p>
@@ -662,7 +666,7 @@ const TravelPage = () => {
                 {/* 애완동물 (intro_info에서만) */}
                 {selectedSpot.intro_info?.chkpet && (
                   <div className="info-item">
-                    <span className="icon-text">🐕</span>
+                    <span className="icon-text"><Icons.pet size={18} /></span>
                     <div>
                       <strong>{t.detail.pets}</strong>
                       <p>{cleanIntroHtml(selectedSpot.intro_info.chkpet)}</p>

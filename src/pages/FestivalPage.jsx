@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
+import Icons from '../components/common/Icons'
 import './FestivalPage.css'
 
 const FestivalPage = () => {
@@ -171,9 +172,11 @@ const FestivalPage = () => {
             id: item.id || item.content_id || index + 1,
             contentId: item.content_id,
             title: item.title,
+            title_en: item.title_en, // 영어 제목
             theme: '', // TourAPI에는 테마가 없음
             place: '',
             placeDetail: item.addr1 || item.addr2,
+            placeDetail_en: item.addr1_en, // 영어 주소
             beginDate: item.event_start_date 
               ? `${item.event_start_date.slice(0, 4)}-${item.event_start_date.slice(4, 6)}-${item.event_start_date.slice(6, 8)}`
               : '',
@@ -183,6 +186,7 @@ const FestivalPage = () => {
             image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
             tel: item.tel,
             overview: item.overview,
+            overview_en: item.overview_en, // 영어 설명
             mapx: item.mapx,
             mapy: item.mapy,
             intro_info: item.intro_info, // 소개정보 (주최, 공연시간, 이용요금 등)
@@ -470,7 +474,7 @@ const FestivalPage = () => {
                       <div className="event-image">
                         <img 
                           src={`https://picsum.photos/seed/${encodeURIComponent(event.title)}/800/500`}
-                          alt={event.title}
+                          alt={language === 'en' && event.title_en ? event.title_en : event.title}
                           loading="lazy"
                           onError={(e) => { e.target.src = '/images/no-image.svg' }}
                         />
@@ -485,7 +489,7 @@ const FestivalPage = () => {
                         </div>
                       </div>
                       <div className="event-content">
-                        <h3 className="event-title">{event.title}</h3>
+                        <h3 className="event-title">{language === 'en' && event.title_en ? event.title_en : event.title}</h3>
                         <div className="event-info">
                           <div className="info-item">
                             <FiCalendar />
@@ -500,7 +504,7 @@ const FestivalPage = () => {
                           </div>
                           <div className="info-item">
                             <FiMapPin />
-                            <span>{event.place} {event.placeDetail && `(${event.placeDetail})`}</span>
+                            <span>{event.place} {event.placeDetail && `(${language === 'en' && event.placeDetail_en ? event.placeDetail_en : event.placeDetail})`}</span>
                           </div>
                           {event.target && (
                             <div className="info-item">
@@ -800,7 +804,7 @@ const FestivalPage = () => {
                 {selectedEvent.intro_info?.usetimefestival && (
                   <div className="detail-row">
                     <div className="detail-label">
-                      <span>💰</span>
+                      <span><Icons.money size={16} /></span>
                       {language === 'ko' ? '이용요금' : 'Fee'}
                     </div>
                     <div className="detail-value">

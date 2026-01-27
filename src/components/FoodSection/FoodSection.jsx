@@ -114,15 +114,15 @@ const FoodSection = memo(() => {
         const formattedFoods = selected.map((item, idx) => ({
           id: idx + 1,
           contentId: item.content_id,
-          name: { ko: item.title, en: item.title },
+          name: { ko: item.title, en: item.title_en || item.title },
           category: { ko: '맛집', en: 'Restaurant' },
           description: { 
             ko: item.overview?.slice(0, 60) || `${item.title}의 맛있는 음식을 즐겨보세요`,
-            en: item.overview?.slice(0, 60) || `Enjoy delicious food at ${item.title}`
+            en: (item.overview_en?.slice(0, 60) || item.overview?.slice(0, 60)) || `Enjoy delicious food at ${item.title_en || item.title}`
           },
           rating: (4 + Math.random() * 0.9).toFixed(1),
           image: getReliableImageUrl(item.firstimage || item.firstimage2, getFoodImage(item.title, '')),
-          location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1) }
+          location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1_en || item.addr1) }
         }))
         setFoods(formattedFoods)
       } else {

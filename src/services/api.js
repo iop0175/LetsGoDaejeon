@@ -251,20 +251,18 @@ export const getTourApiFestivals = async (options = {}) => {
 
 /**
  * TourAPI 상세정보 조회 (공통정보)
+ * TourAPI 2.0에서는 contentId만 전달하면 모든 정보(overview 포함)가 반환됨
  * @param {string} contentId - 콘텐츠 ID
- * @param {boolean} includeOverview - overview 포함 여부
+ * @param {boolean} includeOverview - (호환성 유지용, 실제로는 무시됨)
  * @returns {Promise<Object>} { success, item }
  */
 export const getTourApiDetail = async (contentId, includeOverview = true) => {
   try {
     recordApiCall('tourapi');
     
+    // TourAPI 2.0 (KorService2): contentId만 필요, Y/N 옵션들은 지원 안됨
     const params = new URLSearchParams({
-      contentId,
-      defaultYN: 'Y',
-      firstImageYN: 'Y',
-      addrinfoYN: 'Y',
-      overviewYN: includeOverview ? 'Y' : 'N'
+      contentId
     });
     
     const data = await safeFetch(
@@ -280,7 +278,10 @@ export const getTourApiDetail = async (contentId, includeOverview = true) => {
       return { success: true, item };
     }
     
-    return { success: false, item: null };
+    // API 에러 메시지 포함
+    const errorMsg = data.response?.header?.resultMsg || 'Unknown API error';
+    console.warn(`TourAPI detailCommon2 실패 (contentId: ${contentId}):`, errorMsg);
+    return { success: false, item: null, error: errorMsg };
   } catch (error) {
     console.warn('TourAPI 상세정보 조회 에러:', error.message);
     return { success: false, item: null, error: error.message };
@@ -314,6 +315,36 @@ export const getTourApiIntro = async (contentId, contentTypeId) => {
   } catch (error) {
     console.warn('TourAPI 소개정보 조회 에러:', error.message);
     return { success: false, item: null, error: error.message };
+  }
+};
+
+/**
+ * TourAPI 반복정보 조회 (숙박 객실정보 등)
+ * @param {string} contentId - 콘텐츠 ID
+ * @param {string} contentTypeId - 관광타입 ID (32: 숙박)
+ * @returns {Promise<Object>} { success, items }
+ */
+export const getTourApiRoomInfo = async (contentId, contentTypeId = '32') => {
+  try {
+    recordApiCall('tourapi');
+    
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour/detailInfo2?contentId=${contentId}&contentTypeId=${contentTypeId}&numOfRows=20`,
+      {},
+      API_TIMEOUT
+    );
+    
+    if (data.response?.header?.resultCode === '0000') {
+      const items = data.response.body.items?.item || [];
+      const itemArray = Array.isArray(items) ? items : (items ? [items] : []);
+      
+      return { success: true, items: itemArray };
+    }
+    
+    return { success: false, items: [] };
+  } catch (error) {
+    console.warn('TourAPI 반복정보 조회 에러:', error.message);
+    return { success: false, items: [], error: error.message };
   }
 };
 
@@ -398,6 +429,108 @@ export const getTourApiCounts = async () => {
   }
 };
 
+// ============================================================
+// TourAPI 영문 서비스 (EngService2)
+// 영문 contentTypeId: 76=관광지, 78=문화시설, 80=레포츠, 82=숙박, 79=쇼핑, 85=음식점, 75=행사/축제
+// ============================================================
+
+/**
+ * 국문 contentTypeId를 영문으로 변환
+ */
+export const CONTENT_TYPE_KOR_TO_ENG = {
+  '12': '76',  // 관광지 → Tourist Destination
+  '14': '78',  // 문화시설 → Cultural Facility
+  '15': '85',  // 행사/축제 → Festival/Event
+  '28': '75',  // 레포츠 → Leisure
+  '32': '80',  // 숙박 → Accommodation
+  '38': '79',  // 쇼핑 → Shopping
+  '39': '82'   // 음식점 → Restaurant
+};
+
+/**
+ * TourAPI 영문 지역기반 관광정보 조회
+ * @param {Object} options - { contentTypeId (국문 또는 영문코드), areaCode, pageNo, numOfRows }
+ * @returns {Promise<Object>} { success, items, totalCount }
+ */
+export const getTourApiSpotsEng = async (options = {}) => {
+  const {
+    contentTypeId,      // 국문 또는 영문 코드 모두 지원
+    areaCode = '3',     // 대전
+    pageNo = 1,
+    numOfRows = 100
+  } = options;
+  
+  try {
+    recordApiCall('tourapi');
+    
+    // contentTypeId가 영문 코드(2자리, 70~89)인지 확인
+    const engCodes = ['75', '76', '78', '79', '80', '82', '85'];
+    const engContentTypeId = engCodes.includes(contentTypeId) 
+      ? contentTypeId 
+      : (CONTENT_TYPE_KOR_TO_ENG[contentTypeId] || '76');
+    
+    const params = new URLSearchParams({
+      areaCode,
+      numOfRows: String(numOfRows),
+      pageNo: String(pageNo),
+      contentTypeId: engContentTypeId,
+      arrange: 'C'
+    });
+    
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour-en/areaBasedList2?${params.toString()}`,
+      {},
+      API_TIMEOUT
+    );
+    
+    if (data.response?.header?.resultCode === '0000') {
+      const items = data.response.body.items?.item || [];
+      const itemArray = Array.isArray(items) ? items : (items ? [items] : []);
+      
+      return {
+        success: true,
+        totalCount: data.response.body.totalCount || itemArray.length,
+        items: itemArray
+      };
+    }
+    
+    return { success: false, items: [], totalCount: 0 };
+  } catch (error) {
+    console.warn('TourAPI 영문 조회 에러:', error.message);
+    return { success: false, items: [], totalCount: 0, error: error.message };
+  }
+};
+
+/**
+ * TourAPI 영문 상세정보 조회
+ * @param {string} contentId - 영문 콘텐츠 ID
+ * @returns {Promise<Object>} { success, item }
+ */
+export const getTourApiDetailEng = async (contentId) => {
+  try {
+    recordApiCall('tourapi');
+    
+    const params = new URLSearchParams({ contentId });
+    
+    const data = await safeFetch(
+      `${WORKERS_API_URL}/api/tour-en/detailCommon2?${params.toString()}`,
+      {},
+      API_TIMEOUT
+    );
+    
+    if (data.response?.header?.resultCode === '0000') {
+      const items = data.response.body.items?.item || [];
+      const item = Array.isArray(items) ? items[0] : items;
+      return { success: true, item };
+    }
+    
+    return { success: false, item: null };
+  } catch (error) {
+    console.warn('TourAPI 영문 상세정보 조회 에러:', error.message);
+    return { success: false, item: null, error: error.message };
+  }
+};
+
 export default {
   // 대전 공공데이터 (TourAPI에 없는 데이터)
   getDaejeonParking,
@@ -412,5 +545,8 @@ export default {
   getTourApiDetail,
   getTourApiIntro,
   getTourApiImages,
-  getTourApiCounts
+  getTourApiCounts,
+  // TourAPI 영문 서비스
+  getTourApiSpotsEng,
+  getTourApiDetailEng
 };
