@@ -3,27 +3,100 @@
  * Cloudflare Workers를 사용한 API 프록시 서버
  */
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
+// 허용된 Origin 목록
+const ALLOWED_ORIGINS = [
+  'https://letsgodaejeon.kr',
+  'https://www.letsgodaejeon.kr',
+  'https://letsgodaejeon.vercel.app',
+  'http://localhost:5173',        // 개발용 (Vite)
+  'http://localhost:3000',        // 개발용
+  'http://127.0.0.1:5173',        // 개발용
+  'http://127.0.0.1:3000',        // 개발용
+];
+
+// Rate Limiting 설정
+const RATE_LIMIT = {
+  maxRequests: 100,      // 최대 요청 수
+  windowMs: 60 * 1000,   // 시간 윈도우 (1분)
 };
 
-// JSON 응답 헬퍼
-function jsonResponse(data, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: {
-      ...corsHeaders,
-      'Content-Type': 'application/json',
-    },
-  });
+// 메모리 기반 Rate Limit 저장소 (Worker 인스턴스 단위)
+// 주의: 여러 Worker 인스턴스 간에 공유되지 않음
+const rateLimitStore = new Map();
+
+// Rate Limit 체크 함수
+function checkRateLimit(clientIP) {
+  const now = Date.now();
+  const key = clientIP;
+  
+  // 기존 데이터 조회
+  let data = rateLimitStore.get(key);
+  
+  // 데이터가 없거나 윈도우가 만료된 경우 초기화
+  if (!data || now - data.windowStart > RATE_LIMIT.windowMs) {
+    data = { count: 0, windowStart: now };
+  }
+  
+  // 요청 수 증가
+  data.count++;
+  rateLimitStore.set(key, data);
+  
+  // 오래된 엔트리 정리 (메모리 관리)
+  if (rateLimitStore.size > 10000) {
+    const expireTime = now - RATE_LIMIT.windowMs;
+    for (const [k, v] of rateLimitStore) {
+      if (v.windowStart < expireTime) {
+        rateLimitStore.delete(k);
+      }
+    }
+  }
+  
+  // Rate Limit 초과 여부 반환
+  return {
+    isLimited: data.count > RATE_LIMIT.maxRequests,
+    remaining: Math.max(0, RATE_LIMIT.maxRequests - data.count),
+    resetAt: data.windowStart + RATE_LIMIT.windowMs,
+  };
+}
+
+// Origin 검증 함수
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  return ALLOWED_ORIGINS.some(allowed => origin === allowed || origin.startsWith(allowed));
+}
+
+// CORS 헤더 생성 (동적으로 Origin 설정)
+function getCorsHeaders(origin) {
+  const allowedOrigin = isAllowedOrigin(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    'Vary': 'Origin',
+  };
+}
+
+// JSON 응답 헬퍼 (Rate Limit 헤더 포함)
+function jsonResponse(data, status = 200, origin = null, rateLimit = null) {
+  const headers = {
+    ...getCorsHeaders(origin),
+    'Content-Type': 'application/json',
+  };
+  
+  // Rate Limit 헤더 추가
+  if (rateLimit) {
+    headers['X-RateLimit-Limit'] = String(RATE_LIMIT.maxRequests);
+    headers['X-RateLimit-Remaining'] = String(rateLimit.remaining);
+    headers['X-RateLimit-Reset'] = String(Math.ceil(rateLimit.resetAt / 1000));
+  }
+  
+  return new Response(JSON.stringify(data), { status, headers });
 }
 
 // 에러 응답 헬퍼
-function errorResponse(message, status = 500) {
-  return jsonResponse({ error: message }, status);
+function errorResponse(message, status = 500, origin = null, rateLimit = null) {
+  return jsonResponse({ error: message }, status, origin, rateLimit);
 }
 
 // ODSay API 프록시
@@ -495,7 +568,7 @@ async function handleKcisaExhibitionApi(request, env, pathname) {
 }
 
 // 디버그 엔드포인트
-async function handleDebug(request, env) {
+async function handleDebug(request, env, origin = null) {
   return jsonResponse({
     hasOdsayKey: !!env.ODSAY_API_KEY,
     odsayKeyLength: env.ODSAY_API_KEY ? env.ODSAY_API_KEY.length : 0,
@@ -506,7 +579,8 @@ async function handleDebug(request, env) {
     hasKcisaKey: !!env.KCISA_API_KEY,
     hasKcisaExhibitionKey: !!env.KCISA_EXHIBITION_API_KEY,
     hasTourApiKey: !!env.TOURAPI_KEY,
-  });
+    allowedOrigins: ALLOWED_ORIGINS,
+  }, 200, origin);
 }
 
 // 메인 핸들러
@@ -514,24 +588,52 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const pathname = url.pathname;
+    const origin = request.headers.get('Origin');
+    const corsHeaders = getCorsHeaders(origin);
+    
+    // 클라이언트 IP 추출 (Cloudflare 헤더 우선)
+    const clientIP = request.headers.get('CF-Connecting-IP') 
+      || request.headers.get('X-Forwarded-For')?.split(',')[0]?.trim()
+      || 'unknown';
 
     // CORS preflight 처리
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: corsHeaders });
     }
 
-    // 헬스체크
+    // 헬스체크 (Origin 검증, Rate Limit 없이 허용)
     if (pathname === '/health' || pathname === '/') {
       return jsonResponse({ 
         status: 'ok', 
         message: 'LetsGoDaejeon API Proxy',
         timestamp: new Date().toISOString()
-      });
+      }, 200, origin);
     }
 
-    // 디버그
+    // 디버그 (Origin 검증 없이 허용)
     if (pathname === '/debug') {
-      return handleDebug(request, env);
+      return handleDebug(request, env, origin);
+    }
+
+    // API 요청은 Origin 검증 및 Rate Limit 적용
+    if (pathname.startsWith('/api/')) {
+      // Origin이 없거나 허용되지 않은 경우 차단
+      if (!isAllowedOrigin(origin)) {
+        console.log(`Blocked request from unauthorized origin: ${origin || 'no origin'}`);
+        return errorResponse('Unauthorized: Invalid origin', 403, origin);
+      }
+      
+      // Rate Limit 체크
+      const rateLimit = checkRateLimit(clientIP);
+      if (rateLimit.isLimited) {
+        console.log(`Rate limit exceeded for IP: ${clientIP}`);
+        return errorResponse(
+          'Too Many Requests: Rate limit exceeded. Please try again later.', 
+          429, 
+          origin, 
+          rateLimit
+        );
+      }
     }
 
     // API 라우팅
@@ -567,6 +669,6 @@ export default {
     }
 
     // 404
-    return errorResponse('Not Found', 404);
+    return errorResponse('Not Found', 404, origin);
   },
 };

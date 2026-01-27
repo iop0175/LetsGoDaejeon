@@ -307,6 +307,13 @@ const SpotDetailPage = () => {
   const [newRating, setNewRating] = useState(5)
   const [newReviewContent, setNewReviewContent] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  
+  // 리뷰 페이지네이션 및 정렬 상태
+  const [reviewPage, setReviewPage] = useState(1)
+  const [reviewTotalPages, setReviewTotalPages] = useState(0)
+  const [reviewSortBy, setReviewSortBy] = useState('created_at') // 'created_at' | 'rating'
+  const [reviewSortOrder, setReviewSortOrder] = useState('desc') // 'asc' | 'desc'
+  const REVIEW_PAGE_SIZE = 5
 
   useEffect(() => {
     const loadSpot = async () => {
@@ -351,11 +358,18 @@ const SpotDetailPage = () => {
           }
           
           // 리뷰 로드
-          const reviewResult = await getSpotReviews(contentId)
+          const reviewResult = await getSpotReviews(contentId, {
+            page: 1,
+            pageSize: REVIEW_PAGE_SIZE,
+            sortBy: 'created_at',
+            sortOrder: 'desc'
+          })
           if (reviewResult.success) {
             setReviews(reviewResult.reviews)
             setReviewCount(reviewResult.totalCount)
             setAvgRating(reviewResult.avgRating)
+            setReviewTotalPages(reviewResult.totalPages)
+            setReviewPage(1)
           }
         } else {
           setError(t.detail.notFound)
@@ -399,6 +413,36 @@ const SpotDetailPage = () => {
     }
   }
   
+  // 리뷰 로드 함수
+  const loadReviews = async (page = 1, sortBy = reviewSortBy, sortOrder = reviewSortOrder) => {
+    const reviewResult = await getSpotReviews(contentId, {
+      page,
+      pageSize: REVIEW_PAGE_SIZE,
+      sortBy,
+      sortOrder
+    })
+    if (reviewResult.success) {
+      setReviews(reviewResult.reviews)
+      setReviewCount(reviewResult.totalCount)
+      setAvgRating(reviewResult.avgRating)
+      setReviewTotalPages(reviewResult.totalPages)
+      setReviewPage(page)
+    }
+    return reviewResult
+  }
+  
+  // 리뷰 정렬 변경
+  const handleReviewSortChange = async (newSortBy, newSortOrder) => {
+    setReviewSortBy(newSortBy)
+    setReviewSortOrder(newSortOrder)
+    await loadReviews(1, newSortBy, newSortOrder)
+  }
+  
+  // 리뷰 페이지 변경
+  const handleReviewPageChange = async (newPage) => {
+    await loadReviews(newPage, reviewSortBy, reviewSortOrder)
+  }
+  
   // 리뷰 제출
   const handleSubmitReview = async () => {
     if (!user) {
@@ -420,13 +464,10 @@ const SpotDetailPage = () => {
     })
     
     if (result.success) {
-      // 리뷰 목록 다시 로드
-      const reviewResult = await getSpotReviews(contentId)
-      if (reviewResult.success) {
-        setReviews(reviewResult.reviews)
-        setReviewCount(reviewResult.totalCount)
-        setAvgRating(reviewResult.avgRating)
-      }
+      // 리뷰 목록 다시 로드 (첫 페이지, 최신순으로)
+      setReviewSortBy('created_at')
+      setReviewSortOrder('desc')
+      await loadReviews(1, 'created_at', 'desc')
       setShowReviewForm(false)
       setNewRating(5)
       setNewReviewContent('')
@@ -442,12 +483,7 @@ const SpotDetailPage = () => {
     
     const result = await deleteSpotReview(reviewId, user.id)
     if (result.success) {
-      const reviewResult = await getSpotReviews(contentId)
-      if (reviewResult.success) {
-        setReviews(reviewResult.reviews)
-        setReviewCount(reviewResult.totalCount)
-        setAvgRating(reviewResult.avgRating)
-      }
+      await loadReviews(reviewPage, reviewSortBy, reviewSortOrder)
     }
   }
   
@@ -952,49 +988,91 @@ const SpotDetailPage = () => {
           
           {/* 리뷰 목록 */}
           {reviews.length > 0 ? (
-            <div className="sdp__review-list">
-              {reviews.map(review => (
-                <div key={review.id} className="sdp__review-item">
-                  <div className="sdp__review-header">
-                    <div className="sdp__review-author">
-                      {review.profiles?.avatar_url ? (
-                        <img 
-                          src={review.profiles.avatar_url} 
-                          alt="" 
-                          className="sdp__review-avatar"
-                        />
-                      ) : (
-                        <div className="sdp__review-avatar sdp__review-avatar--default"></div>
-                      )}
-                      <span className="sdp__review-nickname">
-                        {review.profiles?.nickname || '익명'}
-                      </span>
-                    </div>
-                    <div className="sdp__review-meta">
-                      <div className="sdp__review-rating">
-                        {[1, 2, 3, 4, 5].map(star => (
-                          <span key={star} className={`sdp__star--small ${star <= review.rating ? 'sdp__star--filled' : ''}`}>
-                            ★
-                          </span>
-                        ))}
+            <>
+              {/* 리뷰 정렬 옵션 */}
+              <div className="sdp__review-sort">
+                <select 
+                  className="sdp__review-sort-select"
+                  value={`${reviewSortBy}-${reviewSortOrder}`}
+                  onChange={(e) => {
+                    const [sortBy, sortOrder] = e.target.value.split('-')
+                    handleReviewSortChange(sortBy, sortOrder)
+                  }}
+                >
+                  <option value="created_at-desc">최신순</option>
+                  <option value="created_at-asc">오래된순</option>
+                  <option value="rating-desc">별점 높은순</option>
+                  <option value="rating-asc">별점 낮은순</option>
+                </select>
+              </div>
+              
+              <div className="sdp__review-list">
+                {reviews.map(review => (
+                  <div key={review.id} className="sdp__review-item">
+                    <div className="sdp__review-header">
+                      <div className="sdp__review-author">
+                        {review.profiles?.avatar_url ? (
+                          <img 
+                            src={review.profiles.avatar_url} 
+                            alt="" 
+                            className="sdp__review-avatar"
+                          />
+                        ) : (
+                          <div className="sdp__review-avatar sdp__review-avatar--default"></div>
+                        )}
+                        <span className="sdp__review-nickname">
+                          {review.profiles?.nickname || '익명'}
+                        </span>
                       </div>
-                      <span className="sdp__review-date">
-                        {new Date(review.created_at).toLocaleDateString()}
-                      </span>
-                      {user && user.id === review.user_id && (
-                        <button 
-                          className="sdp__review-delete-btn"
-                          onClick={() => handleDeleteReview(review.id)}
-                        >
-                          삭제
-                        </button>
-                      )}
+                      <div className="sdp__review-meta">
+                        <div className="sdp__review-rating">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <span key={star} className={`sdp__star sdp__star--small ${star <= review.rating ? 'sdp__star--filled' : ''}`}>
+                              ★
+                            </span>
+                          ))}
+                        </div>
+                        <span className="sdp__review-date">
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </span>
+                        {user && user.id === review.user_id && (
+                          <button 
+                            className="sdp__review-delete-btn"
+                            onClick={() => handleDeleteReview(review.id)}
+                          >
+                            삭제
+                          </button>
+                        )}
+                      </div>
                     </div>
+                    <p className="sdp__review-content">{review.content}</p>
                   </div>
-                  <p className="sdp__review-content">{review.content}</p>
+                ))}
+              </div>
+              
+              {/* 리뷰 페이지네이션 */}
+              {reviewTotalPages > 1 && (
+                <div className="sdp__review-pagination">
+                  <button 
+                    className="sdp__review-page-btn"
+                    onClick={() => handleReviewPageChange(reviewPage - 1)}
+                    disabled={reviewPage <= 1}
+                  >
+                    ‹ 이전
+                  </button>
+                  <span className="sdp__review-page-info">
+                    {reviewPage} / {reviewTotalPages}
+                  </span>
+                  <button 
+                    className="sdp__review-page-btn"
+                    onClick={() => handleReviewPageChange(reviewPage + 1)}
+                    disabled={reviewPage >= reviewTotalPages}
+                  >
+                    다음 ›
+                  </button>
                 </div>
-              ))}
-            </div>
+              )}
+            </>
           ) : (
             <p className="sdp__review-empty">
               {t.detail.noReviews}

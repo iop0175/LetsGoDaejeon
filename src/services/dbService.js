@@ -2658,13 +2658,18 @@ export const toggleSpotLike = async (contentId, userId) => {
       return { success: false, message: '로그인이 필요합니다', isLiked: false }
     }
     
-    // 기존 좋아요 확인
-    const { data: existing } = await supabase
+    // 기존 좋아요 확인 (maybeSingle()은 결과가 없어도 에러를 발생시키지 않음)
+    const { data: existing, error: selectError } = await supabase
       .from('spot_likes')
       .select('id')
       .eq('content_id', contentId)
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
+    
+    if (selectError) {
+      console.error('좋아요 확인 에러:', selectError)
+      return { success: false, isLiked: false, likeCount: 0 }
+    }
     
     if (existing) {
       // 좋아요 취소
@@ -2706,12 +2711,18 @@ export const checkSpotLiked = async (contentId, userId) => {
   try {
     if (!userId) return false
     
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('spot_likes')
       .select('id')
       .eq('content_id', contentId)
       .eq('user_id', userId)
-      .single()
+      .maybeSingle()
+    
+    // maybeSingle()은 결과가 없어도 에러를 발생시키지 않음
+    if (error) {
+      console.warn('좋아요 확인 에러:', error.message)
+      return false
+    }
     
     return !!data
   } catch {
@@ -2730,6 +2741,7 @@ export const createSpotReview = async ({ contentId, userId, rating, content }) =
       return { success: false, message: '로그인이 필요합니다' }
     }
     
+    // 리뷰 삽입
     const { data, error } = await supabase
       .from('spot_reviews')
       .insert({
@@ -2738,17 +2750,34 @@ export const createSpotReview = async ({ contentId, userId, rating, content }) =
         rating: rating,
         content: content
       })
-      .select(`
-        *,
-        profiles:user_id (
-          nickname,
-          avatar_url
-        )
-      `)
+      .select('*')
       .single()
     
     if (error) throw error
-    return { success: true, review: data }
+    
+    // 프로필 정보 별도 조회 (외래 키 관계가 없을 수 있으므로)
+    let profile = { nickname: '익명', avatar_url: null }
+    try {
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('nickname, avatar_url')
+        .eq('id', userId)
+        .single()
+      
+      if (profileData) {
+        profile = profileData
+      }
+    } catch {
+      // 프로필 조회 실패 시 기본값 사용
+    }
+    
+    return { 
+      success: true, 
+      review: {
+        ...data,
+        profiles: profile
+      }
+    }
   } catch (err) {
     console.error('리뷰 작성 에러:', err)
     return { success: false, message: '리뷰 작성에 실패했습니다' }
@@ -2758,11 +2787,21 @@ export const createSpotReview = async ({ contentId, userId, rating, content }) =
 /**
  * 리뷰 목록 조회
  * @param {string} contentId - 관광지 ID
- * @param {number} page - 페이지 번호
- * @param {number} pageSize - 페이지당 개수
- * @returns {Promise<Object>} { success, reviews, totalCount, avgRating }
+ * @param {Object} options - 옵션 { page, pageSize, sortBy, sortOrder }
+ * @param {number} options.page - 페이지 번호 (기본: 1)
+ * @param {number} options.pageSize - 페이지당 개수 (기본: 5)
+ * @param {string} options.sortBy - 정렬 기준 ('created_at' | 'rating', 기본: 'created_at')
+ * @param {string} options.sortOrder - 정렬 순서 ('asc' | 'desc', 기본: 'desc')
+ * @returns {Promise<Object>} { success, reviews, totalCount, avgRating, totalPages }
  */
-export const getSpotReviews = async (contentId, page = 1, pageSize = 10) => {
+export const getSpotReviews = async (contentId, options = {}) => {
+  const {
+    page = 1,
+    pageSize = 5,
+    sortBy = 'created_at',
+    sortOrder = 'desc'
+  } = options
+  
   try {
     // 전체 개수 조회
     const { count: totalCount } = await supabase
@@ -2784,11 +2823,15 @@ export const getSpotReviews = async (contentId, page = 1, pageSize = 10) => {
     const from = (page - 1) * pageSize
     const to = from + pageSize - 1
     
+    // 정렬 기준 검증
+    const validSortBy = ['created_at', 'rating'].includes(sortBy) ? sortBy : 'created_at'
+    const ascending = sortOrder === 'asc'
+    
     const { data: reviews, error } = await supabase
       .from('spot_reviews')
       .select('*')
       .eq('content_id', contentId)
-      .order('created_at', { ascending: false })
+      .order(validSortBy, { ascending })
       .range(from, to)
     
     if (error) throw error
@@ -2816,15 +2859,20 @@ export const getSpotReviews = async (contentId, page = 1, pageSize = 10) => {
       })
     )
     
+    const total = totalCount || 0
+    const totalPages = Math.ceil(total / pageSize)
+    
     return { 
       success: true, 
       reviews: reviewsWithProfile,
-      totalCount: totalCount || 0,
-      avgRating: parseFloat(avgRating)
+      totalCount: total,
+      avgRating: parseFloat(avgRating),
+      totalPages,
+      currentPage: page
     }
   } catch (err) {
     console.error('리뷰 조회 에러:', err)
-    return { success: false, reviews: [], totalCount: 0, avgRating: 0 }
+    return { success: false, reviews: [], totalCount: 0, avgRating: 0, totalPages: 0, currentPage: 1 }
   }
 }
 
