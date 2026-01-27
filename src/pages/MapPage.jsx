@@ -357,8 +357,8 @@ const MapPage = () => {
         <div style="padding: 10px; min-width: 200px; max-width: 280px;">
           <h4 style="margin: 0 0 8px 0; font-size: 14px; font-weight: 600; color: #333;">${place.name}</h4>
           ${place.address ? `<p style="margin: 0; font-size: 12px; color: #666; line-height: 1.4;">${place.address}</p>` : ''}
-          ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🍽️ ${place.menu}</p>` : ''}
-          ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;">🚗 ${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
+          ${place.menu ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/></svg> ${place.menu}</p>` : ''}
+          ${place.capacity ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #888;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle;"><path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/><path d="M15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/><path d="M5 17H3v-6l2-4h12l2 4v6h-2"/><path d="M9 17h6"/><path d="M3 11h18"/></svg> ${place.capacity}면 ${place.fee ? `| ${place.fee}` : ''}</p>` : ''}
           ${place.parkingType ? `<p style="margin: 4px 0 0 0; font-size: 11px; color: #4f46e5; font-weight: 500;">${place.parkingType}</p>` : ''}
         </div>
       `

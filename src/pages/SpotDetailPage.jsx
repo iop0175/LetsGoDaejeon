@@ -9,6 +9,7 @@ import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
+import Icons from '../components/common/Icons'
 import './SpotDetailPage.css'
 
 // XSS 방지를 위한 텍스트 새니타이징 함수
@@ -717,7 +718,7 @@ const SpotDetailPage = () => {
     return (
       <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
         <div className="sdp__error">
-          <span className="sdp__error-icon">😢</span>
+          <span className="sdp__error-icon"><Icons.sadFace size={48} /></span>
           <p>{error || t.detail.notFound}</p>
           <button onClick={() => navigate(-1)} className="sdp__error-btn">
             ← {t.detail.goBack}
@@ -1198,7 +1199,7 @@ const SpotDetailPage = () => {
             target="_blank" rel="noopener noreferrer"
             className="sdp__bottom-btn sdp__bottom-btn--secondary"
           >
-            🧭 {t.ui.directions}
+            <Icons.compass size={16} /> {t.ui.directions}
           </a>
         )}
       </div>

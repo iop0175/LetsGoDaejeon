@@ -2397,7 +2397,7 @@ export const syncTourSpotsEnglish = async (contentTypeId = null, onProgress = nu
     const unmatchedItems = []
     const total = korItems.length
     
-    console.group('🔄 영문 데이터 매칭 진행')
+    console.group('[SYNC] 영문 데이터 매칭 진행')
     
     for (let i = 0; i < korItems.length; i++) {
       const korItem = korItems[i]

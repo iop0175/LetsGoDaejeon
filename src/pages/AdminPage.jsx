@@ -1471,7 +1471,7 @@ const AdminPage = () => {
         
         // 실패 항목이 있으면 콘솔에 상세 로그 출력
         if (result.failedItems && result.failedItems.length > 0) {
-          console.group('🔴 상세정보 동기화 실패 항목')
+          console.group('[FAIL] 상세정보 동기화 실패 항목')
           result.failedItems.forEach(item => {
             console.warn(`${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
             console.log(`  └ 이유: ${item.reason}`)
@@ -1524,7 +1524,7 @@ const AdminPage = () => {
         
         // 실패 항목이 있으면 콘솔에 상세 로그 출력
         if (result.failedItems && result.failedItems.length > 0) {
-          console.group('🔴 소개정보 동기화 실패 항목')
+          console.group('[FAIL] 소개정보 동기화 실패 항목')
           result.failedItems.forEach(item => {
             console.warn(`${item.title} (content_id: ${item.content_id}, type: ${item.content_type_id})`)
             console.log(`  └ 이유: ${item.reason}`)
@@ -1576,7 +1576,7 @@ const AdminPage = () => {
           : `Room info sync complete!\n- Success: ${result.updatedCount}\n- Failed: ${result.failedCount}`
         
         if (result.failedItems && result.failedItems.length > 0) {
-          console.group('🔴 객실정보 동기화 실패 항목')
+          console.group('[FAIL] 객실정보 동기화 실패 항목')
           result.failedItems.forEach(item => {
             console.warn(`${item.title} (content_id: ${item.content_id})`)
             console.log(`  └ 이유: ${item.reason}`)
@@ -1627,7 +1627,7 @@ const AdminPage = () => {
           : `English sync complete!\n- Matched: ${result.updatedCount}\n- Unmatched: ${result.failedCount}`
         
         if (result.matchedItems && result.matchedItems.length > 0) {
-          console.group('✅ 영문 데이터 매칭 결과')
+          console.group('[OK] 영문 데이터 매칭 결과')
           result.matchedItems.forEach(item => {
             console.log(`${item.korTitle} → ${item.engTitle}`)
           })
@@ -2453,7 +2453,7 @@ const AdminPage = () => {
         <div className="admin-login-container">
           <div className="admin-login-card">
             <div className="login-header">
-              <h1>🚫 {language === 'ko' ? '접근 권한 없음' : 'Access Denied'}</h1>
+              <h1><Icons.forbidden size={24} /> {language === 'ko' ? '접근 권한 없음' : 'Access Denied'}</h1>
               <p>{language === 'ko' ? '관리자 권한이 필요합니다.' : 'Administrator privileges required.'}</p>
             </div>
             
@@ -3899,8 +3899,8 @@ const AdminPage = () => {
                         onChange={(e) => loadTourDbData(tourDbSelectedType, 1, tourDbSearchQuery, tourDbSortField, tourDbSortOrder, e.target.value)}
                       >
                         <option value="all">{language === 'ko' ? '전체' : 'All'}</option>
-                        <option value="hasEng">{language === 'ko' ? '🌐 영문 있음' : '🌐 Has English'}</option>
-                        <option value="noEng">{language === 'ko' ? '❌ 영문 없음' : '❌ No English'}</option>
+                        <option value="hasEng">{language === 'ko' ? '영문 있음' : 'Has English'}</option>
+                        <option value="noEng">{language === 'ko' ? '영문 없음' : 'No English'}</option>
                       </select>
                     )}
                     <button 

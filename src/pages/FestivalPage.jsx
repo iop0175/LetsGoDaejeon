@@ -480,8 +480,8 @@ const FestivalPage = () => {
                         />
                         <div className="event-badges">
                           <span className="theme-badge">{event.theme}</span>
-                          {event.isHot && <span className="hot-badge">🔥 HOT</span>}
-                          {event.isRecommended && <span className="rec-badge">⭐ {t.ui.recommended}</span>}
+                          {event.isHot && <span className="hot-badge"><Icons.fire size={14} /> HOT</span>}
+                          {event.isRecommended && <span className="rec-badge"><Icons.star size={14} /> {t.ui.recommended}</span>}
                         </div>
                         <div className="event-overlay">
                           <FiInfo className="info-icon" />
@@ -710,8 +710,8 @@ const FestivalPage = () => {
                 />
                 <div className="modal-badges">
                   <span className="theme-badge">{selectedEvent.theme}</span>
-                  {selectedEvent.isHot && <span className="hot-badge">🔥 HOT</span>}
-                  {selectedEvent.isRecommended && <span className="rec-badge">⭐ {language === 'ko' ? '추천' : 'Recommended'}</span>}
+                  {selectedEvent.isHot && <span className="hot-badge"><Icons.fire size={14} /> HOT</span>}
+                  {selectedEvent.isRecommended && <span className="rec-badge"><Icons.star size={14} /> {language === 'ko' ? '추천' : 'Recommended'}</span>}
                 </div>
               </div>
             </div>
@@ -819,7 +819,7 @@ const FestivalPage = () => {
                 {selectedEvent.intro_info?.bookingplace && (
                   <div className="detail-row">
                     <div className="detail-label">
-                      <span>🎫</span>
+                      <span><Icons.ticket size={16} /></span>
                       {language === 'ko' ? '예매처' : 'Booking'}
                     </div>
                     <div className="detail-value">
