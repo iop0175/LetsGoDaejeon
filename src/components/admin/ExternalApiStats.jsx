@@ -1,6 +1,7 @@
 import { memo, useState, useEffect } from 'react'
 import { FiActivity, FiRefreshCw, FiTrendingUp, FiAlertCircle, FiCheckCircle, FiDatabase, FiCloud, FiZap, FiBarChart2, FiMap, FiCamera } from 'react-icons/fi'
 import { FaMap, FaBus, FaCar, FaLandmark } from 'react-icons/fa'
+import Icons from '../common/Icons'
 import { getKakaoApiStats } from '../../services/kakaoMobilityService'
 import { getOdsayApiStats } from '../../services/odsayService'
 import { getTodayApiStats, getApiCallSummary, getApiStatsByPeriod, API_TYPES } from '../../services/dbService'
@@ -246,7 +247,7 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
           
           <div className="api-card-footer">
             <a href="https://developers.kakao.com/console/app" target="_blank" rel="noopener noreferrer">
-              {language === 'ko' ? '개발자 콘솔' : 'Dev Console'} →
+              {language === 'ko' ? '개발자 콘솔' : 'Dev Console'} <Icons.externalLink size={12} />
             </a>
           </div>
         </div>
@@ -333,7 +334,7 @@ const ExternalApiStats = memo(({ language = 'ko' }) => {
           
           <div className="api-card-footer">
             <a href="https://lab.odsay.com/mypage" target="_blank" rel="noopener noreferrer">
-              {language === 'ko' ? '개발자 포털' : 'Dev Portal'} →
+              {language === 'ko' ? '개발자 포털' : 'Dev Portal'} <Icons.externalLink size={12} />
             </a>
           </div>
         </div>
