@@ -10,6 +10,15 @@
       ]
     },
     {
+      "source": "/rss.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/rss+xml; charset=utf-8"
+        }
+      ]
+    },
+    {
       "source": "/robots.txt",
       "headers": [
         {
@@ -23,6 +32,10 @@
     {
       "source": "/sitemap.xml",
       "destination": "/sitemap.xml"
+    },
+    {
+      "source": "/rss.xml",
+      "destination": "/rss.xml"
     },
     {
       "source": "/robots.txt",
