@@ -283,6 +283,13 @@
   border-color: var(--primary-color);
 }
 
+.user-btn img {
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .user-btn svg {
   font-size: 1.2rem;
   color: var(--text-secondary);

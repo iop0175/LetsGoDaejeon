@@ -1136,12 +1136,13 @@ export const getPlaceDetail = async (placeType, placeName) => {
   
   // placeType에 따른 테이블 매핑
   const tableMap = {
-    travel: { table: 'travel_spots', nameField: 'tourspotNm' },
-    food: { table: 'restaurants', nameField: 'restrntNm' },
-    culture: { table: 'cultural_facilities', nameField: 'fcltyNm' },
-    festival: { table: 'festivals', nameField: 'title' },
-    accommodation: { table: 'accommodations', nameField: 'romsNm' },
-    shopping: { table: 'shopping_places', nameField: 'shppgNm' },
+    travel: { table: 'tour_spots', nameField: 'title' },
+    food: { table: 'tour_spots', nameField: 'title' },
+    culture: { table: 'tour_spots', nameField: 'title' },
+    festival: { table: 'tour_festivals', nameField: 'title' },
+    accommodation: { table: 'tour_spots', nameField: 'title' },
+    shopping: { table: 'tour_spots', nameField: 'title' },
+    leisure: { table: 'tour_spots', nameField: 'title' },
     medical: { table: 'medical_facilities', nameField: 'hsptlNm' }
   }
   
@@ -1176,86 +1177,68 @@ export const getPlaceDetail = async (placeType, placeName) => {
       return { success: false, error: '장소 정보를 찾을 수 없습니다.' }
     }
     
-    // raw_data가 있으면 그것을 사용, 없으면 원본 데이터 사용
-    const detail = data.raw_data || data
-    
     // 테이블 타입별 필드 매핑
     let mappedDetail = {
       id: data.id,
       type: placeType
     }
     
-    if (placeType === 'travel') {
+    if (placeType === 'travel' || placeType === 'food' || placeType === 'culture' || 
+        placeType === 'accommodation' || placeType === 'shopping' || placeType === 'leisure') {
+      // tour_spots 테이블 공통 매핑
       mappedDetail = {
         ...mappedDetail,
-        name: detail.tourspotNm,
-        address: detail.roadAddr || detail.addr || detail.address,
-        description: detail.mainFclty || detail.description,
-        tel: detail.telNo,
-        homepage: detail.homepage,
-        operatingHours: detail.operTime,
-        closedDays: detail.clsInfo || detail.closedDays,
-        fee: detail.fee || detail.useFee,
-        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
-        lat: detail.lat,
-        lng: detail.lng
-      }
-    } else if (placeType === 'food') {
-      mappedDetail = {
-        ...mappedDetail,
-        name: detail.restrntNm,
-        address: detail.roadAddr || detail.addr,
-        description: detail.restrntTypeSpcl || detail.description,
-        tel: detail.telNo,
-        menu: detail.menuNm,
-        operatingHours: detail.operTime,
-        closedDays: detail.closedDays,
-        price: detail.avgPrice,
-        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
-        lat: detail.lat,
-        lng: detail.lng
-      }
-    } else if (placeType === 'culture') {
-      mappedDetail = {
-        ...mappedDetail,
-        name: detail.fcltyNm,
-        address: detail.roadAddr || detail.addr,
-        description: detail.description,
-        tel: detail.telNo,
-        homepage: detail.homepage,
-        operatingHours: detail.operTime,
-        closedDays: detail.closedDays,
-        fee: detail.fee || detail.useFee,
-        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
-        lat: detail.lat,
-        lng: detail.lng
+        name: data.title,
+        address: data.addr1 || data.addr2,
+        description: data.overview,
+        tel: data.tel,
+        homepage: data.homepage,
+        imageUrl: data.firstimage || data.firstimage2,
+        lat: data.mapy,
+        lng: data.mapx,
+        contentId: data.content_id,
+        contentTypeId: data.content_type_id
       }
     } else if (placeType === 'festival') {
+      // tour_festivals 테이블 매핑
       mappedDetail = {
         ...mappedDetail,
-        name: detail.title,
-        address: detail.roadAddr || detail.addr || detail.eventplace,
-        description: detail.summary || detail.description,
-        tel: detail.telNo || detail.eventhomepage,
-        period: detail.opar,
-        place: detail.eventplace,
-        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
-        lat: detail.lat,
-        lng: detail.lng
+        name: data.title,
+        address: data.addr1 || data.addr2 || data.eventplace,
+        description: data.overview,
+        tel: data.tel,
+        homepage: data.homepage,
+        period: `${data.event_start_date || ''} ~ ${data.event_end_date || ''}`,
+        place: data.eventplace,
+        imageUrl: data.firstimage || data.firstimage2,
+        lat: data.mapy,
+        lng: data.mapx,
+        contentId: data.content_id
+      }
+    } else if (placeType === 'medical') {
+      // medical_facilities 테이블 매핑
+      mappedDetail = {
+        ...mappedDetail,
+        name: data.hsptlNm,
+        address: data.locplc,
+        description: data.hsptlKnd,
+        tel: data.telno,
+        imageUrl: data.imageUrl,
+        lat: data.lat,
+        lng: data.lng
       }
     } else {
-      // 기타 타입 (accommodation, shopping, medical 등)
+      // 기타 타입
       mappedDetail = {
         ...mappedDetail,
         name: placeName,
-        address: detail.roadAddr || detail.addr || detail.address,
-        description: detail.description,
-        tel: detail.telNo,
-        homepage: detail.homepage,
-        operatingHours: detail.operTime,
-        imageUrl: data.imageUrl || detail.imgUrl || detail.imageUrl,
-        lat: detail.lat,
-        lng: detail.lng
+        address: data.addr1 || data.address,
+        description: data.overview || data.description,
+        tel: data.tel,
+        homepage: data.homepage,
+        imageUrl: data.firstimage || data.firstimage2 || data.imageUrl,
+        lat: data.mapy || data.lat,
+        lng: data.mapx || data.lng
       }
     }
     
