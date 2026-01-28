@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { FiArrowLeft, FiFileText, FiCheck, FiAlertCircle, FiSlash, FiEdit3, FiRefreshCw } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
-import './PolicyPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 const TermsPage = () => {
   const { language } = useLanguage()
@@ -145,7 +145,7 @@ provided by To Daejeon, as well as the rights, obligations, and responsibilities
   return (
     <div className={`policy-page ${isDark ? 'dark-theme' : ''}`}>
       <div className="policy-container">
-        <Link to="/" className="back-link">
+        <Link href="/" className="back-link">
           <FiArrowLeft />
           <span>{t.backToHome}</span>
         </Link>

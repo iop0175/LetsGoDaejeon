@@ -1,6 +1,6 @@
 import { memo } from 'react'
 import { useLanguage } from '../../context/LanguageContext'
-import './LicenseBadge.css'
+// CSS는 _app.jsx에서 import
 
 /**
  * 공공누리 저작권 라이선스 배지 컴포넌트

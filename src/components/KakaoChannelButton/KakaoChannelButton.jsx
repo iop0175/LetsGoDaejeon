@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import './KakaoChannelButton.css'
+// CSS는 _app.jsx에서 import
 
 // 카카오톡 채널 아이콘 SVG
 const KakaoIcon = () => (

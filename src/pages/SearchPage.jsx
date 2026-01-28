@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react'
-import { useSearchParams, Link } from 'react-router-dom'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX, FiTrendingUp } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { recordSearchQuery, getPopularSearchQueries, getAllDbData } from '../services/dbService'
 import Icons from '../components/common/Icons'
-import './SearchPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const SearchPage = () => {
   const { language, t } = useLanguage()
-  const [searchParams, setSearchParams] = useSearchParams()
-  const initialQuery = searchParams.get('q') || ''
+  const seoData = SEO_DATA.search[language] || SEO_DATA.search.ko
+  const router = useRouter()
+  const initialQuery = router.query.q || ''
   
   const [query, setQuery] = useState(initialQuery)
   const [searchTerm, setSearchTerm] = useState(initialQuery)
@@ -46,7 +49,7 @@ const SearchPage = () => {
   const handlePopularSearchClick = async (searchQuery) => {
     setQuery(searchQuery)
     setSearchTerm(searchQuery)
-    setSearchParams({ q: searchQuery })
+    router.push({ pathname: '/search', query: { q: searchQuery } }, undefined, { shallow: true })
     setLoading(true)
     
     // 검색 기록 저장
@@ -104,7 +107,7 @@ const SearchPage = () => {
     if (!query.trim()) return
     
     setSearchTerm(query)
-    setSearchParams({ q: query })
+    router.push({ pathname: '/search', query: { q: query } }, undefined, { shallow: true })
     setLoading(true)
     
     // 검색 기록 저장 (DB)
@@ -191,10 +194,17 @@ const SearchPage = () => {
   ]
 
   return (
-    <div className="search-page">
-      <div className="search-hero">
-        <div className="container">
-          <h1>{t.pages.search.title}</h1>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/search"
+      />
+      <div className="search-page">
+        <div className="search-hero">
+          <div className="container">
+            <h1>{t.pages.search.title}</h1>
           <form className="search-form" onSubmit={handleSearch}>
             <div className="search-input-wrapper">
               <FiSearch className="search-icon" />
@@ -415,6 +425,7 @@ const SearchPage = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

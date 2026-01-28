@@ -1,16 +1,16 @@
 import { memo, useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { FiArrowRight, FiClock, FiUser, FiMapPin, FiEye, FiHeart, FiX, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getPublishedTripPlans } from '../../services/tripService'
-import './TravelCourse.css'
+// CSS는 _app.jsx에서 import
 
 // 여행코스 대체 이미지
 const TRAVEL_PLACEHOLDER = '/images/travel-placeholder.svg'
 
 const TravelCourse = memo(() => {
   const { language, t } = useLanguage()
-  const navigate = useNavigate()
+  const router = useRouter()
   const [publishedTrips, setPublishedTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [selectedSpot, setSelectedSpot] = useState(null)
@@ -101,7 +101,7 @@ const TravelCourse = memo(() => {
   // 카드 클릭 핸들러 (전체 카드 클릭 시 상세 페이지 이동)
   const handleCardClick = (course) => {
     if (selectedSpot) return // 팝오버가 열려있으면 이동하지 않음
-    navigate(`/trip/shared/${course.id}`)
+    router.push(`/shared-trip/${course.id}`)
   }
 
   // 길찾기

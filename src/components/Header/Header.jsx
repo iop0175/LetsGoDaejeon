@@ -1,18 +1,18 @@
 import { useState, useEffect, memo } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 import { FiMenu, FiX, FiSearch, FiMapPin, FiGlobe, FiSun, FiMoon, FiUser, FiLogOut, FiSettings } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
-import './Header.css'
+// CSS는 _app.jsx에서 import
 
 const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { language, toggleLanguage, t } = useLanguage()
   const { isDark, toggleTheme } = useTheme()
   const { user, loginWithKakao, logout, getUserProfile } = useAuth()
@@ -48,16 +48,16 @@ const Header = memo(() => {
     setIsMobileMenuOpen(false)
     setIsMoreMenuOpen(false)
     setIsUserMenuOpen(false)
-  }, [location])
+  }, [router.pathname])
 
   const handleSearchClick = () => {
-    navigate('/search')
+    router.push('/search')
   }
 
   const handleKakaoLogin = async () => {
     try {
       // 현재 페이지 경로를 전달하여 로그인 후 돌아오도록 함
-      await loginWithKakao(location.pathname)
+      await loginWithKakao(router.pathname)
     } catch (err) {
 
     }
@@ -77,7 +77,7 @@ const Header = memo(() => {
   return (
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="header-container">
-        <Link to="/" className="logo">
+        <Link href="/" className="logo">
           <FiMapPin className="logo-icon" />
           <span className="logo-text">
             <span className="logo-main">{t.siteName}</span>
@@ -90,8 +90,8 @@ const Header = memo(() => {
             {navItems.map((item) => (
               <li key={item.path} className="nav-item">
                 <Link
-                  to={item.path}
-                  className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                  href={item.path}
+                  className={`nav-link ${router.pathname === item.path ? 'active' : ''}`}
                 >
                   {item.label}
                 </Link>
@@ -99,7 +99,7 @@ const Header = memo(() => {
             ))}
             <li className="nav-item more-menu">
               <button 
-                className={`nav-link more-btn ${moreMenuItems.some(i => i.path === location.pathname) ? 'active' : ''}`}
+                className={`nav-link more-btn ${moreMenuItems.some(i => i.path === router.pathname) ? 'active' : ''}`}
                 onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
               >
                 {language === 'ko' ? '더보기' : 'More'}
@@ -110,8 +110,8 @@ const Header = memo(() => {
                   {moreMenuItems.map((item) => (
                     <li key={item.path}>
                       <Link
-                        to={item.path}
-                        className={`dropdown-link ${location.pathname === item.path ? 'active' : ''}`}
+                        href={item.path}
+                        className={`dropdown-link ${router.pathname === item.path ? 'active' : ''}`}
                       >
                         {item.label}
                       </Link>
@@ -176,11 +176,11 @@ const Header = memo(() => {
                       <span className="user-provider">카카오</span>
                     )}
                   </div>
-                  <Link to="/my-trip" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
+                  <Link href="/my-trip" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
                     <FiMapPin />
                     {language === 'ko' ? '나의 여행' : 'My Trip'}
                   </Link>
-                  <Link to="/profile" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
+                  <Link href="/profile" className="user-dropdown-item" onClick={() => setIsUserMenuOpen(false)}>
                     <FiSettings />
                     {language === 'ko' ? '프로필 설정' : 'Profile Settings'}
                   </Link>

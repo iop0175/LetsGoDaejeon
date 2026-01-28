@@ -1,16 +1,18 @@
 import { useState, useEffect } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
-import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview } from '../services/dbService'
+import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict } from '../services/dbService'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
-import { getUserTripPlans, addTripPlace } from '../services/tripService'
+import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
-import './SpotDetailPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 // XSS 방지를 위한 텍스트 새니타이징 함수
 const sanitizeText = (text) => {
@@ -137,8 +139,22 @@ const FACILITY_ITEMS = [
 ]
 
 const SpotDetailPage = () => {
-  const { contentId } = useParams()
-  const navigate = useNavigate()
+  const router = useRouter()
+  // slug URL에서 contentId 추출 (/spot/관광지명-123456 형식)
+  const { slug, contentId: directContentId } = router.query
+  
+  // slug에서 contentId 추출 (마지막 하이픈 이후 숫자)
+  const contentId = (() => {
+    if (directContentId) return directContentId
+    if (!slug) return null
+    const decoded = decodeURIComponent(slug)
+    const match = decoded.match(/-(\d+)$/)
+    if (match) return match[1]
+    // 전체가 숫자인 경우 (기존 URL 호환)
+    if (/^\d+$/.test(decoded)) return decoded
+    return null
+  })()
+  
   const { language, t } = useLanguage()
   const { isDark } = useTheme()
   const { user } = useAuth()
@@ -178,6 +194,376 @@ const SpotDetailPage = () => {
   const [reviewSortBy, setReviewSortBy] = useState('created_at') // 'created_at' | 'rating'
   const [reviewSortOrder, setReviewSortOrder] = useState('desc') // 'asc' | 'desc'
   const REVIEW_PAGE_SIZE = 5
+  
+  // 주변 관광지 상태
+  const [relatedSpots, setRelatedSpots] = useState([])
+  const [relatedLoading, setRelatedLoading] = useState(false)
+  
+  // 연관 여행코스 상태
+  const [relatedTrips, setRelatedTrips] = useState([])
+  const [relatedTripsLoading, setRelatedTripsLoading] = useState(false)
+  
+  // FAQ 상태
+  const [openFaqIndex, setOpenFaqIndex] = useState(null)
+
+  // FAQ 생성 함수 - 이용안내 기반으로 동적 생성
+  const generateFaqs = (spot, contentType, language) => {
+    if (!spot) return []
+    
+    const faqs = []
+    const intro = spot.intro_info || {}
+    const name = spot.title || '이 장소'
+    
+    // 요금 관련 FAQ
+    const feeFields = ['usefee', 'usefeeleports', 'usetimefestival']
+    const feeValue = feeFields.find(f => intro[f])
+    if (feeValue) {
+      const isFree = /무료|free|없음|0원/i.test(intro[feeValue])
+      faqs.push({
+        q: language === 'ko' 
+          ? `${name}은(는) 무료로 이용할 수 있나요?`
+          : `Is ${name} free to visit?`,
+        a: isFree 
+          ? (language === 'ko' ? '네, 무료로 이용 가능합니다.' : 'Yes, it is free to visit.')
+          : (language === 'ko' ? `이용 요금이 있습니다: ${intro[feeValue].replace(/<[^>]*>/g, '')}` : `There is an admission fee: ${intro[feeValue].replace(/<[^>]*>/g, '')}`)
+      })
+    } else if (contentType === '12' || contentType === '14') {
+      faqs.push({
+        q: language === 'ko' 
+          ? `${name}은(는) 무료로 관람할 수 있나요?`
+          : `Is ${name} free to visit?`,
+        a: language === 'ko' 
+          ? '이용 요금 정보가 없어 직접 확인이 필요합니다. 문의처로 연락해주세요.'
+          : 'Fee information is not available. Please contact them directly.'
+      })
+    }
+    
+    // 소요시간 관련 FAQ
+    if (intro.spendtime) {
+      faqs.push({
+        q: language === 'ko' 
+          ? '관람에 걸리는 시간은 어느 정도인가요?'
+          : 'How long does it take to visit?',
+        a: language === 'ko' 
+          ? `평균 ${intro.spendtime.replace(/<[^>]*>/g, '')} 정도 소요됩니다.`
+          : `It takes approximately ${intro.spendtime.replace(/<[^>]*>/g, '')}.`
+      })
+    } else if (contentType === '14') {
+      faqs.push({
+        q: language === 'ko' 
+          ? '관람에 걸리는 시간은 어느 정도인가요?'
+          : 'How long does it take to visit?',
+        a: language === 'ko' 
+          ? '시설 규모에 따라 다르지만, 보통 1~2시간 정도 소요됩니다.'
+          : 'It usually takes 1-2 hours depending on the facility size.'
+      })
+    }
+    
+    // 반려동물 관련 FAQ
+    if (intro.chkpet) {
+      const allowsPet = /가능|허용|yes|ok|○/i.test(intro.chkpet)
+      faqs.push({
+        q: language === 'ko' 
+          ? '반려동물과 함께 방문할 수 있나요?'
+          : 'Can I bring my pet?',
+        a: allowsPet 
+          ? (language === 'ko' ? '네, 반려동물 동반 입장이 가능합니다.' : 'Yes, pets are allowed.')
+          : (language === 'ko' ? `반려동물 관련 안내: ${intro.chkpet.replace(/<[^>]*>/g, '')}` : `Pet policy: ${intro.chkpet.replace(/<[^>]*>/g, '')}`)
+      })
+    }
+    
+    // 유모차/아이 관련 FAQ
+    if (intro.chkbabycarriage) {
+      const hasBaby = /가능|대여|yes|ok|○|있음/i.test(intro.chkbabycarriage)
+      faqs.push({
+        q: language === 'ko' 
+          ? '아이들과 함께 방문해도 괜찮은가요?'
+          : 'Is it suitable for children?',
+        a: hasBaby 
+          ? (language === 'ko' ? '네, 유모차 대여 서비스가 있어 아이와 함께 방문하기 좋습니다.' : 'Yes, strollers are available for rent, making it great for families.')
+          : (language === 'ko' ? '아이와 함께 방문 가능합니다.' : 'Yes, children are welcome.')
+      })
+    } else if (['12', '14', '28'].includes(contentType)) {
+      faqs.push({
+        q: language === 'ko' 
+          ? '아이들과 함께 방문해도 괜찮은가요?'
+          : 'Is it suitable for children?',
+        a: language === 'ko' 
+          ? '가족 단위 방문객도 많이 찾는 곳입니다. 자세한 편의시설은 방문 전 문의해주세요.'
+          : 'Many families visit here. Please contact them for specific facilities.'
+      })
+    }
+    
+    // 주차 관련 FAQ
+    const parkingFields = ['parking', 'parkingculture', 'parkingleports', 'parkinglodging', 'parkingshopping', 'parkingfood']
+    const parkingValue = parkingFields.find(f => intro[f])
+    if (parkingValue) {
+      const hasParking = /있|가능|무료|유료|대|○|yes/i.test(intro[parkingValue])
+      faqs.push({
+        q: language === 'ko' 
+          ? '주차 공간이 있나요?'
+          : 'Is parking available?',
+        a: hasParking 
+          ? (language === 'ko' ? `네, 주차 가능합니다. ${intro[parkingValue].replace(/<[^>]*>/g, '')}` : `Yes, parking is available. ${intro[parkingValue].replace(/<[^>]*>/g, '')}`)
+          : (language === 'ko' ? `주차 안내: ${intro[parkingValue].replace(/<[^>]*>/g, '')}` : `Parking info: ${intro[parkingValue].replace(/<[^>]*>/g, '')}`)
+      })
+    }
+    
+    // 예약 관련 FAQ
+    if (intro.reservation) {
+      faqs.push({
+        q: language === 'ko' 
+          ? '사전 예약이 필요한가요?'
+          : 'Do I need to make a reservation?',
+        a: language === 'ko' 
+          ? `예약 안내: ${intro.reservation.replace(/<[^>]*>/g, '')}`
+          : `Reservation info: ${intro.reservation.replace(/<[^>]*>/g, '')}`
+      })
+    }
+    
+    // 휴무일 관련 FAQ
+    const restFields = ['restdate', 'restdateculture', 'restdateleports', 'restdateshopping', 'restdatefood']
+    const restValue = restFields.find(f => intro[f])
+    if (restValue) {
+      faqs.push({
+        q: language === 'ko' 
+          ? '휴무일이 있나요?'
+          : 'Are there any closed days?',
+        a: language === 'ko' 
+          ? `${intro[restValue].replace(/<[^>]*>/g, '')}`
+          : `${intro[restValue].replace(/<[^>]*>/g, '')}`
+      })
+    }
+    
+    return faqs.slice(0, 5) // 최대 5개
+  }
+  
+  // 장소 설명 요약 생성 함수 (overview/intro_info 분석 기반)
+  // {{place_name}}은 {{city}} {{district}}에 위치한 {{type}}로,
+  // {{main_feature}}을 주제로 한 {{content_form}} 공간이다.
+  // {{target_user}}에게 적합해 {{search_intent}} 목적으로 많이 방문한다.
+  const generateSpotDescription = (spot, contentType, language) => {
+    if (!spot) return null
+    
+    const name = spot.title || '이 장소'
+    const address = spot.addr1 || ''
+    const overview = (language === 'en' && spot.overview_en ? spot.overview_en : spot.overview) || ''
+    const intro = spot.intro_info || {}
+    const cleanOverview = overview.replace(/<[^>]*>/g, '').toLowerCase()
+    
+    // 주소에서 시/구 추출
+    const addressParts = address.split(' ')
+    const city = addressParts.find(p => p.includes('시') || p.includes('광역시')) || '대전광역시'
+    const district = addressParts.find(p => p.includes('구')) || ''
+    
+    // 콘텐츠 타입별 기본 설정
+    const typeNames = {
+      '12': { ko: '관광지', en: 'tourist attraction' },
+      '14': { ko: '문화시설', en: 'cultural facility' },
+      '28': { ko: '레포츠 시설', en: 'leisure facility' },
+      '32': { ko: '숙박시설', en: 'accommodation' },
+      '38': { ko: '쇼핑 명소', en: 'shopping destination' },
+      '39': { ko: '음식점', en: 'restaurant' },
+      '15': { ko: '축제/행사', en: 'festival/event' }
+    }
+    
+    // 키워드 기반 자동 분석
+    const keywordMap = {
+      feature: {
+        ko: [
+          // 쇼핑 관련 먼저 체크 (스토어, 아울렛 등)
+          { keywords: ['쇼핑', '마트', '시장', '매장', '백화점', '아울렛', '스토어', '상점', '면세점'], value: '쇼핑' },
+          { keywords: ['연구원', '연구소', '에너지', '기술', '원자력', '핵융합', '우주', 'KAIST', '카이스트'], value: '과학기술' },
+          { keywords: ['아쿠아리움', '수족관', '물고기', '해양', '바다', '수중', '동물원', '동물'], value: '해양·동물 체험' },
+          { keywords: ['공원', '숲', '산', '호수', '자연', '꽃', '나무', '정원', '수목원', '생태'], value: '자연경관' },
+          { keywords: ['역사', '문화재', '유적', '전통', '사찰', '성', '기념관'], value: '역사문화' },
+          { keywords: ['박물관', '미술관', '갤러리', '전시관'], value: '문화예술' },
+          { keywords: ['테마', '놀이', '어린이', '키즈', '어린이집'], value: '테마 체험' },
+          { keywords: ['천문', '천문대', '별', '과학'], value: '과학 체험' },
+          { keywords: ['효', '성씨', '족보', '뿌리'], value: '전통문화' },
+          { keywords: ['스포츠', '운동', '레저', '수영', '골프', '테니스', '축구', '체육관'], value: '스포츠' },
+          { keywords: ['맛집', '음식', '요리', '메뉴', '식당', '카페', '밥', '고기', '국밥'], value: '지역 맛집' }
+        ],
+        en: [
+          // Shopping first
+          { keywords: ['shopping', 'mart', 'market', 'store', 'department', 'outlet', 'shop', 'mall', 'duty-free'], value: 'shopping' },
+          { keywords: ['research', 'institute', 'energy', 'technology', 'nuclear', 'fusion', 'space', 'kaist'], value: 'science & technology' },
+          { keywords: ['aquarium', 'fish', 'marine', 'ocean', 'sea', 'underwater', 'zoo', 'animal'], value: 'marine & animal experience' },
+          { keywords: ['park', 'forest', 'mountain', 'lake', 'nature', 'flower', 'tree', 'garden', 'arboretum', 'ecology'], value: 'natural scenery' },
+          { keywords: ['history', 'heritage', 'temple', 'castle', 'memorial'], value: 'history and culture' },
+          { keywords: ['museum', 'art', 'gallery', 'exhibition'], value: 'arts and culture' },
+          { keywords: ['theme', 'play', 'children', 'kids'], value: 'themed activities' },
+          { keywords: ['observatory', 'astronomy', 'star', 'science'], value: 'science experience' },
+          { keywords: ['filial', 'clan', 'genealogy', 'root'], value: 'traditional culture' },
+          { keywords: ['sports', 'exercise', 'leisure', 'swimming', 'golf', 'tennis', 'soccer', 'gym'], value: 'sports' },
+          { keywords: ['restaurant', 'food', 'cuisine', 'menu', 'cafe'], value: 'local cuisine' }
+        ]
+      },
+      form: {
+        ko: [
+          // 쇼핑 먼저
+          { keywords: ['쇼핑', '마트', '시장', '매장', '백화점', '아울렛', '스토어', '상점', '면세점'], value: '쇼핑 체험' },
+          { keywords: ['연구원', '연구소', '에너지', '기술', '핵융합'], value: '견학 체험' },
+          { keywords: ['아쿠아리움', '수족관', '동물원', '관람'], value: '실내 관람' },
+          { keywords: ['공원', '야외', '산책', '정원', '광장', '자연', '숲', '산'], value: '야외 체험' },
+          { keywords: ['전시', '박물관', '미술관', '갤러리', '전시관'], value: '전시 체험' },
+          { keywords: ['공연', '극장', '무대', '콘서트'], value: '공연 관람' },
+          { keywords: ['체험', '프로그램', '교육', '학습', '과학'], value: '교육 체험' },
+          { keywords: ['실내', '관내', '건물'], value: '실내 체험' },
+          { keywords: ['식당', '카페', '맛집', '음식점'], value: '미식 체험' }
+        ],
+        en: [
+          // Shopping first
+          { keywords: ['shopping', 'mart', 'market', 'store', 'department', 'outlet', 'shop', 'mall'], value: 'shopping experience' },
+          { keywords: ['research', 'institute', 'energy', 'technology', 'fusion'], value: 'educational tour' },
+          { keywords: ['aquarium', 'zoo', 'animal', 'marine'], value: 'indoor viewing' },
+          { keywords: ['park', 'outdoor', 'walk', 'garden', 'square', 'nature', 'forest', 'mountain'], value: 'outdoor experience' },
+          { keywords: ['exhibition', 'museum', 'art', 'gallery'], value: 'exhibition' },
+          { keywords: ['performance', 'theater', 'stage', 'concert'], value: 'performance viewing' },
+          { keywords: ['experience', 'program', 'education', 'learning', 'science'], value: 'educational experience' },
+          { keywords: ['indoor', 'building'], value: 'indoor experience' },
+          { keywords: ['restaurant', 'cafe', 'dining'], value: 'dining experience' }
+        ]
+      },
+      target: {
+        ko: [
+          // 쇼핑 먼저
+          { keywords: ['쇼핑', '마트', '시장', '매장', '백화점', '아울렛', '스토어', '상점', '면세점'], value: '쇼핑을 즐기는 분들' },
+          { keywords: ['연구원', '연구소', '에너지', '기술', '핵융합'], value: '과학에 관심 있는 분들' },
+          { keywords: ['아쿠아리움', '수족관', '동물원', '어린이', '아이', '키즈', '유모차', '가족'], value: '가족 단위 방문객' },
+          { keywords: ['연인', '데이트', '커플'], value: '연인' },
+          { keywords: ['사진', '인스타', '포토'], value: '사진 촬영을 즐기는 분들' },
+          { keywords: ['역사', '문화', '기념관', '박물관'], value: '역사에 관심 있는 분들' },
+          { keywords: ['학습', '교육', '체험', '과학'], value: '학습 목적의 방문객' },
+          { keywords: ['운동', '스포츠', '레저'], value: '스포츠를 즐기는 분들' },
+          { keywords: ['맛집', '미식', '음식', '식당'], value: '미식가' }
+        ],
+        en: [
+          // Shopping first
+          { keywords: ['shopping', 'mart', 'market', 'store', 'department', 'outlet', 'shop', 'mall'], value: 'shoppers' },
+          { keywords: ['research', 'institute', 'energy', 'technology', 'fusion'], value: 'science enthusiasts' },
+          { keywords: ['aquarium', 'zoo', 'animal', 'children', 'kids', 'stroller', 'family'], value: 'families' },
+          { keywords: ['couple', 'date', 'romance'], value: 'couples' },
+          { keywords: ['photo', 'instagram'], value: 'photography enthusiasts' },
+          { keywords: ['history', 'culture', 'memorial', 'museum'], value: 'history buffs' },
+          { keywords: ['learning', 'education', 'experience', 'science'], value: 'educational visitors' },
+          { keywords: ['exercise', 'sports', 'leisure'], value: 'sports enthusiasts' },
+          { keywords: ['restaurant', 'food', 'cuisine'], value: 'foodies' }
+        ]
+      },
+      intent: {
+        ko: [
+          // 쇼핑 먼저
+          { keywords: ['쇼핑', '마트', '시장', '매장', '아울렛', '스토어', '상점', '면세점'], value: '쇼핑' },
+          { keywords: ['연구원', '연구소', '에너지', '기술', '핵융합', '견학'], value: '학습' },
+          { keywords: ['아쿠아리움', '수족관', '동물원', '관람', '구경', '감상', '전시'], value: '관람' },
+          { keywords: ['산책', '걷기', '트레킹', '등산', '공원'], value: '산책' },
+          { keywords: ['체험', '프로그램', '활동', '놀이'], value: '체험 활동' },
+          { keywords: ['사진', '촬영', '인스타', '포토'], value: '사진 촬영' },
+          { keywords: ['학습', '교육', '탐방', '박물관', '기념관', '과학'], value: '학습' },
+          { keywords: ['식사', '맛집', '외식', '음식', '식당'], value: '식사' },
+          { keywords: ['휴식', '힐링', '쉼', '자연'], value: '휴식' }
+        ],
+        en: [
+          // Shopping first
+          { keywords: ['shopping', 'mart', 'market', 'store', 'outlet', 'shop', 'mall'], value: 'shopping' },
+          { keywords: ['research', 'institute', 'energy', 'technology', 'fusion', 'learn', 'education', 'explore'], value: 'learning' },
+          { keywords: ['aquarium', 'zoo', 'animal', 'view', 'see', 'watch', 'exhibition', 'museum', 'memorial'], value: 'sightseeing' },
+          { keywords: ['walk', 'hiking', 'trail', 'park'], value: 'walking' },
+          { keywords: ['experience', 'program', 'activity', 'play', 'science'], value: 'experiencing' },
+          { keywords: ['photo', 'picture', 'instagram'], value: 'photography' },
+          { keywords: ['dining', 'restaurant', 'eat', 'food'], value: 'dining' },
+          { keywords: ['rest', 'relax', 'healing', 'nature'], value: 'relaxation' }
+        ]
+      }
+    }
+    
+    // 콘텐츠 타입별 기본값 (키워드 매칭 실패 시 사용)
+    const contentTypeDefaults = {
+      '12': { // 관광지
+        feature: { ko: '자연경관', en: 'natural scenery' },
+        form: { ko: '야외 체험', en: 'outdoor experience' },
+        target: { ko: '가족 단위 방문객', en: 'families' },
+        intent: { ko: '관람', en: 'sightseeing' }
+      },
+      '14': { // 문화시설
+        feature: { ko: '문화예술', en: 'arts and culture' },
+        form: { ko: '전시 체험', en: 'exhibition' },
+        target: { ko: '문화예술에 관심 있는 분들', en: 'art enthusiasts' },
+        intent: { ko: '관람', en: 'sightseeing' }
+      },
+      '28': { // 레포츠
+        feature: { ko: '스포츠', en: 'sports' },
+        form: { ko: '레저 체험', en: 'leisure experience' },
+        target: { ko: '스포츠를 즐기는 분들', en: 'sports enthusiasts' },
+        intent: { ko: '체험 활동', en: 'experiencing' }
+      },
+      '32': { // 숙박
+        feature: { ko: '편안한 휴식', en: 'comfortable rest' },
+        form: { ko: '숙박 서비스', en: 'accommodation service' },
+        target: { ko: '여행객', en: 'travelers' },
+        intent: { ko: '휴식', en: 'relaxation' }
+      },
+      '38': { // 쇼핑
+        feature: { ko: '쇼핑', en: 'shopping' },
+        form: { ko: '쇼핑 체험', en: 'shopping experience' },
+        target: { ko: '쇼핑을 즐기는 분들', en: 'shoppers' },
+        intent: { ko: '쇼핑', en: 'shopping' }
+      },
+      '39': { // 음식점
+        feature: { ko: '지역 맛집', en: 'local cuisine' },
+        form: { ko: '미식 체험', en: 'dining experience' },
+        target: { ko: '미식가', en: 'foodies' },
+        intent: { ko: '식사', en: 'dining' }
+      },
+      '15': { // 축제/행사
+        feature: { ko: '축제', en: 'festival' },
+        form: { ko: '행사 참여', en: 'event participation' },
+        target: { ko: '축제를 즐기는 분들', en: 'festival goers' },
+        intent: { ko: '체험 활동', en: 'experiencing' }
+      }
+    }
+    
+    // 키워드 매칭 함수
+    const findMatch = (category) => {
+      const lang = language === 'ko' ? 'ko' : 'en'
+      const mappings = keywordMap[category][lang]
+      
+      // 먼저 overview와 name에서 키워드 검색
+      for (const mapping of mappings) {
+        if (mapping.keywords.some(kw => cleanOverview.includes(kw) || name.toLowerCase().includes(kw))) {
+          return mapping.value
+        }
+      }
+      
+      // 매칭 안 되면 콘텐츠 타입별 기본값 사용
+      const typeDefault = contentTypeDefaults[contentType]
+      if (typeDefault && typeDefault[category]) {
+        return typeDefault[category][lang]
+      }
+      
+      // 그래도 없으면 관광지(12) 기본값
+      return contentTypeDefaults['12'][category][lang]
+    }
+    
+    // 자동 추출된 값
+    const type = typeNames[contentType]?.[language === 'ko' ? 'ko' : 'en'] || typeNames['12'][language === 'ko' ? 'ko' : 'en']
+    const feature = findMatch('feature')
+    const form = findMatch('form')
+    const target = findMatch('target')
+    const intent = findMatch('intent')
+    
+    // 설명 생성
+    if (language === 'ko') {
+      const locationText = district ? `${city.replace('광역', '')} ${district}` : city.replace('광역', '')
+      
+      return `${name}은 ${locationText}에 위치한 ${type}로, ${feature}을 주제로 한 ${form} 공간이다. ${target}에게 적합해 ${intent} 목적으로 많이 방문한다.`
+    } else {
+      const locationText = district || city
+      
+      return `${name} is a ${type} located in ${locationText}, featuring ${feature} in a ${form} setting. It is suitable for ${target} and popular for ${intent} purposes.`
+    }
+  }
 
   useEffect(() => {
     const loadSpot = async () => {
@@ -235,6 +621,14 @@ const SpotDetailPage = () => {
             setReviewTotalPages(reviewResult.totalPages)
             setReviewPage(1)
           }
+          
+          // 주변 관광지 로드
+          if (spotData.addr1) {
+            loadRelatedSpots(spotData.addr1, contentId)
+          }
+          
+          // 연관 여행코스 로드
+          loadRelatedTrips(spotData.title, contentId)
         } else {
           setError(t.detail.notFound)
         }
@@ -251,6 +645,34 @@ const SpotDetailPage = () => {
       window.scrollTo(0, 0)
     }
   }, [contentId, language])
+  
+  // 연관 여행코스 로드 함수
+  const loadRelatedTrips = async (placeName, contentId) => {
+    setRelatedTripsLoading(true)
+    try {
+      const result = await getTripsContainingPlace(placeName, contentId, 4)
+      if (result.success) {
+        setRelatedTrips(result.trips)
+      }
+    } catch (err) {
+      console.error('연관 여행코스 로드 실패:', err)
+    }
+    setRelatedTripsLoading(false)
+  }
+  
+  // 주변 관광지 로드 함수
+  const loadRelatedSpots = async (address, excludeId) => {
+    setRelatedLoading(true)
+    try {
+      const result = await getSpotsByDistrict(address, excludeId, 4)
+      if (result.success) {
+        setRelatedSpots(result.spots)
+      }
+    } catch (err) {
+      console.error('주변 관광지 로드 실패:', err)
+    }
+    setRelatedLoading(false)
+  }
   
   // 좋아요 상태 확인 (로그인 시)
   useEffect(() => {
@@ -559,7 +981,7 @@ const SpotDetailPage = () => {
         <div className="sdp__error">
           <span className="sdp__error-icon"><Icons.sadFace size={48} /></span>
           <p>{error || t.detail.notFound}</p>
-          <button onClick={() => navigate(-1)} className="sdp__error-btn">
+          <button onClick={() => router.back()} className="sdp__error-btn">
             ← {t.detail.goBack}
           </button>
         </div>
@@ -571,7 +993,7 @@ const SpotDetailPage = () => {
     <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
       {/* 상단 헤더 */}
       <header className="sdp__header">
-        <button className="sdp__header-btn" onClick={() => navigate(-1)}>
+        <button className="sdp__header-btn" onClick={() => router.back()}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
@@ -653,6 +1075,15 @@ const SpotDetailPage = () => {
             {contentConfig.name?.[language]}
           </span>
           <h1 className="sdp__title">{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h1>
+          
+          {/* 장소 설명 요약 */}
+          {(() => {
+            const desc = generateSpotDescription(spot, spot.content_type_id, language)
+            if (!desc) return null
+            return (
+              <p className="sdp__description">{desc}</p>
+            )
+          })()}
           
           {/* 통계 정보 (조회수, 좋아요, 리뷰, 평점) */}
           <div className="sdp__stats">
@@ -770,6 +1201,47 @@ const SpotDetailPage = () => {
           </section>
         )}
 
+        {/* FAQ 섹션 */}
+        {(() => {
+          const faqs = generateFaqs(spot, spot.content_type_id, language)
+          if (faqs.length === 0) return null
+          return (
+            <section className="sdp__section sdp__faq">
+              <div className="sdp__section-header">
+                <span className="sdp__section-icon"><Icons.about size={18} /></span>
+                <h2 className="sdp__section-title">
+                  {language === 'ko' ? '자주 묻는 질문' : 'FAQ'}
+                </h2>
+              </div>
+              <div className="sdp__faq-list">
+                {faqs.map((faq, idx) => (
+                  <div 
+                    key={idx} 
+                    className={`sdp__faq-item ${openFaqIndex === idx ? 'open' : ''}`}
+                  >
+                    <button 
+                      className="sdp__faq-question"
+                      onClick={() => setOpenFaqIndex(openFaqIndex === idx ? null : idx)}
+                    >
+                      <span className="sdp__faq-q">Q.</span>
+                      <span className="sdp__faq-q-text">{faq.q}</span>
+                      <span className="sdp__faq-toggle">
+                        {openFaqIndex === idx ? '−' : '+'}
+                      </span>
+                    </button>
+                    {openFaqIndex === idx && (
+                      <div className="sdp__faq-answer">
+                        <span className="sdp__faq-a">A.</span>
+                        <span className="sdp__faq-a-text">{faq.a}</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          )
+        })()}
+
         {/* 객실정보 (숙박만) */}
         {spot.content_type_id === '32' && spot.room_info && spot.room_info.length > 0 && (
           <section className="sdp__section sdp__rooms">
@@ -854,6 +1326,108 @@ const SpotDetailPage = () => {
               <Icons.globe size={16} />
               {t.detail.visitWebsite}
             </a>
+          </section>
+        )}
+
+        {/* 연관 여행코스 섹션 */}
+        {relatedTrips.length > 0 && (
+          <section className="sdp__section sdp__trips">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.map size={18} /></span>
+              <h2 className="sdp__section-title">
+                {language === 'ko' ? '이 장소가 포함된 여행코스' : 'Travel courses including this place'}
+              </h2>
+            </div>
+            <div className="sdp__trips-list">
+              {relatedTrips.map((trip) => (
+                <Link
+                  key={trip.id}
+                  href={`/shared-trip/${trip.id}`}
+                  className="sdp__trip-card"
+                >
+                  <div className="sdp__trip-thumbnail">
+                    {trip.thumbnailUrl ? (
+                      <img 
+                        src={trip.thumbnailUrl} 
+                        alt={trip.title}
+                        onError={handleImageError}
+                      />
+                    ) : (
+                      <div className="sdp__trip-placeholder">
+                        <Icons.map size={24} />
+                      </div>
+                    )}
+                  </div>
+                  <div className="sdp__trip-info">
+                    <h3 className="sdp__trip-title">{trip.title}</h3>
+                    <div className="sdp__trip-meta">
+                      <span className="sdp__trip-author">
+                        <Icons.user size={12} />
+                        {trip.authorNickname}
+                      </span>
+                      <span className="sdp__trip-days">
+                        {trip.daysCount}{language === 'ko' ? '일' : ' day'}{trip.daysCount > 1 && language === 'en' ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="sdp__trip-places">
+                      {trip.placesPreview.slice(0, 3).map((place, idx) => (
+                        <span key={idx} className="sdp__trip-place-tag">
+                          {place}
+                        </span>
+                      ))}
+                      {trip.placesPreview.length > 3 && (
+                        <span className="sdp__trip-place-more">
+                          +{trip.placesPreview.length - 3}
+                        </span>
+                      )}
+                    </div>
+                    <div className="sdp__trip-stats">
+                      <span><Icons.eye size={12} /> {trip.viewCount}</span>
+                      <span><Icons.heart size={12} /> {trip.likeCount}</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* 주변 관광지 섹션 */}
+        {relatedSpots.length > 0 && (
+          <section className="sdp__section sdp__related">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.compass size={18} /></span>
+              <h2 className="sdp__section-title">
+                {language === 'ko' ? `${spot?.title || '이 장소'} 근처 함께 가볼 만한 곳` : 'Attractions nearby'}
+              </h2>
+            </div>
+            <div className="sdp__related-grid">
+              {relatedSpots.map((related, idx) => (
+                <Link 
+                  key={related.contentId || idx}
+                  href={`/spot/${generateSlug(related.name, related.contentId)}`}
+                  className="sdp__related-card"
+                >
+                  <div className="sdp__related-image">
+                    <img 
+                      src={getReliableImageUrl(related.imageUrl)}
+                      alt={related.name}
+                      onError={handleImageError}
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="sdp__related-info">
+                    <h3 className="sdp__related-title">{related.name}</h3>
+                    {related.address && (
+                      <p className="sdp__related-address">
+                        <Icons.location size={12} />
+                        {related.address.split(' ').slice(1, 3).join(' ')}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
           </section>
         )}
 
@@ -1013,9 +1587,23 @@ const SpotDetailPage = () => {
               )}
             </>
           ) : (
-            <p className="sdp__review-empty">
-              {t.detail.noReviews}
-            </p>
+            <div className="sdp__review-empty">
+              <p className="sdp__review-empty-title">
+                {language === 'ko' 
+                  ? '아직 방문 후기가 등록되지 않았습니다.'
+                  : 'No reviews have been posted yet.'}
+              </p>
+              <p className="sdp__review-empty-desc">
+                {language === 'ko' 
+                  ? `${spot?.title || '이 장소'}을(를) 방문하셨다면`
+                  : `If you visited ${spot?.title || 'this place'},`}
+              </p>
+              <p className="sdp__review-empty-cta">
+                {language === 'ko' 
+                  ? '관람 소감과 팁을 남겨주세요.'
+                  : 'please share your experience and tips.'}
+              </p>
+            </div>
           )}
         </section>
 
@@ -1129,7 +1717,7 @@ const SpotDetailPage = () => {
               ) : tripPlans.length === 0 ? (
                 <div className="sdp__trip-empty">
                   <p>{t.detail.noTripPlans}</p>
-                  <Link to="/my-trip">{t.detail.newTripCreate}</Link>
+                  <Link href="/my-trip">{t.detail.newTripCreate}</Link>
                 </div>
               ) : (
                 <>

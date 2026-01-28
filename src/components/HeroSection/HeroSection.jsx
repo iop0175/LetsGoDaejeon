@@ -8,7 +8,7 @@ import { getReliableImageUrl } from '../../utils/imageUtils'
 import 'swiper/css'
 import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
-import './HeroSection.css'
+// CSS는 _app.jsx에서 import
 
 const HeroSection = memo(() => {
   const { t, language } = useLanguage()

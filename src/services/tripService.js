@@ -1657,3 +1657,102 @@ export const getAllMyTrips = async (userId) => {
     return { success: false, error: err.message }
   }
 }
+
+/**
+ * 특정 장소가 포함된 게시된 여행 코스 찾기
+ * @param {string} placeName - 장소 이름
+ * @param {string} contentId - 장소 contentId (선택)
+ * @param {number} limit - 최대 개수 (기본 5)
+ */
+export const getTripsContainingPlace = async (placeName, contentId = null, limit = 5) => {
+  try {
+    // 1. trip_places에서 해당 장소가 포함된 day_id 찾기
+    let query = supabase
+      .from('trip_places')
+      .select('day_id, place_name, place_address')
+    
+    // contentId가 있으면 place_name에 contentId 포함 여부로 검색 (정확한 매칭)
+    // 없으면 place_name으로 검색
+    if (contentId) {
+      // place_name에 contentId가 포함되어 있거나, 이름이 일치하는 경우
+      query = query.or(`place_name.ilike.%${placeName}%,place_address.ilike.%${contentId}%`)
+    } else {
+      query = query.ilike('place_name', `%${placeName}%`)
+    }
+    
+    const { data: placesData, error: placesError } = await query
+    
+    if (placesError) throw placesError
+    if (!placesData || placesData.length === 0) {
+      return { success: true, trips: [] }
+    }
+    
+    // 2. day_id로 trip_days에서 plan_id 찾기
+    const dayIds = [...new Set(placesData.map(p => p.day_id))]
+    
+    const { data: daysData, error: daysError } = await supabase
+      .from('trip_days')
+      .select('plan_id')
+      .in('id', dayIds)
+    
+    if (daysError) throw daysError
+    if (!daysData || daysData.length === 0) {
+      return { success: true, trips: [] }
+    }
+    
+    // 3. 게시된 여행 계획만 가져오기
+    const planIds = [...new Set(daysData.map(d => d.plan_id))]
+    
+    const { data: plansData, error: plansError } = await supabase
+      .from('trip_plans')
+      .select(`
+        id,
+        title,
+        description,
+        thumbnail_url,
+        author_nickname,
+        view_count,
+        like_count,
+        published_at,
+        trip_days (
+          id,
+          day_number,
+          trip_places (
+            place_name,
+            place_image
+          )
+        )
+      `)
+      .in('id', planIds)
+      .eq('is_published', true)
+      .order('view_count', { ascending: false })
+      .limit(limit)
+    
+    if (plansError) throw plansError
+    
+    // 데이터 변환
+    const trips = (plansData || []).map(plan => {
+      const allPlaces = plan.trip_days?.flatMap(day => 
+        (day.trip_places || []).map(p => p.place_name)
+      ) || []
+      
+      return {
+        id: plan.id,
+        title: plan.title,
+        description: plan.description,
+        thumbnailUrl: plan.thumbnail_url,
+        authorNickname: plan.author_nickname || '익명',
+        viewCount: plan.view_count || 0,
+        likeCount: plan.like_count || 0,
+        publishedAt: plan.published_at,
+        daysCount: plan.trip_days?.length || 0,
+        placesPreview: allPlaces.slice(0, 4)
+      }
+    })
+    
+    return { success: true, trips }
+  } catch (err) {
+    console.error('getTripsContainingPlace error:', err)
+    return { success: false, error: err.message, trips: [] }
+  }
+}

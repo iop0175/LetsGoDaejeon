@@ -6,11 +6,22 @@ import FoodSection from '../components/FoodSection/FoodSection'
 import TravelCourse from '../components/TravelCourse/TravelCourse'
 import WeatherWidget from '../components/WeatherWidget/WeatherWidget'
 import KakaoChannelButton from '../components/KakaoChannelButton/KakaoChannelButton'
-import './HomePage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+import { useLanguage } from '../context/LanguageContext'
+// CSS는 pages/_app.jsx에서 import
 
 const HomePage = () => {
+  const { language } = useLanguage()
+  const seoData = SEO_DATA.home[language] || SEO_DATA.home.ko
+
   return (
     <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/"
+      />
       <HeroSection />
       <QuickMenu />
       <PopularSpots />

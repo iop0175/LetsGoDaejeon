@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { useParams, Link, useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiX, FiInfo, FiMap } from 'react-icons/fi'
 import { FaBus, FaSubway, FaWalking, FaCar, FaBicycle } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
 import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked, getPlaceDetail } from '../services/tripService'
 import { getPublicTransitRoute } from '../services/odsayService'
 import { getCoordinatesFromAddress, getCarRoute } from '../services/kakaoMobilityService'
-import './SharedTripPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 // 일차별 경로 색상
 const DAY_COLORS = [
@@ -20,8 +21,8 @@ const DAY_COLORS = [
 ]
 
 const SharedTripPage = () => {
-  const { tripId } = useParams()
-  const navigate = useNavigate()
+  const router = useRouter()
+  const { tripId } = router.query
   const { language, t } = useLanguage()
   
   const [trip, setTrip] = useState(null)
@@ -609,7 +610,7 @@ const SharedTripPage = () => {
         <div className="shared-trip-error">
           <h2>{t.ui.error}</h2>
           <p>{error || t.common.tripNotFound}</p>
-          <Link to="/" className="back-home-btn">
+          <Link href="/" className="back-home-btn">
             <FiArrowLeft /> {t.common.backToHome}
           </Link>
         </div>
@@ -628,7 +629,7 @@ const SharedTripPage = () => {
             : 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))'
         }}
       >
-        <button className="back-btn" onClick={() => navigate(-1)}>
+        <button className="back-btn" onClick={() => router.back()}>
           <FiArrowLeft />
           {t.ui.back}
         </button>
@@ -1099,7 +1100,7 @@ const SharedTripPage = () => {
       <div className="shared-trip-cta">
         <div className="container">
           <p>{t.trip.createYourOwn}</p>
-          <Link to="/my-trip" className="create-trip-btn">
+          <Link href="/my-trip" className="create-trip-btn">
             {t.trip.createMyTrip}
           </Link>
         </div>

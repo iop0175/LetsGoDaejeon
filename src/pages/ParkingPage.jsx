@@ -4,10 +4,12 @@ import { FaCar, FaParking } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
-import './ParkingPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const ParkingPage = () => {
   const { language, t } = useLanguage()
+  const seoData = SEO_DATA.parking[language] || SEO_DATA.parking.ko
   const [allParkingData, setAllParkingData] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -128,20 +130,27 @@ const ParkingPage = () => {
   const totalPages = Math.ceil(filteredData.length / itemsPerPage)
 
   return (
-    <div className="parking-page">
-      <div className="parking-hero">
-        <div className="hero-content">
-          <h1>
-            <FaParking className="hero-icon" />
-            {t.pages.parking.title}
-          </h1>
-          <p>
-            {language === 'ko' 
-              ? `대전시 내 ${allParkingData.length}개 주차장 정보를 확인하세요.`
-              : `Check information for ${allParkingData.length} parking lots in Daejeon.`}
-          </p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/parking"
+      />
+      <div className="parking-page">
+        <div className="parking-hero">
+          <div className="hero-content">
+            <h1>
+              <FaParking className="hero-icon" />
+              {t.pages.parking.title}
+            </h1>
+            <p>
+              {language === 'ko' 
+                ? `대전시 내 ${allParkingData.length}개 주차장 정보를 확인하세요.`
+                : `Check information for ${allParkingData.length} parking lots in Daejeon.`}
+            </p>
+          </div>
         </div>
-      </div>
 
       <div className="container">
         {/* 필터 버튼 */}
@@ -362,6 +371,7 @@ const ParkingPage = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

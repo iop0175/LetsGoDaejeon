@@ -1,17 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
 import { MdStorefront, MdLocalMall, MdShoppingCart } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import { generateSlug } from '../utils/slugUtils';
 import Icons from '../components/common/Icons';
-import './ShoppingPage.css';
+import SEO, { SEO_DATA } from '../components/common/SEO';
+// CSS는 pages/_app.jsx에서 import
 
 const ShoppingPage = () => {
   const { language, t } = useLanguage();
-  const navigate = useNavigate();
+  const seoData = SEO_DATA.shopping[language] || SEO_DATA.shopping.ko;
+  const router = useRouter();
   const [allShops, setAllShops] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -165,13 +168,20 @@ const ShoppingPage = () => {
   const totalPages = Math.ceil(filteredShops.length / itemsPerPage);
 
   return (
-    <div className="shopping-page">
-      <div className="shopping-hero">
-        <div className="container">
-          <h1>{t.pages.shopping.title}</h1>
-          <p>{t.pages.shopping.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/shopping"
+      />
+      <div className="shopping-page">
+        <div className="shopping-hero">
+          <div className="container">
+            <h1>{t.pages.shopping.title}</h1>
+            <p>{t.pages.shopping.subtitle}</p>
+          </div>
         </div>
-      </div>
 
       <div className="container">
         {/* 검색창 추가 */}
@@ -248,7 +258,7 @@ const ShoppingPage = () => {
         ) : (
           <div className="shopping-grid">
             {paginatedShops.map((shop, index) => (
-              <div key={index} className="shopping-card" onClick={() => navigate(`/spot/${shop.contentId}`)} style={{ cursor: 'pointer' }}>
+              <div key={index} className="shopping-card" onClick={() => router.push(`/spot/${generateSlug(shop.shppgNm, shop.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="shopping-image">
                   <img 
                     src={shop.imageUrl || '/images/no-image.svg'} 
@@ -357,6 +367,7 @@ const ShoppingPage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

@@ -1332,15 +1332,26 @@ export const translations = {
 }
 
 export const LanguageProvider = ({ children }) => {
-  const [language, setLanguage] = useState(() => {
+  // SSR 환경에서는 기본값 사용
+  const [language, setLanguage] = useState('ko')
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // 클라이언트에서 hydration 후 실제 언어 적용
+  useEffect(() => {
     const saved = localStorage.getItem('language')
-    return saved || 'ko'
-  })
+    if (saved) {
+      setLanguage(saved)
+    }
+    setIsHydrated(true)
+  }, [])
 
   useEffect(() => {
-    localStorage.setItem('language', language)
+    if (typeof window === 'undefined') return
+    if (isHydrated) {
+      localStorage.setItem('language', language)
+    }
     document.documentElement.lang = language
-  }, [language])
+  }, [language, isHydrated])
 
   const t = translations[language]
 

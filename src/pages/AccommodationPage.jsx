@@ -1,17 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
 import { MdHotel, MdApartment, MdHome } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import { generateSlug } from '../utils/slugUtils';
 import Icons from '../components/common/Icons';
-import './AccommodationPage.css';
+import SEO, { SEO_DATA } from '../components/common/SEO';
+// CSS는 pages/_app.jsx에서 import
 
 const AccommodationPage = () => {
   const { language } = useLanguage();
-  const navigate = useNavigate();
+  const seoData = SEO_DATA.accommodation[language] || SEO_DATA.accommodation.ko;
+  const router = useRouter();
   const [allRooms, setAllRooms] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -216,13 +219,20 @@ const AccommodationPage = () => {
   const totalPages = Math.ceil(filteredRooms.length / itemsPerPage);
 
   return (
-    <div className="accommodation-page">
-      <div className="accommodation-hero">
-        <div className="container">
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/accommodation"
+      />
+      <div className="accommodation-page">
+        <div className="accommodation-hero">
+          <div className="container">
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
         </div>
-      </div>
 
       <div className="container">
         {/* 검색창 추가 */}
@@ -312,7 +322,7 @@ const AccommodationPage = () => {
         ) : (
           <div className="accommodation-grid">
             {paginatedRooms.map((room, index) => (
-              <div key={index} className="accommodation-card" onClick={() => navigate(`/spot/${room.contentId}`)} style={{ cursor: 'pointer' }}>
+              <div key={index} className="accommodation-card" onClick={() => router.push(`/spot/${generateSlug(room.romsNm, room.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="accommodation-image">
                   <img 
                     src={room.imageUrl || '/images/no-image.svg'} 
@@ -437,6 +447,7 @@ const AccommodationPage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

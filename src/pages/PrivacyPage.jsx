@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { FiArrowLeft, FiShield, FiUser, FiDatabase, FiLock, FiMail, FiClock } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
-import './PolicyPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 const PrivacyPage = () => {
   const { language } = useLanguage()
@@ -147,7 +147,7 @@ Exceptions include:
   return (
     <div className={`policy-page ${isDark ? 'dark-theme' : ''}`}>
       <div className="policy-container">
-        <Link to="/" className="back-link">
+        <Link href="/" className="back-link">
           <FiArrowLeft />
           <span>{t.backToHome}</span>
         </Link>

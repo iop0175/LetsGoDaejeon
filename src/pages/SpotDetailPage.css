@@ -303,13 +303,26 @@
   font-size: 22px;
   font-weight: 700;
   color: #1a1a1a;
-  margin: 0 0 12px 0;
+  margin: 0 0 8px 0;
   line-height: 1.35;
   word-break: keep-all;
 }
 
 .sdp--dark .sdp__title {
   color: #f0f0f5;
+}
+
+/* 장소 설명 요약 */
+.sdp__description {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #555;
+  margin: 0 0 12px 0;
+  word-break: keep-all;
+}
+
+.sdp--dark .sdp__description {
+  color: #a0a0a5;
 }
 
 /* 통계 정보 (조회수, 좋아요, 리뷰) */
@@ -636,6 +649,154 @@
 
 .sdp--dark .sdp__usage-value {
   color: #d0d0d5;
+}
+
+/* FAQ 섹션 */
+.sdp__faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sdp__faq-item {
+  border: 1px solid #e9ecef;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #f8f9fa;
+  transition: all 0.2s ease;
+}
+
+.sdp__faq-item.open {
+  border-color: #0066cc;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+}
+
+.sdp--dark .sdp__faq-item {
+  background: #2a2d35;
+  border-color: #3a3d45;
+}
+
+.sdp--dark .sdp__faq-item.open {
+  border-color: #4dabf7;
+  background: #1e2028;
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.1);
+}
+
+.sdp__faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.sdp__faq-question:hover {
+  background: rgba(0, 102, 204, 0.05);
+}
+
+.sdp--dark .sdp__faq-question {
+  color: #e0e0e5;
+}
+
+.sdp--dark .sdp__faq-question:hover {
+  background: rgba(77, 171, 247, 0.1);
+}
+
+.sdp__faq-q {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0066cc, #00b4d8);
+  color: white;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 50%;
+}
+
+.sdp__faq-q-text {
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.sdp__faq-toggle {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: #888;
+  transition: transform 0.2s;
+}
+
+.sdp__faq-item.open .sdp__faq-toggle {
+  color: #0066cc;
+}
+
+.sdp--dark .sdp__faq-item.open .sdp__faq-toggle {
+  color: #4dabf7;
+}
+
+.sdp__faq-answer {
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px 14px 16px;
+  margin-top: 4px;
+  border-top: 1px solid #e9ecef;
+  animation: fadeIn 0.2s ease;
+}
+
+.sdp--dark .sdp__faq-answer {
+  border-top-color: #3a3d45;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.sdp__faq-a {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e9ecef;
+  color: #666;
+  font-weight: 700;
+  font-size: 12px;
+  border-radius: 50%;
+}
+
+.sdp--dark .sdp__faq-a {
+  background: #3a3d45;
+  color: #aaa;
+}
+
+.sdp__faq-a-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #555;
+}
+
+.sdp--dark .sdp__faq-a-text {
+  color: #b0b0b5;
 }
 
 /* 객실 정보 (숙박) */
@@ -1532,9 +1693,46 @@
 
 .sdp__review-empty {
   text-align: center;
-  padding: 32px 16px;
+  padding: 40px 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px dashed #ddd;
+}
+
+.sdp--dark .sdp__review-empty {
+  background: #2a2d35;
+  border-color: #3a3d45;
+}
+
+.sdp__review-empty-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.sdp--dark .sdp__review-empty-title {
+  color: #e0e0e5;
+}
+
+.sdp__review-empty-desc {
   font-size: 14px;
-  color: #999;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.sdp--dark .sdp__review-empty-desc {
+  color: #b0b0b5;
+}
+
+.sdp__review-empty-cta {
+  font-size: 14px;
+  color: #0066cc;
+  font-weight: 500;
+}
+
+.sdp--dark .sdp__review-empty-cta {
+  color: #4dabf7;
 }
 
 /* 리뷰 정렬 */
@@ -1782,4 +1980,262 @@
 
 .sdp--dark .sdp__share-option--link svg {
   color: #5a9cf5;
+}
+
+/* 연관 여행코스 섹션 */
+.sdp__trips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sdp__trip-card {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.2s ease;
+}
+
+.sdp__trip-card:hover {
+  border-color: #0066cc;
+  box-shadow: 0 2px 8px rgba(0, 102, 204, 0.1);
+  transform: translateY(-1px);
+}
+
+.sdp--dark .sdp__trip-card {
+  background: #2a2d35;
+  border-color: #3a3d45;
+}
+
+.sdp--dark .sdp__trip-card:hover {
+  border-color: #4dabf7;
+  box-shadow: 0 2px 8px rgba(77, 171, 247, 0.1);
+}
+
+.sdp__trip-thumbnail {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #e9ecef;
+}
+
+.sdp__trip-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sdp__trip-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #0066cc33, #00b4d833);
+  color: #0066cc;
+}
+
+.sdp--dark .sdp__trip-placeholder {
+  background: linear-gradient(135deg, #0066cc44, #00b4d844);
+  color: #4dabf7;
+}
+
+.sdp__trip-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sdp__trip-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sdp--dark .sdp__trip-title {
+  color: #e0e0e5;
+}
+
+.sdp__trip-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+.sdp__trip-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.sdp__trip-author {
+  color: #666;
+}
+
+.sdp--dark .sdp__trip-author {
+  color: #999;
+}
+
+.sdp__trip-days {
+  background: #e9ecef;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+}
+
+.sdp--dark .sdp__trip-days {
+  background: #3a3d45;
+  color: #b0b0b5;
+}
+
+.sdp__trip-places {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sdp__trip-place-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #e3f2fd;
+  color: #1976d2;
+  border-radius: 10px;
+}
+
+.sdp--dark .sdp__trip-place-tag {
+  background: #1e3a5f;
+  color: #90caf9;
+}
+
+.sdp__trip-place-more {
+  font-size: 11px;
+  padding: 2px 6px;
+  color: #888;
+}
+
+.sdp__trip-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: #999;
+}
+
+.sdp__trip-stats span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 주변 관광지 섹션 */
+.sdp__related-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 768px) {
+  .sdp__related-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.sdp__related-card {
+  display: block;
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none;
+  color: inherit;
+}
+
+.sdp--dark .sdp__related-card {
+  background: #1e1e24;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.sdp__related-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.12);
+}
+
+.sdp--dark .sdp__related-card:hover {
+  box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+}
+
+.sdp__related-image {
+  position: relative;
+  width: 100%;
+  padding-top: 75%; /* 4:3 비율 */
+  overflow: hidden;
+  background: #f5f5f5;
+}
+
+.sdp--dark .sdp__related-image {
+  background: #2a2a30;
+}
+
+.sdp__related-image img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s;
+}
+
+.sdp__related-card:hover .sdp__related-image img {
+  transform: scale(1.05);
+}
+
+.sdp__related-info {
+  padding: 12px;
+}
+
+.sdp__related-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1e;
+  margin: 0 0 6px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sdp--dark .sdp__related-title {
+  color: #f0f0f5;
+}
+
+.sdp__related-address {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #888;
+  margin: 0;
+}
+
+.sdp--dark .sdp__related-address {
+  color: #888;
+}
+
+.sdp__related-address svg {
+  flex-shrink: 0;
 }

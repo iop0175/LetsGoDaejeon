@@ -2,7 +2,7 @@ import { useState, useEffect, memo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
 import { WiThermometer, WiHumidity, WiStrongWind, WiBarometer, WiDust, WiRefresh, WiDaySunny, WiCloudy, WiRain, WiSnow, WiFog } from 'react-icons/wi';
 import { FiMapPin, FiClock, FiChevronUp, FiChevronDown } from 'react-icons/fi';
-import './WeatherWidget.css';
+// CSS는 _app.jsx에서 import
 
 const WeatherWidget = memo(() => {
   const { language } = useLanguage();

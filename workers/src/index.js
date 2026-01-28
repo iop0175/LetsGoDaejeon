@@ -9,9 +9,12 @@ const ALLOWED_ORIGINS = [
   'https://www.letsgodaejeon.kr',
   'https://letsgodaejeon.vercel.app',
   'http://localhost:5173',        // 개발용 (Vite)
-  'http://localhost:3000',        // 개발용
+  'http://localhost:3000',        // 개발용 (Next.js)
+  'http://localhost:3001',        // 개발용 (Next.js 대체 포트)
+  'http://localhost:3002',        // 개발용 (추가 포트)
   'http://127.0.0.1:5173',        // 개발용
   'http://127.0.0.1:3000',        // 개발용
+  'http://127.0.0.1:3001',        // 개발용
 ];
 
 // Rate Limiting 설정

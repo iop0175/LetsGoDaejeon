@@ -1,17 +1,20 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 'react-icons/fi';
 import { MdTheaters, MdMuseum, MdLocalLibrary, MdMusicNote } from 'react-icons/md';
 import { handleImageError, getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
+import { generateSlug } from '../utils/slugUtils';
 import Icons from '../components/common/Icons';
-import './CulturePage.css';
+import SEO, { SEO_DATA } from '../components/common/SEO';
+// CSS는 pages/_app.jsx에서 import
 
 const CulturePage = () => {
   const { language } = useLanguage();
-  const navigate = useNavigate();
+  const seoData = SEO_DATA.culture[language] || SEO_DATA.culture.ko;
+  const router = useRouter();
   const [allFacilities, setAllFacilities] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -211,13 +214,20 @@ const CulturePage = () => {
   const totalPages = Math.ceil(filteredFacilities.length / itemsPerPage);
 
   return (
-    <div className="culture-page">
-      <div className="culture-hero">
-        <div className="container">
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/culture"
+      />
+      <div className="culture-page">
+        <div className="culture-hero">
+          <div className="container">
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
         </div>
-      </div>
 
       <div className="container">
         <div className="culture-filters">
@@ -296,7 +306,7 @@ const CulturePage = () => {
         ) : (
           <div className="culture-grid">
             {paginatedFacilities.map((facility, index) => (
-              <div key={index} className="culture-card" onClick={() => navigate(`/spot/${facility.contentId}`)} style={{ cursor: 'pointer' }}>
+              <div key={index} className="culture-card" onClick={() => router.push(`/spot/${generateSlug(facility.fcltyNm, facility.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="culture-image">
                   <img 
                     src={facility.imageUrl || '/images/no-image.svg'} 
@@ -405,6 +415,7 @@ const CulturePage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

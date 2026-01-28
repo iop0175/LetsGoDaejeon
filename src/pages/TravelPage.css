@@ -2,6 +2,85 @@
   padding-top: 72px;
 }
 
+/* 검색 영역 */
+.search-section {
+  margin: 24px 0 16px 0;
+}
+
+.search-input-wrapper {
+  position: relative;
+  max-width: 400px;
+  width: 100%;
+}
+
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  font-size: 18px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px 40px 12px 42px;
+  border: 2px solid var(--border-color, #e9ecef);
+  border-radius: 25px;
+  font-size: 15px;
+  background: var(--card-bg, #fff);
+  color: var(--text-primary);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--primary-color, #0066cc);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.search-clear {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #ddd;
+  border: none;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.search-clear:hover {
+  background: #ccc;
+}
+
+.dark-theme .search-input {
+  background: var(--bg-secondary, #1e1e28);
+  border-color: var(--border-color, #333);
+  color: var(--text-primary, #f0f0f5);
+}
+
+.dark-theme .search-clear {
+  background: #444;
+  color: #ccc;
+}
+
+.dark-theme .search-clear:hover {
+  background: #555;
+}
+
 .page-hero {
   height: 300px;
   background: linear-gradient(135deg, rgba(0, 102, 204, 0.9), rgba(0, 180, 216, 0.9));
@@ -83,8 +162,8 @@
   gap: 8px;
 }
 
-.district-btn,
-.dong-btn {
+.travel-page .district-btn,
+.travel-page .dong-btn {
   padding: 8px 16px;
   border: 1px solid var(--border-color, #ddd);
   border-radius: 20px;
@@ -96,43 +175,43 @@
   white-space: nowrap;
 }
 
-.district-btn:hover,
-.dong-btn:hover {
+.travel-page .district-btn:hover,
+.travel-page .dong-btn:hover {
   border-color: var(--primary-color);
   color: var(--primary-color);
 }
 
-.district-btn.active,
-.dong-btn.active {
-  background: var(--primary-color);
+.travel-page .district-btn.active,
+.travel-page .dong-btn.active {
+  background: linear-gradient(135deg, #0066cce6, #00b4d8e6);
   color: white;
-  border-color: var(--primary-color);
+  border-color: transparent;
 }
 
 /* 다크 모드 */
-.dark-theme .location-filters {
+.dark-theme .travel-page .location-filters {
   background: var(--card-bg);
   border-color: var(--border-color);
 }
 
-.dark-theme .district-btn,
-.dark-theme .dong-btn {
+.dark-theme .travel-page .district-btn,
+.dark-theme .travel-page .dong-btn {
   background: var(--card-bg);
   border-color: var(--border-color);
   color: var(--text-primary);
 }
 
-.dark-theme .district-btn:hover,
-.dark-theme .dong-btn:hover {
+.dark-theme .travel-page .district-btn:hover,
+.dark-theme .travel-page .dong-btn:hover {
   border-color: #64b5f6;
   color: #64b5f6;
 }
 
-.dark-theme .district-btn.active,
-.dark-theme .dong-btn.active {
-  background: var(--primary-color);
+.dark-theme .travel-page .district-btn.active,
+.dark-theme .travel-page .dong-btn.active {
+  background: linear-gradient(135deg, #0066cce6, #00b4d8e6);
   color: white;
-  border-color: var(--primary-color);
+  border-color: transparent;
 }
 
 /* 정렬 + 개수 행 */

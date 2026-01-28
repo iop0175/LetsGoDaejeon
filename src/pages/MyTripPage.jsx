@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useRouter } from 'next/router'
+import Link from 'next/link'
 import { 
   FiPlus, FiTrash2, FiEdit2, FiMapPin, FiCalendar, FiClock, 
   FiChevronDown, FiChevronUp, FiSave, FiX, FiMap, FiCoffee,
@@ -28,11 +29,12 @@ import {
 } from '../services/supabase'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { uploadResizedImage } from '../services/blobService'
+import SEO, { SEO_DATA } from '../components/common/SEO'
 import { getRouteByTransport, getCoordinatesFromAddress, calculateDistance, getCarRoute } from '../services/kakaoMobilityService'
 import { getPublicTransitRoute } from '../services/odsayService'
 import { getDaejeonParking } from '../services/api'
 import Icons from '../components/common/Icons'
-import './MyTripPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 // Polyline 좌표를 두꺼운 Polygon으로 변환하는 함수 (클릭 영역 확대용)
 const createRoutePolygon = (pathCoords, width = 0.002) => {
@@ -75,6 +77,7 @@ const MyTripPage = () => {
   const { isDark } = useTheme()
   const { language, t } = useLanguage()
   const { user, loginWithKakao, loading: authLoading } = useAuth()
+  const seoData = SEO_DATA.myTrip[language] || SEO_DATA.myTrip.ko
   
   // 각 일차별 색상 (마커, 경로, 탭 모두 동일하게 사용)
   const dayColors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899']
@@ -266,8 +269,8 @@ const MyTripPage = () => {
     { id: 'bicycle', icon: FaBicycle, label: t.transport.bicycle }
   ]
   
-  // URL 파라미터 (초대 코드)
-  const [searchParams, setSearchParams] = useSearchParams()
+  // URL 파라미터 (next/router)
+  const router = useRouter()
   
   // 여행 계획 목록 로드 (내 여행 + 협업 여행)
   const loadTripPlans = useCallback(async () => {
@@ -383,18 +386,17 @@ const MyTripPage = () => {
   
   // URL의 초대 코드 처리
   useEffect(() => {
-    const inviteCode = searchParams.get('invite')
+    const inviteCode = router.query.invite
     if (inviteCode && user) {
       handleInviteCode(inviteCode)
       // URL에서 초대 코드 파라미터 제거
-      searchParams.delete('invite')
-      setSearchParams(searchParams, { replace: true })
+      router.replace('/my-trip', undefined, { shallow: true })
     } else if (inviteCode && !user && !authLoading) {
       // 로그인이 필요함을 알림
       setPendingInvite(inviteCode)
       alert(t.trip.loginToAcceptInvite)
     }
-  }, [searchParams, user, authLoading])
+  }, [router.query.invite, user, authLoading])
   
   // 초대 코드 처리
   const handleInviteCode = async (inviteCode) => {
@@ -2885,10 +2887,17 @@ const MyTripPage = () => {
   }
   
   return (
-    <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
-      <div className="trip-container">
-        {/* 헤더 */}
-        <header className="trip-header">
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/my-trip"
+      />
+      <div className={`my-trip-page ${isDark ? 'dark-theme' : ''}`}>
+        <div className="trip-container">
+          {/* 헤더 */}
+          <header className="trip-header">
           <div className="trip-header-content">
             <h1>
               <FiMap />
@@ -4266,6 +4275,7 @@ const MyTripPage = () => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

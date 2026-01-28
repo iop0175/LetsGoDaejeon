@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { 
   FiHome, FiUsers, FiMap, FiCalendar, FiShoppingBag, FiSettings, FiLogOut, 
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, FiCloud,
@@ -45,7 +45,7 @@ import { uploadResizedImage, deleteImage } from '../services/blobService'
 import { PAGE_NAMES } from '../utils/apiStats'
 import { StatCard, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import Icons from '../components/common/Icons'
-import './AdminPage.css'
+// CSS는 pages/_app.jsx에서 import
 
 // 페이지 관리 설정 (TourAPI에 없는 데이터만 유지)
 const PAGE_CONFIGS = {
@@ -75,7 +75,7 @@ const AdminPage = () => {
   const { user, loading, login, logout, supabase } = useAuth()
   const { language } = useLanguage()
   const { isDark } = useTheme()
-  const navigate = useNavigate()
+  const router = useRouter()
   
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -2370,8 +2370,8 @@ const AdminPage = () => {
   // 로그아웃 처리
   const handleLogout = useCallback(async () => {
     await logout()
-    navigate('/')
-  }, [logout, navigate])
+    router.push('/')
+  }, [logout, router])
   
   // 로딩 중
   if (loading || adminCheckLoading) {
@@ -2436,7 +2436,7 @@ const AdminPage = () => {
             </form>
             
             <div className="login-footer">
-              <button onClick={() => navigate('/')} className="back-btn">
+              <button onClick={() => router.push('/')} className="back-btn">
                 <FiHome /> {language === 'ko' ? '메인으로' : 'Back to Home'}
               </button>
             </div>
@@ -2472,7 +2472,7 @@ const AdminPage = () => {
               <button onClick={handleLogout} className="logout-btn">
                 <FiLogOut /> {language === 'ko' ? '로그아웃' : 'Logout'}
               </button>
-              <button onClick={() => navigate('/')} className="back-btn">
+              <button onClick={() => router.push('/')} className="back-btn">
                 <FiHome /> {language === 'ko' ? '메인으로' : 'Back to Home'}
               </button>
             </div>

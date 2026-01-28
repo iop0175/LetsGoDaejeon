@@ -3,23 +3,26 @@ import { createContext, useContext, useState, useEffect } from 'react'
 const ThemeContext = createContext()
 
 export const ThemeProvider = ({ children }) => {
-  // 시스템 다크모드 또는 저장된 설정 확인
-  const getInitialTheme = () => {
+  // SSR 환경에서는 기본값 사용, 클라이언트에서만 localStorage 접근
+  const [theme, setTheme] = useState('light')
+  const [isHydrated, setIsHydrated] = useState(false)
+
+  // 클라이언트에서 hydration 후 실제 테마 적용
+  useEffect(() => {
     const savedTheme = localStorage.getItem('theme')
     if (savedTheme) {
-      return savedTheme
+      setTheme(savedTheme)
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark')
     }
-    // 시스템 설정 확인
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-    return 'light'
-  }
-
-  const [theme, setTheme] = useState(getInitialTheme)
+    setIsHydrated(true)
+  }, [])
 
   // 테마 변경 시 처리
   useEffect(() => {
+    // SSR 환경에서는 실행하지 않음
+    if (typeof window === 'undefined') return
+    
     const root = document.documentElement
     
     if (theme === 'dark') {
@@ -30,11 +33,16 @@ export const ThemeProvider = ({ children }) => {
       root.classList.remove('dark-theme')
     }
     
-    localStorage.setItem('theme', theme)
-  }, [theme])
+    if (isHydrated) {
+      localStorage.setItem('theme', theme)
+    }
+  }, [theme, isHydrated])
 
   // 시스템 테마 변경 감지
   useEffect(() => {
+    // SSR 환경에서는 실행하지 않음
+    if (typeof window === 'undefined') return
+    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
     
     const handleChange = (e) => {

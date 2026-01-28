@@ -520,7 +520,10 @@ export const recordPageVisitDB = async (pageName) => {
     // 페이지 방문 통계는 핵심 기능이 아니므로 실패해도 무방
     if (upsertError) {
       // 개발 환경에서만 debug 로그
-      if (import.meta.env.DEV) {
+      const isDev = typeof process !== 'undefined' 
+        ? process.env.NODE_ENV === 'development'
+        : (typeof import.meta !== 'undefined' && import.meta.env?.DEV)
+      if (isDev) {
         console.debug('[PageVisit] Skipped:', upsertError.code)
       }
     }
@@ -3516,5 +3519,45 @@ export const deleteSpotReview = async (reviewId, userId) => {
   } catch (err) {
     console.error('리뷰 삭제 에러:', err)
     return { success: false }
+  }
+}
+
+/**
+ * 주변 관광지 조회 (같은 구 지역)
+ * @param {string} address - 주소 (예: 대전광역시 유성구...)
+ * @param {string} excludeContentId - 제외할 관광지 contentId
+ * @param {number} limit - 가져올 개수 (기본 4)
+ * @returns {Promise<Object>} { success, spots }
+ */
+export const getSpotsByDistrict = async (address, excludeContentId, limit = 4) => {
+  try {
+    // 주소에서 구 이름 추출 (예: 유성구, 서구, 중구 등)
+    const district = address?.split(' ').find(part => part.includes('구'))
+    
+    if (!district) {
+      return { success: false, spots: [], message: '구 정보를 찾을 수 없습니다' }
+    }
+    
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1')
+      .ilike('addr1', `%${district}%`)
+      .neq('content_id', excludeContentId)
+      .not('firstimage', 'is', null)
+      .limit(limit)
+    
+    if (error) throw error
+    
+    const spots = (data || []).map(item => ({
+      contentId: item.content_id,
+      name: item.title,
+      imageUrl: item.firstimage || item.firstimage2,
+      address: item.addr1
+    }))
+    
+    return { success: true, spots }
+  } catch (err) {
+    console.error('주변 관광지 조회 에러:', err)
+    return { success: false, spots: [], message: err.message }
   }
 }

@@ -1,8 +1,8 @@
 import { memo } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import './TravelCard.css'
+// CSS는 _app.jsx에서 import
 
 const DEFAULT_IMAGE = '/images/no-image.svg'
 
@@ -17,7 +17,7 @@ const TravelCard = memo(({ id, contentId, title, location, category, image, dura
   const linkTo = contentId ? `/spot/${contentId}` : `/travel/${id}`
 
   return (
-    <Link to={linkTo} className="travel-card">
+    <Link href={linkTo} className="travel-card">
       <div className="travel-card-image">
         <img 
           src={image || DEFAULT_IMAGE} 

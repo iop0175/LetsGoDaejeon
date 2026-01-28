@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation, FiPlus, FiCalendar, FiCheck, FiX } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -7,13 +7,16 @@ import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbServ
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, cleanIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
+import { generateSlug } from '../utils/slugUtils'
 import Icons from '../components/common/Icons'
-import './FoodPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const FoodPage = () => {
   const { language, t } = useLanguage()
+  const seoData = SEO_DATA.food[language] || SEO_DATA.food.ko
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
   const [allRestaurants, setAllRestaurants] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -236,13 +239,20 @@ const FoodPage = () => {
   const totalPages = Math.ceil(filteredRestaurants.length / itemsPerPage)
 
   return (
-    <div className="food-page">
-      <div className="page-hero food-hero">
-        <div className="page-hero-content">
-          <h1>{t.pages.food.title}</h1>
-          <p>{t.pages.food.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/food"
+      />
+      <div className="food-page">
+        <div className="page-hero food-hero">
+          <div className="page-hero-content">
+            <h1>{t.pages.food.title}</h1>
+            <p>{t.pages.food.subtitle}</p>
+          </div>
         </div>
-      </div>
       
       <div className="container">
         {loading ? (
@@ -314,7 +324,7 @@ const FoodPage = () => {
             
             <div className="food-grid-page">
               {paginatedRestaurants.map((restaurant) => (
-                <div key={restaurant.id} className="food-card-large" onClick={() => navigate(`/spot/${restaurant.contentId}`)} style={{ cursor: 'pointer' }}>
+                <div key={restaurant.id} className="food-card-large" onClick={() => router.push(`/spot/${generateSlug(restaurant.name, restaurant.contentId)}`)} style={{ cursor: 'pointer' }}>
                   <div className="food-image-wrapper">
                     <img 
                       src={restaurant.image || '/images/no-image.svg'} 
@@ -610,6 +620,7 @@ const FoodPage = () => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

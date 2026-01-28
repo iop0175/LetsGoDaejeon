@@ -4,7 +4,7 @@ import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
-import './PopularSpots.css'
+// CSS는 _app.jsx에서 import
 
 // 기본 이미지 (이미지 없을 때 사용)
 const DEFAULT_IMAGE = '/images/no-image.svg';

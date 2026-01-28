@@ -2,8 +2,17 @@ import { createClient } from '@supabase/supabase-js'
 
 // Supabase URL과 키는 환경변수에서 로드 (.env 파일 참조)
 // trim()으로 불필요한 공백/개행 제거
-const supabaseUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim()
-const supabaseAnonKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim()
+// Next.js 호환성: NEXT_PUBLIC_ 접두사 사용, Vite 호환성 유지
+const supabaseUrl = (
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_URL) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_URL) ||
+  ''
+).trim()
+const supabaseAnonKey = (
+  (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_SUPABASE_ANON_KEY) ||
+  (typeof import.meta !== 'undefined' && import.meta.env?.VITE_SUPABASE_ANON_KEY) ||
+  ''
+).trim()
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

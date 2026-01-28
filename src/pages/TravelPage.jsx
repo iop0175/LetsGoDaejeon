@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { FiMapPin, FiLoader, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -8,14 +8,17 @@ import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbServ
 import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
+import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
-import './TravelPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const TravelPage = () => {
   const { language, t } = useLanguage()
+  const seoData = SEO_DATA.travel[language] || SEO_DATA.travel.ko
   const { user } = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
   const [allSpots, setAllSpots] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -285,13 +288,20 @@ const TravelPage = () => {
   const totalPages = Math.ceil(filteredSpots.length / itemsPerPage)
 
   return (
-    <div className="travel-page">
-      <div className="page-hero">
-        <div className="page-hero-content">
-          <h1>{t.pages.travel.title}</h1>
-          <p>{t.pages.travel.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/travel"
+      />
+      <div className="travel-page">
+        <div className="page-hero">
+          <div className="page-hero-content">
+            <h1>{t.pages.travel.title}</h1>
+            <p>{t.pages.travel.subtitle}</p>
+          </div>
         </div>
-      </div>
       
       <div className="container">
         {loading ? (
@@ -363,7 +373,7 @@ const TravelPage = () => {
             
             <div className="spots-grid">
               {paginatedSpots.map((spot) => (
-                <div key={spot.id} className="spot-card-wrapper" onClick={() => navigate(`/spot/${spot.contentId}`)}>
+                <div key={spot.id} className="spot-card-wrapper" onClick={() => router.push(`/spot/${generateSlug(spot.title, spot.contentId)}`)}>
                   <div className="spot-card">
                     <div className="spot-image">
                       <img 
@@ -855,6 +865,7 @@ const TravelPage = () => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

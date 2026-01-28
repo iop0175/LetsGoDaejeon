@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../services/supabase'
 import Icons from '../components/common/Icons'
-import './ProfilePage.css'
+// CSS는 pages/_app.jsx에서 import
 
 const ProfilePage = () => {
   const { isDark } = useTheme()
   const { user, loading: authLoading, loginWithKakao, logout } = useAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
 
   // 프로필 상태
   const [profile, setProfile] = useState({
@@ -150,7 +150,7 @@ const ProfilePage = () => {
   const handleLogout = async () => {
     try {
       await logout()
-      navigate('/')
+      router.push('/')
     } catch (err) {
       console.error('로그아웃 실패:', err)
     }

@@ -1,8 +1,8 @@
 import { memo } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { FiMapPin, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import './Footer.css'
+// CSS는 _app.jsx에서 import
 
 const Footer = memo(() => {
   const { t } = useLanguage()
@@ -31,9 +31,9 @@ const Footer = memo(() => {
             <div className="footer-link-group">
               <h4>{t.footer.tourInfo}</h4>
               <ul>
-                <li><Link to="/travel">{t.nav.travel}</Link></li>
-                <li><Link to="/festival">{t.nav.festival}</Link></li>
-                <li><Link to="/food">{t.nav.food}</Link></li>
+                <li><Link href="/travel">{t.nav.travel}</Link></li>
+                <li><Link href="/festival">{t.nav.festival}</Link></li>
+                <li><Link href="/food">{t.nav.food}</Link></li>
               </ul>
             </div>
             <div className="footer-link-group">
@@ -74,9 +74,9 @@ const Footer = memo(() => {
             <p>{t.footer.copyright}</p>
             <p className="footer-data-source">{t.footer.dataSource}</p>
             <div className="footer-legal">
-              <Link to="/privacy">{t.footer.privacy}</Link>
-              <Link to="/terms">{t.footer.terms}</Link>
-              <Link to="/copyright">{t.footer.copyrightPolicy}</Link>
+              <Link href="/privacy">{t.footer.privacy}</Link>
+              <Link href="/terms">{t.footer.terms}</Link>
+              <Link href="/copyright">{t.footer.copyrightPolicy}</Link>
             </div>
           </div>
         </div>

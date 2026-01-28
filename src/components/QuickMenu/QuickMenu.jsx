@@ -1,7 +1,7 @@
 import { memo } from 'react'
 import { FiMap, FiCalendar, FiActivity, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import './QuickMenu.css'
+// CSS는 _app.jsx에서 import
 
 const QuickMenu = memo(() => {
   const { t } = useLanguage()

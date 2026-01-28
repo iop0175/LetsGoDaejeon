@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { FaHeart, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaSearch, FaStar } from 'react-icons/fa'
 import { getPublishedTripPlans } from '../services/tripService'
 import { useLanguage } from '../context/LanguageContext'
-import './SharedTripsPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 // 여행코스 대체 이미지
 const TRAVEL_PLACEHOLDER = '/images/travel-placeholder.svg'
 
 function SharedTripsPage() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  const seoData = SEO_DATA.sharedTrips[language] || SEO_DATA.sharedTrips.ko
   const [trips, setTrips] = useState([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
@@ -83,7 +85,7 @@ function SharedTripsPage() {
   }
   
   const TripCard = ({ trip }) => (
-    <Link to={`/trip/shared/${trip.id}`} className="trip-card">
+    <Link href={`/shared-trip/${trip.id}`} className="trip-card">
       <div className="trip-card-image">
         <img 
           src={trip.thumbnailUrl || TRAVEL_PLACEHOLDER} 
@@ -123,11 +125,18 @@ function SharedTripsPage() {
   )
   
   return (
-    <div className="shared-trips-page">
-      <div className="shared-trips-header">
-        <h1>{t.pages.sharedTrips.title}</h1>
-        <p>{t.pages.sharedTrips.subtitle}</p>
-      </div>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/shared-trips"
+      />
+      <div className="shared-trips-page">
+        <div className="shared-trips-header">
+          <h1>{t.pages.sharedTrips.title}</h1>
+          <p>{t.pages.sharedTrips.subtitle}</p>
+        </div>
       
       <div className="shared-trips-controls">
         <div className="search-box">
@@ -203,6 +212,7 @@ function SharedTripsPage() {
         </>
       )}
     </div>
+    </>
   )
 }
 

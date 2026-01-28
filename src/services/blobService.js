@@ -1,6 +1,11 @@
 // Vercel Blob 이미지 업로드 서비스
 
-const API_BASE_URL = import.meta.env.PROD 
+// Next.js + Vite 호환 환경변수 체크
+const isProduction = typeof process !== 'undefined' 
+  ? process.env.NODE_ENV === 'production' 
+  : (typeof import.meta !== 'undefined' && import.meta.env?.PROD)
+
+const API_BASE_URL = isProduction
   ? '' // 프로덕션에서는 상대 경로 사용
   : 'http://localhost:3000'; // 개발 환경
 

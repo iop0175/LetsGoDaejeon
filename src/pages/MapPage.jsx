@@ -5,10 +5,12 @@ import { getDaejeonParking } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import Icons from '../components/common/Icons'
-import './MapPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const MapPage = () => {
   const { language, t } = useLanguage()
+  const seoData = SEO_DATA.map[language] || SEO_DATA.map.ko
   const [activeTab, setActiveTab] = useState('tour')
   const [allPlaces, setAllPlaces] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
@@ -29,8 +31,10 @@ const MapPage = () => {
   // 선택된 장소 참조 (setBounds 실행 방지용)
   const selectedPlaceRef = useRef(null)
 
-  // 카카오맵 API 키 (환경변수에서 로드)
-  const KAKAO_MAP_KEY = import.meta.env.VITE_KAKAO_MAP_KEY
+  // 카카오맵 API 키 (환경변수에서 로드) - Next.js + Vite 호환
+  const KAKAO_MAP_KEY = typeof process !== 'undefined' 
+    ? process.env.NEXT_PUBLIC_KAKAO_MAP_KEY 
+    : (typeof import.meta !== 'undefined' && import.meta.env?.VITE_KAKAO_MAP_KEY)
 
   // 주소에서 구 추출
   const getDistrictFromAddr = (addr) => {
@@ -455,9 +459,16 @@ const MapPage = () => {
   ]
 
   return (
-    <div className="map-page">
-      {/* 상단 탭 */}
-      <div className="map-tabs">
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/map"
+      />
+      <div className="map-page">
+        {/* 상단 탭 */}
+        <div className="map-tabs">
         {tabs.map(tab => (
           <button
             key={tab.id}
@@ -650,6 +661,7 @@ const MapPage = () => {
         )}
       </div>
     </div>
+    </>
   )
 }
 

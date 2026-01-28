@@ -3,7 +3,7 @@ import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
-import './FoodSection.css'
+// CSS는 _app.jsx에서 import
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
 const defaultFoods = [

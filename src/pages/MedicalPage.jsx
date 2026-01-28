@@ -4,10 +4,12 @@ import { getAllDbData } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch } from 'react-icons/fi';
 import { MdLocalHospital, MdLocalPharmacy, MdHealthAndSafety } from 'react-icons/md';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
-import './MedicalPage.css';
+import SEO, { SEO_DATA } from '../components/common/SEO';
+// CSS는 pages/_app.jsx에서 import
 
 const MedicalPage = () => {
   const { language } = useLanguage();
+  const seoData = SEO_DATA.medical[language] || SEO_DATA.medical.ko;
   const [allFacilities, setAllFacilities] = useState([]); // 전체 데이터
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -176,13 +178,20 @@ const MedicalPage = () => {
   const totalPages = Math.ceil(filteredFacilities.length / itemsPerPage);
 
   return (
-    <div className="medical-page">
-      <div className="medical-hero">
-        <div className="container">
-          <h1>{t.title}</h1>
-          <p>{t.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/medical"
+      />
+      <div className="medical-page">
+        <div className="medical-hero">
+          <div className="container">
+            <h1>{t.title}</h1>
+            <p>{t.subtitle}</p>
+          </div>
         </div>
-      </div>
 
       <div className="container">
         <div className="medical-search">
@@ -324,6 +333,7 @@ const MedicalPage = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 

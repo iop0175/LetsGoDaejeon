@@ -1,16 +1,19 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/router'
 import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, FiExternalLink, FiMusic } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
-import './FestivalPage.css'
+import SEO, { SEO_DATA } from '../components/common/SEO'
+// CSS는 pages/_app.jsx에서 import
 
 const FestivalPage = () => {
   const { language, t } = useLanguage()
-  const navigate = useNavigate()
+  const seoData = SEO_DATA.festival[language] || SEO_DATA.festival.ko
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState('festival') // 'festival' or 'performance'
   
   // 축제/행사 상태
@@ -347,13 +350,20 @@ const FestivalPage = () => {
   }, [])
 
   return (
-    <div className="festival-page">
-      <div className="page-hero festival-hero">
-        <div className="page-hero-content">
-          <h1>{t.pages.festival.title}</h1>
-          <p>{t.pages.festival.subtitle}</p>
+    <>
+      <SEO 
+        title={seoData.title}
+        description={seoData.description}
+        keywords={seoData.keywords}
+        url="/festival"
+      />
+      <div className="festival-page">
+        <div className="page-hero festival-hero">
+          <div className="page-hero-content">
+            <h1>{t.pages.festival.title}</h1>
+            <p>{t.pages.festival.subtitle}</p>
+          </div>
         </div>
-      </div>
       
       <div className="container">
         {/* 탭 네비게이션 */}
@@ -469,7 +479,7 @@ const FestivalPage = () => {
                     <div 
                       key={event.id} 
                       className="event-card"
-                      onClick={() => event.contentId ? navigate(`/spot/${event.contentId}`) : setSelectedEvent(event)}
+                      onClick={() => event.contentId ? router.push(`/spot/${generateSlug(event.title, event.contentId)}`) : setSelectedEvent(event)}
                     >
                       <div className="event-image">
                         <img 
@@ -1003,6 +1013,7 @@ const FestivalPage = () => {
         </div>
       )}
     </div>
+    </>
   )
 }
 

@@ -174,9 +174,13 @@ export const getReliableImageUrl = (url, fallback = DEFAULT_IMAGE) => {
  */
 export const escapeHtml = (text) => {
   if (!text) return ''
-  const div = document.createElement('div')
-  div.textContent = text
-  return div.innerHTML
+  // SSR 환경에서도 동작하도록 수정
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
 }
 
 /**
@@ -197,10 +201,18 @@ export const cleanIntroHtml = (htmlText, separator = ' / ') => {
   // 나머지 HTML 태그 제거 (a, strong, em 등)
   text = text.replace(/<[^>]+>/g, '')
   
-  // HTML 엔티티 디코딩
-  const textarea = document.createElement('textarea')
-  textarea.innerHTML = text
-  text = textarea.value
+  // HTML 엔티티 디코딩 (SSR 환경에서도 동작)
+  const htmlEntities = {
+    '&nbsp;': ' ',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&amp;': '&',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&apos;': "'"
+  }
+  text = text.replace(/&[#\w]+;/gi, match => htmlEntities[match] || match)
   
   // 연속된 공백/separator 정리
   text = text.replace(new RegExp(`(${separator.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})+`, 'g'), separator)
@@ -228,10 +240,18 @@ export const sanitizeIntroHtml = (htmlText) => {
   // 나머지 HTML 태그 제거
   text = text.replace(/<[^>]+>/g, '')
   
-  // HTML 엔티티 디코딩
-  const textarea = document.createElement('textarea')
-  textarea.innerHTML = text
-  text = textarea.value
+  // HTML 엔티티 디코딩 (SSR 환경에서도 동작)
+  const htmlEntities = {
+    '&nbsp;': ' ',
+    '&lt;': '<',
+    '&gt;': '>',
+    '&amp;': '&',
+    '&quot;': '"',
+    '&#39;': "'",
+    '&#x27;': "'",
+    '&apos;': "'"
+  }
+  text = text.replace(/&[#\w]+;/gi, match => htmlEntities[match] || match)
   
   // placeholder를 <br/> 태그로 복원
   text = text.replace(new RegExp(brPlaceholder.replace(/[[\]]/g, '\\$&'), 'g'), '<br/>')
