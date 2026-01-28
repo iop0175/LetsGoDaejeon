@@ -59,13 +59,13 @@ export const generateSlug = (title, contentId) => {
     return String(contentId || 'unknown')
   }
   
-  // 9. URL 인코딩 (한글 포함 URL용)
-  return encodeURIComponent(slug)
+  // 9. Next.js에서 자동으로 URL 인코딩하므로 인코딩하지 않음
+  return slug
 }
 
 /**
  * Slug에서 contentId 추출
- * @param {string} slug - URL slug (인코딩된 상태)
+ * @param {string} slug - URL slug (인코딩되거나 디코딩된 상태 모두 지원)
  * @returns {string|null} contentId
  * 
  * 예시:
@@ -75,8 +75,13 @@ export const generateSlug = (title, contentId) => {
 export const extractContentIdFromSlug = (slug) => {
   if (!slug) return null
   
-  // URL 디코딩
-  const decoded = decodeURIComponent(slug)
+  // URL 디코딩 시도 (이미 디코딩된 경우에도 안전)
+  let decoded = slug
+  try {
+    decoded = decodeURIComponent(slug)
+  } catch {
+    // 이미 디코딩된 상태면 그대로 사용
+  }
   
   // 마지막 하이픈 이후의 숫자 추출
   const match = decoded.match(/-(\d+)$/)

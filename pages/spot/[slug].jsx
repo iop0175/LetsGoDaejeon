@@ -26,8 +26,8 @@ const generateSlugServer = (title, contentId) => {
   slug = slug.replace(/-+/g, '-').replace(/^-|-$/g, '')
   // contentId 추가
   slug = contentId ? `${slug}-${contentId}` : slug || String(contentId || 'unknown')
-  // URL 인코딩
-  return encodeURIComponent(slug)
+  // Next.js에서 자동으로 URL 인코딩하므로 인코딩하지 않음
+  return slug
 }
 
 export default function SpotPage({ seoData }) {
