@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>레츠고대전 - 대전 여행 가이드</title>
+    <link>https://www.letsgodaejeon.kr</link>
+    <description>대전의 관광지, 맛집, 축제, 숙박, 문화시설 정보를 한눈에! 대전 여행의 모든 것을 안내하는 레츠고대전입니다.</description>
+    <language>ko</language>
+    <lastBuildDate>Wed, 28 Jan 2026 00:00:00 +0900</lastBuildDate>
+    <atom:link href="https://www.letsgodaejeon.kr/rss.xml" rel="self" type="application/rss+xml"/>
+    <image>
+      <url>https://www.letsgodaejeon.kr/images/logo.png</url>
+      <title>레츠고대전</title>
+      <link>https://www.letsgodaejeon.kr</link>
+    </image>
+    
+    <item>
+      <title>대전 관광지 안내</title>
+      <link>https://www.letsgodaejeon.kr/travel</link>
+      <description>대전의 아름다운 관광 명소들을 만나보세요. 자연, 역사, 현대가 어우러진 대전의 매력적인 여행지를 소개합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/travel</guid>
+    </item>
+    
+    <item>
+      <title>대전 축제 및 행사</title>
+      <link>https://www.letsgodaejeon.kr/festival</link>
+      <description>대전에서 열리는 다양한 축제와 행사 정보를 확인하세요. 계절별 축제부터 문화 행사까지 놓치지 마세요.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/festival</guid>
+    </item>
+    
+    <item>
+      <title>대전 맛집 정보</title>
+      <link>https://www.letsgodaejeon.kr/food</link>
+      <description>대전의 숨은 맛집부터 유명 맛집까지! 성심당, 칼국수 거리 등 대전의 다양한 음식을 즐겨보세요.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/food</guid>
+    </item>
+    
+    <item>
+      <title>대전 문화시설</title>
+      <link>https://www.letsgodaejeon.kr/culture</link>
+      <description>대전시립미술관, 국립중앙과학관 등 대전의 다양한 문화시설 정보를 안내합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/culture</guid>
+    </item>
+    
+    <item>
+      <title>대전 숙박 정보</title>
+      <link>https://www.letsgodaejeon.kr/accommodation</link>
+      <description>대전의 호텔, 펜션, 게스트하우스 등 다양한 숙박시설 정보를 확인하세요.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/accommodation</guid>
+    </item>
+    
+    <item>
+      <title>대전 쇼핑</title>
+      <link>https://www.letsgodaejeon.kr/shopping</link>
+      <description>대전의 백화점, 쇼핑몰, 전통시장 등 쇼핑 명소를 소개합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/shopping</guid>
+    </item>
+    
+    <item>
+      <title>대전 레저/스포츠</title>
+      <link>https://www.letsgodaejeon.kr/leisure</link>
+      <description>대전에서 즐길 수 있는 레저 및 스포츠 활동 정보를 안내합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/leisure</guid>
+    </item>
+    
+    <item>
+      <title>공유된 여행 코스</title>
+      <link>https://www.letsgodaejeon.kr/shared-trips</link>
+      <description>다른 여행자들이 공유한 대전 여행 코스를 참고하고, 나만의 여행을 계획해보세요.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/shared-trips</guid>
+    </item>
+    
+    <item>
+      <title>대전 지도</title>
+      <link>https://www.letsgodaejeon.kr/map</link>
+      <description>대전의 관광지, 맛집, 숙박시설 등을 지도에서 한눈에 확인하세요.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/map</guid>
+    </item>
+    
+    <item>
+      <title>대전 주차장 정보</title>
+      <link>https://www.letsgodaejeon.kr/parking</link>
+      <description>대전 시내 공영주차장 및 주요 관광지 주차장 정보를 안내합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/parking</guid>
+    </item>
+    
+    <item>
+      <title>대전 의료시설</title>
+      <link>https://www.letsgodaejeon.kr/medical</link>
+      <description>대전의 병원, 약국 등 의료시설 정보를 안내합니다.</description>
+      <pubDate>Wed, 28 Jan 2026 00:00:00 +0900</pubDate>
+      <guid>https://www.letsgodaejeon.kr/medical</guid>
+    </item>
+  </channel>
+</rss>

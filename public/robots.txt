@@ -11,5 +11,8 @@ Disallow: /api/
 # 사이트맵 위치
 Sitemap: https://www.letsgodaejeon.kr/sitemap.xml
 
+# RSS 피드
+RSS: https://www.letsgodaejeon.kr/rss.xml
+
 # 크롤링 속도 제한 (1초당 1회 요청)
 Crawl-delay: 1
