@@ -40,6 +40,10 @@
     {
       "source": "/robots.txt",
       "destination": "/robots.txt"
+    },
+    {
+      "source": "/trip/shared/:tripId",
+      "destination": "/shared-trip/:tripId"
     }
   ]
 }
