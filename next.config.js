@@ -60,7 +60,20 @@ const nextConfig = {
   
   // 리다이렉트 설정
   async redirects() {
-    return []
+    return [
+      // www 없는 도메인을 www로 리다이렉트
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'letsgodaejeon.kr',
+          },
+        ],
+        destination: 'https://www.letsgodaejeon.kr/:path*',
+        permanent: true,
+      },
+    ]
   },
   
   // 리라이트 설정 (API 프록시 등)
