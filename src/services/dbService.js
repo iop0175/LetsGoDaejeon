@@ -3476,7 +3476,10 @@ export const getSpotReviews = async (contentId, options = {}) => {
           
           return {
             ...review,
-            profiles: profile || { nickname: '익명', avatar_url: null }
+            profiles: profile ? {
+              ...profile,
+              avatar_url: toSecureUrl(profile.avatar_url)
+            } : { nickname: '익명', avatar_url: null }
           }
         } catch {
           return {
