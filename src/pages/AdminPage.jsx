@@ -43,6 +43,7 @@ import {
 } from '../services/tripService'
 import { uploadResizedImage, deleteImage } from '../services/blobService'
 import { PAGE_NAMES } from '../utils/apiStats'
+import { toSecureUrl } from '../utils/imageUtils'
 import { StatCard, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import Icons from '../components/common/Icons'
 // CSS는 pages/_app.jsx에서 import
@@ -4568,7 +4569,7 @@ const AdminPage = () => {
                         <div className="review-header">
                           <div className="review-user">
                             {review.profiles?.avatar_url ? (
-                              <img src={review.profiles.avatar_url} alt="" className="user-avatar" />
+                              <img src={toSecureUrl(review.profiles.avatar_url)} alt="" className="user-avatar" />
                             ) : (
                               <div className="user-avatar-placeholder"><FiUsers /></div>
                             )}
@@ -4686,7 +4687,7 @@ const AdminPage = () => {
                         <div className="profile-avatar" style={{ width: '56px', height: '56px', flexShrink: 0 }}>
                           {profile.avatar_url ? (
                             <img 
-                              src={profile.avatar_url} 
+                              src={toSecureUrl(profile.avatar_url)} 
                               alt={profile.nickname || 'User'} 
                               style={{ 
                                 width: '56px', 

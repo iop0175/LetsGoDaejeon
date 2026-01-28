@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../services/supabase'
+import { toSecureUrl } from '../utils/imageUtils'
 import Icons from '../components/common/Icons'
 // CSS는 pages/_app.jsx에서 import
 
@@ -41,13 +42,13 @@ const ProfilePage = () => {
         if (data) {
           setProfile({
             nickname: data.nickname || '',
-            avatar_url: data.avatar_url || ''
+            avatar_url: toSecureUrl(data.avatar_url) || ''
           })
         } else {
           // 프로필이 없으면 기본값으로 카카오 정보 사용
           setProfile({
             nickname: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0] || '',
-            avatar_url: user.user_metadata?.avatar_url || user.user_metadata?.picture || ''
+            avatar_url: toSecureUrl(user.user_metadata?.avatar_url || user.user_metadata?.picture) || ''
           })
         }
       } catch (err) {

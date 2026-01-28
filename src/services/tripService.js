@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { deleteImage } from './blobService'
+import { toSecureUrl } from '../utils/imageUtils'
 
 // ===== 여행 계획 (Trip Plans) =====
 
@@ -1446,7 +1447,7 @@ export const getTripCollaborators = async (planId) => {
       acceptedAt: collab.accepted_at,
       // Kakao 사용자 정보
       userName: collab.users?.raw_user_meta_data?.name || collab.users?.raw_user_meta_data?.full_name || '알 수 없음',
-      userAvatar: collab.users?.raw_user_meta_data?.avatar_url || collab.users?.raw_user_meta_data?.picture
+      userAvatar: toSecureUrl(collab.users?.raw_user_meta_data?.avatar_url || collab.users?.raw_user_meta_data?.picture)
     }))
     
     return { success: true, collaborators }

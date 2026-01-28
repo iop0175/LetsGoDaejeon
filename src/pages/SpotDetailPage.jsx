@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict } from '../services/dbService'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
-import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
+import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
@@ -1526,7 +1526,7 @@ const SpotDetailPage = () => {
                       <div className="sdp__review-author">
                         {review.profiles?.avatar_url ? (
                           <img 
-                            src={review.profiles.avatar_url} 
+                            src={toSecureUrl(review.profiles.avatar_url)} 
                             alt="" 
                             className="sdp__review-avatar"
                           />

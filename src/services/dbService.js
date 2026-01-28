@@ -1,5 +1,6 @@
 // Supabase 데이터베이스에서 데이터 가져오기
 import { supabase } from './supabase'
+import { toSecureUrl } from '../utils/imageUtils'
 
 // 테이블 설정 (TourAPI에 없는 데이터만 유지)
 const TABLE_CONFIGS = {
@@ -3367,11 +3368,14 @@ export const createSpotReview = async ({ contentId, userId, rating, content, use
         .maybeSingle()
       
       if (profileData && profileData.nickname) {
-        profile = profileData
+        profile = {
+          ...profileData,
+          avatar_url: toSecureUrl(profileData.avatar_url)
+        }
       } else {
         // 프로필이 없거나 닉네임이 없으면 user_metadata에서 생성
         const nickname = userMetadata?.name || userMetadata?.full_name || userMetadata?.email?.split('@')[0] || '사용자'
-        const avatar_url = userMetadata?.avatar_url || userMetadata?.picture || null
+        const avatar_url = toSecureUrl(userMetadata?.avatar_url || userMetadata?.picture)
         
         // 프로필 upsert
         const { data: newProfile, error: profileError } = await supabase

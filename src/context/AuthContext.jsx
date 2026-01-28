@@ -1,5 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react'
 import { supabase, getCurrentUser, onAuthStateChange, signIn, signOut, signInWithKakao, getSession, exchangeCodeForSession } from '../services/supabase'
+import { toSecureUrl } from '../utils/imageUtils'
 
 const AuthContext = createContext(null)
 
@@ -95,7 +96,7 @@ export const AuthProvider = ({ children }) => {
       id: user.id,
       email: user.email,
       nickname: user.user_metadata?.name || user.user_metadata?.full_name || user.email?.split('@')[0],
-      avatar: user.user_metadata?.avatar_url || user.user_metadata?.picture,
+      avatar: toSecureUrl(user.user_metadata?.avatar_url || user.user_metadata?.picture),
       provider: user.app_metadata?.provider || 'email'
     }
   }
