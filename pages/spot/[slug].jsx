@@ -73,7 +73,7 @@ export default function SpotPage({ seoData }) {
           <meta name="twitter:description" content={seoData.description} />
           <meta name="twitter:image" content={seoData.image} />
           
-          {/* 구조화된 데이터 (Schema.org) */}
+          {/* 구조화된 데이터 (Schema.org) - TouristAttraction */}
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -85,8 +85,9 @@ export default function SpotPage({ seoData }) {
                 "image": seoData.image,
                 "address": {
                   "@type": "PostalAddress",
-                  "streetAddress": seoData.address,
-                  "addressLocality": "대전",
+                  "streetAddress": seoData.streetAddress || seoData.address,
+                  "addressLocality": seoData.district || "대전",
+                  "addressRegion": seoData.city || "대전광역시",
                   "addressCountry": "KR"
                 },
                 ...(seoData.phone && { "telephone": seoData.phone }),
@@ -101,6 +102,27 @@ export default function SpotPage({ seoData }) {
               })
             }}
           />
+          
+          {/* 구조화된 데이터 (Schema.org) - FAQPage (AI 생성 FAQ가 있을 때만) */}
+          {seoData.faqItems && seoData.faqItems.length > 0 && (
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{
+                __html: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  "mainEntity": seoData.faqItems.map(item => ({
+                    "@type": "Question",
+                    "name": item.question,
+                    "acceptedAnswer": {
+                      "@type": "Answer",
+                      "text": item.answer
+                    }
+                  }))
+                })
+              }}
+            />
+          )}
         </Head>
       )}
       
@@ -167,10 +189,10 @@ export async function getStaticProps({ params }) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
 
-    // 관광지 기본 정보 가져오기 (SEO용)
+    // 관광지 기본 정보 가져오기 (SEO용 + FAQ용 intro_info 추가)
     const { data: spotData, error } = await serverSupabase
       .from('tour_spots')
-      .select('content_id, title, addr1, overview, firstimage, firstimage2, tel, mapy, mapx')
+      .select('content_id, title, addr1, overview, firstimage, firstimage2, tel, mapy, mapx, intro_info')
       .eq('content_id', contentId)
       .single()
 
@@ -184,6 +206,36 @@ export async function getStaticProps({ params }) {
       ? cleanIntroHtml(spotData.overview).slice(0, 150) 
       : `${spotData.title} - 대전의 인기 관광지입니다. 주소: ${spotData.addr1 || '대전광역시'}`
     
+    // 주소에서 시/구/상세주소 추출
+    const addressParts = (spotData.addr1 || '').split(' ')
+    const city = addressParts.find(p => p.includes('시') || p.includes('광역시')) || '대전광역시'
+    const district = addressParts.find(p => p.includes('구')) || ''
+    const streetAddress = addressParts.slice(2).join(' ') || spotData.addr1
+    
+    // FAQ 데이터 파싱 (AI 생성 FAQ가 있는 경우)
+    let faqItems = []
+    const introInfo = spotData.intro_info
+    if (introInfo?.faq) {
+      let rawFaq = introInfo.faq
+      if (typeof rawFaq === 'string') {
+        // 텍스트 형식 파싱 (Q. ... A. ... 형식)
+        const lines = rawFaq.split('\n').filter(line => line.trim())
+        let currentQ = null
+        for (const line of lines) {
+          const trimmed = line.trim()
+          if (trimmed.startsWith('Q.')) {
+            currentQ = trimmed.replace(/^Q\.\s*/, '')
+          } else if (trimmed.startsWith('A.') && currentQ) {
+            faqItems.push({ question: currentQ, answer: trimmed.replace(/^A\.\s*/, '') })
+            currentQ = null
+          }
+        }
+      } else if (Array.isArray(rawFaq)) {
+        // 배열 형식
+        faqItems = rawFaq.filter(item => item.question && item.answer)
+      }
+    }
+    
     const seoData = {
       name: spotData.title,
       title: `${spotData.title} | 대전 관광지 - 대전으로`,
@@ -192,9 +244,13 @@ export async function getStaticProps({ params }) {
       image: getReliableImageUrl(spotData.firstimage || spotData.firstimage2),
       canonicalUrl: `https://letsgodaejeon.kr/spot/${spotSlug}`,
       address: spotData.addr1,
+      city: city,
+      district: district,
+      streetAddress: streetAddress,
       phone: spotData.tel,
       lat: spotData.mapy,
-      lng: spotData.mapx
+      lng: spotData.mapx,
+      faqItems: faqItems.length > 0 ? faqItems : null
     }
 
     return {
