@@ -6237,6 +6237,119 @@
   transform: translateY(-1px);
 }
 
+.tourapi-actions .btn-sync-ai-desc {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #ff6b35, #f4511e);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.tourapi-actions .btn-sync-ai-desc:hover:not(:disabled) {
+  background: linear-gradient(135deg, #f4511e, #d84315);
+  transform: translateY(-1px);
+}
+
+/* AI Description 설정 섹션 */
+.ai-desc-settings {
+  margin-top: 20px;
+  padding: 20px;
+  background: #f8f9fa;
+  border-radius: 12px;
+  border: 1px solid #e9ecef;
+}
+
+.ai-desc-settings h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 16px;
+  color: #ff6b35;
+  font-size: 1.1rem;
+}
+
+.ai-desc-inputs {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.ai-desc-inputs .input-group {
+  flex: 1;
+  min-width: 250px;
+}
+
+.ai-desc-inputs label {
+  display: block;
+  font-size: 0.85rem;
+  color: #666;
+  margin-bottom: 6px;
+}
+
+.ai-desc-inputs input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 0.95rem;
+}
+
+.ai-desc-inputs input:focus {
+  outline: none;
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.1);
+}
+
+/* AI Description 로그 */
+.ai-desc-logs {
+  margin-top: 20px;
+}
+
+.ai-desc-logs h5 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  color: #333;
+}
+
+.ai-desc-logs .logs-container {
+  max-height: 300px;
+  overflow-y: auto;
+  background: #1e1e1e;
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Monaco', 'Consolas', monospace;
+  font-size: 0.85rem;
+}
+
+.ai-desc-logs .log-entry {
+  padding: 4px 0;
+  color: #d4d4d4;
+}
+
+.ai-desc-logs .log-entry .log-time {
+  color: #888;
+  margin-right: 8px;
+}
+
+.ai-desc-logs .log-entry.log-success .log-msg {
+  color: #4caf50;
+}
+
+.ai-desc-logs .log-entry.log-error .log-msg {
+  color: #f44336;
+}
+
+.ai-desc-logs .log-entry.log-info .log-msg {
+  color: #64b5f6;
+}
+
 .tourapi-actions button:disabled {
   opacity: 0.6;
   cursor: not-allowed;

@@ -35,7 +35,9 @@ import {
   syncTourSpotsEnglish, getTourSpotsWithoutEngCount,
   syncTourSpotsRoomInfo, getTourSpotsWithoutRoomCount,
   getTourSpotsWithoutEng, mapTourSpotEnglish, clearTourSpotEnglish,
-  getMappedEngContentIds
+  getMappedEngContentIds,
+  getRestaurantsWithoutAiDescCount, getRestaurantsWithoutAiDesc, sendRestaurantsToN8n,
+  getSpotsByTypeWithoutAiDescCount, getSpotsByTypeWithoutAiDesc, sendSpotsToN8nByType
 } from '../services/dbService'
 import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
@@ -227,6 +229,29 @@ const AdminPage = () => {
   const [engSyncLoading, setEngSyncLoading] = useState(false) // 영문 데이터 동기화 로딩
   const [engSyncProgress, setEngSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 영문 동기화 진행
   const [noEngCount, setNoEngCount] = useState(0) // 영문 데이터 없는 항목 개수
+  
+  // AI Description 생성 상태 (n8n)
+  const [aiDescSyncLoading, setAiDescSyncLoading] = useState(false)
+  const [aiDescSyncProgress, setAiDescSyncProgress] = useState({ current: 0, total: 0, item: '' })
+  const [noAiDescCount, setNoAiDescCount] = useState(0) // AI description 없는 음식점 개수
+  const [aiDescLogs, setAiDescLogs] = useState([]) // AI description 생성 로그
+  const [aiDescBatchSize, setAiDescBatchSize] = useState(10) // 한 번에 처리할 개수
+  const [aiDescSelectedType, setAiDescSelectedType] = useState('39') // 선택된 카테고리 타입
+  
+  // 카테고리별 n8n webhook URL (production URL - test URL이 아님!)
+  const [aiDescWebhookUrls, setAiDescWebhookUrls] = useState({
+    '12': 'http://localhost:5678/webhook/d714ad13-cad9-4026-a359-7f68dde0f86f', // 관광지
+    '14': 'http://localhost:5678/webhook/937fec8f-1ed2-42e4-ac40-ecf76a0488bf', // 문화시설
+    '28': 'http://localhost:5678/webhook/08e38f13-de9e-4d8a-b3a4-d2361c213e8f', // 레포츠
+    '32': 'http://localhost:5678/webhook/f5dbf2fc-9dae-4034-9652-f6df17840a4b', // 숙박
+    '38': 'http://localhost:5678/webhook/24e7e818-2328-45fd-9dfa-e4b88bcc7a6c', // 쇼핑
+    '39': 'http://localhost:5678/webhook/30db0f61-ac62-49eb-9e55-80436fb7c6c1'  // 음식점
+  })
+  
+  // 카테고리별 AI description 없는 개수
+  const [aiDescCountByType, setAiDescCountByType] = useState({
+    '12': 0, '14': 0, '28': 0, '32': 0, '38': 0, '39': 0
+  })
   
   // 영문 수동 매핑 상태
   const [engMappingData, setEngMappingData] = useState([]) // 영문 없는 국문 데이터 목록
@@ -1300,6 +1325,18 @@ const AdminPage = () => {
       // 영문 데이터 없는 항목 개수 가져오기
       const noEng = await getTourSpotsWithoutEngCount()
       setNoEngCount(noEng)
+      
+      // AI description 없는 음식점 개수 가져오기
+      const noAiDesc = await getRestaurantsWithoutAiDescCount()
+      setNoAiDescCount(noAiDesc)
+      
+      // 각 카테고리별 AI description 없는 개수 가져오기
+      const typeIds = ['12', '14', '28', '32', '38', '39']
+      const aiCountPromises = typeIds.map(id => getSpotsByTypeWithoutAiDescCount(id))
+      const aiCounts = await Promise.all(aiCountPromises)
+      const aiCountObj = {}
+      typeIds.forEach((id, idx) => { aiCountObj[id] = aiCounts[idx] })
+      setAiDescCountByType(aiCountObj)
     } catch (err) {
       console.error('TourAPI 통계 로드 실패:', err)
     }
@@ -1554,6 +1591,94 @@ const AdminPage = () => {
     setIntroSyncLoading(false)
     setIntroSyncProgress({ current: 0, total: 0, item: '' })
   }, [language, noIntroCount, loadTourApiStats])
+  
+  // AI Description 생성 (n8n으로 카테고리별 데이터 전송)
+  const handleSyncAiDescription = useCallback(async () => {
+    const webhookUrl = aiDescWebhookUrls[aiDescSelectedType]
+    const typeCount = aiDescCountByType[aiDescSelectedType] || 0
+    const typeName = TOUR_CONTENT_TYPES[aiDescSelectedType]?.name || aiDescSelectedType
+    
+    if (!webhookUrl) {
+      alert(language === 'ko' ? 'n8n Webhook URL을 입력하세요.' : 'Please enter n8n Webhook URL.')
+      return
+    }
+    
+    const confirmMsg = language === 'ko'
+      ? `${Math.min(aiDescBatchSize, typeCount)}개 ${typeName}의 AI 설명을 생성하시겠습니까?\n(n8n 워크플로우가 실행 중이어야 합니다)`
+      : `Generate AI descriptions for ${Math.min(aiDescBatchSize, typeCount)} ${typeName}?\n(n8n workflow must be running)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    setAiDescSyncLoading(true)
+    setAiDescLogs([])
+    setAiDescSyncProgress({ current: 0, total: 0, item: '' })
+    
+    try {
+      // 선택된 타입에서 AI description이 없는 항목 가져오기
+      const items = await getSpotsByTypeWithoutAiDesc(aiDescSelectedType, aiDescBatchSize)
+      
+      if (items.length === 0) {
+        alert(language === 'ko' ? `AI 설명이 필요한 ${typeName}이(가) 없습니다.` : `No ${typeName} needs AI description.`)
+        setAiDescSyncLoading(false)
+        return
+      }
+      
+      const addLog = (type, message, data = null) => {
+        const timestamp = new Date().toLocaleTimeString('ko-KR')
+        const logEntry = { timestamp, type, message, data }
+        setAiDescLogs(prev => [...prev, logEntry])
+        
+        // 콘솔에도 출력
+        const consoleMsg = `[${timestamp}] ${message}`
+        if (type === 'error') {
+          console.error(consoleMsg, data || '')
+        } else if (type === 'success') {
+          console.log('%c' + consoleMsg, 'color: green', data || '')
+        } else {
+          console.log(consoleMsg, data || '')
+        }
+      }
+      
+      addLog('info', `🚀 AI Description 생성 시작 (${items.length}개 ${typeName})`)
+      addLog('info', `📡 n8n Webhook: ${webhookUrl}`)
+      
+      const result = await sendSpotsToN8nByType(
+        webhookUrl,
+        items,
+        aiDescSelectedType,
+        (current, total, item) => {
+          setAiDescSyncProgress({ current, total, item })
+        },
+        addLog
+      )
+      
+      addLog('info', `📊 전송 완료: 성공 ${result.sentCount}개, 실패 ${result.failedCount}개`)
+      
+      if (result.failedItems && result.failedItems.length > 0) {
+        console.group('[FAIL] AI Description 전송 실패 항목')
+        result.failedItems.forEach(item => {
+          console.warn(`${item.title} (content_id: ${item.content_id})`)
+          console.log(`  └ 이유: ${item.error}`)
+        })
+        console.groupEnd()
+      }
+      
+      alert(language === 'ko'
+        ? `AI 설명 생성 요청 완료!\n- 전송: ${result.sentCount}개\n- 실패: ${result.failedCount}개\n\nn8n에서 처리 후 자동 저장됩니다.`
+        : `AI description request complete!\n- Sent: ${result.sentCount}\n- Failed: ${result.failedCount}\n\nWill be auto-saved after n8n processing.`)
+      
+      // 통계 새로고침
+      await loadTourApiStats()
+    } catch (err) {
+      console.error('AI Description 전송 실패:', err)
+      alert(language === 'ko'
+        ? `AI 설명 생성 요청 중 오류: ${err.message}`
+        : `Error requesting AI descriptions: ${err.message}`)
+    }
+    
+    setAiDescSyncLoading(false)
+    setAiDescSyncProgress({ current: 0, total: 0, item: '' })
+  }, [language, aiDescWebhookUrls, aiDescSelectedType, aiDescBatchSize, aiDescCountByType, loadTourApiStats])
   
   // TourAPI 숙박 객실정보(room_info) 동기화
   const handleSyncRoomInfo = useCallback(async () => {
@@ -3767,7 +3892,76 @@ const AdminPage = () => {
                           <><FiGlobe /> {language === 'ko' ? `영문 (${noEngCount})` : `English (${noEngCount})`}</>
                         )}
                       </button>
+                      <button 
+                        className="btn-sync-ai-desc"
+                        onClick={handleSyncAiDescription}
+                        disabled={tourApiLoading || aiDescSyncLoading || (aiDescCountByType[aiDescSelectedType] || 0) === 0}
+                        title={language === 'ko' ? `AI ${TOUR_CONTENT_TYPES[aiDescSelectedType]?.name} 설명 생성 (n8n)` : `Generate AI ${TOUR_CONTENT_TYPES[aiDescSelectedType]?.name} descriptions (n8n)`}
+                      >
+                        {aiDescSyncLoading ? (
+                          <><FiLoader className="spinning" /> {aiDescSyncProgress.current}/{aiDescSyncProgress.total}</>
+                        ) : (
+                          <><FiCoffee /> {language === 'ko' ? `AI설명 (${aiDescCountByType[aiDescSelectedType] || 0})` : `AI Desc (${aiDescCountByType[aiDescSelectedType] || 0})`}</>
+                        )}
+                      </button>
                     </div>
+                    
+                    {/* AI Description 설정 */}
+                    {activeSection === 'tourapi' && (
+                      <div className="ai-desc-settings">
+                        <h4><FiCoffee /> {language === 'ko' ? 'AI 설명 생성 설정 (n8n)' : 'AI Description Settings (n8n)'}</h4>
+                        <div className="ai-desc-inputs">
+                          <div className="input-group">
+                            <label>{language === 'ko' ? '카테고리 선택' : 'Select Category'}</label>
+                            <select 
+                              value={aiDescSelectedType}
+                              onChange={(e) => setAiDescSelectedType(e.target.value)}
+                              className="ai-desc-select"
+                            >
+                              {Object.entries(TOUR_CONTENT_TYPES).map(([typeId, info]) => (
+                                <option key={typeId} value={typeId}>
+                                  {info.name} ({aiDescCountByType[typeId] || 0}개 필요)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="input-group">
+                            <label>{language === 'ko' ? 'n8n Webhook URL' : 'n8n Webhook URL'}</label>
+                            <input 
+                              type="text" 
+                              value={aiDescWebhookUrls[aiDescSelectedType] || ''}
+                              onChange={(e) => setAiDescWebhookUrls(prev => ({...prev, [aiDescSelectedType]: e.target.value}))}
+                              placeholder="http://localhost:5678/webhook/..."
+                            />
+                          </div>
+                          <div className="input-group">
+                            <label>{language === 'ko' ? '한 번에 처리할 개수' : 'Batch Size'}</label>
+                            <input 
+                              type="number" 
+                              value={aiDescBatchSize}
+                              onChange={(e) => setAiDescBatchSize(Math.max(1, parseInt(e.target.value) || 1))}
+                              min="1"
+                              max="100"
+                            />
+                          </div>
+                        </div>
+                        
+                        {/* AI Description 로그 */}
+                        {aiDescLogs.length > 0 && (
+                          <div className="ai-desc-logs">
+                            <h5>{language === 'ko' ? '📋 실행 로그' : '📋 Execution Log'}</h5>
+                            <div className="logs-container">
+                              {aiDescLogs.map((log, idx) => (
+                                <div key={idx} className={`log-entry log-${log.type}`}>
+                                  <span className="log-time">[{log.timestamp}]</span>
+                                  <span className="log-msg">{log.message}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   {/* 콘텐츠 타입별 카드 */}

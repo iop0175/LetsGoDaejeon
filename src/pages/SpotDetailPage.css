@@ -1408,6 +1408,92 @@
   animation: sdp-spin 0.8s linear infinite;
 }
 
+/* FAQ 섹션 */
+.sdp__faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sdp__faq-item {
+  background: #f8f9fa;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #eee;
+}
+
+.sdp--dark .sdp__faq-item {
+  background: #2a2a2a;
+  border-color: #3a3a3a;
+}
+
+.sdp__faq-question {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: #333;
+  list-style: none;
+}
+
+.sdp__faq-question::-webkit-details-marker {
+  display: none;
+}
+
+.sdp--dark .sdp__faq-question {
+  color: #f0f0f0;
+}
+
+.sdp__faq-q,
+.sdp__faq-a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.sdp__faq-q {
+  background: #de2f5f;
+  color: #fff;
+}
+
+.sdp__faq-a {
+  background: #4CAF50;
+  color: #fff;
+}
+
+.sdp__faq-icon {
+  margin-left: auto;
+  transition: transform 0.2s;
+  color: #999;
+  flex-shrink: 0;
+}
+
+.sdp__faq-item[open] .sdp__faq-icon {
+  transform: rotate(180deg);
+}
+
+.sdp__faq-answer {
+  display: flex;
+  gap: 10px;
+  padding: 0 20px 16px 20px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.sdp--dark .sdp__faq-answer {
+  color: #bbb;
+}
+
 /* 리뷰 섹션 */
 .sdp__reviews .sdp__section-header {
   align-items: center;

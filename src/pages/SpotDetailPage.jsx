@@ -553,13 +553,69 @@ const SpotDetailPage = () => {
     const target = findMatch('target')
     const intent = findMatch('intent')
     
-    // 설명 생성
+    // 설명 생성 - 콘텐츠 타입별 맞춤 템플릿
     if (language === 'ko') {
       const locationText = district ? `${city.replace('광역', '')} ${district}` : city.replace('광역', '')
+      // 동/읍/면 추출 시도
+      const neighborhood = addressParts.find(p => p.includes('동') || p.includes('읍') || p.includes('면') || p.includes('로') || p.includes('길')) || ''
+      const fullLocationText = neighborhood ? `${locationText} ${neighborhood}` : locationText
+      
+      // 음식점(39) 전용 템플릿
+      // AI 생성 설명(ai_description)이 있으면 우선 사용
+      if (contentType === '39') {
+        // n8n AI가 생성한 설명이 있으면 우선 사용
+        if (intro.ai_description) {
+          return intro.ai_description
+        }
+        
+        // AI 설명이 없으면 기존 로직으로 폴백
+        const firstMenu = intro.firstmenu || ''
+        const treatMenu = intro.treatmenu || ''
+        
+        const foodTypes = {
+          '쌈밥': '쌈밥', '국밥': '국밥', '냉면': '냉면', '짬뽕': '짬뽕', '칼국수': '칼국수',
+          '삼겹살': '고기', '소고기': '고기', '돼지고기': '고기', '갈비': '고기',
+          '초밥': '일식', '스시': '일식', '라멘': '일식', '우동': '일식',
+          '파스타': '양식', '스테이크': '양식', '피자': '양식',
+          '짜장면': '중식', '탕수육': '중식',
+          '치킨': '치킨', '카페': '카페', '빵': '베이커리', '디저트': '디저트'
+        }
+        
+        let foodType = '맛집'
+        for (const [keyword, type] of Object.entries(foodTypes)) {
+          if (cleanOverview.includes(keyword) || name.includes(keyword)) {
+            foodType = type + ' 맛집'
+            break
+          }
+        }
+        
+        const tasteKeywords = ['담백한', '깊은 맛의', '신선한', '고소한', '매콤한', '시원한', '진한', '부드러운']
+        let tasteKeyword = tasteKeywords.find(tk => cleanOverview.includes(tk.replace('의', '').replace('한', ''))) || '맛있는'
+        
+        let menuText = ''
+        if (firstMenu && treatMenu) {
+          menuText = `${firstMenu}, ${treatMenu} 등`
+        } else if (firstMenu || treatMenu) {
+          menuText = `${firstMenu || treatMenu} 등`
+        } else {
+          menuText = '다양한'
+        }
+        
+        let description = `${name}은 ${fullLocationText}에 위치한 ${foodType}으로, ${menuText} ${tasteKeyword} 메뉴가 인기다. 식사 목적으로 많이 방문한다.`
+        
+        return description
+      }
       
       return `${name}은 ${locationText}에 위치한 ${type}로, ${feature}을 주제로 한 ${form} 공간이다. ${target}에게 적합해 ${intent} 목적으로 많이 방문한다.`
     } else {
       const locationText = district || city
+      
+      // Restaurant (39) specific template
+      if (contentType === '39') {
+        const firstMenu = intro.firstmenu || intro.treatmenu || ''
+        const menuText = firstMenu ? ` known for ${firstMenu}` : ''
+        return `${name} is a ${type} located in ${locationText}${menuText}. It is popular for ${intent} purposes and suitable for ${target}.`
+      }
       
       return `${name} is a ${type} located in ${locationText}, featuring ${feature} in a ${form} setting. It is suitable for ${target} and popular for ${intent} purposes.`
     }
@@ -1430,6 +1486,58 @@ const SpotDetailPage = () => {
             </div>
           </section>
         )}
+
+        {/* FAQ 섹션 (음식점에서 AI 생성 FAQ가 있을 때만 표시) */}
+        {spot.content_type_id === '39' && spot.intro_info?.faq && (() => {
+          // FAQ가 배열인지 텍스트인지 확인하고 파싱
+          let faqItems = spot.intro_info.faq
+          
+          // 텍스트 형식인 경우 파싱
+          if (typeof faqItems === 'string') {
+            const lines = faqItems.split('\n').filter(line => line.trim())
+            faqItems = []
+            let currentQ = null
+            
+            for (const line of lines) {
+              const trimmed = line.trim()
+              if (trimmed.startsWith('Q.')) {
+                currentQ = trimmed.replace(/^Q\.\s*/, '')
+              } else if (trimmed.startsWith('A.') && currentQ) {
+                faqItems.push({
+                  question: currentQ,
+                  answer: trimmed.replace(/^A\.\s*/, '')
+                })
+                currentQ = null
+              }
+            }
+          }
+          
+          if (!faqItems || faqItems.length === 0) return null
+          
+          return (
+            <section className="sdp__section sdp__faq">
+              <div className="sdp__section-header">
+                <span className="sdp__section-icon"><Icons.about size={18} /></span>
+                <h2 className="sdp__section-title">자주 묻는 질문</h2>
+              </div>
+              <div className="sdp__faq-list">
+                {faqItems.map((item, idx) => (
+                  <details key={idx} className="sdp__faq-item">
+                    <summary className="sdp__faq-question">
+                      <span className="sdp__faq-q">Q.</span>
+                      {item.question}
+                      <Icons.chevronDown size={18} className="sdp__faq-icon" />
+                    </summary>
+                    <div className="sdp__faq-answer">
+                      <span className="sdp__faq-a">A.</span>
+                      {item.answer}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </section>
+          )
+        })()}
 
         {/* 리뷰 섹션 */}
         <section className="sdp__section sdp__reviews">

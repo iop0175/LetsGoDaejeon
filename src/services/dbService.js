@@ -3568,3 +3568,392 @@ export const getSpotsByDistrict = async (address, excludeContentId, limit = 4) =
     return { success: false, spots: [], message: err.message }
   }
 }
+
+/**
+ * AI Description이 없는 음식점(39) 개수 조회
+ * @returns {Promise<number>} 개수
+ */
+export const getRestaurantsWithoutAiDescCount = async () => {
+  try {
+    // intro_info가 없거나 intro_info.ai_description이 없는 음식점(39) 조회
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('id, intro_info')
+      .eq('content_type_id', '39')
+      .not('overview', 'is', null)
+    
+    if (error) throw error
+    
+    // ai_description이 없는 항목만 카운트
+    const count = (data || []).filter(item => 
+      !item.intro_info?.ai_description
+    ).length
+    
+    return count
+  } catch (err) {
+    console.error('AI description 없는 음식점 개수 조회 에러:', err)
+    return 0
+  }
+}
+
+/**
+ * AI Description이 없는 음식점 목록 조회
+ * @param {number} limit - 조회 개수 (기본 10)
+ * @returns {Promise<Array>} 음식점 목록
+ */
+export const getRestaurantsWithoutAiDesc = async (limit = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('id, content_id, title, addr1, overview, intro_info')
+      .eq('content_type_id', '39')
+      .not('overview', 'is', null)
+      .order('id', { ascending: true })
+    
+    if (error) throw error
+    
+    // ai_description이 없는 항목만 필터
+    const filtered = (data || []).filter(item => 
+      !item.intro_info?.ai_description
+    ).slice(0, limit)
+    
+    return filtered
+  } catch (err) {
+    console.error('AI description 없는 음식점 조회 에러:', err)
+    return []
+  }
+}
+
+/**
+ * n8n webhook으로 음식점 데이터 전송 (AI description 생성 요청)
+ * @param {string} webhookUrl - n8n webhook URL
+ * @param {Array} restaurants - 음식점 목록
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @param {Function} onLog - 로그 콜백 (type, message, data)
+ * @returns {Promise<Object>} { success, sentCount, failedCount }
+ */
+export const sendRestaurantsToN8n = async (webhookUrl, restaurants, onProgress = null, onLog = null) => {
+  if (!webhookUrl || !restaurants || restaurants.length === 0) {
+    return { success: false, sentCount: 0, failedCount: 0, message: 'Invalid parameters' }
+  }
+
+  let sentCount = 0
+  let failedCount = 0
+  const total = restaurants.length
+  const failedItems = []
+
+  for (let i = 0; i < restaurants.length; i++) {
+    const item = restaurants[i]
+    
+    if (onProgress) {
+      onProgress(i + 1, total, item.title)
+    }
+
+    try {
+      const payload = {
+        contentid: item.content_id,
+        title: item.title,
+        addr1: item.addr1,
+        overview: item.overview
+      }
+
+      if (onLog) {
+        onLog('info', `[${i + 1}/${total}] 전송 중: ${item.title}`, { content_id: item.content_id })
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (response.ok) {
+        sentCount++
+        if (onLog) {
+          onLog('success', `✅ ${item.title} 전송 완료`, { content_id: item.content_id, status: response.status })
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      // API 과부하 방지 - 100ms 대기
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
+    } catch (err) {
+      failedCount++
+      failedItems.push({ content_id: item.content_id, title: item.title, error: err.message })
+      if (onLog) {
+        onLog('error', `❌ ${item.title} 전송 실패: ${err.message}`, { content_id: item.content_id })
+      }
+    }
+  }
+
+  return { 
+    success: true, 
+    sentCount, 
+    failedCount, 
+    total,
+    failedItems 
+  }
+}
+
+/**
+ * tour_spots의 intro_info에 AI description과 FAQ 저장
+ * @param {string} contentId - content_id
+ * @param {Object} aiData - { ai_description, faq }
+ * @returns {Promise<Object>} { success, error }
+ */
+export const saveAiDescriptionToDb = async (contentId, aiData) => {
+  try {
+    // 기존 intro_info 조회
+    const { data: existing, error: selectError } = await supabase
+      .from('tour_spots')
+      .select('intro_info')
+      .eq('content_id', contentId)
+      .single()
+    
+    if (selectError && selectError.code !== 'PGRST116') throw selectError
+    
+    const existingIntro = existing?.intro_info || {}
+    const newIntro = {
+      ...existingIntro,
+      ...(aiData.ai_description && { ai_description: aiData.ai_description }),
+      ...(aiData.faq && { faq: aiData.faq }),
+      ai_updated_at: new Date().toISOString()
+    }
+
+    const { error: updateError } = await supabase
+      .from('tour_spots')
+      .update({ intro_info: newIntro })
+      .eq('content_id', contentId)
+    
+    if (updateError) throw updateError
+    
+    return { success: true }
+  } catch (err) {
+    console.error('AI description 저장 에러:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// ============================================================
+// 카테고리별 AI Description 생성 (n8n) 함수들
+// ============================================================
+
+// 콘텐츠 타입별 intro_info 필드 매핑
+const INTRO_FIELDS_BY_TYPE = {
+  '12': [ // 관광지
+    { key: 'usetime', label: '운영시간' },
+    { key: 'restdate', label: '휴무일' },
+    { key: 'parking', label: '주차' },
+    { key: 'infocenter', label: '문의' }
+  ],
+  '14': [ // 문화시설
+    { key: 'usetimeculture', label: '운영시간' },
+    { key: 'restdateculture', label: '휴무일' },
+    { key: 'usefee', label: '이용요금' },
+    { key: 'parkingculture', label: '주차' },
+    { key: 'infocenterculture', label: '문의' }
+  ],
+  '28': [ // 레포츠
+    { key: 'usetimeleports', label: '이용시간' },
+    { key: 'usefeeleports', label: '이용요금' },
+    { key: 'restdateleports', label: '휴무일' },
+    { key: 'infocenterleports', label: '문의' },
+    { key: 'parkingleports', label: '주차' }
+  ],
+  '32': [ // 숙박
+    { key: 'checkintime', label: '체크인' },
+    { key: 'checkouttime', label: '체크아웃' },
+    { key: 'roomcount', label: '객실수' },
+    { key: 'subfacility', label: '부대시설' },
+    { key: 'parkinglodging', label: '주차' },
+    { key: 'infocenterlodging', label: '문의' }
+  ],
+  '38': [ // 쇼핑
+    { key: 'opentime', label: '영업시간' },
+    { key: 'saleitem', label: '판매품목' },
+    { key: 'restdateshopping', label: '휴무일' },
+    { key: 'parkingshopping', label: '주차' },
+    { key: 'infocentershopping', label: '문의' }
+  ],
+  '39': [ // 음식점
+    { key: 'firstmenu', label: '대표메뉴' },
+    { key: 'treatmenu', label: '취급메뉴' },
+    { key: 'opentimefood', label: '영업시간' },
+    { key: 'restdatefood', label: '휴무일' },
+    { key: 'parkingfood', label: '주차' },
+    { key: 'infocenterfood', label: '문의' }
+  ]
+}
+
+/**
+ * 카테고리별 AI Description이 없는 항목 개수 조회
+ * @param {string} contentTypeId - 콘텐츠 타입 ID (12, 14, 28, 32, 38, 39)
+ * @returns {Promise<number>} 개수
+ */
+export const getSpotsByTypeWithoutAiDescCount = async (contentTypeId) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('id, intro_info')
+      .eq('content_type_id', contentTypeId)
+      .not('overview', 'is', null)
+    
+    if (error) throw error
+    
+    // ai_description이 없는 항목만 카운트
+    const count = (data || []).filter(item => 
+      !item.intro_info?.ai_description
+    ).length
+    
+    return count
+  } catch (err) {
+    console.error(`AI description 없는 항목(type ${contentTypeId}) 개수 조회 에러:`, err)
+    return 0
+  }
+}
+
+/**
+ * 카테고리별 AI Description이 없는 항목 목록 조회
+ * @param {string} contentTypeId - 콘텐츠 타입 ID
+ * @param {number} limit - 조회 개수 (기본 10)
+ * @returns {Promise<Array>} 항목 목록
+ */
+export const getSpotsByTypeWithoutAiDesc = async (contentTypeId, limit = 10) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('id, content_id, title, addr1, overview, intro_info')
+      .eq('content_type_id', contentTypeId)
+      .not('overview', 'is', null)
+      .order('id', { ascending: true })
+    
+    if (error) throw error
+    
+    // ai_description이 없는 항목만 필터
+    const filtered = (data || []).filter(item => 
+      !item.intro_info?.ai_description
+    ).slice(0, limit)
+    
+    return filtered
+  } catch (err) {
+    console.error(`AI description 없는 항목(type ${contentTypeId}) 조회 에러:`, err)
+    return []
+  }
+}
+
+/**
+ * overview와 intro_info를 합쳐서 하나의 텍스트로 만들기
+ * @param {Object} item - 관광지 데이터
+ * @param {string} contentTypeId - 콘텐츠 타입 ID
+ * @returns {string} 합쳐진 텍스트
+ */
+export const combineSpotDataForAi = (item, contentTypeId) => {
+  const intro = item.intro_info || {}
+  const fields = INTRO_FIELDS_BY_TYPE[contentTypeId] || []
+  
+  // intro_info에서 유효한 값만 추출
+  const introFields = []
+  for (const { key, label } of fields) {
+    if (intro[key]) {
+      const value = intro[key].replace(/<br>/g, ', ').replace(/<[^>]*>/g, '')
+      introFields.push(`${label}: ${value}`)
+    }
+  }
+  
+  const introText = introFields.length > 0 ? introFields.join(' / ') : ''
+  
+  // title + addr1 + overview + intro_info 전부 합치기
+  let combinedText = item.title
+  if (item.addr1) combinedText += `\n주소: ${item.addr1}`
+  if (item.overview) combinedText += `\n\n${item.overview}`
+  if (introText) combinedText += `\n\n[이용안내] ${introText}`
+  
+  return combinedText
+}
+
+/**
+ * 카테고리별 n8n webhook으로 데이터 전송 (AI description 생성 요청)
+ * @param {string} webhookUrl - n8n production webhook URL
+ * @param {Array} items - 관광지 목록
+ * @param {string} contentTypeId - 콘텐츠 타입 ID
+ * @param {Function} onProgress - 진행 콜백 (current, total, item)
+ * @param {Function} onLog - 로그 콜백 (type, message, data)
+ * @returns {Promise<Object>} { success, sentCount, failedCount, failedItems }
+ */
+export const sendSpotsToN8nByType = async (webhookUrl, items, contentTypeId, onProgress = null, onLog = null) => {
+  if (!webhookUrl || !items || items.length === 0) {
+    return { success: false, sentCount: 0, failedCount: 0, message: 'Invalid parameters' }
+  }
+
+  let sentCount = 0
+  let failedCount = 0
+  const total = items.length
+  const failedItems = []
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i]
+    
+    if (onProgress) {
+      onProgress(i + 1, total, item.title)
+    }
+
+    try {
+      // overview와 intro_info를 합쳐서 전송
+      const combinedOverview = combineSpotDataForAi(item, contentTypeId)
+      
+      const payload = {
+        contentid: item.content_id,
+        overview: combinedOverview
+      }
+
+      if (onLog) {
+        onLog('info', `[${i + 1}/${total}] 전송 중: ${item.title}`, { content_id: item.content_id })
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      })
+
+      if (response.ok) {
+        sentCount++
+        if (onLog) {
+          onLog('success', `✅ ${item.title} 전송 완료`, { content_id: item.content_id, status: response.status })
+        }
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      // n8n 처리 시간 확보를 위해 30초 대기
+      if (i < items.length - 1) {  // 마지막 아이템은 대기 안함
+        if (onLog) {
+          onLog('info', `⏳ 다음 요청까지 30초 대기...`)
+        }
+        await new Promise(resolve => setTimeout(resolve, 30000))
+      }
+      
+    } catch (err) {
+      failedCount++
+      failedItems.push({ content_id: item.content_id, title: item.title, error: err.message })
+      if (onLog) {
+        onLog('error', `❌ ${item.title} 전송 실패: ${err.message}`, { content_id: item.content_id })
+      }
+    }
+  }
+
+  return { 
+    success: true, 
+    sentCount, 
+    failedCount, 
+    total,
+    failedItems 
+  }
+}
+
