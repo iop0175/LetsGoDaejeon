@@ -31,7 +31,39 @@
   "rewrites": [
     {
       "source": "/sitemap.xml",
-      "destination": "/sitemap.xml"
+      "destination": "/api/sitemap.xml"
+    },
+    {
+      "source": "/sitemap-main.xml",
+      "destination": "/api/sitemap-main.xml"
+    },
+    {
+      "source": "/sitemap-travel.xml",
+      "destination": "/api/sitemap-travel.xml"
+    },
+    {
+      "source": "/sitemap-food.xml",
+      "destination": "/api/sitemap-food.xml"
+    },
+    {
+      "source": "/sitemap-accommodation.xml",
+      "destination": "/api/sitemap-accommodation.xml"
+    },
+    {
+      "source": "/sitemap-leisure.xml",
+      "destination": "/api/sitemap-leisure.xml"
+    },
+    {
+      "source": "/sitemap-culture.xml",
+      "destination": "/api/sitemap-culture.xml"
+    },
+    {
+      "source": "/sitemap-shopping.xml",
+      "destination": "/api/sitemap-shopping.xml"
+    },
+    {
+      "source": "/sitemap-festival.xml",
+      "destination": "/api/sitemap-festival.xml"
     },
     {
       "source": "/rss.xml",

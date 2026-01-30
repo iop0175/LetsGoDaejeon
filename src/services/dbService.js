@@ -3530,6 +3530,144 @@ export const deleteSpotReview = async (reviewId, userId) => {
 }
 
 /**
+ * 좌표 기반 근처 음식점/카페 조회
+ * @param {number} lat - 위도 (mapy)
+ * @param {number} lng - 경도 (mapx)
+ * @param {string} excludeContentId - 제외할 contentId
+ * @param {string} foodType - 'restaurant' (일반 맛집) 또는 'cafe' (카페)
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, spots }
+ */
+export const getNearbyRestaurants = async (lat, lng, excludeContentId, foodType = 'restaurant', limit = 3) => {
+  try {
+    if (!lat || !lng) {
+      return { success: false, spots: [], message: '좌표 정보가 없습니다' }
+    }
+
+    // PostgreSQL에서 거리 계산을 위한 RPC 함수가 없으므로,
+    // 좌표 범위로 필터링 후 JS에서 거리 계산
+    const latRange = 0.015  // 약 1.5km 범위
+    const lngRange = 0.018
+    
+    let query = supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
+      .eq('content_type_id', '39')  // 음식점
+      .neq('content_id', excludeContentId)
+      .gte('mapy', lat - latRange)
+      .lte('mapy', lat + latRange)
+      .gte('mapx', lng - lngRange)
+      .lte('mapx', lng + lngRange)
+    
+    // 카페/디저트 필터
+    if (foodType === 'cafe') {
+      query = query.or('title.ilike.%카페%,title.ilike.%커피%,title.ilike.%디저트%,title.ilike.%베이커리%,title.ilike.%빵%')
+    } else {
+      // 일반 맛집 (카페/커피 제외)
+      query = query.not('title', 'ilike', '%카페%')
+      query = query.not('title', 'ilike', '%커피%')
+    }
+    
+    const { data, error } = await query.limit(20)  // 더 많이 가져온 후 거리순 정렬
+    
+    if (error) throw error
+    
+    // 거리 계산 및 정렬
+    const spotsWithDistance = (data || []).map(item => {
+      const distance = calculateDistance(lat, lng, parseFloat(item.mapy), parseFloat(item.mapx))
+      return {
+        contentId: item.content_id,
+        name: item.title,
+        imageUrl: item.firstimage || item.firstimage2,
+        address: item.addr1,
+        distance: distance,
+        distanceText: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`
+      }
+    })
+    
+    // 거리순 정렬 후 limit 적용
+    const sortedSpots = spotsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+    
+    return { success: true, spots: sortedSpots }
+  } catch (err) {
+    console.error('근처 맛집 조회 에러:', err)
+    return { success: false, spots: [], message: err.message }
+  }
+}
+
+/**
+ * 두 좌표 간 거리 계산 (Haversine 공식, km 단위)
+ */
+const calculateDistance = (lat1, lng1, lat2, lng2) => {
+  const R = 6371  // 지구 반경 (km)
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng/2) * Math.sin(dLng/2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  return R * c
+}
+
+/**
+ * 좌표 기반 근처 관광지 조회
+ * @param {number} lat - 위도 (mapy)
+ * @param {number} lng - 경도 (mapx)
+ * @param {string} excludeContentId - 제외할 contentId
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, spots }
+ */
+export const getNearbySpots = async (lat, lng, excludeContentId, limit = 4) => {
+  try {
+    if (!lat || !lng) {
+      return { success: false, spots: [], message: '좌표 정보가 없습니다' }
+    }
+
+    const latRange = 0.03  // 약 3km 범위
+    const lngRange = 0.036
+    
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy')
+      .in('content_type_id', ['12', '14', '15', '28'])  // 관광지, 문화시설, 축제, 레포츠
+      .neq('content_id', excludeContentId)
+      .not('firstimage', 'is', null)
+      .gte('mapy', lat - latRange)
+      .lte('mapy', lat + latRange)
+      .gte('mapx', lng - lngRange)
+      .lte('mapx', lng + lngRange)
+      .limit(20)
+    
+    if (error) throw error
+    
+    // 거리 계산 및 정렬
+    const spotsWithDistance = (data || []).map(item => {
+      const distance = calculateDistance(lat, lng, parseFloat(item.mapy), parseFloat(item.mapx))
+      return {
+        contentId: item.content_id,
+        name: item.title,
+        imageUrl: item.firstimage || item.firstimage2,
+        address: item.addr1,
+        distance: distance,
+        distanceText: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`
+      }
+    })
+    
+    const sortedSpots = spotsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+    
+    return { success: true, spots: sortedSpots }
+  } catch (err) {
+    console.error('근처 관광지 조회 에러:', err)
+    return { success: false, spots: [], message: err.message }
+  }
+}
+
+/**
  * 주변 관광지 조회 (같은 구 지역)
  * @param {string} address - 주소 (예: 대전광역시 유성구...)
  * @param {string} excludeContentId - 제외할 관광지 contentId

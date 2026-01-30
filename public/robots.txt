@@ -1,5 +1,5 @@
 # LetsGoDaejeon Robots.txt
-# https://www.letsgodaejeon.kr
+# https://letsgodaejeon.kr
 
 User-agent: *
 Allow: /
@@ -8,11 +8,11 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 
-# 사이트맵 위치
-Sitemap: https://www.letsgodaejeon.kr/sitemap.xml
+# 사이트맵 위치 (인덱스)
+Sitemap: https://letsgodaejeon.kr/sitemap.xml
 
 # RSS 피드
-RSS: https://www.letsgodaejeon.kr/rss.xml
+RSS: https://letsgodaejeon.kr/rss.xml
 
 # 크롤링 속도 제한 (1초당 1회 요청)
 Crawl-delay: 1

@@ -2325,3 +2325,88 @@
 .sdp__related-address svg {
   flex-shrink: 0;
 }
+
+/* 거리 표시 */
+.sdp__related-distance {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: #3498db;
+  margin: 4px 0 0 0;
+}
+
+.sdp--dark .sdp__related-distance {
+  color: #5dade2;
+}
+
+/* 근처 맛집/카페 섹션 */
+.sdp__nearby-food-section .sdp__section-header .sdp__section-icon {
+  font-size: 18px;
+  background: none;
+  width: auto;
+  height: auto;
+  display: inline;
+}
+
+.sdp__nearby-desc {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 20px 0;
+  line-height: 1.6;
+}
+
+.sdp--dark .sdp__nearby-desc {
+  color: #999;
+}
+
+.sdp__nearby-category {
+  margin-bottom: 24px;
+}
+
+.sdp__nearby-category:last-child {
+  margin-bottom: 0;
+}
+
+.sdp__nearby-category-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.sdp--dark .sdp__nearby-category-title {
+  color: #e0e0e0;
+}
+
+.sdp__food-grid {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+@media (max-width: 767px) {
+  .sdp__food-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .sdp__food-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sdp__food-card .sdp__related-image {
+  padding-top: 65%; /* 더 낮은 비율 */
+}
+
+.sdp__food-distance {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}

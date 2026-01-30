@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
-import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict } from '../services/dbService'
+import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots } from '../services/dbService'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
@@ -198,6 +198,11 @@ const SpotDetailPage = () => {
   // 주변 관광지 상태
   const [relatedSpots, setRelatedSpots] = useState([])
   const [relatedLoading, setRelatedLoading] = useState(false)
+  
+  // 근처 맛집/카페 상태 (관광지 전용)
+  const [nearbyRestaurants, setNearbyRestaurants] = useState([])
+  const [nearbyCafes, setNearbyCafes] = useState([])
+  const [nearbyLoading, setNearbyLoading] = useState(false)
   
   // 연관 여행코스 상태
   const [relatedTrips, setRelatedTrips] = useState([])
@@ -678,9 +683,17 @@ const SpotDetailPage = () => {
             setReviewPage(1)
           }
           
-          // 주변 관광지 로드
-          if (spotData.addr1) {
-            loadRelatedSpots(spotData.addr1, contentId)
+          // 관광지(12), 문화시설(14), 축제(15), 레포츠(28)인 경우 좌표 기반 조회
+          const isTouristSpot = ['12', '14', '15', '28'].includes(spotData.content_type_id)
+          
+          if (isTouristSpot && spotData.mapy && spotData.mapx) {
+            // 좌표 기반 주변 관광지 로드
+            loadRelatedSpots(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
+            // 근처 맛집/카페 로드
+            loadNearbyFood(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
+          } else if (spotData.addr1) {
+            // 주소 기반 주변 관광지 로드 (fallback)
+            loadRelatedSpotsByAddress(spotData.addr1, contentId)
           }
           
           // 연관 여행코스 로드
@@ -716,8 +729,22 @@ const SpotDetailPage = () => {
     setRelatedTripsLoading(false)
   }
   
-  // 주변 관광지 로드 함수
-  const loadRelatedSpots = async (address, excludeId) => {
+  // 좌표 기반 주변 관광지 로드 함수
+  const loadRelatedSpots = async (lat, lng, excludeId) => {
+    setRelatedLoading(true)
+    try {
+      const result = await getNearbySpots(lat, lng, excludeId, 4)
+      if (result.success) {
+        setRelatedSpots(result.spots)
+      }
+    } catch (err) {
+      console.error('주변 관광지 로드 실패:', err)
+    }
+    setRelatedLoading(false)
+  }
+  
+  // 주소 기반 주변 관광지 로드 함수 (fallback)
+  const loadRelatedSpotsByAddress = async (address, excludeId) => {
     setRelatedLoading(true)
     try {
       const result = await getSpotsByDistrict(address, excludeId, 4)
@@ -728,6 +755,28 @@ const SpotDetailPage = () => {
       console.error('주변 관광지 로드 실패:', err)
     }
     setRelatedLoading(false)
+  }
+  
+  // 근처 맛집/카페 로드 함수 (관광지 전용)
+  const loadNearbyFood = async (lat, lng, excludeId) => {
+    setNearbyLoading(true)
+    try {
+      // 맛집 3개, 카페 3개 동시 로드
+      const [restaurantResult, cafeResult] = await Promise.all([
+        getNearbyRestaurants(lat, lng, excludeId, 'restaurant', 3),
+        getNearbyRestaurants(lat, lng, excludeId, 'cafe', 3)
+      ])
+      
+      if (restaurantResult.success) {
+        setNearbyRestaurants(restaurantResult.spots)
+      }
+      if (cafeResult.success) {
+        setNearbyCafes(cafeResult.spots)
+      }
+    } catch (err) {
+      console.error('근처 맛집/카페 로드 실패:', err)
+    }
+    setNearbyLoading(false)
   }
   
   // 좋아요 상태 확인 (로그인 시)
@@ -1459,6 +1508,12 @@ const SpotDetailPage = () => {
                 {language === 'ko' ? `${spot?.title || '이 장소'} 근처 함께 가볼 만한 곳` : 'Attractions nearby'}
               </h2>
             </div>
+            <p className="sdp__nearby-desc">
+              {language === 'ko' 
+                ? `${spot?.title || '이 장소'} 인근에 ${relatedSpots.slice(0, 3).map(s => s.name).join(', ')} 등과 함께 둘러보기 좋은 관광지가 분포해 있다.`
+                : `Near ${spot?.title || 'this place'}, there are various attractions such as ${relatedSpots.slice(0, 3).map(s => s.name).join(', ')} that are great to visit together.`
+              }
+            </p>
             <div className="sdp__related-grid">
               {relatedSpots.map((related, idx) => (
                 <Link 
@@ -1482,10 +1537,108 @@ const SpotDetailPage = () => {
                         {related.address.split(' ').slice(1, 3).join(' ')}
                       </p>
                     )}
+                    {related.distanceText && (
+                      <p className="sdp__related-distance">
+                        <Icons.location size={10} />
+                        {related.distanceText}
+                      </p>
+                    )}
                   </div>
                 </Link>
               ))}
             </div>
+          </section>
+        )}
+
+        {/* 근처 맛집/카페 섹션 (관광지 전용) */}
+        {(nearbyRestaurants.length > 0 || nearbyCafes.length > 0) && (
+          <section className="sdp__section sdp__nearby-food-section">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.food size={18} /></span>
+              <h2 className="sdp__section-title">
+                {language === 'ko' ? '근처 맛집 & 카페' : 'Nearby Restaurants & Cafes'}
+              </h2>
+            </div>
+            <p className="sdp__nearby-desc">
+              {language === 'ko' 
+                ? `${spot?.title || '이 장소'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역을 중심으로 한 식사와 휴식이 가능한 맛집과 카페가 분포해 있어 함께 방문하기 좋다.`
+                : `Near ${spot?.title || 'this place'}, there are various restaurants and cafes in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area for meals and relaxation.`
+              }
+            </p>
+            
+            {/* 근처 맛집 */}
+            {nearbyRestaurants.length > 0 && (
+              <div className="sdp__nearby-category">
+                <h3 className="sdp__nearby-category-title">
+                  <Icons.food size={14} /> {language === 'ko' ? '맛집' : 'Restaurants'}
+                </h3>
+                <div className="sdp__related-grid sdp__food-grid">
+                  {nearbyRestaurants.map((restaurant, idx) => (
+                    <Link 
+                      key={restaurant.contentId || idx}
+                      href={`/spot/${generateSlug(restaurant.name, restaurant.contentId)}`}
+                      className="sdp__related-card sdp__food-card"
+                    >
+                      <div className="sdp__related-image">
+                        <img 
+                          src={getReliableImageUrl(restaurant.imageUrl)}
+                          alt={restaurant.name}
+                          onError={handleImageError}
+                          loading="lazy"
+                        />
+                        <span className="sdp__food-distance">{restaurant.distanceText}</span>
+                      </div>
+                      <div className="sdp__related-info">
+                        <h3 className="sdp__related-title">{restaurant.name}</h3>
+                        {restaurant.address && (
+                          <p className="sdp__related-address">
+                            <Icons.location size={12} />
+                            {restaurant.address.split(' ').slice(1, 3).join(' ')}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 근처 카페 */}
+            {nearbyCafes.length > 0 && (
+              <div className="sdp__nearby-category">
+                <h3 className="sdp__nearby-category-title">
+                  <Icons.cafe size={14} /> {language === 'ko' ? '카페' : 'Cafes'}
+                </h3>
+                <div className="sdp__related-grid sdp__food-grid">
+                  {nearbyCafes.map((cafe, idx) => (
+                    <Link 
+                      key={cafe.contentId || idx}
+                      href={`/spot/${generateSlug(cafe.name, cafe.contentId)}`}
+                      className="sdp__related-card sdp__food-card"
+                    >
+                      <div className="sdp__related-image">
+                        <img 
+                          src={getReliableImageUrl(cafe.imageUrl)}
+                          alt={cafe.name}
+                          onError={handleImageError}
+                          loading="lazy"
+                        />
+                        <span className="sdp__food-distance">{cafe.distanceText}</span>
+                      </div>
+                      <div className="sdp__related-info">
+                        <h3 className="sdp__related-title">{cafe.name}</h3>
+                        {cafe.address && (
+                          <p className="sdp__related-address">
+                            <Icons.location size={12} />
+                            {cafe.address.split(' ').slice(1, 3).join(' ')}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
 
