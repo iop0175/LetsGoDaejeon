@@ -1347,8 +1347,8 @@ const AdminPage = () => {
   const handleSyncTourData = useCallback(async (contentTypeId) => {
     const typeName = TOUR_CONTENT_TYPES[contentTypeId]?.name || contentTypeId
     const confirmMsg = language === 'ko'
-      ? `${typeName} 데이터를 API에서 가져와 DB에 저장하시겠습니까?\n(기존 ${typeName} 데이터는 삭제됩니다)`
-      : `Sync ${typeName} data from API to DB?\n(Existing ${typeName} data will be deleted)`
+      ? `${typeName} 데이터를 API에서 가져와 DB에 동기화하시겠습니까?\n(기존 상세정보는 보존됩니다)`
+      : `Sync ${typeName} data from API to DB?\n(Existing detail info will be preserved)`
     
     if (!window.confirm(confirmMsg)) return
     
@@ -1383,16 +1383,16 @@ const AdminPage = () => {
           }
         }
         
-        // 기존 데이터 삭제
-        await deleteAllTourFestivals()
+        // 스마트 동기화: 삭제 없이 upsert만 (기존 데이터 보존)
+        // await deleteAllTourFestivals() // 삭제하지 않음
         
-        // 새 데이터 저장
+        // 새 데이터 저장 (upsert)
         if (allItems.length > 0) {
           const saveResult = await saveTourFestivals(allItems)
           if (saveResult.success) {
             alert(language === 'ko'
-              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 저장되었습니다.`
-              : `${saveResult.savedCount} ${typeName} items saved.`)
+              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 동기화되었습니다.\n(기존 상세정보는 보존됨)`
+              : `${saveResult.savedCount} ${typeName} items synced.\n(Existing details preserved)`)
           } else {
             throw new Error(saveResult.error)
           }
@@ -1421,16 +1421,16 @@ const AdminPage = () => {
           }
         }
         
-        // 기존 데이터 삭제
-        await deleteTourSpots(contentTypeId)
+        // 스마트 동기화: 삭제 없이 upsert만 (기존 상세정보 보존)
+        // await deleteTourSpots(contentTypeId) // 삭제하지 않음
         
-        // 새 데이터 저장
+        // 새 데이터 저장 (upsert)
         if (allItems.length > 0) {
           const saveResult = await saveTourSpots(allItems)
           if (saveResult.success) {
             alert(language === 'ko'
-              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 저장되었습니다.`
-              : `${saveResult.savedCount} ${typeName} items saved.`)
+              ? `${saveResult.savedCount}개의 ${typeName} 데이터가 동기화되었습니다.\n(기존 상세정보는 보존됨)`
+              : `${saveResult.savedCount} ${typeName} items synced.\n(Existing details preserved)`)
           } else {
             throw new Error(saveResult.error)
           }
@@ -1476,8 +1476,8 @@ const AdminPage = () => {
   // 전체 TourAPI 데이터 동기화
   const handleSyncAllTourData = useCallback(async () => {
     const confirmMsg = language === 'ko'
-      ? '모든 TourAPI 데이터를 동기화하시겠습니까?\n(기존 데이터는 모두 삭제됩니다. 시간이 걸릴 수 있습니다.)'
-      : 'Sync all TourAPI data?\n(All existing data will be deleted. This may take a while.)'
+      ? '모든 TourAPI 데이터를 동기화하시겠습니까?\n(기존 상세정보는 보존됩니다. 시간이 걸릴 수 있습니다.)'
+      : 'Sync all TourAPI data?\n(Existing details will be preserved. This may take a while.)'
     
     if (!window.confirm(confirmMsg)) return
     
