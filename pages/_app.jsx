@@ -141,6 +141,15 @@ export default function App({ Component, pageProps }) {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="canonical" href={getCanonicalUrl()} />
         <meta name="robots" content="index, follow" />
+        {/* LCP 히어로 이미지 preload - fetchpriority=high */}
+        {router.pathname === '/' && (
+          <link
+            rel="preload"
+            as="image"
+            href="https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1920&h=1080&fit=crop"
+            fetchPriority="high"
+          />
+        )}
       </Head>
       <ThemeProvider>
         <LanguageProvider>
