@@ -1713,7 +1713,7 @@ const SpotDetailPage = () => {
         {(nearbyAccommodations.length > 0 || nearbyShopping.length > 0) && (
           <section className="sdp__section sdp__nearby-food-section">
             <div className="sdp__section-header">
-              <span className="sdp__section-icon"><Icons.shopping size={18} /></span>
+              <span className="sdp__section-icon"><Icons.card size={18} /></span>
               <h2 className="sdp__section-title">
                 {language === 'ko' ? '주변 숙박 & 쇼핑' : 'Nearby Accommodations & Shopping'}
               </h2>
@@ -1729,7 +1729,7 @@ const SpotDetailPage = () => {
             {nearbyAccommodations.length > 0 && (
               <div className="sdp__nearby-category">
                 <h3 className="sdp__nearby-category-title">
-                  <Icons.hotel size={14} /> {language === 'ko' ? '숙박' : 'Accommodations'}
+                  <Icons.home size={14} /> {language === 'ko' ? '숙박' : 'Accommodations'}
                 </h3>
                 <div className="sdp__related-grid sdp__food-grid">
                   {nearbyAccommodations.map((accommodation, idx) => (
@@ -1770,7 +1770,7 @@ const SpotDetailPage = () => {
             {nearbyShopping.length > 0 && (
               <div className="sdp__nearby-category">
                 <h3 className="sdp__nearby-category-title">
-                  <Icons.shopping size={14} /> {language === 'ko' ? '쇼핑' : 'Shopping'}
+                  <Icons.card size={14} /> {language === 'ko' ? '쇼핑' : 'Shopping'}
                 </h3>
                 <div className="sdp__related-grid sdp__food-grid">
                   {nearbyShopping.map((shop, idx) => (
