@@ -26,14 +26,7 @@ export default function Document() {
       <body>
         <Main />
         <NextScript />
-        
-        {/* 카카오 JavaScript SDK (공유 기능용) - defer로 렌더링 차단 방지 */}
-        <script 
-          defer
-          src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
-          integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
-          crossOrigin="anonymous"
-        />
+        {/* Kakao SDK는 _app.jsx에서 next/script로 최적화 로딩 */}
       </body>
     </Html>
   )
