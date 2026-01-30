@@ -137,9 +137,10 @@ const HeroSection = memo(({ initialSlides = [] }) => {
               alt={getLocalizedText(slide, 'subtitle')}
               fill
               priority={index === 0}
+              fetchPriority={index === 0 ? 'high' : 'auto'}
               sizes="100vw"
               style={{ objectFit: 'cover' }}
-              quality={85}
+              quality={75}
             />
             <div className="hero-overlay" />
             <div className="hero-content">
