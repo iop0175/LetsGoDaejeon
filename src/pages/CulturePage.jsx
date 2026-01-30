@@ -314,6 +314,7 @@ const CulturePage = () => {
                     alt={language === 'en' && facility.fcltyNm_en ? facility.fcltyNm_en : facility.fcltyNm} 
                     width={350}
                     height={200}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"
                     style={{ objectFit: 'cover' }}
                     loading={index < 6 ? 'eager' : 'lazy'}
                   />

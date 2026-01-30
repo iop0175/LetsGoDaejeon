@@ -382,6 +382,7 @@ const TravelPage = () => {
                         alt={language === 'en' && spot.title_en ? spot.title_en : spot.title}
                         width={394}
                         height={263}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 394px"
                         loading="lazy"
                         style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                       />

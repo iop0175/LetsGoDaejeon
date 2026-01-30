@@ -264,6 +264,7 @@ const LeisurePage = () => {
                         alt={language === 'en' && spot.title_en ? spot.title_en : spot.title} 
                         width={350}
                         height={200}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"
                         style={{ objectFit: 'cover' }}
                         loading={index < 6 ? 'eager' : 'lazy'}
                       />

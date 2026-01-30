@@ -330,6 +330,7 @@ const AccommodationPage = () => {
                     alt={language === 'en' && room.romsNm_en ? room.romsNm_en : room.romsNm} 
                     width={350}
                     height={200}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"
                     style={{ objectFit: 'cover' }}
                     loading={index < 6 ? 'eager' : 'lazy'}
                   />

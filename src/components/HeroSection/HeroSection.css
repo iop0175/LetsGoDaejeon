@@ -3,6 +3,7 @@
   height: 100vh;
   min-height: 600px;
   max-height: 900px;
+  overflow: hidden;
 }
 
 .hero.hero-loading {
@@ -25,19 +26,27 @@
   to { transform: rotate(360deg); }
 }
 
-.hero-swiper {
+/* CSS-only 슬라이더 */
+.hero-slider {
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
 .hero-slide {
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  position: relative;
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
   display: flex;
   align-items: center;
+}
+
+.hero-slide.active {
+  opacity: 1;
+  visibility: visible;
+  z-index: 1;
 }
 
 .hero-overlay {
@@ -49,6 +58,7 @@
     rgba(0, 0, 0, 0.4) 50%,
     rgba(0, 0, 0, 0.2) 100%
   );
+  z-index: 1;
 }
 
 .hero-content {
@@ -117,19 +127,66 @@
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 }
 
-/* Swiper 페이지네이션 커스텀 */
-.hero .swiper-pagination {
-  bottom: 40px !important;
+/* 네비게이션 버튼 */
+.hero-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  width: 48px;
+  height: 48px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 1.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s, transform 0.3s;
 }
 
-.hero .swiper-pagination-bullet {
+.hero-nav:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-50%) scale(1.1);
+}
+
+.hero-nav-prev {
+  left: 20px;
+}
+
+.hero-nav-next {
+  right: 20px;
+}
+
+/* 페이지네이션 */
+.hero-pagination {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  display: flex;
+  gap: 8px;
+}
+
+.hero-dot {
   width: 12px;
   height: 12px;
   background: rgba(255, 255, 255, 0.5);
-  opacity: 1;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
-.hero .swiper-pagination-bullet-active {
+.hero-dot:hover {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.hero-dot.active {
   background: white;
   width: 36px;
   border-radius: 6px;
@@ -163,10 +220,28 @@
   .hero-btn {
     padding: 14px 24px;
   }
+
+  .hero-nav {
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+  }
+
+  .hero-nav-prev {
+    left: 10px;
+  }
+
+  .hero-nav-next {
+    right: 10px;
+  }
 }
 
 @media (max-width: 480px) {
   .hero-title {
     font-size: 1.75rem;
+  }
+
+  .hero-nav {
+    display: none;
   }
 }
