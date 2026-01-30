@@ -1,13 +1,13 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import HeroSection from '../src/components/HeroSection/HeroSection'
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
-const HeroSection = dynamic(() => import('../src/components/HeroSection/HeroSection'), { ssr: false })
-const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: false })
-const PopularSpots = dynamic(() => import('../src/components/PopularSpots/PopularSpots'), { ssr: false })
-const FestivalSection = dynamic(() => import('../src/components/FestivalSection/FestivalSection'), { ssr: false })
-const FoodSection = dynamic(() => import('../src/components/FoodSection/FoodSection'), { ssr: false })
-const TravelCourse = dynamic(() => import('../src/components/TravelCourse/TravelCourse'), { ssr: false })
+const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: true })
+const PopularSpots = dynamic(() => import('../src/components/PopularSpots/PopularSpots'), { ssr: true })
+const FestivalSection = dynamic(() => import('../src/components/FestivalSection/FestivalSection'), { ssr: true })
+const FoodSection = dynamic(() => import('../src/components/FoodSection/FoodSection'), { ssr: true })
+const TravelCourse = dynamic(() => import('../src/components/TravelCourse/TravelCourse'), { ssr: true })
 const WeatherWidget = dynamic(() => import('../src/components/WeatherWidget/WeatherWidget'), { ssr: false })
 const KakaoChannelButton = dynamic(() => import('../src/components/KakaoChannelButton/KakaoChannelButton'), { ssr: false })
 
