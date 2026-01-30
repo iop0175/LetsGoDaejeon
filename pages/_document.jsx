@@ -14,6 +14,19 @@ export default function Document() {
         {/* 네이버 사이트 소유 확인 */}
         <meta name="naver-site-verification" content="3dae5e0fb04d30964913bdedff8cea8116f3c850" />
         
+        {/* Google Analytics */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-610JNHR72K" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-610JNHR72K');
+            `,
+          }}
+        />
+        
         {/* 폰트 */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
