@@ -3,6 +3,7 @@
  * 
  * n8n 워크플로우에서 생성된 AI description과 FAQ를 
  * Supabase tour_spots.intro_info에 자동 저장합니다.
+ * 저장 성공 시 IndexNow에 자동 제출합니다.
  * 
  * 사용법:
  *   node scripts/aiDescSaveServer.mjs
@@ -19,6 +20,10 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = 'https://geczvsuzwpvdxiwbxqtf.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdlY3p2c3V6d3B2ZHhpd2J4cXRmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg3OTUzMTksImV4cCI6MjA4NDM3MTMxOX0.rQXwLuP2IvoHQ7UM6Ftats0qaqIYyYG054op9c3KwMQ';
 
+// IndexNow 설정
+const INDEXNOW_KEY = '6d0d01a5802bbad93fbd878628659588';
+const SITE_URL = 'https://letsgodaejeon.kr';
+
 const PORT = 4444;
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -33,10 +38,44 @@ const log = (type, ...args) => {
     info: '📋',
     success: '✅',
     error: '❌',
-    data: '📝'
+    data: '📝',
+    indexnow: '🔔'
   }[type] || '•';
   console.log(`[${timestamp}] ${prefix}`, ...args);
 };
+
+// IndexNow에 URL 제출
+async function submitToIndexNow(title, contentid) {
+  try {
+    const slug = encodeURIComponent(`${title}-${contentid}`);
+    const url = `${SITE_URL}/spot/${slug}`;
+    
+    const response = await fetch('https://api.indexnow.org/indexnow', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
+        host: 'letsgodaejeon.kr',
+        key: INDEXNOW_KEY,
+        keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
+        urlList: [url],
+      }),
+    });
+    
+    const status = response.status;
+    if (status === 200 || status === 202) {
+      log('indexnow', `IndexNow 제출 완료: ${title} (${status})`);
+      return true;
+    } else {
+      log('error', `IndexNow 제출 실패: ${title} (${status})`);
+      return false;
+    }
+  } catch (err) {
+    log('error', `IndexNow 오류: ${err.message}`);
+    return false;
+  }
+}
 
 // Supabase에 저장
 async function saveToSupabase(contentid) {
@@ -72,9 +111,15 @@ async function saveToSupabase(contentid) {
 
     if (updateError) throw updateError;
 
-    log('success', `저장 완료: ${existing?.title || contentid}`);
+    const spotTitle = existing?.title || contentid;
+    log('success', `저장 완료: ${spotTitle}`);
     log('data', `  ai_description: ${newIntro.ai_description?.substring(0, 50)}...`);
     log('data', `  faq: ${typeof newIntro.faq === 'string' ? newIntro.faq.substring(0, 50) : JSON.stringify(newIntro.faq).substring(0, 50)}...`);
+
+    // IndexNow에 URL 제출 (저장 성공 시)
+    if (existing?.title) {
+      await submitToIndexNow(existing.title, contentid);
+    }
 
     delete pendingData[contentid];
   } catch (err) {
@@ -167,18 +212,19 @@ const server = http.createServer((req, res) => {
 
 server.listen(PORT, '0.0.0.0', () => {
   console.log('');
-  console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║     🤖 AI Description 저장 서버 (n8n → Supabase)  ║');
-  console.log('╠══════════════════════════════════════════════════╣');
-  console.log(`║  URL: http://0.0.0.0:${PORT}                         ║`);
-  console.log('║                                                  ║');
-  console.log('║  n8n에서 사용:                                   ║');
-  console.log(`║  • POST http://host.docker.internal:${PORT}/data     ║`);
-  console.log(`║  • POST http://host.docker.internal:${PORT}/faq      ║`);
-  console.log('║  • 쿼리스트링: ?contentid=XXX                    ║');
-  console.log('║                                                  ║');
-  console.log('║  상태 확인: GET /status                          ║');
-  console.log('╚══════════════════════════════════════════════════╝');
+  console.log('╔══════════════════════════════════════════════════════╗');
+  console.log('║  🤖 AI Description 저장 서버 + IndexNow 자동 제출     ║');
+  console.log('╠══════════════════════════════════════════════════════╣');
+  console.log(`║  URL: http://0.0.0.0:${PORT}                             ║`);
+  console.log('║                                                      ║');
+  console.log('║  n8n에서 사용:                                       ║');
+  console.log(`║  • POST http://host.docker.internal:${PORT}/data         ║`);
+  console.log(`║  • POST http://host.docker.internal:${PORT}/faq          ║`);
+  console.log('║  • 쿼리스트링: ?contentid=XXX                        ║');
+  console.log('║                                                      ║');
+  console.log('║  🔔 저장 성공 시 IndexNow 자동 제출                  ║');
+  console.log('║  상태 확인: GET /status                              ║');
+  console.log('╚══════════════════════════════════════════════════════╝');
   console.log('');
 });
 
