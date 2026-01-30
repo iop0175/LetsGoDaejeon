@@ -1956,7 +1956,7 @@ export const getOrphanedTourSpots = async (contentTypeId, apiContentIds) => {
       .from('tour_spots')
       .select('id, content_id, title, ai_description, overview')
       .eq('content_type_id', contentTypeId)
-      .order('title')
+      .order('title', { ascending: true })
     
     if (error) throw error
     
