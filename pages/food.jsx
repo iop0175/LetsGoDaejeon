@@ -31,14 +31,14 @@ export default function FoodPage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://letsgodaejeon.kr/food" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/food" />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://letsgodaejeon.kr/food" />
+        <meta property="og:url" content="https://www.letsgodaejeon.kr/food" />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -56,7 +56,7 @@ export default function FoodPage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 맛집 목록",
               "description": SEO.ko.description,
-              "url": "https://letsgodaejeon.kr/food",
+              "url": "https://www.letsgodaejeon.kr/food",
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",

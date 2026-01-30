@@ -171,14 +171,14 @@ export default function TravelPage({ initialSpots, totalCount }) {
         <title>{seoData.title}</title>
         <meta name="description" content={seoData.description} />
         <meta name="keywords" content={seoData.keywords} />
-        <link rel="canonical" href="https://letsgodaejeon.kr/travel" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/travel" />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://letsgodaejeon.kr/travel" />
+        <meta property="og:url" content="https://www.letsgodaejeon.kr/travel" />
         <meta property="og:title" content={seoData.title} />
         <meta property="og:description" content={seoData.description} />
-        <meta property="og:image" content="https://letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
         <meta property="og:locale" content={language === 'ko' ? 'ko_KR' : 'en_US'} />
         
         {/* Twitter Card */}

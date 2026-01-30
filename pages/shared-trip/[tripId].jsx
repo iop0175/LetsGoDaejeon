@@ -23,7 +23,7 @@ export default function SharedTripPage({ tripData }) {
         <meta property="og:type" content="article" />
         <meta property="og:title" content={tripName} />
         <meta property="og:description" content={tripDescription} />
-        <meta property="og:image" content="https://letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
         <meta property="og:site_name" content="대전으로" />
         
         {/* Schema.org 구조화 데이터 */}

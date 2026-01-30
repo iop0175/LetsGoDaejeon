@@ -29,7 +29,7 @@ export default function MyTripPage() {
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
         <meta name="robots" content="noindex" /> {/* 로그인 필요 페이지는 인덱싱 제외 */}
-        <link rel="canonical" href="https://letsgodaejeon.kr/my-trip" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/my-trip" />
       </Head>
 
       <MyTripPageContent />

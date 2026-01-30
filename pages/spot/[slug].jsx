@@ -242,7 +242,7 @@ export async function getStaticProps({ params }) {
       description: seoDescription,
       keywords: `${spotData.title}, 대전 ${spotData.title}, 대전 관광지, 대전 여행, ${spotData.addr1?.split(' ').slice(0, 2).join(' ')}`,
       image: getReliableImageUrl(spotData.firstimage || spotData.firstimage2),
-      canonicalUrl: `https://letsgodaejeon.kr/spot/${spotSlug}`,
+      canonicalUrl: `https://www.letsgodaejeon.kr/spot/${spotSlug}`,
       address: spotData.addr1,
       city: city,
       district: district,

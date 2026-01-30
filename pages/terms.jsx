@@ -13,7 +13,7 @@ export default function TermsPage() {
       <Head>
         <title>이용약관 | 대전으로</title>
         <meta name="description" content="대전으로 서비스 이용약관" />
-        <link rel="canonical" href="https://letsgodaejeon.kr/terms" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/terms" />
       </Head>
 
       <TermsPageContent />

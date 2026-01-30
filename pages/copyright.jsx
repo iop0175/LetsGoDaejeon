@@ -13,7 +13,7 @@ export default function CopyrightPage() {
       <Head>
         <title>저작권 정보 | 대전으로</title>
         <meta name="description" content="대전으로 서비스 저작권 및 라이선스 정보" />
-        <link rel="canonical" href="https://letsgodaejeon.kr/copyright" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/copyright" />
       </Head>
 
       <CopyrightPageContent />

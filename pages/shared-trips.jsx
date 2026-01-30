@@ -29,14 +29,14 @@ export default function SharedTripsPage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://letsgodaejeon.kr/shared-trips" />
+        <link rel="canonical" href="https://www.letsgodaejeon.kr/shared-trips" />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://letsgodaejeon.kr/shared-trips" />
+        <meta property="og:url" content="https://www.letsgodaejeon.kr/shared-trips" />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +54,7 @@ export default function SharedTripsPage({ initialData }) {
               "@type": "ItemList",
               "name": "공유된 대전 여행 코스",
               "description": SEO.ko.description,
-              "url": "https://letsgodaejeon.kr/shared-trips",
+              "url": "https://www.letsgodaejeon.kr/shared-trips",
               "numberOfItems": initialData?.length || 0
             })
           }}
