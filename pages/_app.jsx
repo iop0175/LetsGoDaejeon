@@ -3,9 +3,19 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { Noto_Sans_KR } from 'next/font/google'
 import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
+
+// Next.js Font 최적화 - 빌드 시 자동 인라인, FOUT/CLS 최소화
+const notoSansKR = Noto_Sans_KR({
+  weight: ['300', '400', '500', '600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+  variable: '--font-noto-sans-kr',
+})
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
 const Header = dynamic(() => import('../src/components/Header/Header'), { ssr: false })
@@ -107,7 +117,7 @@ export default function App({ Component, pageProps }) {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <div className="app">
+            <div className={`app ${notoSansKR.variable}`} style={{ fontFamily: 'var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif' }}>
               <SpeedInsights />
               {!isAdminPage && <Header />}
               <main className="main-content">

@@ -27,24 +27,20 @@ export default function Document() {
           }}
         />
         
-        {/* 폰트 */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link 
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap" 
-          rel="stylesheet" 
-        />
+        {/* 폰트는 next/font/google에서 자동 최적화됨 (_app.jsx) */}
         
         {/* 카카오맵 SDK preconnect */}
         <link rel="preconnect" href="https://dapi.kakao.com" />
         <link rel="preconnect" href="https://t1.daumcdn.net" />
+        <link rel="preconnect" href="https://t1.kakaocdn.net" />
       </Head>
       <body>
         <Main />
         <NextScript />
         
-        {/* 카카오 JavaScript SDK (공유 기능용) */}
+        {/* 카카오 JavaScript SDK (공유 기능용) - defer로 렌더링 차단 방지 */}
         <script 
+          defer
           src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js" 
           integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4" 
           crossOrigin="anonymous"
