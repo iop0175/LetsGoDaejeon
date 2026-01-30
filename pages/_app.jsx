@@ -21,9 +21,10 @@ const notoSansKR = Noto_Sans_KR({
   variable: '--font-noto-sans-kr',
 })
 
-// SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
+// Header는 클라이언트 전용 (인터랙션 필요)
 const Header = dynamic(() => import('../src/components/Header/Header'), { ssr: false })
-const Footer = dynamic(() => import('../src/components/Footer/Footer'), { ssr: false })
+// Footer는 SSR 활성화 (CLS 방지)
+import Footer from '../src/components/Footer/Footer'
 
 // 전역 CSS (Next.js에서는 _app에서만 import 가능)
 import '../src/styles/index.css'
