@@ -1,6 +1,6 @@
 /* 프로필 페이지 */
 .profile-page {
-  min-height: calc(100vh - 80px);
+  min-height: 200vh; /* CLS 방지 */
   padding: 2rem;
   background: #f8fafc;
 }

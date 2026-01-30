@@ -3,7 +3,7 @@
   margin: 0 auto;
   padding: 2rem;
   padding-top: calc(72px + 2rem);
-  min-height: calc(100vh - 200px);
+  min-height: 200vh; /* CLS 방지 */
 }
 
 .shared-trips-header {
@@ -128,7 +128,7 @@
 }
 
 .trip-card-image {
-  height: 160px;
+  aspect-ratio: 16 / 10; /* CLS 방지 */
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   position: relative;
   display: flex;

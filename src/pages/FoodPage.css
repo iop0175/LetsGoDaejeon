@@ -1,5 +1,6 @@
 .food-page {
   padding-top: 72px;
+  min-height: 200vh; /* CLS 방지 */
 }
 
 .food-hero {
@@ -209,8 +210,16 @@
 .food-image-wrapper {
   position: relative;
   width: 240px;
-  min-height: 280px;
+  aspect-ratio: 6 / 7; /* CLS 방지 */
   flex-shrink: 0;
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: food-skeleton 1.5s infinite;
+}
+
+@keyframes food-skeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 .food-image-wrapper img {
