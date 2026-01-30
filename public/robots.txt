@@ -21,4 +21,4 @@ RSS: https://letsgodaejeon.kr/rss.xml
 Crawl-delay: 1
 
 # Daum Webmaster Tool 인증
-#DaumWebMasterTool:e66fe74826630c332a8de14dc485134948af33efaa8d313188ea40d21acb6505:CJO2ccdSNYzrWJRcwAAiCg==
+#DaumWebMasterTool:af12b3f0aa5653eac4b0fbce6e87ec11bd51097f9680b0193bf0c7efff158540:CJO2ccdSNYzrWJRcwAAiCg==
