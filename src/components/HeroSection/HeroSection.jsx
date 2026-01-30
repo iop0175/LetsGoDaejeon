@@ -27,7 +27,7 @@ const HeroSection = memo(() => {
       subtitle_en: t.hero.slide1.subtitle,
       description_ko: t.hero.slide1.description,
       description_en: t.hero.slide1.description,
-      imageUrl: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?w=1920&h=1080&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1522383225653-ed111181a951',
       link: '/travel'
     },
     {
@@ -38,7 +38,7 @@ const HeroSection = memo(() => {
       subtitle_en: t.hero.slide2.subtitle,
       description_ko: t.hero.slide2.description,
       description_en: t.hero.slide2.description,
-      imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=1920&h=1080&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1451187580459-43490279c0fa',
       link: '/travel'
     },
     {
@@ -49,7 +49,7 @@ const HeroSection = memo(() => {
       subtitle_en: t.hero.slide3.subtitle,
       description_ko: t.hero.slide3.description,
       description_en: t.hero.slide3.description,
-      imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1920&h=1080&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
       link: '/food'
     }
   ], [t])
