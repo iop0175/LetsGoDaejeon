@@ -28,7 +28,7 @@ const HeroSection = memo(({ initialSlides = [] }) => {
       subtitle_en: t.hero.slide1.subtitle,
       description_ko: t.hero.slide1.description,
       description_en: t.hero.slide1.description,
-      imageUrl: '/images/hero/hero-1.jpg',
+      imageUrl: '/images/hero/hero-1.webp',
       link: '/travel'
     },
     {
@@ -39,7 +39,7 @@ const HeroSection = memo(({ initialSlides = [] }) => {
       subtitle_en: t.hero.slide2.subtitle,
       description_ko: t.hero.slide2.description,
       description_en: t.hero.slide2.description,
-      imageUrl: '/images/hero/hero-2.jpg',
+      imageUrl: '/images/hero/hero-2.webp',
       link: '/travel'
     },
     {
@@ -50,7 +50,7 @@ const HeroSection = memo(({ initialSlides = [] }) => {
       subtitle_en: t.hero.slide3.subtitle,
       description_ko: t.hero.slide3.description,
       description_en: t.hero.slide3.description,
-      imageUrl: '/images/hero/hero-3.jpg',
+      imageUrl: '/images/hero/hero-3.webp',
       link: '/food'
     }
   ], [t])

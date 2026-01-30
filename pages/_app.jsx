@@ -146,8 +146,9 @@ export default function App({ Component, pageProps }) {
           <link
             rel="preload"
             as="image"
-            href="/images/hero/hero-1.jpg"
+            href="/images/hero/hero-1.webp"
             fetchPriority="high"
+            type="image/webp"
           />
         )}
       </Head>
