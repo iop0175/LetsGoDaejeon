@@ -146,7 +146,7 @@ export default function App({ Component, pageProps }) {
           <link
             rel="preload"
             as="image"
-            href="/_next/image?url=https%3A%2F%2Fimages.unsplash.com%2Fphoto-1522383225653-ed111181a951&w=1920&q=85"
+            href="/images/hero/hero-1.jpg"
             fetchPriority="high"
           />
         )}
