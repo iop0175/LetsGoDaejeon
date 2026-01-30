@@ -1368,7 +1368,15 @@ const SpotDetailPage = () => {
                 <div key={index} className="sdp__room-card">
                   {room.roomimg1 && (
                     <div className="sdp__room-image">
-                      <img src={room.roomimg1} alt={room.roomtitle || `Room ${index + 1}`} loading="lazy" />
+                      <Image 
+                        src={room.roomimg1} 
+                        alt={room.roomtitle || `Room ${index + 1}`} 
+                        width={300}
+                        height={200}
+                        sizes="(max-width: 768px) 100vw, 300px"
+                        loading="lazy"
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                      />
                     </div>
                   )}
                   <div className="sdp__room-info">
@@ -1461,10 +1469,14 @@ const SpotDetailPage = () => {
                 >
                   <div className="sdp__trip-thumbnail">
                     {trip.thumbnailUrl ? (
-                      <img 
+                      <Image 
                         src={trip.thumbnailUrl} 
                         alt={trip.title}
+                        width={160}
+                        height={90}
+                        sizes="160px"
                         loading="lazy"
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         onError={handleImageError}
                       />
                     ) : (
@@ -1530,9 +1542,13 @@ const SpotDetailPage = () => {
                   className="sdp__related-card"
                 >
                   <div className="sdp__related-image">
-                    <img 
+                    <Image 
                       src={getReliableImageUrl(related.imageUrl)}
                       alt={related.name}
+                      width={350}
+                      height={200}
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 350px"
+                      style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                       onError={handleImageError}
                       loading="lazy"
                     />
@@ -1588,9 +1604,13 @@ const SpotDetailPage = () => {
                       className="sdp__related-card sdp__food-card"
                     >
                       <div className="sdp__related-image">
-                        <img 
+                        <Image 
                           src={getReliableImageUrl(restaurant.imageUrl)}
                           alt={restaurant.name}
+                          width={200}
+                          height={120}
+                          sizes="(max-width: 640px) 50vw, 200px"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           onError={handleImageError}
                           loading="lazy"
                         />
@@ -1625,9 +1645,13 @@ const SpotDetailPage = () => {
                       className="sdp__related-card sdp__food-card"
                     >
                       <div className="sdp__related-image">
-                        <img 
+                        <Image 
                           src={getReliableImageUrl(cafe.imageUrl)}
                           alt={cafe.name}
+                          width={200}
+                          height={120}
+                          sizes="(max-width: 640px) 50vw, 200px"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                           onError={handleImageError}
                           loading="lazy"
                         />
@@ -1796,9 +1820,11 @@ const SpotDetailPage = () => {
                     <div className="sdp__review-header">
                       <div className="sdp__review-author">
                         {review.profiles?.avatar_url ? (
-                          <img 
+                          <Image 
                             src={toSecureUrl(review.profiles.avatar_url)} 
                             alt="" 
+                            width={32}
+                            height={32}
                             className="sdp__review-avatar"
                             loading="lazy"
                           />
@@ -1984,9 +2010,12 @@ const SpotDetailPage = () => {
             
             <div className="sdp__trip-modal-body">
               <div className="sdp__trip-preview">
-                <img 
+                <Image 
                   src={getReliableImageUrl(spot.firstimage, '/images/no-image.svg')}
                   alt={spot.title}
+                  width={60}
+                  height={60}
+                  style={{ objectFit: 'cover' }}
                   onError={handleImageError}
                 />
                 <div>
