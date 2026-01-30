@@ -6,7 +6,7 @@ import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
-import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots } from '../services/dbService'
+import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots, getNearbyAccommodations, getNearbyShopping } from '../services/dbService'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
@@ -204,6 +204,11 @@ const SpotDetailPage = () => {
   const [nearbyRestaurants, setNearbyRestaurants] = useState([])
   const [nearbyCafes, setNearbyCafes] = useState([])
   const [nearbyLoading, setNearbyLoading] = useState(false)
+  
+  // 근처 숙박/쇼핑 상태 (맛집 전용)
+  const [nearbyAccommodations, setNearbyAccommodations] = useState([])
+  const [nearbyShopping, setNearbyShopping] = useState([])
+  const [nearbyPlacesLoading, setNearbyPlacesLoading] = useState(false)
   
   // 연관 여행코스 상태
   const [relatedTrips, setRelatedTrips] = useState([])
@@ -686,12 +691,17 @@ const SpotDetailPage = () => {
           
           // 관광지(12), 문화시설(14), 축제(15), 레포츠(28)인 경우 좌표 기반 조회
           const isTouristSpot = ['12', '14', '15', '28'].includes(spotData.content_type_id)
+          // 맛집(39)인 경우
+          const isRestaurant = spotData.content_type_id === '39'
           
           if (isTouristSpot && spotData.mapy && spotData.mapx) {
             // 좌표 기반 주변 관광지 로드
             loadRelatedSpots(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
             // 근처 맛집/카페 로드
             loadNearbyFood(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
+          } else if (isRestaurant && spotData.mapy && spotData.mapx) {
+            // 맛집: 주변 숙박/쇼핑 로드
+            loadNearbyPlaces(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
           } else if (spotData.addr1) {
             // 주소 기반 주변 관광지 로드 (fallback)
             loadRelatedSpotsByAddress(spotData.addr1, contentId)
@@ -778,6 +788,28 @@ const SpotDetailPage = () => {
       console.error('근처 맛집/카페 로드 실패:', err)
     }
     setNearbyLoading(false)
+  }
+  
+  // 근처 숙박/쇼핑 로드 함수 (맛집 전용)
+  const loadNearbyPlaces = async (lat, lng, excludeId) => {
+    setNearbyPlacesLoading(true)
+    try {
+      // 숙박 3개, 쇼핑 3개 동시 로드
+      const [accommodationResult, shoppingResult] = await Promise.all([
+        getNearbyAccommodations(lat, lng, excludeId, 3),
+        getNearbyShopping(lat, lng, excludeId, 3)
+      ])
+      
+      if (accommodationResult.success) {
+        setNearbyAccommodations(accommodationResult.spots)
+      }
+      if (shoppingResult.success) {
+        setNearbyShopping(shoppingResult.spots)
+      }
+    } catch (err) {
+      console.error('근처 숙박/쇼핑 로드 실패:', err)
+    }
+    setNearbyPlacesLoading(false)
   }
   
   // 좋아요 상태 확인 (로그인 시)
@@ -1666,6 +1698,106 @@ const SpotDetailPage = () => {
                           <p className="sdp__related-address">
                             <Icons.location size={12} />
                             {cafe.address.split(' ').slice(1, 3).join(' ')}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* 근처 숙박/쇼핑 섹션 (맛집 전용) */}
+        {(nearbyAccommodations.length > 0 || nearbyShopping.length > 0) && (
+          <section className="sdp__section sdp__nearby-food-section">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.shopping size={18} /></span>
+              <h2 className="sdp__section-title">
+                {language === 'ko' ? '주변 숙박 & 쇼핑' : 'Nearby Accommodations & Shopping'}
+              </h2>
+            </div>
+            <p className="sdp__nearby-desc">
+              {language === 'ko' 
+                ? `${spot?.title || '이 맛집'} 주변에서 편리하게 숙박하고 쇼핑도 즐길 수 있습니다.`
+                : `You can conveniently stay and shop around ${spot?.title || 'this restaurant'}.`
+              }
+            </p>
+            
+            {/* 근처 숙박 */}
+            {nearbyAccommodations.length > 0 && (
+              <div className="sdp__nearby-category">
+                <h3 className="sdp__nearby-category-title">
+                  <Icons.hotel size={14} /> {language === 'ko' ? '숙박' : 'Accommodations'}
+                </h3>
+                <div className="sdp__related-grid sdp__food-grid">
+                  {nearbyAccommodations.map((accommodation, idx) => (
+                    <Link 
+                      key={accommodation.contentId || idx}
+                      href={`/spot/${generateSlug(accommodation.name, accommodation.contentId)}`}
+                      className="sdp__related-card sdp__food-card"
+                    >
+                      <div className="sdp__related-image">
+                        <Image 
+                          src={getReliableImageUrl(accommodation.imageUrl)}
+                          alt={accommodation.name}
+                          width={200}
+                          height={120}
+                          sizes="(max-width: 640px) 50vw, 200px"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          onError={handleImageError}
+                          loading="lazy"
+                        />
+                        <span className="sdp__food-distance">{accommodation.distanceText}</span>
+                      </div>
+                      <div className="sdp__related-info">
+                        <h3 className="sdp__related-title">{accommodation.name}</h3>
+                        {accommodation.address && (
+                          <p className="sdp__related-address">
+                            <Icons.location size={12} />
+                            {accommodation.address.split(' ').slice(1, 3).join(' ')}
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            {/* 근처 쇼핑 */}
+            {nearbyShopping.length > 0 && (
+              <div className="sdp__nearby-category">
+                <h3 className="sdp__nearby-category-title">
+                  <Icons.shopping size={14} /> {language === 'ko' ? '쇼핑' : 'Shopping'}
+                </h3>
+                <div className="sdp__related-grid sdp__food-grid">
+                  {nearbyShopping.map((shop, idx) => (
+                    <Link 
+                      key={shop.contentId || idx}
+                      href={`/spot/${generateSlug(shop.name, shop.contentId)}`}
+                      className="sdp__related-card sdp__food-card"
+                    >
+                      <div className="sdp__related-image">
+                        <Image 
+                          src={getReliableImageUrl(shop.imageUrl)}
+                          alt={shop.name}
+                          width={200}
+                          height={120}
+                          sizes="(max-width: 640px) 50vw, 200px"
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                          onError={handleImageError}
+                          loading="lazy"
+                        />
+                        <span className="sdp__food-distance">{shop.distanceText}</span>
+                      </div>
+                      <div className="sdp__related-info">
+                        <h3 className="sdp__related-title">{shop.name}</h3>
+                        {shop.address && (
+                          <p className="sdp__related-address">
+                            <Icons.location size={12} />
+                            {shop.address.split(' ').slice(1, 3).join(' ')}
                           </p>
                         )}
                       </div>

@@ -3660,6 +3660,116 @@ export const getNearbyRestaurants = async (lat, lng, excludeContentId, foodType 
 }
 
 /**
+ * 좌표 기반 근처 숙박 조회
+ * @param {number} lat - 위도 (mapy)
+ * @param {number} lng - 경도 (mapx)
+ * @param {string} excludeContentId - 제외할 contentId
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, spots }
+ */
+export const getNearbyAccommodations = async (lat, lng, excludeContentId, limit = 3) => {
+  try {
+    if (!lat || !lng) {
+      return { success: false, spots: [], message: '좌표 정보가 없습니다' }
+    }
+
+    const latRange = 0.02  // 약 2km 범위
+    const lngRange = 0.024
+    
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
+      .eq('content_type_id', '32')  // 숙박
+      .neq('content_id', excludeContentId)
+      .not('firstimage', 'is', null)
+      .gte('mapy', lat - latRange)
+      .lte('mapy', lat + latRange)
+      .gte('mapx', lng - lngRange)
+      .lte('mapx', lng + lngRange)
+      .limit(20)
+    
+    if (error) throw error
+    
+    // 거리 계산 및 정렬
+    const spotsWithDistance = (data || []).map(item => {
+      const distance = calculateDistance(lat, lng, parseFloat(item.mapy), parseFloat(item.mapx))
+      return {
+        contentId: item.content_id,
+        name: item.title,
+        imageUrl: item.firstimage || item.firstimage2,
+        address: item.addr1,
+        distance: distance,
+        distanceText: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`
+      }
+    })
+    
+    const sortedSpots = spotsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+    
+    return { success: true, spots: sortedSpots }
+  } catch (err) {
+    console.error('근처 숙박 조회 에러:', err)
+    return { success: false, spots: [], message: err.message }
+  }
+}
+
+/**
+ * 좌표 기반 근처 쇼핑 조회
+ * @param {number} lat - 위도 (mapy)
+ * @param {number} lng - 경도 (mapx)
+ * @param {string} excludeContentId - 제외할 contentId
+ * @param {number} limit - 가져올 개수
+ * @returns {Promise<Object>} { success, spots }
+ */
+export const getNearbyShopping = async (lat, lng, excludeContentId, limit = 3) => {
+  try {
+    if (!lat || !lng) {
+      return { success: false, spots: [], message: '좌표 정보가 없습니다' }
+    }
+
+    const latRange = 0.02  // 약 2km 범위
+    const lngRange = 0.024
+    
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
+      .eq('content_type_id', '38')  // 쇼핑
+      .neq('content_id', excludeContentId)
+      .not('firstimage', 'is', null)
+      .gte('mapy', lat - latRange)
+      .lte('mapy', lat + latRange)
+      .gte('mapx', lng - lngRange)
+      .lte('mapx', lng + lngRange)
+      .limit(20)
+    
+    if (error) throw error
+    
+    // 거리 계산 및 정렬
+    const spotsWithDistance = (data || []).map(item => {
+      const distance = calculateDistance(lat, lng, parseFloat(item.mapy), parseFloat(item.mapx))
+      return {
+        contentId: item.content_id,
+        name: item.title,
+        imageUrl: item.firstimage || item.firstimage2,
+        address: item.addr1,
+        distance: distance,
+        distanceText: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`
+      }
+    })
+    
+    const sortedSpots = spotsWithDistance
+      .sort((a, b) => a.distance - b.distance)
+      .slice(0, limit)
+    
+    return { success: true, spots: sortedSpots }
+  } catch (err) {
+    console.error('근처 쇼핑 조회 에러:', err)
+    return { success: false, spots: [], message: err.message }
+  }
+}
+
+/**
  * 두 좌표 간 거리 계산 (Haversine 공식, km 단위)
  */
 const calculateDistance = (lat1, lng1, lat2, lng2) => {
