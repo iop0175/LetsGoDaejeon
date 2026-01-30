@@ -1954,15 +1954,23 @@ export const getOrphanedTourSpots = async (contentTypeId, apiContentIds) => {
     // DB에서 해당 타입의 모든 항목 조회
     const { data: dbItems, error } = await supabase
       .from('tour_spots')
-      .select('id, content_id, title, ai_description, overview')
+      .select('id, content_id, title, intro_info, overview')
       .eq('content_type_id', contentTypeId)
       .order('title', { ascending: true })
     
     if (error) throw error
     
-    // API에 없는 항목 필터링
+    // API에 없는 항목 필터링 및 ai_description 추출
     const apiIdSet = new Set(apiContentIds.map(id => String(id)))
-    const orphanedItems = (dbItems || []).filter(item => !apiIdSet.has(String(item.content_id)))
+    const orphanedItems = (dbItems || [])
+      .filter(item => !apiIdSet.has(String(item.content_id)))
+      .map(item => ({
+        id: item.id,
+        content_id: item.content_id,
+        title: item.title,
+        ai_description: item.intro_info?.ai_description || null,
+        overview: item.overview
+      }))
     
     return { 
       success: true, 
