@@ -1126,13 +1126,16 @@ const SpotDetailPage = () => {
         <section className="sdp__gallery" onClick={() => allImages.length > 0 && setShowFullGallery(true)}>
           {allImages.length > 0 ? (
             <div className="sdp__gallery-grid">
-              {/* 메인 이미지 (왼쪽 큰 이미지) */}
+              {/* 메인 이미지 (왼쪽 큰 이미지) - LCP 최적화 */}
               <div className="sdp__gallery-item sdp__gallery-item--main">
                 <Image 
                   src={getReliableImageUrl(allImages[0])} 
                   alt={language === 'en' && spot.title_en ? spot.title_en : spot.title}
                   width={600}
                   height={400}
+                  priority
+                  fetchPriority="high"
+                  sizes="(max-width: 768px) 100vw, 600px"
                   style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   onError={handleImageError} 
                 />
