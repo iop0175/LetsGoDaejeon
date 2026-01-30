@@ -1789,6 +1789,7 @@ const AdminPage = () => {
   // API에 없고 DB에만 있는 항목 조회
   const handleCheckOrphaned = useCallback(async (contentTypeId) => {
     const typeName = TOUR_CONTENT_TYPES[contentTypeId]?.name || contentTypeId
+    console.log('[DEBUG] handleCheckOrphaned 시작:', contentTypeId, typeName)
     setOrphanedLoading(true)
     setOrphanedSelectedType(contentTypeId)
     setOrphanedItems([])
@@ -1806,6 +1807,7 @@ const AdminPage = () => {
           pageNo,
           numOfRows: 100
         })
+        console.log('[DEBUG] API 조회 page:', pageNo, 'items:', result.items?.length)
         
         if (result.success && result.items.length > 0) {
           allApiItems = [...allApiItems, ...result.items]
@@ -1816,15 +1818,19 @@ const AdminPage = () => {
         }
       }
       
+      console.log('[DEBUG] API 총 항목:', allApiItems.length)
+      
       // API content_id 목록
       const apiContentIds = allApiItems.map(item => item.contentid)
       
       // DB에만 있는 항목 조회
       const result = await getOrphanedTourSpots(contentTypeId, apiContentIds)
+      console.log('[DEBUG] Orphaned 결과:', result)
       
       if (result.success) {
         setOrphanedItems(result.items)
         setOrphanedModalOpen(true)
+        console.log('[DEBUG] 모달 열림, items:', result.items.length)
         
         if (result.items.length === 0) {
           alert(language === 'ko'
