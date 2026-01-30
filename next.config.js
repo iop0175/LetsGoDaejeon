@@ -32,6 +32,18 @@ const nextConfig = {
         protocol: 'https',
         hostname: '*.supabase.co',
       },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+      },
+      {
+        protocol: 'https',
+        hostname: 'frqzcjaavws6yb7a.public.blob.vercel-storage.com',
+      },
     ],
     unoptimized: false,
   },
