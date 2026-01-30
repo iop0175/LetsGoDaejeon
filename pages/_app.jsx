@@ -85,6 +85,13 @@ export default function App({ Component, pageProps }) {
   const router = useRouter()
   const isAdminPage = router.pathname.startsWith('/admin')
   
+  // canonical URL 생성
+  const getCanonicalUrl = () => {
+    const baseUrl = 'https://www.letsgodaejeon.kr'
+    const path = router.asPath.split('?')[0].split('#')[0] // 쿼리스트링, 해시 제거
+    return path === '/' ? baseUrl : `${baseUrl}${path}`
+  }
+  
   useEffect(() => {
     loadKakaoMapSDK(router.pathname)
     initKakaoSDK()
@@ -94,6 +101,7 @@ export default function App({ Component, pageProps }) {
     <>
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="canonical" href={getCanonicalUrl()} />
       </Head>
       <ThemeProvider>
         <LanguageProvider>
