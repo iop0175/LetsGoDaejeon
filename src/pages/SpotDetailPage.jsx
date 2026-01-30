@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Image from 'next/image'
 import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
@@ -1127,9 +1128,12 @@ const SpotDetailPage = () => {
             <div className="sdp__gallery-grid">
               {/* 메인 이미지 (왼쪽 큰 이미지) */}
               <div className="sdp__gallery-item sdp__gallery-item--main">
-                <img 
+                <Image 
                   src={getReliableImageUrl(allImages[0])} 
-                  alt={language === 'en' && spot.title_en ? spot.title_en : spot.title} 
+                  alt={language === 'en' && spot.title_en ? spot.title_en : spot.title}
+                  width={600}
+                  height={400}
+                  style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   onError={handleImageError} 
                 />
               </div>
@@ -1141,9 +1145,12 @@ const SpotDetailPage = () => {
                 >
                   {allImages[idx] ? (
                     <>
-                      <img 
+                      <Image 
                         src={getReliableImageUrl(allImages[idx])} 
-                        alt="" 
+                        alt=""
+                        width={370}
+                        height={277}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         onError={handleImageError} 
                       />
                       {idx === 4 && allImages.length > 5 && (
@@ -1901,9 +1908,12 @@ const SpotDetailPage = () => {
         <div className="sdp__modal-overlay" onClick={() => setShowFullGallery(false)}>
           <div className="sdp__gallery-modal" onClick={e => e.stopPropagation()}>
             <button className="sdp__modal-close" onClick={() => setShowFullGallery(false)}>×</button>
-            <img 
+            <Image 
               src={getReliableImageUrl(allImages[currentImageIndex])}
               alt={spot.title}
+              width={1200}
+              height={800}
+              style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '70vh' }}
               onError={handleImageError}
             />
             <div className="sdp__gallery-modal-nav">
@@ -1918,7 +1928,15 @@ const SpotDetailPage = () => {
                   className={`sdp__thumb ${idx === currentImageIndex ? 'sdp__thumb--active' : ''}`}
                   onClick={() => setCurrentImageIndex(idx)}
                 >
-                  <img src={getReliableImageUrl(img)} alt="" loading="lazy" onError={handleImageError} />
+                  <Image 
+                    src={getReliableImageUrl(img)} 
+                    alt="" 
+                    width={100}
+                    height={75}
+                    loading="lazy"
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                    onError={handleImageError} 
+                  />
                 </div>
               ))}
             </div>
