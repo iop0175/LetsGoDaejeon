@@ -1,4 +1,4 @@
-import { generateShoppingSitemap } from '../src/utils/sitemapGenerator'
+import { generateShoppingSitemap } from '../../src/utils/sitemapGenerator'
 
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/xml')

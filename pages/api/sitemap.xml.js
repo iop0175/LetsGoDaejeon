@@ -1,4 +1,4 @@
-import { generateSitemapIndex } from '../src/utils/sitemapGenerator'
+import { generateSitemapIndex } from '../../src/utils/sitemapGenerator'
 
 export default function handler(req, res) {
   res.setHeader('Content-Type', 'application/xml')

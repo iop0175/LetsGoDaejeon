@@ -7,6 +7,9 @@ Allow: /
 # 검색엔진이 크롤링하지 않아도 되는 페이지
 Disallow: /admin
 Disallow: /api/
+Disallow: /profile
+Disallow: /my-trip
+Disallow: /search
 
 # 사이트맵 위치 (인덱스)
 Sitemap: https://letsgodaejeon.kr/sitemap.xml
