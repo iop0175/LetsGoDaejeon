@@ -107,7 +107,7 @@ const HeroSection = memo(() => {
               <div className="hero-overlay" />
               <div className="hero-content">
                 <span className="hero-badge">{getLocalizedText(slide, 'title')}</span>
-                <h1 className="hero-title">{getLocalizedText(slide, 'subtitle')}</h1>
+                <h2 className="hero-title">{getLocalizedText(slide, 'subtitle')}</h2>
                 <p className="hero-description">{getLocalizedText(slide, 'description')}</p>
                 <a href={slide.link || '/'} className="hero-btn">
                   {t.hero.viewMore}

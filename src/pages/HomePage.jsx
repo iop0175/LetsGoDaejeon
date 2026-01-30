@@ -22,6 +22,8 @@ const HomePage = () => {
         keywords={seoData.keywords}
         url="/"
       />
+      {/* SEO H1 - 시각적으로 숨김, 스크린리더와 검색엔진에 표시 */}
+      <h1 className="visually-hidden">대전으로 - 대전 관광 여행 가이드 | 맛집, 축제, 숙소 정보</h1>
       <HeroSection />
       <QuickMenu />
       <PopularSpots />
