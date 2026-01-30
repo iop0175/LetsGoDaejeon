@@ -37,7 +37,8 @@ import {
   getTourSpotsWithoutEng, mapTourSpotEnglish, clearTourSpotEnglish,
   getMappedEngContentIds,
   getRestaurantsWithoutAiDescCount, getRestaurantsWithoutAiDesc, sendRestaurantsToN8n,
-  getSpotsByTypeWithoutAiDescCount, getSpotsByTypeWithoutAiDesc, sendSpotsToN8nByType
+  getSpotsByTypeWithoutAiDescCount, getSpotsByTypeWithoutAiDesc, sendSpotsToN8nByType,
+  getOrphanedTourSpots, deleteTourSpotsByIds
 } from '../services/dbService'
 import {
   getAdminPublishedTrips, adminUpdateTripPublishStatus, adminUpdateTrip,
@@ -229,6 +230,13 @@ const AdminPage = () => {
   const [engSyncLoading, setEngSyncLoading] = useState(false) // 영문 데이터 동기화 로딩
   const [engSyncProgress, setEngSyncProgress] = useState({ current: 0, total: 0, item: '' }) // 영문 동기화 진행
   const [noEngCount, setNoEngCount] = useState(0) // 영문 데이터 없는 항목 개수
+  
+  // API에 없고 DB에만 있는 항목(orphaned) 관리
+  const [orphanedModalOpen, setOrphanedModalOpen] = useState(false)
+  const [orphanedItems, setOrphanedItems] = useState([])
+  const [orphanedLoading, setOrphanedLoading] = useState(false)
+  const [orphanedSelectedType, setOrphanedSelectedType] = useState(null)
+  const [orphanedSelectedIds, setOrphanedSelectedIds] = useState(new Set())
   
   // AI Description 생성 상태 (n8n)
   const [aiDescSyncLoading, setAiDescSyncLoading] = useState(false)
@@ -1777,6 +1785,124 @@ const AdminPage = () => {
     setEngSyncLoading(false)
     setEngSyncProgress({ current: 0, total: 0, item: '' })
   }, [language, noEngCount, loadTourApiStats])
+  
+  // API에 없고 DB에만 있는 항목 조회
+  const handleCheckOrphaned = useCallback(async (contentTypeId) => {
+    const typeName = TOUR_CONTENT_TYPES[contentTypeId]?.name || contentTypeId
+    setOrphanedLoading(true)
+    setOrphanedSelectedType(contentTypeId)
+    setOrphanedItems([])
+    setOrphanedSelectedIds(new Set())
+    
+    try {
+      // API에서 현재 데이터 목록 가져오기
+      let allApiItems = []
+      let pageNo = 1
+      let hasMore = true
+      
+      while (hasMore) {
+        const result = await getTourApiSpots({
+          contentTypeId,
+          pageNo,
+          numOfRows: 100
+        })
+        
+        if (result.success && result.items.length > 0) {
+          allApiItems = [...allApiItems, ...result.items]
+          pageNo++
+          hasMore = result.items.length === 100
+        } else {
+          hasMore = false
+        }
+      }
+      
+      // API content_id 목록
+      const apiContentIds = allApiItems.map(item => item.contentid)
+      
+      // DB에만 있는 항목 조회
+      const result = await getOrphanedTourSpots(contentTypeId, apiContentIds)
+      
+      if (result.success) {
+        setOrphanedItems(result.items)
+        setOrphanedModalOpen(true)
+        
+        if (result.items.length === 0) {
+          alert(language === 'ko'
+            ? `${typeName}: API에 없는 항목이 없습니다.`
+            : `${typeName}: No orphaned items found.`)
+        }
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (err) {
+      console.error('Orphaned 항목 조회 실패:', err)
+      alert(language === 'ko'
+        ? `조회 중 오류: ${err.message}`
+        : `Error: ${err.message}`)
+    }
+    
+    setOrphanedLoading(false)
+  }, [language])
+  
+  // Orphaned 항목 선택 토글
+  const handleToggleOrphanedSelect = useCallback((id) => {
+    setOrphanedSelectedIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(id)) {
+        newSet.delete(id)
+      } else {
+        newSet.add(id)
+      }
+      return newSet
+    })
+  }, [])
+  
+  // Orphaned 항목 전체 선택/해제
+  const handleToggleAllOrphaned = useCallback(() => {
+    if (orphanedSelectedIds.size === orphanedItems.length) {
+      setOrphanedSelectedIds(new Set())
+    } else {
+      setOrphanedSelectedIds(new Set(orphanedItems.map(item => item.id)))
+    }
+  }, [orphanedItems, orphanedSelectedIds.size])
+  
+  // 선택한 Orphaned 항목 삭제
+  const handleDeleteOrphaned = useCallback(async () => {
+    if (orphanedSelectedIds.size === 0) {
+      alert(language === 'ko' ? '삭제할 항목을 선택하세요.' : 'Select items to delete.')
+      return
+    }
+    
+    const confirmMsg = language === 'ko'
+      ? `선택한 ${orphanedSelectedIds.size}개 항목을 삭제하시겠습니까?\n(이 작업은 되돌릴 수 없습니다)`
+      : `Delete ${orphanedSelectedIds.size} selected items?\n(This cannot be undone)`
+    
+    if (!window.confirm(confirmMsg)) return
+    
+    try {
+      const result = await deleteTourSpotsByIds(Array.from(orphanedSelectedIds))
+      
+      if (result.success) {
+        alert(language === 'ko'
+          ? `${result.deletedCount}개 항목이 삭제되었습니다.`
+          : `${result.deletedCount} items deleted.`)
+        
+        // 목록에서 삭제된 항목 제거
+        setOrphanedItems(prev => prev.filter(item => !orphanedSelectedIds.has(item.id)))
+        setOrphanedSelectedIds(new Set())
+        
+        // 통계 새로고침
+        await loadTourApiStats()
+      } else {
+        throw new Error(result.error)
+      }
+    } catch (err) {
+      console.error('삭제 실패:', err)
+      alert(language === 'ko'
+        ? `삭제 중 오류: ${err.message}`
+        : `Error deleting: ${err.message}`)
+    }
+  }, [language, orphanedSelectedIds, loadTourApiStats])
   
   // 영문 매핑 - 국문 데이터 로드
   const loadEngMappingData = useCallback(async (typeId = '') => {
@@ -4025,6 +4151,20 @@ const AdminPage = () => {
                                 <><FiDownload /> {language === 'ko' ? 'DB 동기화' : 'Sync to DB'}</>
                               )}
                             </button>
+                            {typeId !== '15' && apiCount - dbCount < 0 && (
+                              <button 
+                                className="btn-check-orphaned"
+                                onClick={() => handleCheckOrphaned(typeId)}
+                                disabled={orphanedLoading && orphanedSelectedType === typeId}
+                                title={language === 'ko' ? 'API에 없는 항목 확인' : 'Check orphaned items'}
+                              >
+                                {orphanedLoading && orphanedSelectedType === typeId ? (
+                                  <FiLoader className="spinning" />
+                                ) : (
+                                  <><FiSearch /> {language === 'ko' ? '차이 확인' : 'Check Diff'}</>
+                                )}
+                              </button>
+                            )}
                             {typeId === '15' && (
                               <button 
                                 className="btn-delete-expired"
@@ -4045,8 +4185,8 @@ const AdminPage = () => {
                     <FiActivity />
                     <p>
                       {language === 'ko'
-                        ? '동기화 시 해당 타입의 기존 데이터는 삭제되고 새 데이터로 대체됩니다. 행사/축제는 종료일이 지나지 않은 것만 가져옵니다.'
-                        : 'Sync will delete existing data of that type and replace with new data. Festivals only include those not yet ended.'}
+                        ? '동기화 시 기존 상세정보(overview, ai_description 등)는 보존됩니다. DB에만 있는 항목은 "차이 확인"으로 선택 삭제 가능합니다.'
+                        : 'Sync preserves existing details (overview, ai_description). Orphaned items can be deleted via "Check Diff".'}
                     </p>
                   </div>
                 </>
@@ -4631,6 +4771,71 @@ const AdminPage = () => {
                 saving={editSaving}
                 language={language}
               />
+              
+              {/* API에 없는 항목(orphaned) 모달 */}
+              {orphanedModalOpen && (
+                <div className="modal-overlay" onClick={() => setOrphanedModalOpen(false)}>
+                  <div className="modal-content orphaned-modal" onClick={e => e.stopPropagation()}>
+                    <div className="modal-header">
+                      <h3>
+                        {language === 'ko' 
+                          ? `API에 없는 항목 (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})` 
+                          : `Orphaned Items (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})`}
+                      </h3>
+                      <button className="modal-close" onClick={() => setOrphanedModalOpen(false)}>×</button>
+                    </div>
+                    <div className="modal-body">
+                      {orphanedItems.length === 0 ? (
+                        <p className="no-items">{language === 'ko' ? 'API에 없는 항목이 없습니다.' : 'No orphaned items.'}</p>
+                      ) : (
+                        <>
+                          <div className="orphaned-toolbar">
+                            <label className="select-all">
+                              <input 
+                                type="checkbox" 
+                                checked={orphanedSelectedIds.size === orphanedItems.length}
+                                onChange={handleToggleAllOrphaned}
+                              />
+                              {language === 'ko' ? '전체 선택' : 'Select All'} ({orphanedSelectedIds.size}/{orphanedItems.length})
+                            </label>
+                            <button 
+                              className="btn-delete-selected"
+                              onClick={handleDeleteOrphaned}
+                              disabled={orphanedSelectedIds.size === 0}
+                            >
+                              <FiTrash2 /> {language === 'ko' ? '선택 삭제' : 'Delete Selected'}
+                            </button>
+                          </div>
+                          <div className="orphaned-list">
+                            {orphanedItems.map(item => (
+                              <div key={item.id} className={`orphaned-item ${orphanedSelectedIds.has(item.id) ? 'selected' : ''}`}>
+                                <label>
+                                  <input 
+                                    type="checkbox"
+                                    checked={orphanedSelectedIds.has(item.id)}
+                                    onChange={() => handleToggleOrphanedSelect(item.id)}
+                                  />
+                                  <span className="item-title">{item.title}</span>
+                                  <span className="item-id">({item.content_id})</span>
+                                </label>
+                                <div className="item-info">
+                                  {item.ai_description && <span className="badge ai">AI설명</span>}
+                                  {item.overview && <span className="badge overview">Overview</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="orphaned-notice">
+                            {language === 'ko' 
+                              ? '⚠️ 삭제 시 해당 항목의 모든 데이터(AI설명, Overview 등)가 함께 삭제됩니다.' 
+                              : '⚠️ Deleting will remove all data including AI description and overview.'}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
               
               {!pageLoading && pageData.length > 0 && (
                 <Pagination

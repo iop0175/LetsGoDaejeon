@@ -8618,3 +8618,208 @@
     max-height: 400px;
   }
 }
+
+/* ========================================
+   Orphaned Items Modal (API에 없는 항목)
+   ======================================== */
+.btn-check-orphaned {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: var(--admin-warning);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-check-orphaned:hover:not(:disabled) {
+  background: #d97706;
+  transform: translateY(-1px);
+}
+
+.btn-check-orphaned:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.orphaned-modal {
+  max-width: 600px;
+  width: 95%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.orphaned-modal .modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 15px;
+}
+
+.orphaned-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background: var(--admin-bg);
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.orphaned-toolbar .select-all {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.orphaned-toolbar .select-all input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.btn-delete-selected {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--admin-danger);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-delete-selected:hover:not(:disabled) {
+  background: #b91c1c;
+}
+
+.btn-delete-selected:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.orphaned-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+}
+
+.orphaned-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--admin-border);
+  transition: background 0.2s;
+}
+
+.orphaned-item:last-child {
+  border-bottom: none;
+}
+
+.orphaned-item:hover {
+  background: var(--admin-bg);
+}
+
+.orphaned-item.selected {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.orphaned-item label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  cursor: pointer;
+}
+
+.orphaned-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.orphaned-item .item-title {
+  font-weight: 500;
+  color: var(--admin-text);
+}
+
+.orphaned-item .item-id {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin-left: 5px;
+}
+
+.orphaned-item .item-info {
+  display: flex;
+  gap: 6px;
+}
+
+.orphaned-item .badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.orphaned-item .badge.ai {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.orphaned-item .badge.overview {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.orphaned-notice {
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: #fef3c7;
+  border-radius: 8px;
+  font-size: 13px;
+  color: #92400e;
+}
+
+.no-items {
+  text-align: center;
+  padding: 40px;
+  color: var(--admin-text-muted);
+}
+
+/* Dark mode */
+.dark-mode .orphaned-toolbar {
+  background: #1e293b;
+}
+
+.dark-mode .orphaned-item.selected {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.dark-mode .orphaned-item .badge.ai {
+  background: #1e3a5f;
+  color: #60a5fa;
+}
+
+.dark-mode .orphaned-item .badge.overview {
+  background: #14532d;
+  color: #86efac;
+}
+
+.dark-mode .orphaned-notice {
+  background: #422006;
+  color: #fcd34d;
+}

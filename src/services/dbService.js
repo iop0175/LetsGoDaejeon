@@ -1944,6 +1944,60 @@ export const deleteTourSpots = async (contentTypeId) => {
 }
 
 /**
+ * DB에만 있고 API에 없는 tour_spots 조회
+ * @param {string} contentTypeId - 관광타입
+ * @param {Array<string>} apiContentIds - API에서 받아온 content_id 목록
+ * @returns {Promise<Object>} { success, items, count }
+ */
+export const getOrphanedTourSpots = async (contentTypeId, apiContentIds) => {
+  try {
+    // DB에서 해당 타입의 모든 항목 조회
+    const { data: dbItems, error } = await supabase
+      .from('tour_spots')
+      .select('id, content_id, title, ai_description, overview')
+      .eq('content_type_id', contentTypeId)
+      .order('title')
+    
+    if (error) throw error
+    
+    // API에 없는 항목 필터링
+    const apiIdSet = new Set(apiContentIds.map(id => String(id)))
+    const orphanedItems = (dbItems || []).filter(item => !apiIdSet.has(String(item.content_id)))
+    
+    return { 
+      success: true, 
+      items: orphanedItems,
+      count: orphanedItems.length
+    }
+  } catch (err) {
+    console.error('Orphaned TourSpots 조회 에러:', err)
+    return { success: false, items: [], count: 0, error: err.message }
+  }
+}
+
+/**
+ * 특정 tour_spots 항목들 삭제 (ID 목록으로)
+ * @param {Array<number>} ids - 삭제할 ID 목록
+ * @returns {Promise<Object>} { success, deletedCount }
+ */
+export const deleteTourSpotsByIds = async (ids) => {
+  try {
+    const { data, error } = await supabase
+      .from('tour_spots')
+      .delete()
+      .in('id', ids)
+      .select()
+    
+    if (error) throw error
+    
+    return { success: true, deletedCount: data?.length || 0 }
+  } catch (err) {
+    console.error('TourSpots 선택 삭제 에러:', err)
+    return { success: false, deletedCount: 0, error: err.message }
+  }
+}
+
+/**
  * TourAPI 관광정보 개수 조회
  * @param {string} contentTypeId - 관광타입 (null이면 전체)
  * @returns {Promise<number>} 개수
