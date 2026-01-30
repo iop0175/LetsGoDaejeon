@@ -87,7 +87,7 @@ export default function App({ Component, pageProps }) {
   
   // canonical URL 생성
   const getCanonicalUrl = () => {
-    const baseUrl = 'https://www.letsgodaejeon.kr'
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
     const path = router.asPath.split('?')[0].split('#')[0] // 쿼리스트링, 해시 제거
     return path === '/' ? baseUrl : `${baseUrl}${path}`
   }
