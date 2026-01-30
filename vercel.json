@@ -79,14 +79,6 @@
       "destination": "/api/sitemap-festival.xml"
     },
     {
-      "source": "/rss.xml",
-      "destination": "/rss.xml"
-    },
-    {
-      "source": "/robots.txt",
-      "destination": "/robots.txt"
-    },
-    {
       "source": "/trip/shared/:tripId",
       "destination": "/shared-trip/:tripId"
     }
