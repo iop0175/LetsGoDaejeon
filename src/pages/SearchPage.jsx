@@ -293,6 +293,7 @@ const SearchPage = () => {
                           <img 
                             src={`https://picsum.photos/seed/${encodeURIComponent(item.tourspotNm)}/400/300`}
                             alt={item.tourspotNm}
+                            loading="lazy"
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
                           <span className="result-badge tour">{t.pages.search.attractions}</span>
@@ -332,6 +333,7 @@ const SearchPage = () => {
                           <img 
                             src={`https://picsum.photos/seed/${encodeURIComponent(item.restrntNm)}/400/300`}
                             alt={item.restrntNm}
+                            loading="lazy"
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
                           <span className="result-badge food">{t.pages.search.restaurants}</span>
@@ -372,6 +374,7 @@ const SearchPage = () => {
                           <img 
                             src={`https://picsum.photos/seed/${encodeURIComponent(item.title)}/400/300`}
                             alt={item.title}
+                            loading="lazy"
                             onError={(e) => { e.target.src = '/images/no-image.svg' }}
                           />
                           <span className="result-badge event">{item.themeCdNm || t.pages.search.events}</span>

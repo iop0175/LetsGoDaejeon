@@ -156,6 +156,7 @@ const Header = memo(() => {
                     src={userProfile.avatar} 
                     alt={userProfile.nickname}
                     className="user-avatar"
+                    loading="lazy"
                   />
                 ) : (
                   <FiUser />
@@ -169,6 +170,7 @@ const Header = memo(() => {
                         src={userProfile.avatar} 
                         alt={userProfile.nickname}
                         className="user-dropdown-avatar"
+                        loading="lazy"
                       />
                     )}
                     <span className="user-nickname">{userProfile?.nickname}</span>

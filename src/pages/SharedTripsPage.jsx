@@ -90,6 +90,7 @@ function SharedTripsPage() {
         <img 
           src={trip.thumbnailUrl || TRAVEL_PLACEHOLDER} 
           alt={trip.title}
+          loading="lazy"
           onError={(e) => {
             e.target.onerror = null
             e.target.src = TRAVEL_PLACEHOLDER

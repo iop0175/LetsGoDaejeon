@@ -50,10 +50,15 @@ import '../src/pages/AdminPage.css'
 import '../src/pages/ProfilePage.css'
 import '../src/pages/PolicyPage.css'
 
-// 카카오맵 SDK 동적 로드
-const loadKakaoMapSDK = () => {
+// 카카오맵 SDK 동적 로드 - 필요한 페이지에서만 로드
+const loadKakaoMapSDK = (pathname) => {
   if (typeof window === 'undefined') return
   if (window.kakao?.maps) return
+  
+  // 지도가 필요한 페이지에서만 SDK 로드
+  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip']
+  const needsMap = mapPages.some(page => pathname.startsWith(page))
+  if (!needsMap) return
   
   const kakaoScript = document.createElement('script')
   kakaoScript.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`
@@ -81,9 +86,9 @@ export default function App({ Component, pageProps }) {
   const isAdminPage = router.pathname.startsWith('/admin')
   
   useEffect(() => {
-    loadKakaoMapSDK()
+    loadKakaoMapSDK(router.pathname)
     initKakaoSDK()
-  }, [])
+  }, [router.pathname])
   
   return (
     <>

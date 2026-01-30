@@ -86,6 +86,7 @@ const LicenseBadge = memo(({ type = '1', source = null }) => {
                 src={img}
                 alt={`KOGL Type ${idx + 1}`}
                 className="kogl-image"
+                loading="lazy"
               />
             ))}
           </div>
@@ -111,6 +112,7 @@ const LicenseBadge = memo(({ type = '1', source = null }) => {
           src={kogl.image}
           alt={kogl.name[language]}
           className="kogl-image"
+          loading="lazy"
         />
         <span className="license-text">
           {kogl.name[language]}

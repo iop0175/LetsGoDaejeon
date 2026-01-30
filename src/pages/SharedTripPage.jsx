@@ -770,6 +770,7 @@ const SharedTripPage = () => {
                       <img 
                         src={placeDetail?.imageUrl || selectedPlace.placeImage} 
                         alt={selectedPlace.placeName}
+                        loading="lazy"
                         onError={(e) => { e.target.style.display = 'none' }}
                       />
                     </div>

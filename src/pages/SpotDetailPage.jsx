@@ -1361,7 +1361,7 @@ const SpotDetailPage = () => {
                 <div key={index} className="sdp__room-card">
                   {room.roomimg1 && (
                     <div className="sdp__room-image">
-                      <img src={room.roomimg1} alt={room.roomtitle || `Room ${index + 1}`} />
+                      <img src={room.roomimg1} alt={room.roomtitle || `Room ${index + 1}`} loading="lazy" />
                     </div>
                   )}
                   <div className="sdp__room-info">
@@ -1457,6 +1457,7 @@ const SpotDetailPage = () => {
                       <img 
                         src={trip.thumbnailUrl} 
                         alt={trip.title}
+                        loading="lazy"
                         onError={handleImageError}
                       />
                     ) : (
@@ -1792,6 +1793,7 @@ const SpotDetailPage = () => {
                             src={toSecureUrl(review.profiles.avatar_url)} 
                             alt="" 
                             className="sdp__review-avatar"
+                            loading="lazy"
                           />
                         ) : (
                           <div className="sdp__review-avatar sdp__review-avatar--default"></div>
@@ -1916,7 +1918,7 @@ const SpotDetailPage = () => {
                   className={`sdp__thumb ${idx === currentImageIndex ? 'sdp__thumb--active' : ''}`}
                   onClick={() => setCurrentImageIndex(idx)}
                 >
-                  <img src={getReliableImageUrl(img)} alt="" onError={handleImageError} />
+                  <img src={getReliableImageUrl(img)} alt="" loading="lazy" onError={handleImageError} />
                 </div>
               ))}
             </div>
