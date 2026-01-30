@@ -4778,71 +4778,6 @@ const AdminPage = () => {
                 language={language}
               />
               
-              {/* API에 없는 항목(orphaned) 모달 */}
-              {orphanedModalOpen && (
-                <div className="modal-overlay" onClick={() => setOrphanedModalOpen(false)}>
-                  <div className="modal-content orphaned-modal" onClick={e => e.stopPropagation()}>
-                    <div className="modal-header">
-                      <h3>
-                        {language === 'ko' 
-                          ? `API에 없는 항목 (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})` 
-                          : `Orphaned Items (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})`}
-                      </h3>
-                      <button className="modal-close" onClick={() => setOrphanedModalOpen(false)}>×</button>
-                    </div>
-                    <div className="modal-body">
-                      {orphanedItems.length === 0 ? (
-                        <p className="no-items">{language === 'ko' ? 'API에 없는 항목이 없습니다.' : 'No orphaned items.'}</p>
-                      ) : (
-                        <>
-                          <div className="orphaned-toolbar">
-                            <label className="select-all">
-                              <input 
-                                type="checkbox" 
-                                checked={orphanedSelectedIds.size === orphanedItems.length}
-                                onChange={handleToggleAllOrphaned}
-                              />
-                              {language === 'ko' ? '전체 선택' : 'Select All'} ({orphanedSelectedIds.size}/{orphanedItems.length})
-                            </label>
-                            <button 
-                              className="btn-delete-selected"
-                              onClick={handleDeleteOrphaned}
-                              disabled={orphanedSelectedIds.size === 0}
-                            >
-                              <FiTrash2 /> {language === 'ko' ? '선택 삭제' : 'Delete Selected'}
-                            </button>
-                          </div>
-                          <div className="orphaned-list">
-                            {orphanedItems.map(item => (
-                              <div key={item.id} className={`orphaned-item ${orphanedSelectedIds.has(item.id) ? 'selected' : ''}`}>
-                                <label>
-                                  <input 
-                                    type="checkbox"
-                                    checked={orphanedSelectedIds.has(item.id)}
-                                    onChange={() => handleToggleOrphanedSelect(item.id)}
-                                  />
-                                  <span className="item-title">{item.title}</span>
-                                  <span className="item-id">({item.content_id})</span>
-                                </label>
-                                <div className="item-info">
-                                  {item.ai_description && <span className="badge ai">AI설명</span>}
-                                  {item.overview && <span className="badge overview">Overview</span>}
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                          <p className="orphaned-notice">
-                            {language === 'ko' 
-                              ? '⚠️ 삭제 시 해당 항목의 모든 데이터(AI설명, Overview 등)가 함께 삭제됩니다.' 
-                              : '⚠️ Deleting will remove all data including AI description and overview.'}
-                          </p>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-              
               {!pageLoading && pageData.length > 0 && (
                 <Pagination
                   currentPage={currentPage}
@@ -5357,6 +5292,71 @@ const AdminPage = () => {
           )}
         </div>
       </main>
+      
+      {/* API에 없는 항목(orphaned) 모달 - 최상위 레벨 */}
+      {orphanedModalOpen && (
+        <div className="modal-overlay" onClick={() => setOrphanedModalOpen(false)}>
+          <div className="modal-content orphaned-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>
+                {language === 'ko' 
+                  ? `API에 없는 항목 (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})` 
+                  : `Orphaned Items (${TOUR_CONTENT_TYPES[orphanedSelectedType]?.name || ''})`}
+              </h3>
+              <button className="modal-close" onClick={() => setOrphanedModalOpen(false)}>×</button>
+            </div>
+            <div className="modal-body">
+              {orphanedItems.length === 0 ? (
+                <p className="no-items">{language === 'ko' ? 'API에 없는 항목이 없습니다.' : 'No orphaned items.'}</p>
+              ) : (
+                <>
+                  <div className="orphaned-toolbar">
+                    <label className="select-all">
+                      <input 
+                        type="checkbox" 
+                        checked={orphanedSelectedIds.size === orphanedItems.length}
+                        onChange={handleToggleAllOrphaned}
+                      />
+                      {language === 'ko' ? '전체 선택' : 'Select All'} ({orphanedSelectedIds.size}/{orphanedItems.length})
+                    </label>
+                    <button 
+                      className="btn-delete-selected"
+                      onClick={handleDeleteOrphaned}
+                      disabled={orphanedSelectedIds.size === 0}
+                    >
+                      <FiTrash2 /> {language === 'ko' ? '선택 삭제' : 'Delete Selected'}
+                    </button>
+                  </div>
+                  <div className="orphaned-list">
+                    {orphanedItems.map(item => (
+                      <div key={item.id} className={`orphaned-item ${orphanedSelectedIds.has(item.id) ? 'selected' : ''}`}>
+                        <label>
+                          <input 
+                            type="checkbox"
+                            checked={orphanedSelectedIds.has(item.id)}
+                            onChange={() => handleToggleOrphanedSelect(item.id)}
+                          />
+                          <span className="item-title">{item.title}</span>
+                          <span className="item-id">({item.content_id})</span>
+                        </label>
+                        <div className="item-info">
+                          {item.ai_description && <span className="badge ai">AI설명</span>}
+                          {item.overview && <span className="badge overview">Overview</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="orphaned-notice">
+                    {language === 'ko' 
+                      ? '⚠️ 삭제 시 해당 항목의 모든 데이터(AI설명, Overview 등)가 함께 삭제됩니다.' 
+                      : '⚠️ Deleting will remove all data including AI description and overview.'}
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
