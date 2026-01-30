@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, useMemo } from 'react'
+import Image from 'next/image'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules'
 import { FiArrowRight } from 'react-icons/fi'
@@ -98,12 +99,18 @@ const HeroSection = memo(() => {
         loop={true}
         className="hero-swiper"
       >
-        {slides.map((slide) => (
+        {slides.map((slide, index) => (
           <SwiperSlide key={slide.id}>
-            <div 
-              className="hero-slide"
-              style={{ backgroundImage: `url(${getReliableImageUrl(slide.imageUrl)})` }}
-            >
+            <div className="hero-slide">
+              <Image
+                src={getReliableImageUrl(slide.imageUrl)}
+                alt={getLocalizedText(slide, 'subtitle')}
+                fill
+                priority={index === 0}
+                sizes="100vw"
+                style={{ objectFit: 'cover' }}
+                quality={85}
+              />
               <div className="hero-overlay" />
               <div className="hero-content">
                 <span className="hero-badge">{getLocalizedText(slide, 'title')}</span>

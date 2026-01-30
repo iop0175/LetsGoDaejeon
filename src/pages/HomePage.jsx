@@ -1,14 +1,32 @@
+import dynamic from 'next/dynamic'
 import HeroSection from '../components/HeroSection/HeroSection'
 import QuickMenu from '../components/QuickMenu/QuickMenu'
 import PopularSpots from '../components/PopularSpots/PopularSpots'
-import FestivalSection from '../components/FestivalSection/FestivalSection'
-import FoodSection from '../components/FoodSection/FoodSection'
-import TravelCourse from '../components/TravelCourse/TravelCourse'
-import WeatherWidget from '../components/WeatherWidget/WeatherWidget'
-import KakaoChannelButton from '../components/KakaoChannelButton/KakaoChannelButton'
 import SEO, { SEO_DATA } from '../components/common/SEO'
 import { useLanguage } from '../context/LanguageContext'
 // CSS는 pages/_app.jsx에서 import
+
+// Dynamic imports for below-the-fold components
+const FestivalSection = dynamic(() => import('../components/FestivalSection/FestivalSection'), {
+  loading: () => <div className="section-loading" />,
+  ssr: true
+})
+const FoodSection = dynamic(() => import('../components/FoodSection/FoodSection'), {
+  loading: () => <div className="section-loading" />,
+  ssr: true
+})
+const TravelCourse = dynamic(() => import('../components/TravelCourse/TravelCourse'), {
+  loading: () => <div className="section-loading" />,
+  ssr: true
+})
+const WeatherWidget = dynamic(() => import('../components/WeatherWidget/WeatherWidget'), {
+  loading: () => null,
+  ssr: false
+})
+const KakaoChannelButton = dynamic(() => import('../components/KakaoChannelButton/KakaoChannelButton'), {
+  loading: () => null,
+  ssr: false
+})
 
 const HomePage = () => {
   const { language } = useLanguage()
