@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiShoppingBag, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
@@ -260,11 +261,13 @@ const ShoppingPage = () => {
             {paginatedShops.map((shop, index) => (
               <div key={index} className="shopping-card" onClick={() => router.push(`/spot/${generateSlug(shop.shppgNm, shop.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="shopping-image">
-                  <img 
+                  <Image 
                     src={shop.imageUrl || '/images/no-image.svg'} 
-                    alt={language === 'en' && shop.shppgNm_en ? shop.shppgNm_en : shop.shppgNm} 
+                    alt={language === 'en' && shop.shppgNm_en ? shop.shppgNm_en : shop.shppgNm}
+                    width={394}
+                    height={263}
                     loading="lazy"
-                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   />
                 </div>
                 <div className="shopping-card-content">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Image from 'next/image'
 import { FiSearch, FiMapPin, FiCalendar, FiClock, FiLoader, FiX, FiTrendingUp } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { recordSearchQuery, getPopularSearchQueries, getAllDbData } from '../services/dbService'

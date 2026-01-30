@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { FiMapPin, FiLoader, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -376,13 +377,13 @@ const TravelPage = () => {
                 <div key={spot.id} className="spot-card-wrapper" onClick={() => router.push(`/spot/${generateSlug(spot.title, spot.contentId)}`)}>
                   <div className="spot-card">
                     <div className="spot-image">
-                      <img 
-                        src={spot.ktoImage || spot.image} 
+                      <Image 
+                        src={spot.ktoImage || spot.image || '/images/no-image.svg'} 
                         alt={language === 'en' && spot.title_en ? spot.title_en : spot.title}
+                        width={394}
+                        height={263}
                         loading="lazy"
-                        onError={(e) => {
-                          e.target.src = '/images/no-image.svg'
-                        }}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                       />
                       {(spot.image_author || spot.photographer) && (
                         <div className="spot-photographer">
@@ -515,15 +516,21 @@ const TravelPage = () => {
             <div className="modal-image-gallery">
               <div className="gallery-main-image">
                 {currentImageIndex === 0 ? (
-                  <img 
+                  <Image 
                     src={getReliableImageUrl(selectedSpot.image)}
                     alt={selectedSpot.title}
+                    width={800}
+                    height={600}
+                    style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
                     onError={handleImageError}
                   />
                 ) : (
-                  <img 
+                  <Image 
                     src={getReliableImageUrl(additionalImages[currentImageIndex - 1]?.originimgurl)}
                     alt={`${selectedSpot.title} - ${currentImageIndex}`}
+                    width={800}
+                    height={600}
+                    style={{ objectFit: 'contain', maxWidth: '100%', maxHeight: '100%' }}
                     onError={handleImageError}
                   />
                 )}
@@ -558,9 +565,12 @@ const TravelPage = () => {
                     className={`thumbnail ${currentImageIndex === 0 ? 'active' : ''}`}
                     onClick={() => setCurrentImageIndex(0)}
                   >
-                    <img 
+                    <Image 
                       src={getReliableImageUrl(selectedSpot.image)}
                       alt="대표"
+                      width={100}
+                      height={75}
+                      style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                       onError={handleImageError}
                     />
                   </div>
@@ -570,9 +580,12 @@ const TravelPage = () => {
                       className={`thumbnail ${currentImageIndex === idx + 1 ? 'active' : ''}`}
                       onClick={() => setCurrentImageIndex(idx + 1)}
                     >
-                      <img 
+                      <Image 
                         src={getReliableImageUrl(img.smallimageurl || img.originimgurl)}
                         alt={img.imgname || `이미지 ${idx + 1}`}
+                        width={100}
+                        height={75}
+                        style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                         onError={handleImageError}
                       />
                     </div>
@@ -756,10 +769,12 @@ const TravelPage = () => {
               {/* 추가할 장소 정보 */}
               <div className="spot-to-add">
                 <div className="spot-to-add-image">
-                  <img 
-                    src={getReliableImageUrl(spotToAdd?.image)} 
-                    alt={spotToAdd?.title}
-                    onError={(e) => e.target.src = '/images/no-image.svg'}
+                  <Image 
+                    src={getReliableImageUrl(spotToAdd?.image) || '/images/no-image.svg'} 
+                    alt={spotToAdd?.title || ''}
+                    width={120}
+                    height={80}
+                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
                   />
                 </div>
                 <div className="spot-to-add-info">
