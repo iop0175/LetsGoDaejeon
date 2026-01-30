@@ -5,7 +5,7 @@
 
 // 허용된 Origin 목록
 const ALLOWED_ORIGINS = [
-  'https://letsgodaejeon.kr',
+  'https://www.letsgodaejeon.kr',
   'https://www.letsgodaejeon.kr',
   'https://letsgodaejeon.vercel.app',
   'http://localhost:5173',        // 개발용 (Vite)

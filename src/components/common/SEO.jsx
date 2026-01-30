@@ -16,13 +16,13 @@ const SEO = ({
   title, 
   description, 
   keywords, 
-  image = 'https://letsgodaejeon.kr/og-image.svg',
+  image = 'https://www.letsgodaejeon.kr/og-image.svg',
   url,
   type = 'website'
 }) => {
   const { language } = useLanguage()
   
-  const siteUrl = 'https://letsgodaejeon.kr'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
   const fullUrl = url ? `${siteUrl}${url}` : siteUrl
   const siteName = language === 'ko' ? '대전으로' : "Let's Go Daejeon"
   const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | Let's Go Daejeon`

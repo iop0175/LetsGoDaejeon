@@ -22,7 +22,7 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 // IndexNow 설정
 const INDEXNOW_KEY = '6d0d01a5802bbad93fbd878628659588';
-const SITE_URL = 'https://letsgodaejeon.kr';
+const SITE_URL = 'https://www.letsgodaejeon.kr';
 
 const PORT = 4444;
 

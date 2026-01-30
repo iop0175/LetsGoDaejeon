@@ -918,7 +918,7 @@ const SpotDetailPage = () => {
     // 프로덕션 도메인 사용 (localhost인 경우 실제 도메인으로 변환)
     const currentUrl = window.location.href
     const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
-    const productionDomain = 'https://letsgodaejeon.kr'
+    const productionDomain = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
     const spotSlug = generateSlug(spot?.title, contentId)
     const shareUrl = isLocalhost 
       ? `${productionDomain}/spot/${spotSlug}` 
@@ -980,7 +980,7 @@ const SpotDetailPage = () => {
     // 프로덕션 도메인 사용 (localhost인 경우 실제 도메인으로 변환)
     const currentUrl = window.location.href
     const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
-    const productionDomain = 'https://letsgodaejeon.kr'
+    const productionDomain = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
     const spotSlug = generateSlug(spot?.title, contentId)
     const copyUrl = isLocalhost 
       ? `${productionDomain}/spot/${spotSlug}` 

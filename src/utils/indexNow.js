@@ -1,6 +1,6 @@
 // IndexNow 유틸리티 - 클라이언트 및 서버에서 사용
 const INDEXNOW_KEY = '6d0d01a5802bbad93fbd878628659588'
-const SITE_URL = 'https://letsgodaejeon.kr'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
 
 /**
  * IndexNow에 URL 제출

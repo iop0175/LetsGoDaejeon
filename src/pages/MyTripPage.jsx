@@ -519,12 +519,13 @@ const MyTripPage = () => {
   const handleKakaoInvite = () => {
     if (window.Kakao && window.Kakao.isInitialized()) {
       const trip = tripPlans.find(t => t.id === invitingTripId)
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
       window.Kakao.Share.sendDefault({
         objectType: 'feed',
         content: {
           title: t.trip.letsPlantTogether,
           description: trip?.title || t.trip.daejeonTrip,
-          imageUrl: 'https://letsgodaejeon.kr/images/og-image.png',
+          imageUrl: `${siteUrl}/images/og-image.png`,
           link: {
             mobileWebUrl: inviteUrl,
             webUrl: inviteUrl,

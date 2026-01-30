@@ -4,7 +4,7 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-const SITE_URL = 'https://letsgodaejeon.kr'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
 
 // 메인 사이트맵 페이지 목록
 const mainPages = [
