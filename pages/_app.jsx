@@ -112,12 +112,12 @@ export default function App({ Component, pageProps }) {
   
   return (
     <>
-      {/* Google Analytics - afterInteractive로 페이지 로드 후 로딩 */}
+      {/* Google Analytics - lazyOnload로 초기 로딩 성능 개선 */}
       <Script
         src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
-        strategy="afterInteractive"
+        strategy="lazyOnload"
       />
-      <Script id="google-analytics" strategy="afterInteractive">
+      <Script id="google-analytics" strategy="lazyOnload">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){dataLayer.push(arguments);}
@@ -128,12 +128,12 @@ export default function App({ Component, pageProps }) {
         `}
       </Script>
       
-      {/* 카카오 JavaScript SDK (공유 기능용) - afterInteractive로 렌더링 차단 방지 */}
+      {/* 카카오 JavaScript SDK (공유 기능용) - lazyOnload로 초기 성능 개선 */}
       <Script
         src="https://t1.kakaocdn.net/kakao_js_sdk/2.7.2/kakao.min.js"
         integrity="sha384-TiCUE00h649CAMonG018J2ujOgDKW/kVWlChEuu4jK2vxfAAD0eZxzCKakxg55G4"
         crossOrigin="anonymous"
-        strategy="afterInteractive"
+        strategy="lazyOnload"
         onLoad={() => initKakaoSDK()}
       />
       
