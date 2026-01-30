@@ -12,11 +12,11 @@ import { AuthProvider } from '../src/context/AuthContext'
 // Google Analytics ID
 const GA_TRACKING_ID = 'G-610JNHR72K'
 
-// Next.js Font 최적화 - 빌드 시 자동 인라인, FOUT/CLS 최소화
+// Next.js Font 최적화 - CLS 최소화를 위해 optional 사용
 const notoSansKR = Noto_Sans_KR({
   weight: ['300', '400', '500', '600', '700'],
   subsets: ['latin'],
-  display: 'swap',
+  display: 'optional', // swap → optional: 폰트 로딩 시 CLS 방지
   preload: true,
   variable: '--font-noto-sans-kr',
 })
