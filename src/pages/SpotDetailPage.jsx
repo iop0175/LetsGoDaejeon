@@ -1720,8 +1720,8 @@ const SpotDetailPage = () => {
             </div>
             <p className="sdp__nearby-desc">
               {language === 'ko' 
-                ? `${spot?.title || '이 맛집'} 주변에서 편리하게 숙박하고 쇼핑도 즐길 수 있습니다.`
-                : `You can conveniently stay and shop around ${spot?.title || 'this restaurant'}.`
+                ? `${spot?.title || '이 맛집'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역을 중심으로 숙박시설과 쇼핑 공간이 함께 형성돼 있어, 식사 후 휴식과 쇼핑을 동시에 즐기기 좋다.`
+                : `Near ${spot?.title || 'this restaurant'}, there are accommodations and shopping areas in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area, making it convenient to rest and shop after your meal.`
               }
             </p>
             
