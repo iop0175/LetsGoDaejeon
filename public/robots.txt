@@ -19,5 +19,6 @@ RSS: https://letsgodaejeon.kr/rss.xml
 
 # 크롤링 속도 제한 (1초당 1회 요청)
 Crawl-delay: 1
+
 # Daum Webmaster Tool 인증
-#DaumWebMasterTool:d39f087a4a0ece4ebfd3055167ec165c659e5e6417a0bd246f0b2d15805dd6e7:CJO2ccdSNYzrWJRcwAAiCg==
+#DaumWebMasterTool:e66fe74826630c332a8de14dc485134948af33efaa8d313188ea40d21acb6505:CJO2ccdSNYzrWJRcwAAiCg==
