@@ -1,6 +1,7 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import HeroSection from '../src/components/HeroSection/HeroSection'
+import { getHeroSlides } from '../src/services/dbService'
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
 const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: true })
@@ -20,7 +21,7 @@ const SEO = {
   image: 'https://www.letsgodaejeon.kr/og-image.svg'
 }
 
-export default function HomePage() {
+export default function HomePage({ heroSlides }) {
   return (
     <>
       <Head>
@@ -46,7 +47,7 @@ export default function HomePage() {
         <meta name="twitter:image" content={SEO.image} />
       </Head>
 
-      <HeroSection />
+      <HeroSection initialSlides={heroSlides} />
       <QuickMenu />
       <PopularSpots />
       <TravelCourse />
@@ -64,11 +65,24 @@ export default function HomePage() {
   )
 }
 
-// 정적 생성 (SSG)
+// 정적 생성 (SSG) - 빌드 시 히어로 슬라이드 데이터 미리 가져오기
 export async function getStaticProps() {
+  let heroSlides = []
+  
+  try {
+    const result = await getHeroSlides(true)
+    if (result.success && result.items.length > 0) {
+      heroSlides = result.items
+    }
+  } catch (error) {
+    console.error('Failed to fetch hero slides:', error)
+  }
+  
   return {
-    props: {},
-    // 24시간마다 재생성 (ISR)
-    revalidate: 86400
+    props: {
+      heroSlides,
+    },
+    // 1시간마다 재생성 (ISR)
+    revalidate: 3600
   }
 }

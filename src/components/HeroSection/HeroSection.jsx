@@ -11,10 +11,11 @@ import 'swiper/css/pagination'
 import 'swiper/css/effect-fade'
 // CSS는 _app.jsx에서 import
 
-const HeroSection = memo(() => {
+const HeroSection = memo(({ initialSlides = [] }) => {
   const { t, language } = useLanguage()
-  const [slides, setSlides] = useState([])
-  const [loading, setLoading] = useState(true)
+  // initialSlides가 있으면 초기값으로 사용 (SSG에서 미리 가져온 데이터)
+  const [slides, setSlides] = useState(initialSlides)
+  const [loading, setLoading] = useState(initialSlides.length === 0)
   const [error, setError] = useState(null)
 
   // 기본 슬라이드 (DB에 데이터가 없을 때 사용) - useMemo로 언어 변경 시 업데이트
@@ -55,6 +56,12 @@ const HeroSection = memo(() => {
   ], [t])
 
   useEffect(() => {
+    // initialSlides가 이미 있으면 다시 가져올 필요 없음
+    if (initialSlides.length > 0) {
+      setLoading(false)
+      return
+    }
+    
     const fetchSlides = async () => {
       try {
         setError(null)
@@ -73,7 +80,7 @@ const HeroSection = memo(() => {
     }
 
     fetchSlides()
-  }, [defaultSlides])
+  }, [defaultSlides, initialSlides])
 
   // 언어에 따른 텍스트 가져오기
   const getLocalizedText = (slide, field) => {
