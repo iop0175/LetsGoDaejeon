@@ -3,6 +3,7 @@ import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
+import { generateSlug } from '../../utils/slugUtils'
 // CSS는 _app.jsx에서 import
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -151,7 +152,7 @@ const FoodSection = memo(() => {
         ) : (
           <div className="food-grid">
             {foods.map((food) => (
-              <a key={food.id} href={food.contentId ? `/spot/${food.contentId}` : '/food'} className="food-card">
+              <a key={food.id} href={food.contentId ? `/spot/${generateSlug(food.name[language] || food.name.ko, food.contentId)}` : '/food'} className="food-card">
                 <div className="food-image">
                   <img src={food.image} alt={food.name[language] || food.name.ko} loading="lazy" />
                   <div className="food-rating">

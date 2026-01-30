@@ -2,6 +2,7 @@ import { memo } from 'react'
 import Link from 'next/link'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
+import { generateSlug } from '../../utils/slugUtils'
 // CSS는 _app.jsx에서 import
 
 const DEFAULT_IMAGE = '/images/no-image.svg'
@@ -14,7 +15,7 @@ const TravelCard = memo(({ id, contentId, title, location, category, image, dura
   }
 
   // contentId가 있으면 상세 페이지로, 없으면 /travel/id로
-  const linkTo = contentId ? `/spot/${contentId}` : `/travel/${id}`
+  const linkTo = contentId ? `/spot/${generateSlug(title, contentId)}` : `/travel/${id}`
 
   return (
     <Link href={linkTo} className="travel-card">

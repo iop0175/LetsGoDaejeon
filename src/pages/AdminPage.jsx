@@ -4791,7 +4791,7 @@ const AdminPage = () => {
                         </div>
                         <div className="review-actions">
                           <a 
-                            href={`/spot/${review.content_type}/${review.content_id}`} 
+                            href={`/spot/${review.content_id}`} 
                             target="_blank" 
                             className="view-spot-btn"
                           >

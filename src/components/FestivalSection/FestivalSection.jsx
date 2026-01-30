@@ -5,6 +5,7 @@ import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourFestivals } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
+import { generateSlug } from '../../utils/slugUtils'
 import 'swiper/css'
 import 'swiper/css/navigation'
 // CSS는 _app.jsx에서 import
@@ -179,7 +180,7 @@ const FestivalSection = memo(() => {
           >
             {festivals.map((festival) => (
               <SwiperSlide key={festival.id}>
-                <a href={festival.contentId ? `/spot/${festival.contentId}` : '/festival'} className="festival-card">
+                <a href={festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival'} className="festival-card">
                   <div className="festival-image">
                     <img src={festival.image} alt={festival.title[language] || festival.title.ko} loading="lazy" />
                     <span className="festival-status">{festival.host || t.festivalSection.upcoming}</span>

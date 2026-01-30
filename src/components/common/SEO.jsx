@@ -16,13 +16,13 @@ const SEO = ({
   title, 
   description, 
   keywords, 
-  image = 'https://lets-go-daejeon.vercel.app/og-image.svg',
+  image = 'https://letsgodaejeon.kr/og-image.svg',
   url,
   type = 'website'
 }) => {
   const { language } = useLanguage()
   
-  const siteUrl = 'https://lets-go-daejeon.vercel.app'
+  const siteUrl = 'https://letsgodaejeon.kr'
   const fullUrl = url ? `${siteUrl}${url}` : siteUrl
   const siteName = language === 'ko' ? '대전으로' : "Let's Go Daejeon"
   const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | Let's Go Daejeon`

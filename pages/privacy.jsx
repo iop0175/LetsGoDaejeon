@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <Head>
         <title>개인정보처리방침 | 대전으로</title>
         <meta name="description" content="대전으로 서비스 개인정보처리방침" />
-        <link rel="canonical" href="https://lets-go-daejeon.vercel.app/privacy" />
+        <link rel="canonical" href="https://letsgodaejeon.kr/privacy" />
       </Head>
 
       <PrivacyPageContent />

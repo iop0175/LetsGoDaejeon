@@ -26,7 +26,7 @@ const nextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'lets-go-daejeon.vercel.app',
+        hostname: 'letsgodaejeon.kr',
       },
       {
         protocol: 'https',

@@ -3931,12 +3931,12 @@ export const sendSpotsToN8nByType = async (webhookUrl, items, contentTypeId, onP
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
-      // n8n 처리 시간 확보 및 Gemini API Rate Limit 방지를 위해 60초 대기
+      // n8n 처리 시간 확보 및 Gemini API Rate Limit 방지를 위해 2분 대기
       if (i < items.length - 1) {  // 마지막 아이템은 대기 안함
         if (onLog) {
-          onLog('info', `⏳ 다음 요청까지 60초 대기...`)
+          onLog('info', `⏳ 다음 요청까지 2분 대기...`)
         }
-        await new Promise(resolve => setTimeout(resolve, 60000))
+        await new Promise(resolve => setTimeout(resolve, 120000))
       }
       
     } catch (err) {

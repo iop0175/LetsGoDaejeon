@@ -10,7 +10,7 @@ export const config = {
 // 허용된 도메인 목록
 const ALLOWED_ORIGINS = [
   'https://letsgodaejeon.vercel.app',
-  'https://lets-go-daejeon.vercel.app',
+  'https://letsgodaejeon.kr',
   'https://letsgodaejeon.kr',
   'https://www.letsgodaejeon.kr',
   'http://localhost:5173',

@@ -870,8 +870,9 @@ const SpotDetailPage = () => {
     const currentUrl = window.location.href
     const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
     const productionDomain = 'https://letsgodaejeon.kr'
+    const spotSlug = generateSlug(spot?.title, contentId)
     const shareUrl = isLocalhost 
-      ? `${productionDomain}/spot/${contentId}` 
+      ? `${productionDomain}/spot/${spotSlug}` 
       : currentUrl
     
     const shareTitle = spot?.title || '대전 관광지'
@@ -931,8 +932,9 @@ const SpotDetailPage = () => {
     const currentUrl = window.location.href
     const isLocalhost = currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')
     const productionDomain = 'https://letsgodaejeon.kr'
+    const spotSlug = generateSlug(spot?.title, contentId)
     const copyUrl = isLocalhost 
-      ? `${productionDomain}/spot/${contentId}` 
+      ? `${productionDomain}/spot/${spotSlug}` 
       : currentUrl
     
     try {

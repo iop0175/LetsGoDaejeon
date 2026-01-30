@@ -29,14 +29,14 @@ export default function CulturePage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://lets-go-daejeon.vercel.app/culture" />
+        <link rel="canonical" href="https://letsgodaejeon.kr/culture" />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://lets-go-daejeon.vercel.app/culture" />
+        <meta property="og:url" content="https://letsgodaejeon.kr/culture" />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://lets-go-daejeon.vercel.app/og-image.svg" />
+        <meta property="og:image" content="https://letsgodaejeon.kr/og-image.svg" />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +54,7 @@ export default function CulturePage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 문화시설 목록",
               "description": SEO.ko.description,
-              "url": "https://lets-go-daejeon.vercel.app/culture",
+              "url": "https://letsgodaejeon.kr/culture",
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",

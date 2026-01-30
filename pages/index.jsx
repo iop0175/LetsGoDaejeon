@@ -16,8 +16,8 @@ const SEO = {
   title: '대전으로 | Let\'s Go Daejeon - 대전 관광 여행 가이드',
   description: '대전의 아름다운 관광지, 맛집, 축제, 문화시설을 소개합니다. 대전 여행의 모든 것을 한눈에!',
   keywords: '대전, 대전 관광, 대전 여행, 대전 맛집, 대전 축제, 대전 가볼만한곳, 대전 명소, Daejeon, Daejeon Tourism',
-  url: 'https://lets-go-daejeon.vercel.app',
-  image: 'https://lets-go-daejeon.vercel.app/og-image.svg'
+  url: 'https://letsgodaejeon.kr',
+  image: 'https://letsgodaejeon.kr/og-image.svg'
 }
 
 export default function HomePage() {
