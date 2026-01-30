@@ -7,6 +7,7 @@ Allow: /
 # 검색엔진이 크롤링하지 않아도 되는 페이지
 Disallow: /admin
 Disallow: /api/
+Disallow: /_next/
 Disallow: /profile
 Disallow: /my-trip
 Disallow: /search
