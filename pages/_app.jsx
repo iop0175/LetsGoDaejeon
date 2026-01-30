@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import Head from 'next/head'
+import Script from 'next/script'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { SpeedInsights } from '@vercel/speed-insights/next'
@@ -7,6 +8,9 @@ import { Noto_Sans_KR } from 'next/font/google'
 import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
+
+// Google Analytics ID
+const GA_TRACKING_ID = 'G-610JNHR72K'
 
 // Next.js Font 최적화 - 빌드 시 자동 인라인, FOUT/CLS 최소화
 const notoSansKR = Noto_Sans_KR({
@@ -109,6 +113,22 @@ export default function App({ Component, pageProps }) {
   
   return (
     <>
+      {/* Google Analytics - afterInteractive로 페이지 로드 후 로딩 */}
+      <Script
+        src={`https://www.googletagmanager.com/gtag/js?id=${GA_TRACKING_ID}`}
+        strategy="afterInteractive"
+      />
+      <Script id="google-analytics" strategy="afterInteractive">
+        {`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_TRACKING_ID}', {
+            page_path: window.location.pathname,
+          });
+        `}
+      </Script>
+      
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="canonical" href={getCanonicalUrl()} />
