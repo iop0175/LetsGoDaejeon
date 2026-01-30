@@ -156,7 +156,7 @@ const PopularSpots = memo(() => {
           </div>
         )}
         <div className="section-more">
-          <a href="/travel" className="btn btn-secondary">
+          <a href="/travel" className="btn btn-secondary" aria-label={`${t.popularSpots.title} - ${t.popularSpots.viewMore}`}>
             {t.popularSpots.viewMore}
             <FiArrowRight />
           </a>

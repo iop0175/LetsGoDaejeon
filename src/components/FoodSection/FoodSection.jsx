@@ -182,7 +182,7 @@ const FoodSection = memo(() => {
         )}
         
         <div className="section-more">
-          <a href="/food" className="btn btn-secondary">
+          <a href="/food" className="btn btn-secondary" aria-label={`${t.foodSection.title} - ${t.foodSection.viewMore}`}>
             {t.foodSection.viewMore}
             <FiArrowRight />
           </a>

@@ -109,7 +109,11 @@ const HeroSection = memo(() => {
                 <span className="hero-badge">{getLocalizedText(slide, 'title')}</span>
                 <h2 className="hero-title">{getLocalizedText(slide, 'subtitle')}</h2>
                 <p className="hero-description">{getLocalizedText(slide, 'description')}</p>
-                <a href={slide.link || '/'} className="hero-btn">
+                <a 
+                  href={slide.link || '/'} 
+                  className="hero-btn"
+                  aria-label={`${getLocalizedText(slide, 'subtitle')} - ${t.hero.viewMore}`}
+                >
                   {t.hero.viewMore}
                   <FiArrowRight />
                 </a>
