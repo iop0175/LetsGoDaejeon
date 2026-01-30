@@ -7,6 +7,17 @@ const nextConfig = {
   
   // 이미지 최적화 설정
   images: {
+    // domains는 deprecated지만 Vercel에서 더 확실히 동작
+    domains: [
+      'tong.visitkorea.or.kr',
+      'www.daejeon.go.kr',
+      'dapi.kakao.com',
+      't1.daumcdn.net',
+      'letsgodaejeon.kr',
+      'images.unsplash.com',
+      'picsum.photos',
+      'frqzcjaavws6yb7a.public.blob.vercel-storage.com',
+    ],
     remotePatterns: [
       {
         protocol: 'https',
