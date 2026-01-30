@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { FiMapPin, FiClock, FiLoader, FiX, FiCamera, FiPhone, FiNavigation, FiPlus, FiCalendar, FiCheck, FiSun } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -254,15 +255,17 @@ const LeisurePage = () => {
 
             {/* 레포츠 카드 그리드 */}
             <div className="leisure-grid">
-              {paginatedSpots.map((spot) => (
+              {paginatedSpots.map((spot, index) => (
                 <div key={spot.id} className="leisure-card" onClick={() => router.push(`/spot/${generateSlug(spot.title, spot.contentId)}`)}>
                   <div className="leisure-card-image">
                     {spot.image ? (
-                      <img 
-                        src={spot.image} 
+                      <Image 
+                        src={getReliableImageUrl(spot.image)} 
                         alt={language === 'en' && spot.title_en ? spot.title_en : spot.title} 
-                        loading="lazy"
-                        onError={handleImageError}
+                        width={350}
+                        height={200}
+                        style={{ objectFit: 'cover' }}
+                        loading={index < 6 ? 'eager' : 'lazy'}
                       />
                     ) : (
                       <div className="no-image">

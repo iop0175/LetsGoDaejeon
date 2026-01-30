@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiClock, FiNavigation, FiCamera, FiLoader } from 'react-icons/fi';
@@ -308,11 +309,13 @@ const CulturePage = () => {
             {paginatedFacilities.map((facility, index) => (
               <div key={index} className="culture-card" onClick={() => router.push(`/spot/${generateSlug(facility.fcltyNm, facility.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="culture-image">
-                  <img 
-                    src={facility.imageUrl || '/images/no-image.svg'} 
+                  <Image 
+                    src={getReliableImageUrl(facility.imageUrl) || '/images/no-image.svg'} 
                     alt={language === 'en' && facility.fcltyNm_en ? facility.fcltyNm_en : facility.fcltyNm} 
-                    loading="lazy"
-                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                    width={350}
+                    height={200}
+                    style={{ objectFit: 'cover' }}
+                    loading={index < 6 ? 'eager' : 'lazy'}
                   />
                 </div>
                 <div className="culture-card-content">

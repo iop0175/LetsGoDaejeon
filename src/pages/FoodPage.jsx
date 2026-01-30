@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { FiMapPin, FiClock, FiPhone, FiLoader, FiNavigation, FiPlus, FiCalendar, FiCheck, FiX } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
 import { useAuth } from '../context/AuthContext'
@@ -323,16 +324,16 @@ const FoodPage = () => {
             </div>
             
             <div className="food-grid-page">
-              {paginatedRestaurants.map((restaurant) => (
+              {paginatedRestaurants.map((restaurant, index) => (
                 <div key={restaurant.id} className="food-card-large" onClick={() => router.push(`/spot/${generateSlug(restaurant.name, restaurant.contentId)}`)} style={{ cursor: 'pointer' }}>
                   <div className="food-image-wrapper">
-                    <img 
-                      src={restaurant.image || '/images/no-image.svg'} 
+                    <Image 
+                      src={getReliableImageUrl(restaurant.image) || '/images/no-image.svg'} 
                       alt={language === 'en' && restaurant.name_en ? restaurant.name_en : restaurant.name} 
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = '/images/no-image.svg'
-                      }}
+                      width={350}
+                      height={200}
+                      style={{ objectFit: 'cover' }}
+                      loading={index < 6 ? 'eager' : 'lazy'}
                     />
                   </div>
                   <div className="food-info-wrapper">

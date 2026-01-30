@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/router';
+import Image from 'next/image';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch, FiCamera, FiLoader, FiClock } from 'react-icons/fi';
@@ -324,11 +325,13 @@ const AccommodationPage = () => {
             {paginatedRooms.map((room, index) => (
               <div key={index} className="accommodation-card" onClick={() => router.push(`/spot/${generateSlug(room.romsNm, room.contentId)}`)} style={{ cursor: 'pointer' }}>
                 <div className="accommodation-image">
-                  <img 
-                    src={room.imageUrl || '/images/no-image.svg'} 
+                  <Image 
+                    src={getReliableImageUrl(room.imageUrl) || '/images/no-image.svg'} 
                     alt={language === 'en' && room.romsNm_en ? room.romsNm_en : room.romsNm} 
-                    loading="lazy"
-                    onError={(e) => { e.target.src = '/images/no-image.svg' }}
+                    width={350}
+                    height={200}
+                    style={{ objectFit: 'cover' }}
+                    loading={index < 6 ? 'eager' : 'lazy'}
                   />
                 </div>
                 <div className="accommodation-card-content">
