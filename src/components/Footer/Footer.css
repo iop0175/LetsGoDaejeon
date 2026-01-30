@@ -2,6 +2,7 @@
   background: var(--text-primary);
   color: #b4b4c8;
   padding: 60px 0 30px;
+  min-height: 400px; /* CLS 방지 */
 }
 
 .footer-container {

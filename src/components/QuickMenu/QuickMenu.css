@@ -1,6 +1,7 @@
 .quick-menu {
   padding: 80px 0;
   background: var(--bg-secondary);
+  min-height: 350px; /* CLS 방지 */
 }
 
 .quick-menu-header {
