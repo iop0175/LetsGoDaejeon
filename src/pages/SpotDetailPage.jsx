@@ -1627,10 +1627,14 @@ const SpotDetailPage = () => {
               {language === 'ko' 
                 ? spot?.content_type_id === '32'
                   ? `${spot?.title || '이 숙소'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역의 맛집과 카페가 있어, 숙박 중 편리하게 식사와 휴식을 즐길 수 있다.`
-                  : `${spot?.title || '이 장소'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역을 중심으로 한 식사와 휴식이 가능한 맛집과 카페가 분포해 있어 함께 방문하기 좋다.`
+                  : spot?.content_type_id === '28'
+                    ? `${spot?.title || '이 레포츠 시설'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역의 맛집과 카페가 있어, 레저 활동 후 식사와 휴식을 즐기기 좋다.`
+                    : `${spot?.title || '이 장소'} 인근에는 ${spot?.addr1?.split(' ').find(part => part.includes('구')) || '주변'} 지역을 중심으로 한 식사와 휴식이 가능한 맛집과 카페가 분포해 있어 함께 방문하기 좋다.`
                 : spot?.content_type_id === '32'
                   ? `Near ${spot?.title || 'this accommodation'}, there are restaurants and cafes in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area for convenient dining during your stay.`
-                  : `Near ${spot?.title || 'this place'}, there are various restaurants and cafes in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area for meals and relaxation.`
+                  : spot?.content_type_id === '28'
+                    ? `Near ${spot?.title || 'this leisure facility'}, there are restaurants and cafes in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area, perfect for dining after your activities.`
+                    : `Near ${spot?.title || 'this place'}, there are various restaurants and cafes in the ${spot?.addr1?.split(' ').find(part => part.includes('구')) || 'surrounding'} area for meals and relaxation.`
               }
             </p>
             
