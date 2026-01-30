@@ -1,5 +1,6 @@
-import { memo } from 'react'
+import { memo, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { FiMapPin, FiClock, FiArrowRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { generateSlug } from '../../utils/slugUtils'
@@ -9,23 +10,39 @@ const DEFAULT_IMAGE = '/images/no-image.svg'
 
 const TravelCard = memo(({ id, contentId, title, location, category, image, duration }) => {
   const { t } = useLanguage()
+  const [imgSrc, setImgSrc] = useState(image || DEFAULT_IMAGE)
 
-  const handleImageError = (e) => {
-    e.target.src = DEFAULT_IMAGE
+  const handleImageError = () => {
+    setImgSrc(DEFAULT_IMAGE)
   }
 
   // contentId가 있으면 상세 페이지로, 없으면 /travel/id로
   const linkTo = contentId ? `/spot/${generateSlug(title, contentId)}` : `/travel/${id}`
 
+  // 외부 이미지인지 확인
+  const isExternal = imgSrc && (imgSrc.startsWith('http://') || imgSrc.startsWith('https://'))
+
   return (
     <Link href={linkTo} className="travel-card">
       <div className="travel-card-image">
-        <img 
-          src={image || DEFAULT_IMAGE} 
-          alt={title} 
-          loading="lazy" 
-          onError={handleImageError}
-        />
+        {isExternal ? (
+          <Image 
+            src={imgSrc}
+            alt={title}
+            width={350}
+            height={263}
+            loading="lazy"
+            onError={handleImageError}
+            style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+          />
+        ) : (
+          <img 
+            src={imgSrc}
+            alt={title}
+            loading="lazy"
+            onError={handleImageError}
+          />
+        )}
         <span className="travel-card-category">{category}</span>
       </div>
       <div className="travel-card-content">

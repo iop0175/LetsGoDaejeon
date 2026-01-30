@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react'
+import Image from 'next/image'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
@@ -182,7 +183,14 @@ const FestivalSection = memo(() => {
               <SwiperSlide key={festival.id}>
                 <a href={festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival'} className="festival-card">
                   <div className="festival-image">
-                    <img src={festival.image} alt={festival.title[language] || festival.title.ko} loading="lazy" />
+                    <Image 
+                      src={festival.image} 
+                      alt={festival.title[language] || festival.title.ko} 
+                      width={410}
+                      height={263}
+                      loading="lazy"
+                      style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                    />
                     <span className="festival-status">{festival.host || t.festivalSection.upcoming}</span>
                   </div>
                   <div className="festival-content">
