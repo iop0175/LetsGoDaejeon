@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
-import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiX, FiInfo, FiMap } from 'react-icons/fi'
-import { FaBus, FaSubway, FaWalking, FaCar, FaBicycle } from 'react-icons/fa'
+import { FiArrowLeft, FiCalendar, FiMapPin, FiClock, FiUser, FiEye, FiHeart, FiShare2, FiNavigation, FiInfo, FiMap, FiEdit3, FiPhone } from 'react-icons/fi'
+import { FaWalking, FaCar, FaBus, FaSubway } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
 import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked, getPlaceDetail } from '../services/tripService'
-import { getPublicTransitRoute } from '../services/odsayService'
-import { getCoordinatesFromAddress, getCarRoute } from '../services/kakaoMobilityService'
+import { getCarRoute } from '../services/kakaoMobilityService'
+import { getReliableImageUrl, DEFAULT_IMAGE } from '../utils/imageUtils'
+import { generateSlug } from '../utils/slugUtils'
 // CSS는 pages/_app.jsx에서 import
 
 // 일차별 경로 색상
@@ -20,6 +21,696 @@ const DAY_COLORS = [
   '#06b6d4', // 청록
 ]
 
+// 안정적인 이미지 컴포넌트
+const SafeImage = ({ src, alt, fallback = DEFAULT_IMAGE, className = '' }) => {
+  const [imgSrc, setImgSrc] = useState(() => getReliableImageUrl(src, fallback))
+  const [hasError, setHasError] = useState(false)
+  
+  useEffect(() => {
+    setImgSrc(getReliableImageUrl(src, fallback))
+    setHasError(false)
+  }, [src, fallback])
+  
+  const handleError = () => {
+    if (!hasError) {
+      setHasError(true)
+      setImgSrc(fallback)
+    }
+  }
+  
+  return (
+    <img 
+      src={imgSrc}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={handleError}
+    />
+  )
+}
+
+// 장소 카드 컴포넌트 - 모든 정보를 인라인으로 표시 (SEO 포함)
+const PlaceCard = ({ place, placeIndex, dayIndex, dayColor, nextPlace, language, t, handleDirection }) => {
+  const [placeDetail, setPlaceDetail] = useState(null)
+  const [loading, setLoading] = useState(true)
+  
+  // 컴포넌트 마운트 시 상세 정보 로드
+  useEffect(() => {
+    const loadDetail = async () => {
+      if (place.placeType && place.placeName) {
+        setLoading(true)
+        try {
+          const result = await getPlaceDetail(place.placeType, place.placeName)
+          if (result.success && result.detail) {
+            setPlaceDetail(result.detail)
+          }
+        } catch (err) {
+          console.error('Failed to load place detail:', err)
+        }
+        setLoading(false)
+      } else {
+        setLoading(false)
+      }
+    }
+    loadDetail()
+  }, [place.placeType, place.placeName])
+  
+  const address = placeDetail?.address || place.address || place.placeAddress
+  const imageUrl = placeDetail?.imageUrl || place.placeImage
+  
+  // DB에서 가져온 교통 정보 파싱 (안전하게 처리)
+  const parseTransportData = (data) => {
+    if (!data) return null
+    // 이미 객체인 경우
+    if (typeof data === 'object') return data
+    // 단순 문자열인 경우 (예: "walk", "bus", "car") - 타입만 반환
+    if (typeof data === 'string') {
+      // JSON 문자열인지 확인
+      if (data.startsWith('{') || data.startsWith('[')) {
+        try {
+          return JSON.parse(data)
+        } catch (e) {
+          return { type: data }
+        }
+      }
+      // 단순 타입 문자열
+      return { type: data }
+    }
+    return null
+  }
+  
+  const transportInfo = parseTransportData(place.transportToNext)
+  const transitInfo = parseTransportData(place.transitToNext)
+  
+  // 디버그 로그 - 대중교통 데이터 확인
+  useEffect(() => {
+    if (transitInfo) {
+      console.log(`[DEBUG] 장소: ${place.placeName}`)
+      console.log('[DEBUG] transitInfo 전체:', JSON.stringify(transitInfo, null, 2))
+      if (transitInfo.routeDetails) {
+        transitInfo.routeDetails.forEach((route, idx) => {
+          console.log(`[DEBUG] routeDetails[${idx}]:`, {
+            type: route.type,
+            busNo: route.busNo,
+            lineName: route.lineName,
+            startStation: route.startStation,
+            endStation: route.endStation
+          })
+        })
+      }
+    }
+  }, [transitInfo, place.placeName])
+  
+  // 상세페이지 URL 생성 (contentId 필요)
+  // placeDetail에서 contentId를 가져오거나, 없으면 null
+  const contentId = placeDetail?.contentId
+  const detailUrl = contentId && place.placeName
+    ? `/spot/${generateSlug(place.placeName, contentId)}`
+    : null
+  
+  return (
+    <article 
+      id={`place-card-${dayIndex}-${placeIndex}`}
+      className="place-card" 
+      style={{ '--place-color': dayColor }}
+    >
+      {/* 카드 헤더 - 번호와 이름 */}
+      <header className="place-card-header">
+        <div className="place-order-badge" style={{ backgroundColor: dayColor }}>
+          {placeIndex + 1}
+        </div>
+        {detailUrl ? (
+          <Link href={detailUrl} className="place-card-title-link">
+            <h4 className="place-card-title">{place.placeName}</h4>
+          </Link>
+        ) : (
+          <h4 className="place-card-title">{place.placeName}</h4>
+        )}
+        {place.stayDuration && (
+          <span className="place-duration">
+            <FiClock /> {place.stayDuration}분
+          </span>
+        )}
+      </header>
+      
+      {/* 이미지 - 클릭 시 상세페이지로 이동 */}
+      {detailUrl ? (
+        <Link href={detailUrl} className="place-card-image-link">
+          <div className="place-card-image">
+            <SafeImage 
+              src={imageUrl || DEFAULT_IMAGE}
+              alt={`${place.placeName} - 대전 여행 명소`}
+              fallback={DEFAULT_IMAGE}
+            />
+          </div>
+        </Link>
+      ) : (
+        <div className="place-card-image">
+          <SafeImage 
+            src={imageUrl || DEFAULT_IMAGE}
+            alt={`${place.placeName} - 대전 관광지`}
+            fallback={DEFAULT_IMAGE}
+          />
+        </div>
+      )}
+      
+      {/* 모든 정보 표시 */}
+      <div className="place-card-content">
+        {/* 주소 */}
+        {address && (
+          <div className="place-info-row">
+            <FiMapPin className="info-icon" />
+            <span className="info-text">{address}</span>
+          </div>
+        )}
+        
+        {/* 메모 */}
+        {place.memo && (
+          <div className="place-memo-inline">
+            <FiEdit3 className="info-icon" />
+            <span className="memo-text">{place.memo}</span>
+          </div>
+        )}
+        
+        {/* 로딩 표시 */}
+        {loading && (
+          <div className="place-card-loading">
+            <div className="loading-spinner small" />
+          </div>
+        )}
+        
+        {/* 상세 정보 - 바로 표시 (확장 없이) */}
+        {!loading && placeDetail && (
+          <div className="place-detail-info">
+            {/* 전화번호 */}
+            {placeDetail.tel && (
+              <div className="place-info-row">
+                <FiPhone className="info-icon" />
+                <a href={`tel:${placeDetail.tel}`} className="info-link">{placeDetail.tel}</a>
+              </div>
+            )}
+            
+            {/* 운영시간 */}
+            {placeDetail.operatingHours && (
+              <div className="place-info-row">
+                <FiClock className="info-icon" />
+                <span><strong>{t.detail.hours}:</strong> {placeDetail.operatingHours}</span>
+              </div>
+            )}
+            
+            {/* 휴무일 */}
+            {placeDetail.closedDays && (
+              <div className="place-info-row">
+                <FiCalendar className="info-icon" />
+                <span><strong>{t.detail.closed}:</strong> {placeDetail.closedDays}</span>
+              </div>
+            )}
+            
+            {/* 이용요금 */}
+            {placeDetail.fee && (
+              <div className="place-info-row">
+                <FiInfo className="info-icon" />
+                <span><strong>{t.detail.fee}:</strong> {placeDetail.fee}</span>
+              </div>
+            )}
+            
+            {/* 축제/행사 기간 */}
+            {placeDetail.period && (
+              <div className="place-info-row">
+                <FiCalendar className="info-icon" />
+                <span><strong>{t.common.period}:</strong> {placeDetail.period}</span>
+              </div>
+            )}
+            
+            {/* 설명 */}
+            {placeDetail.description && (
+              <p className="place-description">{placeDetail.description}</p>
+            )}
+            
+            {/* 홈페이지 */}
+            {placeDetail.homepage && (
+              <div className="place-info-row">
+                <a 
+                  href={placeDetail.homepage} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="info-link homepage-link"
+                >
+                  {t.common.visitWebsite} →
+                </a>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      
+      {/* 액션 버튼 */}
+      <div className="place-card-actions">
+        <button 
+          className="direction-btn"
+          onClick={() => handleDirection(place)}
+        >
+          <FiNavigation />
+          {t.common.getDirections}
+        </button>
+        
+        {detailUrl && (
+          <Link 
+            href={detailUrl}
+            className="detail-link-btn"
+          >
+            <FiInfo />
+            {language === 'ko' ? '상세페이지' : 'Details'}
+          </Link>
+        )}
+      </div>
+      
+      {/* 다음 장소로의 이동 정보 - DB 데이터 사용 */}
+      {nextPlace && (
+        <div className="next-place-transit">
+          <div className="transit-line" style={{ backgroundColor: dayColor }}></div>
+          <div className="transit-content">
+            <div className="transit-header">
+              <FiNavigation className="transit-icon" style={{ color: dayColor }} />
+              <span className="transit-title">
+                {language === 'ko' ? '다음 장소로 이동' : 'Next Destination'}
+              </span>
+            </div>
+            <div className="transit-destination">
+              → <strong>{nextPlace.placeName}</strong>
+            </div>
+            
+            {/* DB에서 가져온 교통 정보 표시 */}
+            {(transportInfo || transitInfo) && (
+              <div className="transit-info-row">
+                {/* 교통 수단 타입 (단순 문자열인 경우) */}
+                {transportInfo?.type && (
+                  <span className="transit-method">
+                    {transportInfo.type === 'car' && <><FaCar className="transit-method-icon" /> {language === 'ko' ? '자동차' : 'Car'}</>}
+                    {transportInfo.type === 'walk' && <><FaWalking className="transit-method-icon" /> {language === 'ko' ? '도보' : 'Walk'}</>}
+                    {transportInfo.type === 'bus' && <><FaBus className="transit-method-icon" /> {language === 'ko' ? '버스' : 'Bus'}</>}
+                    {transportInfo.type === 'subway' && <><FaSubway className="transit-method-icon" /> {language === 'ko' ? '지하철' : 'Subway'}</>}
+                  </span>
+                )}
+                
+                {/* 자동차 상세 정보 (JSON 객체인 경우) */}
+                {transportInfo && !transportInfo.type && transportInfo.duration && (
+                  <span className="transit-method">
+                    <FaCar className="transit-method-icon" />
+                    {Math.round(transportInfo.duration / 60)}분
+                    {transportInfo.distance && ` (${(transportInfo.distance / 1000).toFixed(1)}km)`}
+                  </span>
+                )}
+                
+                {/* 도보 상세 정보 */}
+                {transportInfo?.walkDuration && (
+                  <span className="transit-method">
+                    <FaWalking className="transit-method-icon" />
+                    {Math.round(transportInfo.walkDuration / 60)}분
+                  </span>
+                )}
+              </div>
+            )}
+            
+            {/* 대중교통 상세 정보 (transitInfo가 상세 객체인 경우) */}
+            {transitInfo && !transitInfo.type && (
+              <div className="transit-public-info">
+                {/* 총 정보 헤더 */}
+                {(transitInfo.totalTime || transitInfo.totalDistance || transitInfo.payment) && (
+                  <div className="transit-summary">
+                    {transitInfo.totalTime && (
+                      <span className="summary-item">
+                        <FiClock className="summary-icon" />
+                        {transitInfo.totalTime}{typeof transitInfo.totalTime === 'number' ? '분' : ''}
+                      </span>
+                    )}
+                    {transitInfo.totalDistance && (
+                      <span className="summary-item">
+                        <FiMap className="summary-icon" />
+                        {typeof transitInfo.totalDistance === 'number' 
+                          ? `${(transitInfo.totalDistance / 1000).toFixed(1)}km`
+                          : transitInfo.totalDistance
+                        }
+                      </span>
+                    )}
+                    {transitInfo.payment && (
+                      <span className="summary-item">
+                        {typeof transitInfo.payment === 'number' 
+                          ? `${transitInfo.payment.toLocaleString()}원`
+                          : transitInfo.payment
+                        }
+                      </span>
+                    )}
+                  </div>
+                )}
+                
+                {/* 경로 상세 (routeDetails) */}
+                {transitInfo.routeDetails && transitInfo.routeDetails.length > 0 && (
+                  <div className="route-details-list">
+                    {transitInfo.routeDetails.map((route, idx) => (
+                      <div key={idx} className={`route-detail-item ${route.type}`}>
+                        {/* 도보 구간 */}
+                        {route.type === 'walk' && (
+                          <>
+                            <FaWalking className="route-detail-icon walk" />
+                            <div className="route-detail-content">
+                              <span className="route-label">{language === 'ko' ? '도보' : 'Walk'}</span>
+                              <span className="route-info">
+                                {route.sectionTime && `${route.sectionTime}분`}
+                                {route.distance && ` · ${route.distance}m`}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* 버스 구간 */}
+                        {route.type === 'bus' && (
+                          <>
+                            <FaBus className="route-detail-icon bus" style={{ color: route.busColor || '#22C55E' }} />
+                            <div className="route-detail-content">
+                              <div className="route-header">
+                                <span className="route-badge bus" style={{ backgroundColor: route.busColor || '#22C55E' }}>
+                                  {route.busNo}
+                                </span>
+                                {route.availableBuses && route.availableBuses.length > 1 && (
+                                  <span className="alt-routes">
+                                    +{route.availableBuses.length - 1}개 노선
+                                  </span>
+                                )}
+                              </div>
+                              {/* 승하차 정류장 정보 */}
+                              {(route.startStation || route.endStation) && (
+                                <div className="route-stations-detail">
+                                  <div className="station-row">
+                                    <span className="station-marker start"></span>
+                                    <span className="station-text">
+                                      <span className="station-type">승차</span>
+                                      {route.startStation || '정보없음'}
+                                    </span>
+                                  </div>
+                                  <div className="station-row">
+                                    <span className="station-marker end"></span>
+                                    <span className="station-text">
+                                      <span className="station-type">하차</span>
+                                      {route.endStation || '정보없음'}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              <span className="route-info">
+                                {route.sectionTime && `${route.sectionTime}분`}
+                                {route.stationCount && ` · ${route.stationCount}정거장`}
+                                {route.distance && ` · ${(route.distance / 1000).toFixed(1)}km`}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        
+                        {/* 지하철 구간 */}
+                        {route.type === 'subway' && (
+                          <>
+                            <FaSubway className="route-detail-icon subway" style={{ color: route.lineColor || '#3B82F6' }} />
+                            <div className="route-detail-content">
+                              <div className="route-header">
+                                <span className="route-badge subway" style={{ backgroundColor: route.lineColor || '#3B82F6' }}>
+                                  {route.lineName}
+                                </span>
+                              </div>
+                              {/* 승하차역 정보 */}
+                              {(route.startStation || route.endStation) && (
+                                <div className="route-stations-detail">
+                                  <div className="station-row">
+                                    <span className="station-marker start"></span>
+                                    <span className="station-text">
+                                      <span className="station-type">승차</span>
+                                      {route.startStation || '정보없음'}역
+                                    </span>
+                                  </div>
+                                  <div className="station-row">
+                                    <span className="station-marker end"></span>
+                                    <span className="station-text">
+                                      <span className="station-type">하차</span>
+                                      {route.endStation || '정보없음'}역
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                              <span className="route-info">
+                                {route.sectionTime && `${route.sectionTime}분`}
+                                {route.stationCount && ` · ${route.stationCount}역`}
+                                {route.distance && ` · ${(route.distance / 1000).toFixed(1)}km`}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* 구 버전 데이터 호환 (bus, subway 객체 - segments 포함) */}
+                {!transitInfo.routeDetails && (transitInfo.bus || transitInfo.subway) && (
+                  <>
+                    {transitInfo.bus && (
+                      <div className="transit-bus-section">
+                        {/* 버스 헤더 - 버스번호 먼저, 시간 나중에 */}
+                        <div className="transit-public-row">
+                          <FaBus className="transit-public-icon bus" />
+                          <div className="transit-public-detail">
+                            {transitInfo.bus.routes && transitInfo.bus.routes.length > 0 && (
+                              <span className="transit-routes">
+                                {transitInfo.bus.routes.map((route, idx) => (
+                                  <span key={idx} className="route-badge bus">{route}</span>
+                                ))}
+                              </span>
+                            )}
+                            <span className="transit-time">{transitInfo.bus.totalTime}분</span>
+                          </div>
+                        </div>
+                        {/* 버스 구간별 승하차 정보 (segments) */}
+                        {transitInfo.bus.segments && transitInfo.bus.segments.length > 0 && (
+                          <div className="route-details-list">
+                            {transitInfo.bus.segments.map((segment, idx) => (
+                              <div key={idx} className="route-detail-item bus">
+                                <FaBus className="route-detail-icon bus" />
+                                <div className="route-detail-content">
+                                  <div className="route-header">
+                                    <span className="route-badge bus">
+                                      {segment.busNo}
+                                    </span>
+                                    {segment.availableBuses && segment.availableBuses.length > 1 && (
+                                      <span className="alt-routes">
+                                        +{segment.availableBuses.length - 1}개 노선
+                                      </span>
+                                    )}
+                                  </div>
+                                  {/* 승하차 정류장 정보 */}
+                                  {(segment.startStation || segment.endStation) && (
+                                    <div className="route-stations-detail">
+                                      <div className="station-row">
+                                        <span className="station-marker start"></span>
+                                        <span className="station-text">
+                                          <span className="station-type">승차</span>
+                                          {segment.startStation || '정보없음'}
+                                        </span>
+                                      </div>
+                                      <div className="station-row">
+                                        <span className="station-marker end"></span>
+                                        <span className="station-text">
+                                          <span className="station-type">하차</span>
+                                          {segment.endStation || '정보없음'}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <span className="route-info">
+                                    {segment.sectionTime && `${segment.sectionTime}분`}
+                                    {segment.stationCount && ` · ${segment.stationCount}정거장`}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {transitInfo.subway && (
+                      <div className="transit-subway-section">
+                        {/* 지하철 헤더 - 노선 먼저, 시간 나중에 */}
+                        <div className="transit-public-row">
+                          <FaSubway className="transit-public-icon subway" />
+                          <div className="transit-public-detail">
+                            {transitInfo.subway.lines && transitInfo.subway.lines.length > 0 && (
+                              <span className="transit-routes">
+                                {transitInfo.subway.lines.map((line, idx) => (
+                                  <span key={idx} className="route-badge subway">{line}</span>
+                                ))}
+                              </span>
+                            )}
+                            <span className="transit-time">{transitInfo.subway.totalTime || transitInfo.subway.time}분</span>
+                          </div>
+                        </div>
+                        {/* 지하철 구간별 승하차 정보 (segments) */}
+                        {transitInfo.subway.segments && transitInfo.subway.segments.length > 0 && (
+                          <div className="route-details-list">
+                            {transitInfo.subway.segments.map((segment, idx) => (
+                              <div key={idx} className="route-detail-item subway">
+                                <FaSubway className="route-detail-icon subway" />
+                                <div className="route-detail-content">
+                                  <div className="route-header">
+                                    <span className="route-badge subway">
+                                      {segment.lineName || '지하철'}
+                                    </span>
+                                  </div>
+                                  {/* 승하차역 정보 */}
+                                  {(segment.startStation || segment.endStation) && (
+                                    <div className="route-stations-detail">
+                                      <div className="station-row">
+                                        <span className="station-marker start"></span>
+                                        <span className="station-text">
+                                          <span className="station-type">승차</span>
+                                          {segment.startStation || '정보없음'}역
+                                        </span>
+                                      </div>
+                                      <div className="station-row">
+                                        <span className="station-marker end"></span>
+                                        <span className="station-text">
+                                          <span className="station-type">하차</span>
+                                          {segment.endStation || '정보없음'}역
+                                        </span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  <span className="route-info">
+                                    {segment.sectionTime && `${segment.sectionTime}분`}
+                                    {segment.stationCount && ` · ${segment.stationCount}역`}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+                
+                {/* 모든 대중교통 경로 옵션 (allRoutes) */}
+                {transitInfo.allRoutes && transitInfo.allRoutes.length > 1 && (
+                  <div className="all-routes-section">
+                    <div className="all-routes-header">
+                      <span className="all-routes-title">
+                        {language === 'ko' ? '다른 경로 옵션' : 'Alternative Routes'}
+                        <span className="routes-count">({transitInfo.allRoutes.length - 1})</span>
+                      </span>
+                    </div>
+                    <div className="all-routes-list">
+                      {transitInfo.allRoutes.slice(1).map((route, idx) => (
+                        <div key={idx} className="alt-route-card">
+                          <div className="alt-route-header">
+                            <span className="alt-route-time">{route.totalTime}분</span>
+                            {route.payment && (
+                              <span className="alt-route-payment">{route.payment.toLocaleString()}원</span>
+                            )}
+                          </div>
+                          <div className="alt-route-summary">
+                            {route.busSummary && (
+                              <span className="alt-route-type bus">
+                                <FaBus /> {route.busSummary}
+                              </span>
+                            )}
+                            {route.subwaySummary && (
+                              <span className="alt-route-type subway">
+                                <FaSubway /> {route.subwaySummary}
+                              </span>
+                            )}
+                          </div>
+                          {/* 상세 경로 표시 - 승하차 정류장 포함 */}
+                          <div className="alt-route-details">
+                            {route.routeDetails.map((detail, dIdx) => (
+                              <div key={dIdx} className={`alt-route-step-block ${detail.type}`}>
+                                <div className="alt-route-step-header">
+                                  {detail.type === 'walk' && (
+                                    <span className="alt-route-step-type">
+                                      <FaWalking /> 도보 {detail.sectionTime}분
+                                      {detail.distance && ` (${detail.distance}m)`}
+                                    </span>
+                                  )}
+                                  {detail.type === 'bus' && (
+                                    <>
+                                      <span className="alt-route-step-type">
+                                        <FaBus style={{ color: detail.busColor || '#22C55E' }} />
+                                        <span className="alt-route-badge" style={{ backgroundColor: detail.busColor || '#22C55E' }}>
+                                          {detail.busNo}
+                                        </span>
+                                        {detail.sectionTime}분 · {detail.stationCount}정거장
+                                      </span>
+                                      {(detail.startStation || detail.endStation) && (
+                                        <div className="alt-route-stations">
+                                          <span className="station-label">
+                                            <span className="station-dot start"></span>
+                                            승차: {detail.startStation || '정보없음'}
+                                          </span>
+                                          <span className="station-arrow">→</span>
+                                          <span className="station-label">
+                                            <span className="station-dot end"></span>
+                                            하차: {detail.endStation || '정보없음'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                  {detail.type === 'subway' && (
+                                    <>
+                                      <span className="alt-route-step-type">
+                                        <FaSubway style={{ color: detail.lineColor || '#3B82F6' }} />
+                                        <span className="alt-route-badge" style={{ backgroundColor: detail.lineColor || '#3B82F6' }}>
+                                          {detail.lineName}
+                                        </span>
+                                        {detail.sectionTime}분 · {detail.stationCount}역
+                                      </span>
+                                      {(detail.startStation || detail.endStation) && (
+                                        <div className="alt-route-stations">
+                                          <span className="station-label">
+                                            <span className="station-dot start"></span>
+                                            승차: {detail.startStation || '정보없음'}
+                                          </span>
+                                          <span className="station-arrow">→</span>
+                                          <span className="station-label">
+                                            <span className="station-dot end"></span>
+                                            하차: {detail.endStation || '정보없음'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* 교통 정보가 없을 때 기본 메시지 */}
+            {!transportInfo && !transitInfo && (
+              <div className="transit-info-row">
+                <span className="transit-no-info">
+                  {language === 'ko' ? '이동 정보 없음' : 'No transit info'}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </article>
+  )
+}
+
 const SharedTripPage = () => {
   const router = useRouter()
   const { tripId } = router.query
@@ -31,15 +722,9 @@ const SharedTripPage = () => {
   const [isLiked, setIsLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [likingInProgress, setLikingInProgress] = useState(false)
-  const [selectedPlace, setSelectedPlace] = useState(null)
-  const [placeDetail, setPlaceDetail] = useState(null) // DB에서 가져온 장소 상세 정보
-  const [detailLoading, setDetailLoading] = useState(false)
-  const [transitInfo, setTransitInfo] = useState(null)
-  const [transitLoading, setTransitLoading] = useState(false)
   const [selectedDay, setSelectedDay] = useState(0) // 선택된 일차 (지도용)
   const [mapReady, setMapReady] = useState(false)
   const [kakaoMapLoaded, setKakaoMapLoaded] = useState(!!window.kakao?.maps)
-  const detailCardRef = useRef(null)
   const mapRef = useRef(null)
   const mapInstanceRef = useRef(null)
   const markersRef = useRef([])
@@ -230,9 +915,15 @@ const SharedTripPage = () => {
           })
           overlaysRef.current.push(overlay)
           
-          // 클릭 이벤트
+          // 클릭 이벤트 - 해당 카드로 스크롤
           markerContent.addEventListener('click', () => {
-            handlePlaceClick(place, dayIndex, placeIndex)
+            const cardId = `place-card-${dayIndex}-${placeIndex}`
+            const cardElement = document.getElementById(cardId)
+            if (cardElement) {
+              cardElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
+              cardElement.classList.add('highlight')
+              setTimeout(() => cardElement.classList.remove('highlight'), 2000)
+            }
           })
           
           // 호버 효과
@@ -375,224 +1066,6 @@ const SharedTripPage = () => {
     }
   }
   
-  // 다음 장소까지의 이동 정보 조회 (저장된 정보 우선 사용)
-  const fetchTransitInfo = async (currentPlace, nextPlace) => {
-    const transportType = currentPlace?.transportToNext
-    
-    setTransitLoading(true)
-    
-    try {
-      // 1. 먼저 DB에 저장된 경로 정보 확인 (모든 이동 수단)
-      if (currentPlace?.transitToNext) {
-        const savedInfo = currentPlace.transitToNext
-        
-        // 대중교통이 아닌 경우 (도보, 자전거, 자가용, 택시)
-        const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
-        if (nonTransitTypes.includes(transportType)) {
-          setTransitInfo({
-            transportType: savedInfo.transportType || transportType,
-            duration: savedInfo.duration,
-            distance: savedInfo.distance,
-            isEstimate: savedInfo.isEstimate,
-            bus: null,
-            subway: null,
-            nextPlaceName: nextPlace.placeName
-          })
-          setTransitLoading(false)
-          return
-        }
-        
-        // 대중교통(버스/지하철)인 경우
-        // savedInfo에 bus/subway 상세가 없으면 기본 정보만 표시
-        let busInfo = savedInfo.bus || null
-        let subwayInfo = savedInfo.subway || null
-        
-        // bus 타입인데 bus 상세 정보가 없으면 기본 카드만 표시하도록 설정
-        if (transportType === 'bus' && !busInfo) {
-          busInfo = {
-            totalTime: savedInfo.duration,
-            distance: savedInfo.distance,
-            payment: savedInfo.payment,
-            busRoutes: [],
-            routeDetails: []
-          }
-        }
-        
-        // subway 타입인데 subway 상세 정보가 없으면 기본 카드만 표시하도록 설정
-        if (transportType === 'subway' && !subwayInfo) {
-          subwayInfo = {
-            totalTime: savedInfo.duration,
-            distance: savedInfo.distance,
-            payment: savedInfo.payment,
-            lines: [],
-            routeDetails: []
-          }
-        }
-        
-        setTransitInfo({
-          transportType: savedInfo.transportType || transportType,
-          duration: savedInfo.duration,
-          distance: savedInfo.distance,
-          bus: busInfo,
-          subway: subwayInfo,
-          nextPlaceName: nextPlace.placeName
-        })
-        setTransitLoading(false)
-        return
-      }
-      
-      // 2. 저장된 정보가 없고, 대중교통이 아닌 경우 - 정보 없음 표시
-      const nonTransitTypes = ['walk', 'bicycle', 'car', 'taxi']
-      if (nonTransitTypes.includes(transportType)) {
-        setTransitInfo({
-          transportType,
-          duration: null,
-          distance: null,
-          bus: null,
-          subway: null,
-          nextPlaceName: nextPlace.placeName
-        })
-        setTransitLoading(false)
-        return
-      }
-      
-      // 3. 저장된 정보가 없고, 대중교통인 경우 - API로 조회
-      
-      // 좌표가 없으면 주소에서 조회
-      let currentLat = currentPlace?.lat
-      let currentLng = currentPlace?.lng
-      let nextLat = nextPlace?.lat
-      let nextLng = nextPlace?.lng
-      
-      const currentAddr = currentPlace?.address || currentPlace?.placeAddress
-      const nextAddr = nextPlace?.address || nextPlace?.placeAddress
-      
-      // 현재 장소 좌표 조회 (주소 실패 시 장소명으로 재시도)
-      if (!currentLat || !currentLng) {
-        if (currentAddr) {
-          const coordResult = await getCoordinatesFromAddress(currentAddr)
-          if (coordResult.success) {
-            currentLat = coordResult.lat
-            currentLng = coordResult.lng
-          }
-        }
-        
-        if ((!currentLat || !currentLng) && currentPlace?.placeName) {
-          const coordResult = await getCoordinatesFromAddress(`대전 ${currentPlace.placeName}`)
-          if (coordResult.success) {
-            currentLat = coordResult.lat
-            currentLng = coordResult.lng
-          }
-        }
-      }
-      
-      // 다음 장소 좌표 조회 (주소 실패 시 장소명으로 재시도)
-      if (!nextLat || !nextLng) {
-        if (nextAddr) {
-          const coordResult = await getCoordinatesFromAddress(nextAddr)
-          if (coordResult.success) {
-            nextLat = coordResult.lat
-            nextLng = coordResult.lng
-          }
-        }
-        
-        if ((!nextLat || !nextLng) && nextPlace?.placeName) {
-          const coordResult = await getCoordinatesFromAddress(`대전 ${nextPlace.placeName}`)
-          if (coordResult.success) {
-            nextLat = coordResult.lat
-            nextLng = coordResult.lng
-          }
-        }
-      }
-      
-      if (!currentLat || !currentLng || !nextLat || !nextLng) {
-        setTransitInfo(null)
-        setTransitLoading(false)
-        return
-      }
-      
-      // 버스 경로 조회
-      const busResult = await getPublicTransitRoute(
-        currentLng, currentLat,
-        nextLng, nextLat,
-        'bus'
-      )
-      
-      // 지하철 경로 조회
-      const subwayResult = await getPublicTransitRoute(
-        currentLng, currentLat,
-        nextLng, nextLat,
-        'subway'
-      )
-      
-      setTransitInfo({
-        bus: busResult.success ? busResult : null,
-        subway: subwayResult.success ? subwayResult : null,
-        nextPlaceName: nextPlace.placeName
-      })
-    } catch (err) {
-      setTransitInfo(null)
-    }
-    setTransitLoading(false)
-  }
-  
-  // 장소 선택 토글 및 상세 정보 로드
-  const handlePlaceClick = async (place, dayIndex, placeIndex) => {
-    if (selectedPlace?.dayIndex === dayIndex && selectedPlace?.placeIndex === placeIndex) {
-      setSelectedPlace(null) // 같은 장소 클릭 시 닫기
-      setTransitInfo(null)
-      setPlaceDetail(null)
-    } else {
-      setSelectedPlace({ ...place, dayIndex, placeIndex })
-      setPlaceDetail(null)
-      
-      // DB에서 장소 상세 정보 로드
-      if (place.placeType && place.placeName) {
-        setDetailLoading(true)
-        try {
-          const result = await getPlaceDetail(place.placeType, place.placeName)
-          if (result.success && result.detail) {
-            setPlaceDetail(result.detail)
-          }
-        } catch (err) {
-          console.error('Failed to load place detail:', err)
-        }
-        setDetailLoading(false)
-      }
-      
-      // 다음 장소가 있으면 대중교통 정보 조회
-      const day = trip?.days?.[dayIndex]
-      const nextPlace = day?.places?.[placeIndex + 1]
-      if (nextPlace) {
-        await fetchTransitInfo(place, nextPlace)
-      } else {
-        setTransitInfo(null)
-      }
-    }
-  }
-  
-  // 외부 클릭 시 상세 카드 닫기
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (detailCardRef.current && !detailCardRef.current.contains(e.target)) {
-        // 클릭한 요소가 place-item이 아닌 경우에만 닫기
-        if (!e.target.closest('.place-item')) {
-          setSelectedPlace(null)
-          setTransitInfo(null)
-          setPlaceDetail(null)
-        }
-      }
-    }
-    
-    if (selectedPlace) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [selectedPlace])
-  
   if (loading) {
     return (
       <div className="shared-trip-page">
@@ -625,7 +1098,7 @@ const SharedTripPage = () => {
         className="shared-trip-hero"
         style={{ 
           backgroundImage: trip.thumbnailUrl 
-            ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url(${trip.thumbnailUrl})`
+            ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7)), url(${getReliableImageUrl(trip.thumbnailUrl)})`
             : 'linear-gradient(135deg, var(--primary-color), var(--secondary-color))'
         }}
       >
@@ -701,43 +1174,36 @@ const SharedTripPage = () => {
             </div>
           </div>
           
-          <div className="trip-layout">
-            {/* 왼쪽: 일정 목록 */}
-            <div className="trip-schedule">
+          <div className="trip-layout trip-layout-cards">
+            {/* 일정 목록 - 카드 기반 레이아웃 */}
+            <div className="trip-schedule-cards">
               {trip.days && trip.days.length > 0 ? (
                 trip.days.map((day, dayIndex) => (
                   <div 
                     key={dayIndex} 
-                    className={`day-section ${selectedDay === dayIndex ? 'active' : ''}`}
-                    onClick={() => setSelectedDay(dayIndex)}
+                    className="day-section-card"
+                    style={{ '--day-color': DAY_COLORS[dayIndex % DAY_COLORS.length] }}
                   >
-                    <div className="day-header" style={{ '--day-color': DAY_COLORS[dayIndex % DAY_COLORS.length] }}>
-                      <span className="day-number">
+                    <div className="day-header-card">
+                      <span className="day-number-badge">
                         {language === 'ko' ? `${dayIndex + 1}${t.trip.day}` : `Day ${dayIndex + 1}`}
                       </span>
-                      {day.date && (
-                        <span className="day-date">
-                          {new Date(day.date).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            weekday: 'short'
-                          })}
-                        </span>
-                      )}
                     </div>
                     
-                    <div className="places-timeline">
+                    <div className="places-grid">
                       {day.places && day.places.length > 0 ? (
                         day.places.map((place, placeIndex) => (
-                          <div 
-                            key={placeIndex} 
-                            className={`place-item ${selectedPlace?.dayIndex === dayIndex && selectedPlace?.placeIndex === placeIndex ? 'selected' : ''}`}
-                            onClick={() => handlePlaceClick(place, dayIndex, placeIndex)}
-                          >
-                            <div className="place-order">{placeIndex + 1}</div>
-                            <span className="place-name-badge">{place.placeName}</span>
-                            <FiInfo className="place-info-icon" />
-                          </div>
+                          <PlaceCard 
+                            key={placeIndex}
+                            place={place}
+                            placeIndex={placeIndex}
+                            dayIndex={dayIndex}
+                            dayColor={DAY_COLORS[dayIndex % DAY_COLORS.length]}
+                            nextPlace={day.places[placeIndex + 1]}
+                            language={language}
+                            t={t}
+                            handleDirection={handleDirection}
+                          />
                         ))
                       ) : (
                         <div className="no-places">
@@ -755,347 +1221,31 @@ const SharedTripPage = () => {
                 </div>
               )}
             </div>
-            
-            {/* 오른쪽: 장소 상세 정보 카드 */}
-            <div className={`place-detail-panel ${selectedPlace ? 'visible' : ''}`}>
-              {selectedPlace && (
-                <div ref={detailCardRef} className="place-detail-card">
-                  <button className="close-detail-btn" onClick={() => { setSelectedPlace(null); setTransitInfo(null); setPlaceDetail(null); }}>
-                    <FiX />
-                  </button>
-                  
-                  {/* 장소 이미지 */}
-                  {(placeDetail?.imageUrl || selectedPlace.placeImage) && (
-                    <div className="detail-image">
-                      <img 
-                        src={placeDetail?.imageUrl || selectedPlace.placeImage} 
-                        alt={selectedPlace.placeName}
-                        loading="lazy"
-                        onError={(e) => { e.target.style.display = 'none' }}
-                      />
-                    </div>
-                  )}
-                  
-                  <h3 className="detail-place-name">{selectedPlace.placeName}</h3>
-                  
-                  {/* 로딩 중 */}
-                  {detailLoading && (
-                    <div className="detail-loading">
-                      <div className="loading-spinner small" />
-                      <span>{t.common.loadingDetails}</span>
-                    </div>
-                  )}
-                  
-                  {/* DB 상세 정보 */}
-                  {placeDetail && !detailLoading && (
-                    <div className="db-detail-section">
-                      {placeDetail.description && (
-                        <div className="detail-description">
-                          <p>{placeDetail.description}</p>
-                        </div>
-                      )}
-                      
-                      {placeDetail.tel && (
-                        <div className="detail-row">
-                          <FiInfo />
-                          <span>{t.detail.phone}: {placeDetail.tel}</span>
-                        </div>
-                      )}
-                      
-                      {placeDetail.operatingHours && (
-                        <div className="detail-row">
-                          <FiClock />
-                          <span>{t.detail.hours}: {placeDetail.operatingHours}</span>
-                        </div>
-                      )}
-                      
-                      {placeDetail.closedDays && (
-                        <div className="detail-row">
-                          <FiCalendar />
-                          <span>{t.detail.closed}: {placeDetail.closedDays}</span>
-                        </div>
-                      )}
-                      
-                      {(placeDetail.fee || placeDetail.price) && (
-                        <div className="detail-row">
-                          <FiInfo />
-                          <span>{t.detail.fee}: {placeDetail.fee || placeDetail.price}</span>
-                        </div>
-                      )}
-                      
-                      {placeDetail.menu && (
-                        <div className="detail-row">
-                          <FiInfo />
-                          <span>{t.detail.menu}: {placeDetail.menu}</span>
-                        </div>
-                      )}
-                      
-                      {placeDetail.period && (
-                        <div className="detail-row">
-                          <FiCalendar />
-                          <span>{t.common.period}: {placeDetail.period}</span>
-                        </div>
-                      )}
-                      
-                      {placeDetail.homepage && (
-                        <div className="detail-row">
-                          <FiInfo />
-                          <a href={placeDetail.homepage} target="_blank" rel="noopener noreferrer" className="detail-link">
-                            {t.common.visitWebsite}
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  
-                  {/* 주소 */}
-                  {(selectedPlace.address || placeDetail?.address) && (
-                    <div className="detail-row">
-                      <FiMapPin />
-                      <span>{placeDetail?.address || selectedPlace.address}</span>
-                    </div>
-                  )}
-                  
-                  {selectedPlace.stayDuration && (
-                    <div className="detail-row">
-                      <FiClock />
-                      <span>{selectedPlace.stayDuration}{t.transport.minutes} {t.transport.estimated}</span>
-                    </div>
-                  )}
-                  
-                  {selectedPlace.memo && (
-                    <div className="detail-memo">
-                      <strong>{t.trip.memo}</strong>
-                      <p>{selectedPlace.memo}</p>
-                    </div>
-                  )}
-                  
-                  <button 
-                    className="detail-direction-btn"
-                    onClick={() => handleDirection(selectedPlace)}
-                  >
-                    <FiNavigation />
-                    {t.common.getDirections}
-                  </button>
-                  
-                  {/* 다음 장소로 이동하는 대중교통 정보 */}
-                  {transitLoading && (
-                    <div className="transit-loading">
-                      <div className="loading-spinner small" />
-                      <span>{t.transport.loadingTransit}</span>
-                    </div>
-                  )}
-                  
-                  {transitInfo && !transitLoading && (
-                    <div className="transit-info-section">
-                      <h4 className="transit-title">
-                        <FiNavigation />
-                        {language === 'ko' 
-                          ? `${transitInfo.nextPlaceName}${t.transport.toPlace}`
-                          : `${t.transport.toPlace} ${transitInfo.nextPlaceName}`
-                        }
-                      </h4>
-                      
-                      {/* 버스 정보 */}
-                      {transitInfo.bus && !transitInfo.bus.noRoute && (
-                        <div className="transit-card bus">
-                          <div className="transit-header">
-                            <FaBus className="transit-icon bus" />
-                            <span className="transit-type">{t.transport.bus}</span>
-                            <span className="transit-time">
-                              {transitInfo.bus.totalTime}{t.transport.minutes}
-                            </span>
-                          </div>
-                          
-                          {/* 저장된 데이터: segments 사용 */}
-                          {transitInfo.bus.segments?.length > 0 && (
-                            <div className="transit-details">
-                              {transitInfo.bus.segments.map((seg, idx) => (
-                                <div key={idx} className="transit-segment">
-                                  <div className="segment-routes">
-                                    {(seg.availableBuses || [seg.busNo]).slice(0, 5).map((bus, i) => (
-                                      <span key={i} className="bus-badge">{bus}</span>
-                                    ))}
-                                  </div>
-                                  <div className="segment-stations">
-                                    <span className="station-name">{seg.startStation}</span>
-                                    <span className="station-arrow">→</span>
-                                    <span className="station-name">{seg.endStation}</span>
-                                    <span className="station-count">({seg.stationCount}정거장)</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* API 응답: routeDetails 사용 (fallback) */}
-                          {!transitInfo.bus.segments && transitInfo.bus.routeDetails?.filter(r => r.type === 'bus').length > 0 && (
-                            <div className="transit-details">
-                              {transitInfo.bus.routeDetails.filter(r => r.type === 'bus').map((seg, idx) => (
-                                <div key={idx} className="transit-segment">
-                                  <div className="segment-routes">
-                                    {(seg.availableBuses || [{ busNo: seg.busNo }]).slice(0, 5).map((bus, i) => (
-                                      <span key={i} className="bus-badge">{bus.busNo || bus}</span>
-                                    ))}
-                                  </div>
-                                  <div className="segment-stations">
-                                    <span className="station-name">{seg.startStation}</span>
-                                    <span className="station-arrow">→</span>
-                                    <span className="station-name">{seg.endStation}</span>
-                                    <span className="station-count">({seg.stationCount}정거장)</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* 간단 노선 목록 (segments/routeDetails 없을 때) */}
-                          {!transitInfo.bus.segments && !transitInfo.bus.routeDetails && transitInfo.bus.routes?.length > 0 && (
-                            <div className="transit-routes">
-                              <span className="routes-label">
-                                {t.transport.availableRoutes}:
-                              </span>
-                              <div className="bus-routes">
-                                {transitInfo.bus.routes.slice(0, 5).map((busNo, idx) => (
-                                  <span key={idx} className="bus-badge">{busNo}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* 지하철 정보 */}
-                      {transitInfo.subway && !transitInfo.subway.noRoute && (
-                        <div className="transit-card subway">
-                          <div className="transit-header">
-                            <FaSubway className="transit-icon subway" />
-                            <span className="transit-type">{t.transport.subway}</span>
-                            <span className="transit-time">
-                              {transitInfo.subway.totalTime}{t.transport.minutes}
-                            </span>
-                          </div>
-                          
-                          {/* 저장된 데이터: segments 사용 */}
-                          {transitInfo.subway.segments?.length > 0 && (
-                            <div className="transit-details">
-                              {transitInfo.subway.segments.map((seg, idx) => (
-                                <div key={idx} className="transit-segment">
-                                  <div className="segment-routes">
-                                    <span 
-                                      className="subway-badge"
-                                      style={{ backgroundColor: seg.lineColor || '#1a5dc8' }}
-                                    >
-                                      {seg.lineName}
-                                    </span>
-                                  </div>
-                                  <div className="segment-stations">
-                                    <span className="station-name">{seg.startStation}</span>
-                                    <span className="station-arrow">→</span>
-                                    <span className="station-name">{seg.endStation}</span>
-                                    <span className="station-count">({seg.stationCount}역)</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* API 응답: routeDetails 사용 (fallback) */}
-                          {!transitInfo.subway.segments && transitInfo.subway.routeDetails?.filter(r => r.type === 'subway').length > 0 && (
-                            <div className="transit-details">
-                              {transitInfo.subway.routeDetails.filter(r => r.type === 'subway').map((seg, idx) => (
-                                <div key={idx} className="transit-segment">
-                                  <div className="segment-routes">
-                                    <span 
-                                      className="subway-badge"
-                                      style={{ backgroundColor: seg.lineColor || '#1a5dc8' }}
-                                    >
-                                      {seg.lineName}
-                                    </span>
-                                  </div>
-                                  <div className="segment-stations">
-                                    <span className="station-name">{seg.startStation}</span>
-                                    <span className="station-arrow">→</span>
-                                    <span className="station-name">{seg.endStation}</span>
-                                    <span className="station-count">({seg.stationCount}역)</span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          
-                          {/* 간단 노선 목록 (segments/routeDetails 없을 때) */}
-                          {!transitInfo.subway.segments && !transitInfo.subway.routeDetails && transitInfo.subway.lines?.length > 0 && (
-                            <div className="transit-routes">
-                              <span className="routes-label">
-                                {t.transport.line}:
-                              </span>
-                              <div className="subway-lines">
-                                {transitInfo.subway.lines.map((line, idx) => (
-                                  <span key={idx} className="subway-badge">{line}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* 비대중교통 이동수단 (택시, 도보, 자전거, 자가용) */}
-                      {['taxi', 'car', 'walk', 'bicycle'].includes(transitInfo.transportType) && (
-                        <div className={`transit-card ${transitInfo.transportType}`}>
-                          <div className="transit-header">
-                            {transitInfo.transportType === 'taxi' && <FaCar className="transit-icon taxi" />}
-                            {transitInfo.transportType === 'car' && <FaCar className="transit-icon car" />}
-                            {transitInfo.transportType === 'walk' && <FaWalking className="transit-icon walk" />}
-                            {transitInfo.transportType === 'bicycle' && <FaBicycle className="transit-icon bicycle" />}
-                            <span className="transit-type">
-                              {transitInfo.transportType === 'taxi' && t.transport.taxi}
-                              {transitInfo.transportType === 'car' && t.transport.car}
-                              {transitInfo.transportType === 'walk' && t.transport.walk}
-                              {transitInfo.transportType === 'bicycle' && t.transport.bicycle}
-                            </span>
-                            {transitInfo.duration && (
-                              <span className="transit-time">
-                                {transitInfo.duration}{t.transport.minutes}
-                              </span>
-                            )}
-                          </div>
-                          {transitInfo.distance && (
-                            <div className="transit-details">
-                              <span className="transit-distance">
-                                {t.transport.distance}: {typeof transitInfo.distance === 'number' && transitInfo.distance >= 1 
-                                  ? `${transitInfo.distance.toFixed(1)}km`
-                                  : `${Math.round((transitInfo.distance || 0) * 1000)}m`}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* 대중교통 경로가 없고 비대중교통도 아닐 때 */}
-                      {(!transitInfo.bus || transitInfo.bus.noRoute) && 
-                       (!transitInfo.subway || transitInfo.subway.noRoute) &&
-                       !['taxi', 'car', 'walk', 'bicycle'].includes(transitInfo.transportType) && (
-                        <div className="no-transit">
-                          <FaWalking />
-                          <span>{t.transport.walkOrDrive}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {!selectedPlace && (
-                <div className="no-selection">
-                  <FiInfo />
-                  <p>{t.trip.clickToViewDetails}</p>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
+      
+      {/* SEO용 숨겨진 섹션 - 검색엔진 크롤러용 (사용자에게는 보이지 않음) */}
+      <section className="seo-hidden-section" aria-hidden="true">
+        <h2>{trip.title} - {language === 'ko' ? '대전 여행 코스' : 'Daejeon Travel Course'}</h2>
+        {trip.description && <p>{trip.description}</p>}
+        {trip.days?.map((day, dayIdx) => (
+          <div key={dayIdx}>
+            <h3>{language === 'ko' ? `${dayIdx + 1}일차` : `Day ${dayIdx + 1}`}</h3>
+            {day.places?.map((place, placeIdx) => (
+              <article key={placeIdx}>
+                <h4>{placeIdx + 1}. {place.placeName}</h4>
+                {(place.address || place.placeAddress) && <p>{place.address || place.placeAddress}</p>}
+                {place.memo && <p>{place.memo}</p>}
+              </article>
+            ))}
+          </div>
+        ))}
+        <p>{language === 'ko' 
+          ? '대전 여행, 대전 관광, 대전 가볼만한곳, 대전 맛집, 대전 명소'
+          : 'Daejeon travel, Daejeon tourism, places to visit in Daejeon'
+        }</p>
+      </section>
       
       {/* 하단 CTA */}
       <div className="shared-trip-cta">

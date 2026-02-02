@@ -3,11 +3,40 @@ import Link from 'next/link'
 import { FaHeart, FaCalendarAlt, FaMapMarkerAlt, FaClock, FaSearch, FaStar } from 'react-icons/fa'
 import { getPublishedTripPlans } from '../services/tripService'
 import { useLanguage } from '../context/LanguageContext'
+import { getReliableImageUrl } from '../utils/imageUtils'
 import SEO, { SEO_DATA } from '../components/common/SEO'
 // CSS는 pages/_app.jsx에서 import
 
 // 여행코스 대체 이미지
 const TRAVEL_PLACEHOLDER = '/images/travel-placeholder.svg'
+
+// 안정적인 이미지 컴포넌트
+const SafeImage = ({ src, alt, fallback = TRAVEL_PLACEHOLDER, className = '' }) => {
+  const [imgSrc, setImgSrc] = useState(() => getReliableImageUrl(src, fallback))
+  const [hasError, setHasError] = useState(false)
+  
+  useEffect(() => {
+    setImgSrc(getReliableImageUrl(src, fallback))
+    setHasError(false)
+  }, [src, fallback])
+  
+  const handleError = () => {
+    if (!hasError) {
+      setHasError(true)
+      setImgSrc(fallback)
+    }
+  }
+  
+  return (
+    <img 
+      src={imgSrc}
+      alt={alt}
+      className={className}
+      loading="lazy"
+      onError={handleError}
+    />
+  )
+}
 
 function SharedTripsPage() {
   const { t, language } = useLanguage()
@@ -87,14 +116,10 @@ function SharedTripsPage() {
   const TripCard = ({ trip }) => (
     <Link href={`/shared-trip/${trip.id}`} className="trip-card">
       <div className="trip-card-image">
-        <img 
-          src={trip.thumbnailUrl || TRAVEL_PLACEHOLDER} 
+        <SafeImage 
+          src={trip.thumbnailUrl}
           alt={trip.title}
-          loading="lazy"
-          onError={(e) => {
-            e.target.onerror = null
-            e.target.src = TRAVEL_PLACEHOLDER
-          }}
+          fallback={TRAVEL_PLACEHOLDER}
         />
         {trip.authorNickname === 'LetsGoDaejeon 관리자' && (
           <div className="admin-badge">

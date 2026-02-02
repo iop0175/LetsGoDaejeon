@@ -17,6 +17,9 @@ const Header = memo(() => {
   const { isDark, toggleTheme } = useTheme()
   const { user, loginWithKakao, logout, getUserProfile } = useAuth()
 
+  // 로그인 상태에 따라 '나의 여행' 링크 경로 결정
+  const myTripPath = user ? '/my-trip' : '/trip-planner'
+
   const navItems = [
     { path: '/', label: t.nav.home },
     { path: '/travel', label: t.nav.travel },
@@ -24,7 +27,7 @@ const Header = memo(() => {
     { path: '/food', label: t.nav.food },
     { path: '/shared-trips', label: language === 'ko' ? '여행코스' : 'Travel Courses' },
     { path: '/map', label: t.nav.map },
-    { path: '/my-trip', label: language === 'ko' ? '나의 여행' : 'My Trip' },
+    { path: myTripPath, label: language === 'ko' ? '나의 여행' : 'My Trip', isMyTrip: true },
   ]
 
   const moreMenuItems = [
@@ -91,7 +94,11 @@ const Header = memo(() => {
               <li key={item.path} className="nav-item">
                 <Link
                   href={item.path}
-                  className={`nav-link ${router.pathname === item.path ? 'active' : ''}`}
+                  className={`nav-link ${
+                    item.isMyTrip 
+                      ? (router.pathname === '/my-trip' || router.pathname === '/trip-planner' ? 'active' : '')
+                      : (router.pathname === item.path ? 'active' : '')
+                  }`}
                 >
                   {item.label}
                 </Link>

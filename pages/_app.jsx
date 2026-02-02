@@ -64,6 +64,7 @@ import '../src/pages/SpotDetailPage.css'
 import '../src/pages/AdminPage.css'
 import '../src/pages/ProfilePage.css'
 import '../src/pages/PolicyPage.css'
+import '../src/pages/TripPlannerPage.css'
 
 // 카카오맵 SDK 동적 로드 - 필요한 페이지에서만 로드
 const loadKakaoMapSDK = (pathname) => {
@@ -71,7 +72,7 @@ const loadKakaoMapSDK = (pathname) => {
   if (window.kakao?.maps) return
   
   // 지도가 필요한 페이지에서만 SDK 로드
-  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip']
+  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip', '/trip-planner']
   const needsMap = mapPages.some(page => pathname.startsWith(page))
   if (!needsMap) return
   

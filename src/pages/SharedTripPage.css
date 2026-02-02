@@ -657,25 +657,30 @@
   font-size: 0.95rem;
 }
 
-/* 기존 place-card 스타일 제거하고 대체 */
-.place-card {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  background: var(--card-bg);
-  padding: 20px;
-  border-radius: var(--border-radius);
-  margin-bottom: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: var(--transition);
+/* 이전 place-card 스타일 제거됨 - 새 카드 기반 스타일 사용 */
+
+/* 맵에서 마커 클릭 시 하이라이트 애니메이션 */
+.place-card.highlight {
+  animation: cardHighlight 1.5s ease-out;
 }
 
-.place-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateX(4px);
+@keyframes cardHighlight {
+  0% {
+    box-shadow: 0 0 0 3px rgba(0, 128, 0, 0.6);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(0, 128, 0, 0.4);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: var(--shadow-sm);
+    transform: scale(1);
+  }
 }
 
+/* 기존 스타일 - 현재 사용 안 함 */
+/*
 .place-order {
   position: absolute;
   left: -30px;
@@ -755,6 +760,7 @@
   background: var(--primary-color);
   color: white;
 }
+*/
 
 /* 빈 상태 */
 .no-places,
@@ -956,6 +962,25 @@
 .dark-theme .place-card {
   background: var(--card-bg);
   border: 1px solid var(--border-color);
+}
+
+.dark-theme .place-card.highlight {
+  animation: cardHighlightDark 1.5s ease-out;
+}
+
+@keyframes cardHighlightDark {
+  0% {
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.7);
+    transform: scale(1.02);
+  }
+  50% {
+    box-shadow: 0 0 15px 5px rgba(76, 175, 80, 0.5);
+    transform: scale(1.02);
+  }
+  100% {
+    box-shadow: var(--shadow-sm);
+    transform: scale(1);
+  }
 }
 
 .dark-theme .place-memo {
@@ -1160,5 +1185,1128 @@
   
   .legend-item {
     font-size: 0.8rem;
+  }
+}
+
+/* ===== 카드 기반 레이아웃 ===== */
+.trip-layout-cards {
+  display: block;
+}
+
+.trip-schedule-cards {
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.day-section-card {
+  margin-bottom: 40px;
+  background: var(--card-bg);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+
+.day-header-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--day-color, var(--primary-color)), color-mix(in srgb, var(--day-color, var(--primary-color)) 70%, black));
+  color: white;
+}
+
+.day-number-badge {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.day-date-text {
+  font-size: 0.95rem;
+  opacity: 0.9;
+}
+
+.places-grid {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* 장소 카드 */
+.place-card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.place-card:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+}
+
+.place-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.place-order-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.place-card-title-link {
+  flex: 1;
+  text-decoration: none;
+  display: block;
+}
+
+.place-card-title-link:hover .place-card-title {
+  color: var(--primary-color);
+}
+
+.place-card-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  flex: 1;
+  margin: 0;
+  transition: color 0.2s;
+}
+
+.place-card-image-link {
+  display: block;
+}
+
+.place-duration {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  background: var(--bg-secondary);
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.place-card-image {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  background: var(--bg-tertiary);
+}
+
+.place-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.place-card:hover .place-card-image img {
+  transform: scale(1.05);
+}
+
+.place-card-content {
+  padding: 16px 20px;
+}
+
+.place-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.place-info-row .info-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--primary-color);
+}
+
+.place-info-row .info-text {
+  line-height: 1.5;
+}
+
+.place-info-row .info-link {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.place-info-row .info-link:hover {
+  text-decoration: underline;
+}
+
+.place-memo-inline {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.place-memo-inline .info-icon {
+  flex-shrink: 0;
+  color: var(--secondary-color);
+}
+
+.place-memo-inline .memo-text {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.place-card-loading {
+  display: flex;
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.place-quick-info {
+  margin-top: 8px;
+}
+
+.expand-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1px dashed var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.expand-toggle:hover {
+  background: var(--bg-secondary);
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+
+.expand-toggle .arrow {
+  font-size: 0.7rem;
+  transition: transform 0.2s;
+}
+
+.expand-toggle .arrow.up {
+  transform: rotate(180deg);
+}
+
+.place-expanded-info {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.place-description {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 16px;
+}
+
+.homepage-link {
+  color: var(--primary-color) !important;
+  font-weight: 500;
+}
+
+.place-card-actions {
+  display: flex;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.place-card-actions .direction-btn,
+.place-card-actions .detail-link-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.place-card-actions .direction-btn {
+  background: var(--primary-color);
+  color: white;
+  border: none;
+}
+
+.place-card-actions .direction-btn:hover {
+  background: var(--secondary-color);
+}
+
+.place-card-actions .detail-link-btn {
+  background: transparent;
+  color: var(--primary-color);
+  border: 1px solid var(--primary-color);
+}
+
+.place-card-actions .detail-link-btn:hover {
+  background: var(--primary-color);
+  color: white;
+}
+
+/* 다음 장소로의 이동 정보 */
+.next-place-transit {
+  padding: 16px 20px;
+  display: flex;
+  gap: 16px;
+  background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+  border-top: 1px solid var(--border-color);
+}
+
+.transit-line {
+  width: 4px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.transit-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.transit-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.transit-icon {
+  font-size: 1rem;
+}
+
+.transit-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.transit-destination {
+  font-size: 0.95rem;
+  color: var(--text-primary);
+}
+
+.transit-destination strong {
+  color: var(--primary-color);
+}
+
+.transit-info-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 4px;
+}
+
+.transit-method {
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.transit-method-icon {
+  font-size: 0.9rem;
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+.transit-no-info {
+  font-size: 0.8rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+
+/* 대중교통 상세 정보 */
+.transit-public-info {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.transit-public-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.transit-public-icon {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.transit-public-icon.bus {
+  color: #22C55E;
+}
+
+.transit-public-icon.subway {
+  color: #3B82F6;
+}
+
+.transit-public-detail {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.transit-time {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
+}
+
+.transit-routes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* 헤더의 버스/지하철 배지 - 강조 스타일 */
+.transit-routes .route-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.transit-routes .route-badge.bus {
+  background: #22C55E;
+  color: white;
+}
+
+.transit-routes .route-badge.subway {
+  background: #3B82F6;
+  color: white;
+}
+
+.transit-total {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.transit-total strong {
+  color: var(--primary-color);
+}
+
+/* 교통 정보 요약 */
+.transit-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 10px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.summary-icon {
+  color: var(--primary-color);
+  font-size: 0.85rem;
+}
+
+/* 경로 상세 목록 */
+.route-details-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.route-detail-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.route-detail-icon {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.route-detail-icon.walk {
+  color: var(--text-tertiary);
+}
+
+.route-detail-icon.bus {
+  color: #22C55E;
+}
+
+.route-detail-icon.subway {
+  color: #3B82F6;
+}
+
+.route-detail-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.route-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: white;
+}
+
+.route-badge.bus {
+  background: #22C55E;
+}
+
+.route-badge.subway {
+  background: #3B82F6;
+}
+
+.alt-routes {
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+}
+
+.route-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+}
+
+.route-stations {
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+
+/* 승하차 정류장 상세 표시 */
+.route-stations-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  margin: 4px 0;
+}
+
+.station-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.station-marker {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.station-marker.start {
+  background: #22C55E;
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2);
+}
+
+.station-marker.end {
+  background: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+}
+
+.station-text {
+  font-size: 0.8rem;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.station-type {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+/* 다크 테마 승하차 정류장 */
+.dark-theme .route-stations-detail {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .station-marker.start {
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.3);
+}
+
+.dark-theme .station-marker.end {
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
+}
+
+.dark-theme .station-type {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.route-info {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* 다크 테마 경로 상세 */
+.dark-theme .transit-summary,
+.dark-theme .route-detail-item {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+/* 모든 경로 옵션 섹션 */
+.all-routes-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-color);
+}
+
+.all-routes-header {
+  margin-bottom: 12px;
+}
+
+.all-routes-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.routes-count {
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-left: 4px;
+}
+
+.all-routes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alt-route-card {
+  padding: 12px 14px;
+  background: var(--bg-primary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.alt-route-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.alt-route-time {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--primary-color);
+}
+
+.alt-route-payment {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.alt-route-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.alt-route-type {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.alt-route-type.bus {
+  background: rgba(34, 197, 94, 0.1);
+  color: #16A34A;
+}
+
+.alt-route-type.subway {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563EB;
+}
+
+.alt-route-details {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* 대체 경로 상세 - 각 구간 블록 */
+.alt-route-step-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border-left: 3px solid var(--border-color);
+}
+
+.alt-route-step-block.walk {
+  border-left-color: #9CA3AF;
+}
+
+.alt-route-step-block.bus {
+  border-left-color: #22C55E;
+}
+
+.alt-route-step-block.subway {
+  border-left-color: #3B82F6;
+}
+
+.alt-route-step-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.alt-route-step-type {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.alt-route-step-type svg {
+  font-size: 0.9rem;
+}
+
+.alt-route-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: white;
+  margin-right: 4px;
+}
+
+/* 승하차 정류장 정보 */
+.alt-route-stations {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 6px 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  margin-top: 2px;
+}
+
+.station-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.station-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.station-dot.start {
+  background: #22C55E;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
+}
+
+.station-dot.end {
+  background: #EF4444;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+}
+
+.station-arrow {
+  color: var(--text-tertiary);
+  font-size: 0.8rem;
+}
+
+/* 기존 alt-route-step 스타일 (하위 호환) */
+.alt-route-step {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+}
+
+.alt-route-step.walk {
+  color: var(--text-tertiary);
+}
+
+.alt-route-step.bus svg {
+  color: #22C55E;
+}
+
+.alt-route-step.subway svg {
+  color: #3B82F6;
+}
+
+/* 다크 테마 대체 경로 */
+.dark-theme .alt-route-card {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .alt-route-type.bus {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ADE80;
+}
+
+.dark-theme .alt-route-type.subway {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+}
+
+.dark-theme .alt-route-step {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+/* 다크 테마 대체 경로 상세 */
+.dark-theme .alt-route-step-block {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dark-theme .alt-route-stations {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.dark-theme .station-dot.start {
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+}
+
+.dark-theme .station-dot.end {
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+}
+
+/* SEO 숨김 섹션 - 크롤러용 */
+.seo-hidden-section {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* 다크 테마 교통 정보 */
+.dark-theme .next-place-transit {
+  background: linear-gradient(135deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0.3) 100%);
+}
+
+.dark-theme .transit-public-row {
+  background: var(--bg-tertiary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .route-badge.bus {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ADE80;
+}
+
+.dark-theme .route-badge.subway {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+}
+
+/* 다크 테마 카드 스타일 */
+.dark-theme .day-section-card {
+  background: var(--card-bg);
+}
+
+.dark-theme .place-card {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.dark-theme .place-card:hover {
+  box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+}
+
+.dark-theme .place-card-actions {
+  background: rgba(0,0,0,0.2);
+}
+
+/* 카드 레이아웃 반응형 */
+@media (max-width: 768px) {
+  .day-section-card {
+    margin-bottom: 24px;
+    border-radius: 12px;
+  }
+  
+  .day-header-card {
+    padding: 16px 18px;
+  }
+  
+  .day-number-badge {
+    font-size: 1.1rem;
+  }
+  
+  .places-grid {
+    padding: 16px;
+    gap: 20px;
+  }
+  
+  .place-card-header {
+    padding: 14px 16px;
+  }
+  
+  .place-card-title {
+    font-size: 1.05rem;
+  }
+  
+  .place-card-image {
+    height: 160px;
+  }
+  
+  .place-card-content {
+    padding: 14px 16px;
+  }
+  
+  .place-card-actions {
+    flex-direction: column;
+    padding: 12px 16px;
+  }
+  
+  .place-card-actions .direction-btn,
+  .place-card-actions .detail-link-btn {
+    width: 100%;
+  }
+}
+
+/* ===== SEO용 여행 일정 상세 섹션 ===== */
+.seo-itinerary-section {
+  background: var(--bg-secondary);
+  padding: 60px 0;
+  margin-top: 40px;
+  border-top: 1px solid var(--border-color);
+}
+
+.seo-itinerary-section .container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+.seo-section-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+
+.seo-trip-description {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 40px;
+}
+
+.seo-day-section {
+  margin-bottom: 40px;
+}
+
+.seo-day-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--primary-color);
+}
+
+.seo-places-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.seo-place-item {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  border: 1px solid var(--border-color);
+}
+
+.seo-place-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.seo-place-address {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+.seo-place-address strong {
+  color: var(--text-primary);
+}
+
+.seo-place-memo {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.seo-place-link {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--primary-color);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.seo-place-link:hover {
+  color: var(--secondary-color);
+  text-decoration: underline;
+}
+
+.seo-keywords-section {
+  margin-top: 40px;
+  padding: 20px 24px;
+  background: var(--card-bg);
+  border-radius: 12px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.seo-keywords-section p {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin: 0;
+}
+
+/* SEO 섹션 다크 테마 */
+.dark-theme .seo-itinerary-section {
+  background: var(--bg-secondary);
+}
+
+.dark-theme .seo-place-item {
+  background: var(--card-bg);
+  border-color: var(--border-color);
+}
+
+.dark-theme .seo-keywords-section {
+  background: var(--card-bg);
+}
+
+/* SEO 섹션 반응형 */
+@media (max-width: 768px) {
+  .seo-itinerary-section {
+    padding: 40px 0;
+    margin-top: 30px;
+  }
+  
+  .seo-section-title {
+    font-size: 1.4rem;
+  }
+  
+  .seo-trip-description {
+    font-size: 1rem;
+    margin-bottom: 30px;
+  }
+  
+  .seo-day-title {
+    font-size: 1.15rem;
+  }
+  
+  .seo-place-item {
+    padding: 16px 18px;
+  }
+  
+  .seo-place-name {
+    font-size: 1.05rem;
   }
 }
