@@ -13,6 +13,13 @@ export default function Document() {
         
         {/* 네이버 사이트 소유 확인 */}
         <meta name="naver-site-verification" content="3dae5e0fb04d30964913bdedff8cea8116f3c850" />
+
+        {/* Google AdSense - 사이트 승인 심사가 서버 렌더 HTML을 읽으므로 _app의 next/script 대신 여기에 둠 */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8695235492188309"
+          crossOrigin="anonymous"
+        />
         
         {/* Google Analytics는 _app.jsx에서 next/script로 최적화 로딩 */}
         
