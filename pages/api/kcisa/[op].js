@@ -97,11 +97,15 @@ export default async function handler(req, res) {
       items
     })
   } catch (error) {
+    // fetch 실패는 message가 항상 'fetch failed'라서 cause 없이는 DNS/TLS/타임아웃을
+    // 구분할 수 없다. 원인 코드를 같이 돌려준다.
+    const cause = error.cause ? `${error.cause.code || ''} ${error.cause.message || ''}`.trim() : ''
     return res.status(200).json({
       success: false,
       items: [],
       totalCount: 0,
-      message: error.name === 'AbortError' ? 'KCISA 응답 시간 초과' : error.message
+      message: error.name === 'AbortError' ? 'KCISA 응답 시간 초과' : error.message,
+      cause
     })
   }
 }
