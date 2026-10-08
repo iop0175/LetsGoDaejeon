@@ -108,29 +108,70 @@ export const getCulturalPerformances = async (options = {}) => {
   }
 };
 
+const PERFORMANCE_PAGE_SIZE = 1000;
+
 /**
- * 대전 지역 공연 정보 조회 (KCISA에서 대전 필터링)
- * @param {Object} options - 검색 옵션
- * @returns {Promise<Object>} 대전 공연 정보 목록
+ * 공연 1건이 대전 공연인지 판정.
+ *
+ * CNV_060 은 지역 파라미터도 지역 코드 필드도 없어서 문자열로 판단해야 한다.
+ * - eventSite: "대전예술의전당" 처럼 장소명에 대전이 들어가는 다수 케이스
+ * - title: "[대전] ..." 처럼 KCISA가 지역을 괄호로 태깅한 케이스.
+ *   "작은극장 다함", "소극장 고도" 같이 장소명에 대전이 없는 소극장이 여기서 걸린다.
+ *
+ * title 에 '대전' 부분일치를 쓰면 "초대전"(초대展)이 걸려 전국 전시가 섞이므로
+ * 반드시 괄호 포함 '[대전]' 으로만 본다.
  */
-export const getDaejeonPerformances = async (options = {}) => {
+const isDaejeonPerformance = (item) =>
+  (item.eventSite || '').includes('대전') || (item.title || '').includes('[대전]');
+
+/**
+ * 대전 지역 공연 정보 조회 (KCISA 전체를 페이징하며 대전만 수집)
+ * @param {Object} options
+ * @param {Function} [options.onProgress] - ({ pageNo, scanned, total, found }) 진행 콜백
+ * @param {number} [options.maxPages] - 안전 상한 (기본 100 페이지 = 10만 건)
+ * @returns {Promise<Object>} { success, items, totalCount, scannedTotal }
+ */
+export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}) => {
   try {
-    const result = await getCulturalPerformances({ ...options, numOfRows: 100 });
-    
-    if (result.success && result.items.length > 0) {
-      // 대전 지역 공연만 필터링
-      const daejeonItems = result.items.filter(item => 
-        item.eventSite?.includes('대전') || 
-        item.description?.includes('대전')
-      );
-      
-      return {
-        success: true,
-        totalCount: daejeonItems.length,
-        items: daejeonItems
-      };
+    const seen = new Set();
+    const items = [];
+    let scannedTotal = 0;
+
+    for (let pageNo = 1; pageNo <= maxPages; pageNo++) {
+      const result = await getCulturalPerformances({ pageNo, numOfRows: PERFORMANCE_PAGE_SIZE });
+
+      if (!result.success) {
+        // 첫 페이지부터 실패면 오류로 보고, 중간 실패면 모은 만큼이라도 돌려준다.
+        if (pageNo === 1) {
+          return { success: false, items: [], totalCount: 0, message: result.message };
+        }
+        break;
+      }
+
+      if (pageNo === 1) scannedTotal = result.totalCount || 0;
+
+      for (const item of result.items) {
+        if (!isDaejeonPerformance(item)) continue;
+        // 같은 공연이 페이지 경계에서 중복될 수 있다. 고유 ID가 없어 3개 필드로 식별한다.
+        const key = `${item.title}|${item.eventSite}|${item.eventPeriod}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        items.push(item);
+      }
+
+      onProgress?.({
+        pageNo,
+        scanned: Math.min(pageNo * PERFORMANCE_PAGE_SIZE, scannedTotal || pageNo * PERFORMANCE_PAGE_SIZE),
+        total: scannedTotal,
+        found: items.length
+      });
+
+      // numOfRows=1000 을 요청해도 989건처럼 덜 오므로 페이지 건수로는 끝을 판단할 수 없다.
+      if (result.items.length === 0) break;
+      if (scannedTotal && pageNo * PERFORMANCE_PAGE_SIZE >= scannedTotal) break;
     }
-    return result;
+
+    return { success: true, items, totalCount: items.length, scannedTotal };
   } catch (error) {
     console.warn('대전공연 API 오류:', error.message);
     return { success: false, items: [], totalCount: 0, error: error.message };

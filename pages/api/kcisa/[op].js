@@ -130,13 +130,18 @@ export default async function handler(req, res) {
       viewCount: parseInt(getTagValue(itemXml, 'viewCount') || '0')
     }))
 
+    // 업스트림 전체 건수를 페이지 건수와 구분해 돌려준다.
+    // 이게 없으면 호출부가 마지막 페이지를 판단할 수 없어 끝까지 페이징하지 못한다.
+    const upstreamTotal = parseInt(getTagValue(text, 'totalCount') || '0')
+
     // 공연 목록은 자주 바뀌지 않으므로 엣지에 캐시해 업스트림 호출을 줄인다.
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=86400')
     return res.status(200).json({
       success: true,
       resultCode,
       resultMsg,
-      totalCount: items.length,
+      totalCount: upstreamTotal || items.length,
+      pageCount: items.length,
       items
     })
   } catch (error) {

@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
   getMedicalFacilities, getDaejeonParking,
-  getCulturalPerformances,
+  getDaejeonPerformances,
   getTourApiSpots, getTourApiFestivals, getTourApiCounts,
   getTourApiDetail,
   getTourApiSpotsEng,
@@ -210,6 +210,8 @@ const AdminPage = () => {
   const [apiPerformances, setApiPerformances] = useState([]) // KCISA API에서 불러온 공연 목록
   const [performancesLoading, setPerformancesLoading] = useState(false)
   const [performanceSyncLoading, setPerformanceSyncLoading] = useState(false)
+  // 전체 페이징이 수십 초 걸리므로 진행 상황을 버튼에 노출한다.
+  const [performanceSyncProgress, setPerformanceSyncProgress] = useState('')
   const [performanceDeleteLoading, setPerformanceDeleteLoading] = useState(false)
   const [performanceDbCount, setPerformanceDbCount] = useState(0)
 
@@ -1176,19 +1178,26 @@ const AdminPage = () => {
   // KCISA API에서 공연 데이터 가져오기
   const loadApiPerformances = useCallback(async () => {
     setPerformanceSyncLoading(true)
+    setPerformanceSyncProgress('')
     try {
-      // 대전 키워드로 검색하여 API 레벨에서 필터링
-      const result = await getCulturalPerformances({ numOfRows: 100, title: '대전' })
+      // title='대전' 검색은 제목에 대전이 든 공연만 잡아 대전 공연 대부분을 놓치고,
+      // "초대전"까지 걸려 전국 전시가 섞였다. 전체를 페이징하며 지역으로 거른다.
+      const result = await getDaejeonPerformances({
+        onProgress: ({ scanned, total, found }) => {
+          setPerformanceSyncProgress(
+            total
+              ? `${scanned.toLocaleString()}/${total.toLocaleString()} 검색, 대전 ${found}건`
+              : `${scanned.toLocaleString()}건 검색, 대전 ${found}건`
+          )
+        }
+      })
       if (result.success && result.items) {
         // 종료일 지나지 않은 것만 추가 필터링
         const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
         const todayNum = parseInt(today)
-        
+
         const filtered = result.items.filter(item => {
-          // 장소(eventSite)에 "대전"이 포함된 것만
-          const siteHasDaejeon = (item.eventSite || '').includes('대전')
-          if (!siteHasDaejeon) return false
-          
+          // 지역 판정은 getDaejeonPerformances 가 이미 했다. 여기선 종료일만 본다.
           // 종료일 체크 (eventPeriod: "20260123 ~ 20260125" 형식)
           if (item.eventPeriod) {
             const parts = item.eventPeriod.split(' ~ ')
@@ -1211,6 +1220,7 @@ const AdminPage = () => {
       return { success: false, error: err.message }
     } finally {
       setPerformanceSyncLoading(false)
+      setPerformanceSyncProgress('')
     }
   }, [])
   
@@ -3790,7 +3800,7 @@ const AdminPage = () => {
                     disabled={performanceSyncLoading}
                   >
                     {performanceSyncLoading ? (
-                      <><FiLoader className="spinning" /> 동기화 중...</>
+                      <><FiLoader className="spinning" /> {performanceSyncProgress || '동기화 중...'}</>
                     ) : (
                       <><FiDownload /> {language === 'ko' ? 'API → DB 저장' : 'Sync from API'}</>
                     )}
