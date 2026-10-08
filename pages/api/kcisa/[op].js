@@ -1,14 +1,64 @@
 // KCISA 문화예술 공연 정보 프록시
 // GET /api/kcisa/CNV_060?numOfRows=20&pageNo=1
 //
-// Cloudflare Workers 프록시를 쓰지 않는 이유: Cloudflare 엣지 내부 리졸버가
-// api.kcisa.kr 을 해석하지 못해서(530 / error code 1016) 호출이 거의 항상 실패한다.
-// 공개 리졸버(1.1.1.1, 8.8.8.8, 9.9.9.9)와 권위 서버(ns.kcis.or.kr)는 모두
-// 175.125.91.8 을 정상 응답하므로, Cloudflare를 거치지 않는 Vercel 런타임에서
-// 직접 호출한다. dev(next dev)에서도 같은 코드가 돈다.
+// api.kcisa.kr 의 권위 서버(ns1.uhost.co.kr)가 리졸버에 따라 NXDOMAIN을 준다.
+// Google 리졸버는 NXDOMAIN, Cloudflare 는 175.125.91.8 을 정상 응답한다. 그래서
+// Cloudflare Workers 프록시는 530(error code 1016)으로, Vercel 기본 리졸버는
+// ENOTFOUND로 실패했다. 아래처럼 Cloudflare DoH로 받은 주소에 직접 붙고 TLS SNI와
+// 인증서 검증은 api.kcisa.kr 로 유지한다. dev에서도 같은 코드가 돈다.
+// node:dns Resolver로 1.1.1.1 에 UDP 질의하는 방법은 dig는 되는데도 ENOTFOUND가
+// 떠서 쓰지 않는다.
+
+import https from 'node:https'
 
 const KCISA_BASE = 'https://api.kcisa.kr/openapi'
+const KCISA_HOST = 'api.kcisa.kr'
 const TIMEOUT_MS = 15000
+const DOH_URL = `https://cloudflare-dns.com/dns-query?name=${KCISA_HOST}&type=A`
+
+// DoH까지 막히는 환경을 위한 최후 수단. 주소가 바뀌면 여기만 고치면 된다.
+const FALLBACK_IP = '175.125.91.8'
+
+let cachedIp = null
+
+const resolveKcisaIp = async () => {
+  if (cachedIp) return cachedIp
+  try {
+    const res = await fetch(DOH_URL, {
+      headers: { accept: 'application/dns-json' },
+      signal: AbortSignal.timeout(3000)
+    })
+    const json = await res.json()
+    cachedIp = json.Answer?.find((a) => a.type === 1)?.data || FALLBACK_IP
+  } catch {
+    cachedIp = FALLBACK_IP
+  }
+  return cachedIp
+}
+
+// fetch는 DNS lookup을 바꿀 수 없어서 node:https 로 직접 요청한다.
+// autoSelectFamily가 켜진 Node는 lookup 결과를 배열로 기대하므로 둘 다 지원한다.
+const requestKcisa = (url, ip) =>
+  new Promise((resolve, reject) => {
+    const req = https.get(
+      url,
+      {
+        lookup: (host, opts, cb) =>
+          opts.all ? cb(null, [{ address: ip, family: 4 }]) : cb(null, ip, 4),
+        timeout: TIMEOUT_MS
+      },
+      (res) => {
+        let body = ''
+        res.setEncoding('utf8')
+        res.on('data', (chunk) => {
+          body += chunk
+        })
+        res.on('end', () => resolve(body))
+      }
+    )
+    req.on('timeout', () => req.destroy(new Error('KCISA 응답 시간 초과')))
+    req.on('error', reject)
+  })
 
 // 프록시를 허용하는 오퍼레이션. 임의 경로가 들어와 KCISA로 중계되는 걸 막는다.
 const ALLOWED_OPS = new Set(['CNV_060'])
@@ -47,15 +97,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const controller = new AbortController()
-    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-    let text
-    try {
-      const upstream = await fetch(kcisaUrl.toString(), { signal: controller.signal })
-      text = await upstream.text()
-    } finally {
-      clearTimeout(timer)
-    }
+    const ip = await resolveKcisaIp()
+    const text = await requestKcisa(kcisaUrl.toString(), ip)
 
     const resultCode = getTagValue(text, 'resultCode')
     const resultMsg = getTagValue(text, 'resultMsg')
@@ -97,15 +140,13 @@ export default async function handler(req, res) {
       items
     })
   } catch (error) {
-    // fetch 실패는 message가 항상 'fetch failed'라서 cause 없이는 DNS/TLS/타임아웃을
-    // 구분할 수 없다. 원인 코드를 같이 돌려준다.
-    const cause = error.cause ? `${error.cause.code || ''} ${error.cause.message || ''}`.trim() : ''
+    // DNS/TLS/타임아웃을 구분할 수 있게 원인 코드를 같이 돌려준다.
     return res.status(200).json({
       success: false,
       items: [],
       totalCount: 0,
-      message: error.name === 'AbortError' ? 'KCISA 응답 시간 초과' : error.message,
-      cause
+      message: error.message,
+      cause: error.code || ''
     })
   }
 }
