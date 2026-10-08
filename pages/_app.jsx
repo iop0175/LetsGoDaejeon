@@ -65,6 +65,7 @@ import '../src/pages/AdminPage.css'
 import '../src/pages/ProfilePage.css'
 import '../src/pages/PolicyPage.css'
 import '../src/pages/TripPlannerPage.css'
+import '../src/pages/DevCitiesPage.css'
 
 // 카카오맵 SDK 동적 로드 - 필요한 페이지에서만 로드
 const loadKakaoMapSDK = (pathname) => {
