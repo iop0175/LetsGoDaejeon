@@ -1,6 +1,7 @@
 // Supabase 데이터베이스에서 데이터 가져오기
 import { supabase } from './supabase'
 import { toSecureUrl } from '../utils/imageUtils'
+import { parsePerformancePeriod, todayIsoDate } from '../utils/performancePeriod'
 
 // 테이블 설정 (TourAPI에 없는 데이터만 유지)
 const TABLE_CONFIGS = {
@@ -1494,17 +1495,8 @@ const decodeHtmlEntities = (str) => {
  * 날짜 문자열에서 Date 추출 (YYYY.MM.DD 또는 YYYY-MM-DD 형식)
  */
 const parseDateFromPeriod = (periodStr, isEnd = false) => {
-  if (!periodStr) return null
-  
-  // 날짜 패턴 추출 (YYYY.MM.DD 또는 YYYY-MM-DD)
-  const datePattern = /(\d{4})[.\-](\d{2})[.\-](\d{2})/g
-  const dates = [...periodStr.matchAll(datePattern)]
-  
-  if (dates.length === 0) return null
-  
-  // 시작일은 첫 번째 날짜, 종료일은 마지막 날짜
-  const targetDate = isEnd ? dates[dates.length - 1] : dates[0]
-  return `${targetDate[1]}-${targetDate[2]}-${targetDate[3]}`
+  const { start, end } = parsePerformancePeriod(periodStr)
+  return isEnd ? end : start
 }
 
 /**
@@ -1664,31 +1656,57 @@ export const deletePerformance = async (id) => {
  */
 export const deleteExpiredPerformances = async () => {
   try {
-    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
-    
-    // 먼저 삭제 대상 조회
-    const { data: expiredData } = await supabase
+    const today = todayIsoDate()
+
+    // end_date 가 채워진 정상 행
+    const { data: dated, error: datedError } = await supabase
       .from('performances')
       .select('id, title, end_date')
       .lt('end_date', today)
-    
-    if (!expiredData || expiredData.length === 0) {
+
+    if (datedError) {
+      console.error('만료된 공연 조회 실패:', datedError)
+      return { success: false, error: datedError.message }
+    }
+
+    // end_date 가 null 인 레거시 행. 파서가 YYYYMMDD 를 못 읽던 시절에 저장돼
+    // 날짜가 비어 있고, SQL 의 NULL < today 는 참이 아니라 영구히 남아 있었다.
+    // event_period 원문은 남아 있으므로 여기서 직접 판정한다.
+    const { data: undated, error: undatedError } = await supabase
+      .from('performances')
+      .select('id, title, event_period')
+      .is('end_date', null)
+
+    if (undatedError) {
+      console.error('날짜 없는 공연 조회 실패:', undatedError)
+      return { success: false, error: undatedError.message }
+    }
+
+    const expiredUndated = (undated || []).filter((p) => {
+      const { end } = parsePerformancePeriod(p.event_period)
+      // 기간을 못 읽는 행은 손대지 않는다. 수동 확인 대상이다.
+      return end && end < today
+    })
+
+    const expiredData = [...(dated || []), ...expiredUndated]
+
+    if (expiredData.length === 0) {
       return { success: true, deletedCount: 0, message: '삭제할 만료된 공연이 없습니다.' }
     }
-    
-    // 삭제 실행
+
+    // 조회와 삭제 조건이 갈라지지 않도록 조회한 id 로만 삭제한다.
     const { error } = await supabase
       .from('performances')
       .delete()
-      .lt('end_date', today)
-    
+      .in('id', expiredData.map((p) => p.id))
+
     if (error) {
       console.error('만료된 공연 삭제 실패:', error)
       return { success: false, error: error.message }
     }
-    
-    return { 
-      success: true, 
+
+    return {
+      success: true,
       deletedCount: expiredData.length,
       deletedPerformances: expiredData
     }

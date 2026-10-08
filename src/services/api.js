@@ -1,6 +1,7 @@
 // 대전 공공데이터 API 서비스
 // API 키는 서버(Workers)를 통해 프록시되어 보호됩니다
 import { recordApiCall } from '../utils/apiStats';
+import { isPerformanceExpired, todayIsoDate } from '../utils/performancePeriod';
 import { safeFetch } from '../utils/fetchUtils';
 
 // Cloudflare Workers API 프록시 URL
@@ -125,17 +126,22 @@ const isDaejeonPerformance = (item) =>
   (item.eventSite || '').includes('대전') || (item.title || '').includes('[대전]');
 
 /**
- * 대전 지역 공연 정보 조회 (KCISA 전체를 페이징하며 대전만 수집)
+ * 대전 지역 공연 정보 조회 (KCISA 전체를 페이징하며 대전의 현재/예정 공연만 수집)
+ *
+ * CNV_060 은 종료일이 지난 공연도 섞어서 내려주므로 수집 단계에서 떨어낸다.
+ * DB 에 안 넣는 게 목적이라 저장 직전이 아니라 여기서 거르는 쪽이 맞다.
  * @param {Object} options
  * @param {Function} [options.onProgress] - ({ pageNo, scanned, total, found }) 진행 콜백
  * @param {number} [options.maxPages] - 안전 상한 (기본 100 페이지 = 10만 건)
- * @returns {Promise<Object>} { success, items, totalCount, scannedTotal }
+ * @returns {Promise<Object>} { success, items, totalCount, scannedTotal, expiredSkipped }
  */
 export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}) => {
   try {
     const seen = new Set();
     const items = [];
+    const today = todayIsoDate();
     let scannedTotal = 0;
+    let expiredSkipped = 0;
 
     for (let pageNo = 1; pageNo <= maxPages; pageNo++) {
       const result = await getCulturalPerformances({ pageNo, numOfRows: PERFORMANCE_PAGE_SIZE });
@@ -152,6 +158,10 @@ export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}
 
       for (const item of result.items) {
         if (!isDaejeonPerformance(item)) continue;
+        if (isPerformanceExpired(item.eventPeriod, today)) {
+          expiredSkipped++;
+          continue;
+        }
         // 같은 공연이 페이지 경계에서 중복될 수 있다. 고유 ID가 없어 3개 필드로 식별한다.
         const key = `${item.title}|${item.eventSite}|${item.eventPeriod}`;
         if (seen.has(key)) continue;
@@ -171,7 +181,7 @@ export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}
       if (scannedTotal && pageNo * PERFORMANCE_PAGE_SIZE >= scannedTotal) break;
     }
 
-    return { success: true, items, totalCount: items.length, scannedTotal };
+    return { success: true, items, totalCount: items.length, scannedTotal, expiredSkipped };
   } catch (error) {
     console.warn('대전공연 API 오류:', error.message);
     return { success: false, items: [], totalCount: 0, error: error.message };

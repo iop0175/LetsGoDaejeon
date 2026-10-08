@@ -12,6 +12,12 @@
 import assert from 'node:assert/strict'
 import https from 'node:https'
 
+import {
+  parsePerformancePeriod,
+  isPerformanceExpired,
+  todayIsoDate
+} from '../src/utils/performancePeriod.js'
+
 const isDaejeonPerformance = (item) =>
   (item.eventSite || '').includes('대전') || (item.title || '').includes('[대전]')
 
@@ -37,7 +43,64 @@ assert.equal(isDaejeonPerformance({ title: 'Songs Echo Memories', eventSite: '�
 assert.equal(isDaejeonPerformance({}), false)
 assert.equal(isDaejeonPerformance({ title: null, eventSite: undefined }), false)
 
-console.log('offline: ok (8 cases)')
+console.log('offline(지역): ok (8 cases)')
+
+// ---------- 오프라인: 기간 파싱 ----------
+
+// 회귀 방어 본체. KCISA 실제 형식은 구분자가 없다.
+// 구분자를 필수로 요구하던 예전 파서는 여기서 null 을 반환해
+// 모든 행의 end_date 가 비었고 만료 삭제가 영구히 0건이었다.
+assert.deepEqual(parsePerformancePeriod('20261001 ~ 20261017'), {
+  start: '2026-10-01',
+  end: '2026-10-17'
+})
+
+// 구분자가 있는 형식도 계속 받아야 한다
+assert.deepEqual(parsePerformancePeriod('2026.10.01 ~ 2026.10.17'), {
+  start: '2026-10-01',
+  end: '2026-10-17'
+})
+assert.deepEqual(parsePerformancePeriod('2026-10-01 ~ 2026-10-17'), {
+  start: '2026-10-01',
+  end: '2026-10-17'
+})
+
+// 하루 공연: 날짜가 하나만 와도 시작일과 종료일이 모두 채워져야 한다
+assert.deepEqual(parsePerformancePeriod('20261017'), { start: '2026-10-17', end: '2026-10-17' })
+
+// 공백 없는 물결표
+assert.deepEqual(parsePerformancePeriod('20261001~20261017'), {
+  start: '2026-10-01',
+  end: '2026-10-17'
+})
+
+// 빈 값
+assert.deepEqual(parsePerformancePeriod(''), { start: null, end: null })
+assert.deepEqual(parsePerformancePeriod(null), { start: null, end: null })
+assert.deepEqual(parsePerformancePeriod('상시'), { start: null, end: null })
+
+// 없는 날짜는 버려야 한다. date 컬럼에 들어가면 배치 upsert 전체가 실패한다.
+assert.deepEqual(parsePerformancePeriod('20260230'), { start: null, end: null })
+assert.deepEqual(parsePerformancePeriod('20261332'), { start: null, end: null })
+// 뒤쪽만 깨진 경우 앞쪽 날짜는 살려서 쓴다
+assert.deepEqual(parsePerformancePeriod('20261001 ~ 20260230'), {
+  start: '2026-10-01',
+  end: '2026-10-01'
+})
+
+// 만료 판정
+assert.equal(isPerformanceExpired('20260207 ~ 20260208', '2026-10-08'), true)
+assert.equal(isPerformanceExpired('20261001 ~ 20261017', '2026-10-08'), false)
+// 종료일 == 오늘이면 아직 진행 중이다
+assert.equal(isPerformanceExpired('20261008 ~ 20261008', '2026-10-08'), false)
+// 기간을 못 읽으면 만료로 보지 않는다 (멀쩡한 공연을 버리는 쪽이 더 위험)
+assert.equal(isPerformanceExpired('상시', '2026-10-08'), false)
+assert.equal(isPerformanceExpired('', '2026-10-08'), false)
+
+// 오늘 날짜는 KST 기준 YYYY-MM-DD 여야 한다 (UTC 쓰면 KST 오전에 하루 밀린다)
+assert.match(todayIsoDate(), /^\d{4}-\d{2}-\d{2}$/)
+
+console.log('offline(기간): ok (18 cases), today(KST)=' + todayIsoDate())
 
 // ---------- 라이브: 업스트림 규약 검증 ----------
 
@@ -108,3 +171,21 @@ console.log(
     `괄호없는부분일치 오탐=${falsePositives.length}`
 )
 console.log(`추정 대전 공연 = ${Math.round((union.length / items.length) * upstreamTotal)}건`)
+
+// 업스트림 eventPeriod 가 실제로 파싱되는지 확인.
+// 형식이 바뀌면 end_date 가 다시 전부 null 이 되고 만료 삭제가 조용히 멈춘다.
+const periods = (xml.match(/<item>[\s\S]*?<\/item>/g) || []).map((x) => tag(x, 'eventPeriod'))
+const withPeriod = periods.filter(Boolean)
+const parsed = withPeriod.filter((p) => parsePerformancePeriod(p).end)
+
+assert.ok(withPeriod.length > 0, 'eventPeriod 가 비어 있다')
+assert.ok(
+  parsed.length / withPeriod.length > 0.95,
+  `eventPeriod 파싱률 ${parsed.length}/${withPeriod.length}. 업스트림 날짜 형식이 바뀐 것 같다.`
+)
+
+const today = todayIsoDate()
+const expired = withPeriod.filter((p) => isPerformanceExpired(p, today))
+console.log(
+  `기간: 파싱 ${parsed.length}/${withPeriod.length}건  만료 ${expired.length}건  예시="${withPeriod[0]}"`
+)

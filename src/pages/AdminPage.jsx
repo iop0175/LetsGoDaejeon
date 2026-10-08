@@ -47,6 +47,7 @@ import {
 import { uploadResizedImage, deleteImage } from '../services/blobService'
 import { PAGE_NAMES } from '../utils/apiStats'
 import { toSecureUrl } from '../utils/imageUtils'
+import { todayIsoDate } from '../utils/performancePeriod'
 import { StatCard, DataTable, Pagination, EditModal, SupabaseUsageStats, ExternalApiStats } from '../components/admin'
 import Icons from '../components/common/Icons'
 // CSS는 pages/_app.jsx에서 import
@@ -1192,27 +1193,9 @@ const AdminPage = () => {
         }
       })
       if (result.success && result.items) {
-        // 종료일 지나지 않은 것만 추가 필터링
-        const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
-        const todayNum = parseInt(today)
-
-        const filtered = result.items.filter(item => {
-          // 지역 판정은 getDaejeonPerformances 가 이미 했다. 여기선 종료일만 본다.
-          // 종료일 체크 (eventPeriod: "20260123 ~ 20260125" 형식)
-          if (item.eventPeriod) {
-            const parts = item.eventPeriod.split(' ~ ')
-            const endDateStr = parts[1]?.trim() || parts[0]?.trim()
-            if (endDateStr && endDateStr.length === 8) {
-              const endDateNum = parseInt(endDateStr)
-              if (endDateNum < todayNum) return false
-            }
-          }
-          
-          return true
-        })
-        
-        setApiPerformances(filtered)
-        return { success: true, count: filtered.length }
+        // 지역 판정과 종료일 필터는 getDaejeonPerformances 가 이미 처리한다.
+        setApiPerformances(result.items)
+        return { success: true, count: result.items.length }
       }
       return { success: false }
     } catch (err) {
@@ -3845,8 +3828,8 @@ const AdminPage = () => {
                       </thead>
                       <tbody>
                         {dbPerformances.map(perf => {
-                          const today = new Date().toISOString().split('T')[0]
-                          const isExpired = perf.end_date && perf.end_date < today
+                          // 만료 삭제와 같은 기준(KST)을 써야 경계 시간대에 표시와 동작이 어긋나지 않는다.
+                          const isExpired = perf.end_date && perf.end_date < todayIsoDate()
                           return (
                             <tr key={perf.id} className={isExpired ? 'expired' : ''}>
                               <td>
