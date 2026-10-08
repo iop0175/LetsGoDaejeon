@@ -1,5 +1,4 @@
 import { useState, useEffect, memo } from 'react'
-import Image from 'next/image'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
@@ -155,13 +154,11 @@ const FoodSection = memo(() => {
             {foods.map((food) => (
               <a key={food.id} href={food.contentId ? `/spot/${generateSlug(food.name[language] || food.name.ko, food.contentId)}` : '/food'} className="food-card">
                 <div className="food-image">
-                  <Image 
+                  <img
                     src={food.image} 
                     alt={food.name[language] || food.name.ko} 
-                    width={350}
-                    height={263}
                     loading="lazy"
-                    style={{ objectFit: 'cover', width: '100%', height: '100%' }}
+                    onError={(event) => { event.currentTarget.src = '/images/no-image.svg' }}
                   />
                   <div className="food-rating">
                     <FiStar />
