@@ -86,8 +86,10 @@ export const getCulturalPerformances = async (options = {}) => {
     if (dtype) queryParams += `&dtype=${encodeURIComponent(dtype)}`;
     if (title) queryParams += `&title=${encodeURIComponent(title)}`;
     
+    // Cloudflare 엣지가 api.kcisa.kr 을 해석하지 못해(530/1016) Workers 프록시로는
+    // 거의 항상 실패한다. 같은 오리진의 Next.js 라우트(Vercel 런타임)로 우회한다.
     const data = await safeFetch(
-      `${WORKERS_API_URL}/api/kcisa/CNV_060?${queryParams}`,
+      `/api/kcisa/CNV_060?${queryParams}`,
       {},
       API_TIMEOUT
     );
