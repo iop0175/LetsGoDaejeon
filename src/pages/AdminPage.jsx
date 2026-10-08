@@ -1244,8 +1244,8 @@ const AdminPage = () => {
   // 만료된 공연 삭제
   const handleDeleteExpiredPerformances = useCallback(async () => {
     const confirmMsg = language === 'ko'
-      ? '종료일이 지난 모든 공연을 삭제하시겠습니까?'
-      : 'Delete all expired performances?'
+      ? '종료일이 지난 공연과 날짜 데이터가 없는 공연을 모두 삭제하시겠습니까?'
+      : 'Delete all expired performances and performances without date data?'
     
     if (!window.confirm(confirmMsg)) return
     
@@ -1254,8 +1254,8 @@ const AdminPage = () => {
       const result = await deleteExpiredPerformances()
       if (result.success) {
         alert(language === 'ko' 
-          ? `${result.deletedCount}개의 만료된 공연이 삭제되었습니다.` 
-          : `${result.deletedCount} expired performances deleted.`)
+          ? `${result.deletedCount}개의 만료/날짜누락 공연이 삭제되었습니다.`
+          : `${result.deletedCount} expired/undated performances deleted.`)
         loadDbPerformances()
       } else {
         alert(result.error || '삭제 실패')

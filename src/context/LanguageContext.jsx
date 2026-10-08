@@ -71,8 +71,8 @@ export const translations = {
 
     // 축제 섹션
     festivalSection: {
-      title: '대전의 축제 · 행사',
-      subtitle: '대전에서 펼쳐지는 다채로운 축제를 만나보세요',
+      title: '대전의 공연 · 행사',
+      subtitle: '대전에서 펼쳐지는 다채로운 공연을 만나보세요',
       viewAll: '모든 축제 보기',
       upcoming: '예정'
     },
@@ -732,8 +732,8 @@ export const translations = {
 
     // Festival Section
     festivalSection: {
-      title: 'Festivals & Events',
-      subtitle: 'Experience the colorful festivals of Daejeon',
+      title: 'Performances & Events',
+      subtitle: 'Experience colorful performances in Daejeon',
       viewAll: 'View All Festivals',
       upcoming: 'Upcoming'
     },

@@ -1651,7 +1651,7 @@ export const deletePerformance = async (id) => {
 }
 
 /**
- * 만료된 공연 삭제 (종료일이 오늘 이전인 공연)
+ * 만료된 공연 삭제 (종료일이 오늘 이전이거나 날짜 데이터가 없는 공연)
  * @returns {Promise<Object>} 삭제 결과
  */
 export const deleteExpiredPerformances = async () => {
@@ -1669,9 +1669,9 @@ export const deleteExpiredPerformances = async () => {
       return { success: false, error: datedError.message }
     }
 
-    // end_date 가 null 인 레거시 행. 파서가 YYYYMMDD 를 못 읽던 시절에 저장돼
-    // 날짜가 비어 있고, SQL 의 NULL < today 는 참이 아니라 영구히 남아 있었다.
-    // event_period 원문은 남아 있으므로 여기서 직접 판정한다.
+    // end_date 가 null 인 행. event_period 원문을 다시 읽어 이미 끝난 공연은
+    // 만료로 지우고, 원문도 없거나 읽을 수 없는 행도 함께 지운다.
+    // 관리자 공연 목록에서 날짜 없는 데이터가 계속 남는 것보다 정리하는 쪽이 맞다.
     const { data: undated, error: undatedError } = await supabase
       .from('performances')
       .select('id, title, event_period')
@@ -1684,14 +1684,13 @@ export const deleteExpiredPerformances = async () => {
 
     const expiredUndated = (undated || []).filter((p) => {
       const { end } = parsePerformancePeriod(p.event_period)
-      // 기간을 못 읽는 행은 손대지 않는다. 수동 확인 대상이다.
-      return end && end < today
+      return !end || end < today
     })
 
     const expiredData = [...(dated || []), ...expiredUndated]
 
     if (expiredData.length === 0) {
-      return { success: true, deletedCount: 0, message: '삭제할 만료된 공연이 없습니다.' }
+      return { success: true, deletedCount: 0, message: '삭제할 만료/날짜누락 공연이 없습니다.' }
     }
 
     // 조회와 삭제 조건이 갈라지지 않도록 조회한 id 로만 삭제한다.
@@ -4284,4 +4283,3 @@ export const sendSpotsToN8nByType = async (webhookUrl, items, contentTypeId, onP
     failedItems 
   }
 }
-
