@@ -4,7 +4,7 @@
 import { recordApiCall, API_TYPES } from './dbService.js'
 
 // Cloudflare Workers API 프록시 URL
-const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev'
+const WORKERS_API_URL = process.env.NEXT_PUBLIC_WORKERS_API_URL || 'https://letsgodaejeon-api.eoynx.workers.dev'
 
 // API 사용량 추적
 let apiCallCount = 0

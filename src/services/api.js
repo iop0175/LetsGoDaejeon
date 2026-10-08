@@ -4,7 +4,7 @@ import { recordApiCall } from '../utils/apiStats';
 import { safeFetch } from '../utils/fetchUtils';
 
 // Cloudflare Workers API 프록시 URL
-const WORKERS_API_URL = 'https://letsgodaejeon-api.daegieun700.workers.dev';
+const WORKERS_API_URL = process.env.NEXT_PUBLIC_WORKERS_API_URL || 'https://letsgodaejeon-api.eoynx.workers.dev';
 const API_TIMEOUT = 15000; // 15초 타임아웃
 
 // 기본 이미지 (이미지 없을 때 사용)

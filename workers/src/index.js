@@ -136,12 +136,12 @@ async function handleOdsay(request, env, pathname, origin) {
 
 
     
-    // ODSay에 등록된 도메인을 Referer로 설정
+    // ODSay에 등록된 도메인을 Referer로 설정 (workers.dev 주소 변경 시 깨지지 않게 요청 호스트에서 유도)
     const response = await fetch(odsayUrl.toString(), {
       method: 'GET',
       headers: {
-        'Referer': 'https://letsgodaejeon-api.daegieun700.workers.dev',
-        'Origin': 'https://letsgodaejeon-api.daegieun700.workers.dev',
+        'Referer': url.origin,
+        'Origin': url.origin,
       }
     });
     const data = await response.json();
@@ -392,9 +392,30 @@ async function handleKcisaApi(request, env, pathname, origin) {
       }
     });
     
-    const response = await fetch(kcisaUrl.toString());
-    const text = await response.text();
-    
+    // api.kcisa.kr 권위 DNS(ns1/ns2.uhost.co.kr)가 리졸버마다 다른 답을 줘서 조회가 자주 실패함
+    // (Cloudflare 530/1016). 음성 캐시 때문에 즉시 재시도는 효과가 없어서, 어쩌다 성공한 응답을
+    // 직접 캐시에 넣어 두고 실패 구간을 덮는다. 키는 캐시 키에서 제외.
+    const cacheUrl = new URL(kcisaUrl);
+    cacheUrl.searchParams.delete('serviceKey');
+    const cacheKey = new Request(cacheUrl.toString());
+    const cache = caches.default;
+
+    let text = '';
+    let response = { status: 0 };
+    const cached = await cache.match(cacheKey);
+    if (cached) {
+      text = await cached.text();
+      response = { status: 200 };
+    } else {
+      response = await fetch(kcisaUrl.toString());
+      text = await response.text();
+      if (text.includes('<resultCode>0000</resultCode>')) {
+        await cache.put(cacheKey, new Response(text, {
+          headers: { 'Content-Type': 'text/xml', 'Cache-Control': 'max-age=3600' }
+        }));
+      }
+    }
+
     // XML 파싱 헬퍼 (Workers 환경용)
     const getTagValue = (xml, tag) => {
       const match = xml.match(new RegExp(`<${tag}>([\\s\\S]*?)</${tag}>`));
@@ -430,12 +451,15 @@ async function handleKcisaApi(request, env, pathname, origin) {
       }, 200, origin);
     }
     
-    return jsonResponse({ 
-      success: false, 
+    return jsonResponse({
+      success: false,
       resultCode,
       resultMsg,
-      items: [], 
-      totalCount: 0 
+      items: [],
+      totalCount: 0,
+      // 업스트림 응답이 XML이 아닐 때(차단/에러 페이지 등) 원인을 버리지 않도록 남김
+      upstreamStatus: response.status,
+      upstreamBody: text.slice(0, 300)
     }, 200, origin);
   } catch (error) {
     return errorResponse('KCISA API 요청 실패: ' + error.message, 500, origin);
