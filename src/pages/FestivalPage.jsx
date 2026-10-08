@@ -36,6 +36,13 @@ const FestivalPage = () => {
   const [performanceSearchQuery, setPerformanceSearchQuery] = useState('')
   const performanceItemsPerPage = 12
 
+  useEffect(() => {
+    if (!router.isReady) return
+    if (router.query.tab === 'performance') {
+      setActiveTab('performance')
+    }
+  }, [router.isReady, router.query.tab])
+
   // 시간 포맷 변환
   const formatTime = (time) => {
     if (!time || time.length < 4) return ''

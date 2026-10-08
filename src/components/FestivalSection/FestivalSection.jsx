@@ -4,9 +4,10 @@ import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
-import { getTourFestivals } from '../../services/dbService'
+import { getDbPerformances, getTourFestivals } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
 import { generateSlug } from '../../utils/slugUtils'
+import { todayIsoDate } from '../../utils/performancePeriod'
 import 'swiper/css'
 import 'swiper/css/navigation'
 // CSS는 _app.jsx에서 import
@@ -77,6 +78,7 @@ const getFestivalImage = (name) => {
 const FestivalSection = memo(() => {
   const { language, t } = useLanguage()
   const [festivals, setFestivals] = useState([])
+  const [sectionMode, setSectionMode] = useState('festival')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -90,11 +92,16 @@ const FestivalSection = memo(() => {
       
       if (tourResult.success && tourResult.items.length > 0) {
         // 현재 날짜 기준으로 종료되지 않은 축제만 필터링
-        const today = new Date().toISOString().split('T')[0].replace(/-/g, '')
+        const today = todayIsoDate().replace(/-/g, '')
         const activeItems = tourResult.items.filter(item => {
           if (!item.event_end_date) return true
           return item.event_end_date >= today
         })
+
+        if (activeItems.length === 0) {
+          await fetchPerformancesFallback()
+          return
+        }
         
         // 랜덤으로 섞기
         const shuffled = [...activeItems].sort(() => Math.random() - 0.5)
@@ -124,16 +131,47 @@ const FestivalSection = memo(() => {
             theme: ''
           }
         })
+        setSectionMode('festival')
         setFestivals(formattedFestivals)
       } else {
-        // tour_festivals에 진행중/예정 행사가 없으면 빈 배열
-        setFestivals([])
+        await fetchPerformancesFallback()
       }
     } catch (error) {
       console.error('축제 데이터 로드 실패:', error)
-      setFestivals([])
+      await fetchPerformancesFallback()
     }
     setLoading(false)
+  }
+
+  const fetchPerformancesFallback = async () => {
+    try {
+      const dbPerformances = await getDbPerformances(true)
+      const today = todayIsoDate()
+      const activePerformances = (dbPerformances || [])
+        .filter((item) => !item.end_date || item.end_date >= today)
+        .sort((a, b) => (a.start_date || '9999-99-99').localeCompare(b.start_date || '9999-99-99'))
+        .slice(0, 10)
+
+      const formattedPerformances = activePerformances.map((item, idx) => ({
+        id: idx + 1,
+        contentId: null,
+        title: { ko: item.title, en: item.title },
+        period: item.event_period || [item.start_date, item.end_date].filter(Boolean).join(' - '),
+        location: { ko: item.event_site || '', en: item.event_site || '' },
+        image: getReliableImageUrl(item.image_url, '/images/no-image.svg'),
+        summary: item.description || '',
+        summary_en: item.description || '',
+        theme: '',
+        href: '/festival?tab=performance'
+      }))
+
+      setSectionMode('performance')
+      setFestivals(formattedPerformances)
+    } catch (error) {
+      console.error('공연 데이터 로드 실패:', error)
+      setSectionMode('performance')
+      setFestivals([])
+    }
   }
 
   return (
@@ -160,7 +198,7 @@ const FestivalSection = memo(() => {
           </div>
         ) : festivals.length === 0 ? (
           <div className="festival-empty">
-            <p>{t.festivalSection.noFestivals || '현재 진행중인 행사가 없습니다.'}</p>
+            <p>{t.festivalSection.noPerformances || '현재 진행중인 문화공연이 없습니다.'}</p>
           </div>
         ) : (
           <Swiper
@@ -181,7 +219,7 @@ const FestivalSection = memo(() => {
           >
             {festivals.map((festival) => (
               <SwiperSlide key={festival.id}>
-                <a href={festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival'} className="festival-card">
+                <a href={festival.href || (festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival')} className="festival-card">
                   <div className="festival-image">
                     <Image 
                       src={festival.image} 
@@ -217,8 +255,10 @@ const FestivalSection = memo(() => {
         )}
         
         <div className="section-more">
-          <a href="/festival" className="btn btn-primary">
-            {t.festivalSection.viewAll}
+          <a href={sectionMode === 'performance' ? '/festival?tab=performance' : '/festival'} className="btn btn-primary">
+            {sectionMode === 'performance'
+              ? (t.festivalSection.viewAllPerformances || '문화공연 전체보기')
+              : t.festivalSection.viewAll}
             <FiArrowRight />
           </a>
         </div>
