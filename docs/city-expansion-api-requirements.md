@@ -204,6 +204,52 @@ function isCityPerformance(item, city) {
 - 제목과 장소 문자열 필터가 필요하다.
 - `초대전` 같은 오탐을 막기 위해 제목은 `[대전]`처럼 괄호 태그 위주로 본다.
 
+## 서울 1차 보강 API
+
+사용 후보:
+
+- 서울 열린데이터광장 `서울시 실시간 도시데이터`
+- 문서: `https://data.seoul.go.kr/dataList/OA-21285/A/1/datasetView.do`
+- 키 이름: `SEOUL_OPENAPI_KEY`
+
+검증 결과:
+
+- `광화문·덕수궁` 기준 JSON 응답 정상
+- `CITYDATA` 객체 확인
+- `PRK_STTS` 주차장 현황 확인
+- `EVENT_STTS` 행사 현황 확인
+- `WEATHER_STTS` 날씨 현황 확인
+- `LIVE_PPLTN_STTS` 실시간 인구/혼잡도 확인
+
+요청 예시:
+
+```text
+http://openapi.seoul.go.kr:8088/{SEOUL_OPENAPI_KEY}/json/citydata/1/5/{AREA_NM}
+```
+
+예시 지역명:
+
+- `광화문·덕수궁`
+- `명동 관광특구`
+- `홍대 관광특구`
+- `잠실 관광특구`
+
+활용 범위:
+
+- 서울 주차장 보강: `PRK_STTS`
+- 서울 행사 보강: `EVENT_STTS`
+- 서울 날씨 보강: `WEATHER_STTS`
+- 서울 혼잡도/방문 추천: `LIVE_PPLTN_STTS`
+- 서울 대중교통 혼잡 참고: `SUB_STTS`, `BUS_STN_STTS`
+
+주의:
+
+- 이 API는 서울 전체 POI 목록 API가 아니라 주요 장소별 실시간 도시데이터다.
+- `AREA_NM` 목록을 별도로 확보하거나, 인기 지역 후보 목록을 먼저 정의해야 한다.
+- 관광지/맛집/숙박 기본 데이터는 여전히 TourAPI를 우선 사용한다.
+- 키 원문은 문서나 커밋에 저장하지 않는다.
+- 실제 구현 시 보호 시크릿 또는 Vercel/Worker 환경변수에 `SEOUL_OPENAPI_KEY`로 저장한다.
+
 ## 도시별 필수 보강 API
 
 ### 주차장
@@ -217,7 +263,7 @@ function isCityPerformance(item, city) {
 
 도시별 필요 작업:
 
-- 서울: 서울시 주차장 API 어댑터 필요
+- 서울: 서울시 실시간 도시데이터 `PRK_STTS` 우선 사용. 부족하면 별도 주차장 API 추가 검토
 - 부산: 부산시 주차장 API 또는 전국 주차장 표준데이터 검토
 - 제주: 제주 주차장 API 또는 전국 주차장 표준데이터 검토
 
@@ -296,7 +342,7 @@ getMedicalFacilities({ cityKey, pageNo, numOfRows })
 
 후보:
 
-- 서울: 서울 열린데이터광장 문화/행사 API
+- 서울: 서울시 실시간 도시데이터 `EVENT_STTS` 우선 사용. 부족하면 별도 문화/행사 API 추가 검토
 - 부산: 부산 공공데이터포털 또는 부산문화관광 행사 API
 - 제주: 제주데이터허브 또는 제주관광공사 행사 데이터
 
@@ -353,6 +399,10 @@ getMedicalFacilities({ cityKey, pageNo, numOfRows })
 대전 전용 값:
 
 - `DAEJEON_API_KEY`: 대전 주차장/의료 API
+
+서울 전용 값:
+
+- `SEOUL_OPENAPI_KEY`: 서울 열린데이터광장 API. 실시간 도시데이터 `citydata` 호출에 사용
 
 도시별 API를 추가하면 다음처럼 분리한다.
 
