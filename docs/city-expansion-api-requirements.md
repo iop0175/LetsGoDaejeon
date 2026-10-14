@@ -250,6 +250,132 @@ http://openapi.seoul.go.kr:8088/{SEOUL_OPENAPI_KEY}/json/citydata/1/5/{AREA_NM}
 - 키 원문은 문서나 커밋에 저장하지 않는다.
 - 실제 구현 시 보호 시크릿 또는 Vercel/Worker 환경변수에 `SEOUL_OPENAPI_KEY`로 저장한다.
 
+## 부산 1차 보강 API
+
+사용 후보:
+
+- 부산 의료기관 API
+- 부산명소정보 API
+- 부산축제정보 API
+- 부산 공영주차장 정보 API
+- 한국교통안전공단 주차정보 API
+
+### 부산 의료기관
+
+용도:
+
+- 병원, 의원, 약국 등 의료기관 목록 보강
+- 기존 대전 의료기관 API의 부산 대체 소스
+
+Endpoint:
+
+```text
+https://apis.data.go.kr/6260000/MedicInstitService
+```
+
+활용 범위:
+
+- 부산 의료기관 페이지
+- 여행 중 응급/생활 정보
+- `getMedicalFacilities({ cityKey: 'busan' })` 어댑터
+
+확인 필요:
+
+- 상세 operation 이름
+- 좌표 필드 제공 여부
+- 기관 분류, 진료과, 전화번호 필드
+- 약국 포함 여부
+
+### 부산명소정보
+
+용도:
+
+- 부산 공식 명소 데이터 보강
+- TourAPI 관광지 데이터의 부산 특화 보조 소스
+
+Endpoint:
+
+```text
+https://apis.data.go.kr/6260000/AttractionService
+```
+
+활용 범위:
+
+- 부산 명소 상세 보강
+- 부산 랜딩 추천 카드 후보
+- TourAPI 데이터와 중복 제거 후 보조 노출
+
+주의:
+
+- 1차 관광지 기본 데이터는 여전히 TourAPI `areaCode=6`을 우선한다.
+- 부산명소정보는 부산 특화 설명, 이미지, 공식 분류가 더 좋을 때 보강용으로 쓴다.
+
+### 부산축제정보
+
+용도:
+
+- 부산 지역 축제/행사 보강
+- TourAPI `searchFestival2`의 부산 행사 누락 보완
+
+Endpoint:
+
+```text
+https://apis.data.go.kr/6260000/FestivalService
+```
+
+활용 범위:
+
+- 부산 축제 목록
+- 부산 랜딩 행사 카드
+- 지역 특화 행사 데이터
+
+확인 필요:
+
+- 시작일/종료일 구조화 여부
+- 행사 장소 주소와 좌표 필드
+- 이미지 필드
+- 종료 행사 필터링 가능 여부
+
+### 부산 주차장
+
+부산 주차장은 부산시 공영주차장 API를 우선 사용한다.
+
+Endpoint:
+
+```text
+https://apis.data.go.kr/6260000/BusanPblcPrkngInfoService
+```
+
+활용 범위:
+
+- 부산 주차장 목록
+- 부산 주요 관광지 주변 주차장 검색
+- `getParkingFacilities({ cityKey: 'busan' })` 어댑터
+
+보조 후보:
+
+```text
+https://apis.data.go.kr/B553881/Parking_v1
+```
+
+용도:
+
+- 한국교통안전공단 주차정보 제공 API
+- 부산시 공영주차장 API에 없는 전국 단위 주차장 보강
+- 나중에 부산 외 도시 주차장 공통 fallback 후보
+
+우선순위:
+
+1. 부산광역시 공영주차장 정보
+2. 한국교통안전공단 주차정보
+3. Kakao Local 키워드 검색 fallback
+
+주의:
+
+- 두 주차장 API의 중복 제거 키를 먼저 정해야 한다.
+- 권장 중복 기준은 이름 + 주소 + 좌표 근접값이다.
+- 실시간 잔여면수가 없으면 `totalLot`, 요금, 운영시간 중심으로만 표시한다.
+
 ## 도시별 필수 보강 API
 
 ### 주차장
@@ -264,7 +390,7 @@ http://openapi.seoul.go.kr:8088/{SEOUL_OPENAPI_KEY}/json/citydata/1/5/{AREA_NM}
 도시별 필요 작업:
 
 - 서울: 서울시 실시간 도시데이터 `PRK_STTS` 우선 사용. 부족하면 별도 주차장 API 추가 검토
-- 부산: 부산시 주차장 API 또는 전국 주차장 표준데이터 검토
+- 부산: 부산광역시 공영주차장 정보 API 우선 사용. 부족하면 한국교통안전공단 주차정보 API 보강
 - 제주: 제주 주차장 API 또는 전국 주차장 표준데이터 검토
 
 권장 함수:
@@ -304,7 +430,7 @@ getParkingFacilities({ cityKey, pageNo, numOfRows })
 도시별 필요 작업:
 
 - 서울: 병원, 약국, 응급의료 데이터 확인
-- 부산: 병원, 약국 데이터 확인
+- 부산: 부산 의료기관 API 사용 후보 확정. 약국 포함 여부와 좌표 필드 확인 필요
 - 제주: 병원, 약국 데이터 확인
 
 권장 함수:
@@ -343,7 +469,7 @@ getMedicalFacilities({ cityKey, pageNo, numOfRows })
 후보:
 
 - 서울: 서울시 실시간 도시데이터 `EVENT_STTS` 우선 사용. 부족하면 별도 문화/행사 API 추가 검토
-- 부산: 부산 공공데이터포털 또는 부산문화관광 행사 API
+- 부산: 부산축제정보 API 우선 사용. 부산명소정보 API는 관광지 보강용으로 사용
 - 제주: 제주데이터허브 또는 제주관광공사 행사 데이터
 
 ## 선택 보강 API
@@ -403,6 +529,11 @@ getMedicalFacilities({ cityKey, pageNo, numOfRows })
 서울 전용 값:
 
 - `SEOUL_OPENAPI_KEY`: 서울 열린데이터광장 API. 실시간 도시데이터 `citydata` 호출에 사용
+
+부산 전용 값:
+
+- `BUSAN_API_KEY`: 부산 공공데이터포털 API. 의료기관, 명소, 축제, 공영주차장 호출에 사용
+- `TRANSPORT_SAFETY_API_KEY`: 한국교통안전공단 주차정보 API. 전국 주차장 fallback에 사용
 
 도시별 API를 추가하면 다음처럼 분리한다.
 
