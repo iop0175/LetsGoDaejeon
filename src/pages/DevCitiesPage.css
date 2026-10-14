@@ -29,6 +29,21 @@
   line-height: 1.75;
 }
 
+.dev-cities-hero-copy .dev-doc-note {
+  margin-top: 16px;
+  font-size: 14px;
+  color: #68758a;
+}
+
+.dev-doc-note code {
+  padding: 3px 6px;
+  border: 1px solid #d8e0ec;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #244f95;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
 .dev-badge {
   display: inline-flex;
   align-items: center;

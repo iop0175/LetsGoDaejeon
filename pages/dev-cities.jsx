@@ -78,6 +78,7 @@ export default function DevCitiesPage() {
             <span className="dev-badge">Internal Dev</span>
             <h1>도시 확장 개발 보드</h1>
             <p>대전으로 구조를 서울·부산·제주로 넓힐 때 공통으로 재사용할 API와 도시별로 새로 붙일 데이터를 나눠 보는 내부용 페이지입니다.</p>
+            <p className="dev-doc-note">API 상세 목록: <code>docs/city-expansion-api-requirements.md</code></p>
           </div>
           <div className="dev-cities-summary">
             <div>
