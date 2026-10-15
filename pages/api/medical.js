@@ -1,5 +1,4 @@
 import { CITY } from '../../src/config/cities.js'
-import { getDongFromAddr } from '../../src/utils/constants.js'
 
 const SERVICES = ['TbHospitalInfo', 'TbPharmacyOperateInfo']
 const CACHE_TTL = 24 * 60 * 60 * 1000
@@ -12,7 +11,8 @@ export const normalizeSeoulMedical = (item) => ({
   lat: Number(item.WGS84LAT) || 0,
   lon: Number(item.WGS84LON) || 0,
   district: item.DUTYADDR?.split(' ')[1] || null,
-  dong: item.DUTYADDR?.match(/\(([가-힣0-9]+동)/)?.[1] || getDongFromAddr(item.DUTYADDR)
+  // 도로명 주소 괄호 안 법정동만 쓴다. 본문에서 찾으면 '영동대로', '상가동' 같은 오탐이 난다
+  dong: item.DUTYADDR?.match(/\(([가-힣0-9.]+동(?:\d+가)?)[,)]/)?.[1] || null
 })
 
 export const filterMedical = (items, { q = '', type = 'all', district = 'all', dong = 'all' }) => {
