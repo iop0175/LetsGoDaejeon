@@ -10,7 +10,7 @@ import { CITY, getCityPageSeo } from '../config/cities';
 // CSS는 pages/_app.jsx에서 import
 
 // 서울은 데이터가 커서 검색과 페이지 나누기를 /api/medical에서 한다
-const SERVER_FILTERED = CITY.key === 'seoul';
+const SERVER_FILTERED = ['seoul', 'busan'].includes(CITY.key);
 
 const MedicalPage = () => {
   const { language } = useLanguage();
@@ -20,6 +20,7 @@ const MedicalPage = () => {
   const [allFacilities, setAllFacilities] = useState([]); // 전체 데이터
   const [serverResult, setServerResult] = useState({ items: [], totalCount: 0, dongs: [] });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState('all');
@@ -67,7 +68,7 @@ const MedicalPage = () => {
     { id: '병원', label: t.hospital, icon: <MdLocalHospital /> },
     { id: '의원', label: t.clinic, icon: <MdLocalHospital /> },
     { id: '약국', label: t.pharmacy, icon: <MdLocalPharmacy /> }
-  ];
+  ].filter(type => CITY.key !== 'busan' || type.id !== '약국');
 
   // 최초 1회 전체 데이터 로드
   useEffect(() => {
@@ -78,12 +79,14 @@ const MedicalPage = () => {
   useEffect(() => {
     if (!SERVER_FILTERED) return;
     setLoading(true);
+    setError('');
     let active = true;
     const timer = setTimeout(async () => {
       const result = await getMedicalFacilities(currentPage, itemsPerPage, {
         q: searchQuery, type: selectedType, district: districtFilter, dong: dongFilter
       });
       if (!active) return;
+      if (!result.success) setError(language === 'ko' ? '의료기관 정보를 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.' : 'Medical information is unavailable. Please try again later.');
       setServerResult(result.success ? result : { items: [], totalCount: 0, dongs: [] });
       setLoading(false);
     }, 300);
@@ -222,6 +225,7 @@ const MedicalPage = () => {
         </div>
 
       <div className="container">
+        {CITY.key === 'busan' && <p className="section-subtitle">{language === 'ko' ? '국립중앙의료원 병의원 정보입니다. 약국은 포함되지 않으며, 방문 전 진료 여부를 전화로 확인해 주세요.' : 'Hospital and clinic information from the National Medical Center. Pharmacies are not included. Call before visiting.'}</p>}
         <div className="medical-search">
           <FiSearch />
           <input
@@ -231,6 +235,7 @@ const MedicalPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        {error && <p role="alert">{error}</p>}
 
         <div className="medical-filters">
           {facilityTypes.map(type => (

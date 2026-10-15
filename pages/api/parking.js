@@ -1,4 +1,6 @@
 import { CITY } from '../../src/config/cities.js'
+import { loadBusan, normalizeBusanParking } from '../../src/utils/busanApi.js'
+export const config = { maxDuration: 60 }
 
 const formatTime = (value) => {
   const text = String(value || '').padStart(4, '0')
@@ -48,6 +50,18 @@ const fetchRange = async (key, start, end) => {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false, items: [], totalCount: 0 })
+  if (CITY.key === 'busan') {
+    try {
+      const rows = await loadBusan('parking')
+      const items = [...new Map(rows.map(normalizeBusanParking).map(item => [item.parkingId, item])).values()]
+      const pageNo = Math.max(1, Math.floor(Number(req.query.pageNo) || 1))
+      const numOfRows = Math.min(3000, Math.max(1, Math.floor(Number(req.query.numOfRows) || 50)))
+      res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
+      return res.status(200).json({ success: true, totalCount: items.length, items: items.slice((pageNo - 1) * numOfRows, pageNo * numOfRows) })
+    } catch (error) {
+      return res.status(502).json({ success: false, items: [], totalCount: 0, error: error.message })
+    }
+  }
   if (CITY.key !== 'seoul') return res.status(404).json({ success: false, items: [], totalCount: 0 })
 
   const key = process.env.SEOUL_OPENAPI_KEY?.trim()

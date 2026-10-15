@@ -1,7 +1,9 @@
 import { CITY } from '../../src/config/cities.js'
+import { loadBusan, normalizeBusanMedical } from '../../src/utils/busanApi.js'
 
 const SERVICES = ['TbHospitalInfo', 'TbPharmacyOperateInfo']
 const CACHE_TTL = 24 * 60 * 60 * 1000
+export const config = { maxDuration: 60 }
 
 export const normalizeSeoulMedical = (item) => ({
   hsptlNm: item.DUTYNAME,
@@ -56,13 +58,13 @@ const loadAll = async (key) => {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false, items: [], totalCount: 0 })
-  if (CITY.key !== 'seoul') return res.status(404).json({ success: false, items: [], totalCount: 0 })
+  if (!['seoul', 'busan'].includes(CITY.key)) return res.status(404).json({ success: false, items: [], totalCount: 0 })
 
   const key = process.env.SEOUL_OPENAPI_KEY?.trim()
-  if (!key) return res.status(503).json({ success: false, items: [], totalCount: 0, error: '서울 의료 API 키가 없습니다.' })
+  if (CITY.key === 'seoul' && !key) return res.status(503).json({ success: false, items: [], totalCount: 0, error: '서울 의료 API 키가 없습니다.' })
 
   try {
-    const all = await loadAll(key)
+    const all = CITY.key === 'busan' ? (await loadBusan('medical')).map(normalizeBusanMedical) : await loadAll(key)
     const filters = {
       q: String(req.query.q || ''),
       type: String(req.query.type || 'all'),

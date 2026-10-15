@@ -77,6 +77,14 @@ export default function TravelPage({ initialSpots, totalCount }) {
     return Array.from(dongs).sort()
   }, [allSpots, districtFilter])
 
+  useEffect(() => {
+    if (!router.isReady) return
+    const requested = router.query.district
+    if (typeof requested === 'string' && CITY.districtNames.includes(requested)) {
+      setDistrictFilter(requested)
+    }
+  }, [router.isReady, router.query.district])
+
   // 데이터가 없으면 클라이언트에서 로드
   useEffect(() => {
     if (!initialSpots || initialSpots.length === 0) {

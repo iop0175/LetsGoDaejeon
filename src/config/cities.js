@@ -64,6 +64,45 @@ export const CITIES = {
       en: { title: 'SEOUL · Let’s Go Seoul', subtitle: 'Culture around every corner', description: 'Discover city parks, neighborhood streets, and your own side of Seoul.' }
     }
   },
+  busan: {
+    key: 'busan',
+    cityName: '부산',
+    cityNameEn: 'Busan',
+    aliases: ['부산광역시'],
+    name: '부산으로',
+    englishName: "Let's Go Busan",
+    tourApiAreaCode: '6',
+    center: { x: 129.0756, y: 35.1796 },
+    bounds: { latMin: 34.88, latMax: 35.40, lngMin: 128.73, lngMax: 129.32 },
+    districtNames: [
+      '중구', '서구', '동구', '영도구', '부산진구', '동래구', '남구', '북구',
+      '해운대구', '사하구', '금정구', '강서구', '연제구', '수영구', '사상구', '기장군'
+    ],
+    odsayCityCode: null,
+    domain: null,
+    publicUrl: 'https://letsgobusan.vercel.app',
+    tourismOrgName: '부산관광공사',
+    governmentUrl: 'https://www.busan.go.kr',
+    parkingReady: true,
+    medicalReady: true,
+    pageCopy: {
+      ko: {
+        travel: { subtitle: '해변과 산복도로, 골목까지 걸어서 만나는 부산' },
+        festival: { subtitle: '오늘 부산에서 열리는 축제와 공연, 전시' },
+        food: { subtitle: '돼지국밥과 씨앗호떡, 자갈치 횟집까지 부산의 한 끼' }
+      },
+      en: {
+        travel: { subtitle: 'Beaches, hillside roads and lanes of Busan on foot' },
+        festival: { subtitle: 'Festivals, shows and exhibitions on in Busan today' },
+        food: { subtitle: 'Pork soup, sweet hotteok and Jagalchi seafood, a taste of Busan' }
+      }
+    },
+    hero: {
+      image: '/images/hero/busan.jpg',
+      ko: { title: 'BUSAN · 부산으로', subtitle: '파도 너머, 부산', description: '해변과 야경, 골목시장까지 바다가 이끄는 대로 부산을 걸어보세요.' },
+      en: { title: 'BUSAN · Let’s Go Busan', subtitle: 'Beyond the waves, Busan', description: 'From beaches and night views to market alleys, follow the sea through Busan.' }
+    }
+  },
   jeju: {
     key: 'jeju',
     cityName: '제주',

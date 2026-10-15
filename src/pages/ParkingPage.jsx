@@ -156,6 +156,7 @@ const ParkingPage = () => {
         </div>
 
       <div className="container">
+        {CITY.key === 'busan' && <p className="section-subtitle">{language === 'ko' ? '부산광역시 공영주차장 안내 정보입니다. 실시간 잔여 주차면이 아니며 요금·운영시간은 현장에서 확인해 주세요.' : 'Busan public parking information, not live availability. Confirm fees and hours on site.'}</p>}
         {/* 필터 버튼 */}
         <div className="filter-section">
           <button 

@@ -6,8 +6,8 @@ import { createClient } from '@supabase/supabase-js'
 nextEnv.loadEnvConfig(process.cwd())
 
 const cityKey = process.argv[2]
-const areaCode = { daejeon: '3', seoul: '1', jeju: '39' }[cityKey]
-if (!areaCode) throw new Error('Usage: node scripts/syncCityEnglish.mjs daejeon|seoul|jeju [--apply]')
+const areaCode = { daejeon: '3', seoul: '1', busan: '6', jeju: '39' }[cityKey]
+if (!areaCode) throw new Error('Usage: node scripts/syncCityEnglish.mjs daejeon|seoul|busan|jeju [--apply]')
 
 const database = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 const apply = process.argv.includes('--apply')

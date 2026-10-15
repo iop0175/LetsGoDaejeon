@@ -3,6 +3,8 @@
  * Cloudflare Workers를 사용한 API 프록시 서버
  */
 
+import { fetchBusan } from './busan.js';
+
 // 허용된 Origin 목록
 const ALLOWED_ORIGINS = [
   'https://www.letsgodaejeon.kr',
@@ -12,6 +14,7 @@ const ALLOWED_ORIGINS = [
   'https://www.letsgoseoul.kr',
   'https://letsgoseoul.vercel.app',
   'https://letsgojeju.vercel.app',
+  'https://letsgobusan.vercel.app',
   'http://localhost:5173',        // 개발용 (Vite)
   'http://localhost:3000',        // 개발용 (Next.js)
   'http://localhost:3001',        // 개발용 (Next.js 대체 포트)
@@ -736,6 +739,10 @@ export default {
     }
 
     // API 라우팅
+    if (pathname.startsWith('/api/busan/')) {
+      const result = await fetchBusan(request, env);
+      return jsonResponse(result.data, result.status, origin);
+    }
     if (pathname.startsWith('/api/odsay')) {
       return handleOdsay(request, env, pathname, origin);
     }

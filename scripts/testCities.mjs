@@ -13,7 +13,7 @@ for (const city of Object.values(CITIES)) {
   }
 }
 
-for (const cityKey of ['daejeon', 'seoul', 'jeju']) {
+for (const cityKey of ['daejeon', 'seoul', 'busan', 'jeju']) {
   process.env.NEXT_PUBLIC_CITY_KEY = cityKey
   const config = await import(`../src/config/cities.js?city=${cityKey}`)
   assert.equal(config.CITY.key, cityKey)

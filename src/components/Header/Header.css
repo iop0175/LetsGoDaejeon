@@ -635,3 +635,63 @@
     box-shadow: none;
   }
 }
+
+/* 360~430px 폭에서 햄버거 버튼이 화면 밖으로 밀리지 않게 헤더 간격을 줄인다 */
+@media (max-width: 480px) {
+  .header-container {
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  .header-actions {
+    gap: 2px;
+  }
+
+  .logo {
+    gap: 6px;
+  }
+
+  .logo-icon {
+    font-size: 1.6rem;
+  }
+
+  .lang-btn span {
+    display: none;
+  }
+
+  .lang-btn {
+    padding: 0;
+    width: 34px;
+    min-width: 34px;
+    justify-content: center;
+  }
+
+  .city-select {
+    width: 58px;
+  }
+}
+
+
+@media (max-width: 400px) {
+  .header-container {
+    gap: 4px;
+  }
+
+  .header-actions {
+    gap: 0;
+  }
+
+  .city-select {
+    width: 54px;
+  }
+
+  .login-btn {
+    width: 34px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .mobile-menu-btn {
+    width: 36px;
+  }
+}

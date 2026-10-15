@@ -1,0 +1,20 @@
+.busan-guides { background: var(--bg-secondary); }
+.busan-guides .section-title, .busan-guides .section-subtitle { text-align: left; }
+.busan-guides__controls { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin: 24px 0; }
+.busan-guides button { padding: 10px 16px; border: 1px solid var(--border-color, #ccd5da); border-radius: 8px; background: var(--bg-primary); color: var(--text-primary); cursor: pointer; font: inherit; }
+.busan-guides button[aria-pressed="true"] { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+.busan-guides__controls [role="group"] { display: flex; gap: 8px; }
+.busan-guides__controls input { min-width: 0; max-width: 100%; padding: 12px; font: inherit; color: var(--text-primary); background: var(--bg-primary); border: 1px solid var(--border-color, #ccd5da); border-radius: 8px; }
+.busan-guides__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px 24px; }
+.busan-guides__card { min-width: 0; overflow-wrap: anywhere; }
+.busan-guides__card img { width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 10px; }
+.busan-guides__district { display: block; color: var(--primary-color); margin-top: 12px; font-size: 14px; }
+.busan-guides__card h3 { font-size: 20px; margin: 6px 0 10px; line-height: 1.5; }
+.busan-guides__card p { color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; white-space: pre-line; }
+.busan-guides summary { cursor: pointer; color: var(--primary-color); padding: 8px 0; }
+.busan-guides__pagination { display: flex; justify-content: center; gap: 20px; align-items: center; margin-top: 32px; }
+.busan-guides button:disabled { opacity: .5; cursor: default; }
+.busan-guides a { color: var(--primary-color); }
+.busan-guides :is(a, button, input, summary):focus-visible { outline: 2px solid var(--primary-color); outline-offset: 4px; }
+@media (max-width: 900px) { .busan-guides__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 560px) { .busan-guides__grid { grid-template-columns: minmax(0, 1fr); } }

@@ -10,6 +10,7 @@ import { getUserTripPlans, addTripPlace } from '../services/tripService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../utils/constants'
 import { generateSlug } from '../utils/slugUtils'
+import { CITY } from '../config/cities'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
@@ -59,6 +60,15 @@ const TravelPage = () => {
     
     return Array.from(dongs).sort()
   }, [allSpots, districtFilter])
+
+  // 랜딩의 구·군 카드에서 /travel?district=해운대구 로 들어오면 해당 구를 미리 선택
+  useEffect(() => {
+    if (!router.isReady) return
+    const requested = router.query.district
+    if (typeof requested === 'string' && CITY.districtNames.includes(requested)) {
+      setDistrictFilter(requested)
+    }
+  }, [router.isReady, router.query.district])
 
   // 구 변경 시 동 필터 초기화 및 페이지 리셋
   useEffect(() => {

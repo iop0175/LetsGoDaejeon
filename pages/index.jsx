@@ -11,6 +11,8 @@ const FestivalSection = dynamic(() => import('../src/components/FestivalSection/
 const FoodSection = dynamic(() => import('../src/components/FoodSection/FoodSection'), { ssr: true })
 const TravelCourse = dynamic(() => import('../src/components/TravelCourse/TravelCourse'), { ssr: true })
 const SeoulCrowd = dynamic(() => import('../src/components/SeoulCrowd/SeoulCrowd'), { ssr: false })
+const BusanDistricts = dynamic(() => import('../src/components/BusanDistricts/BusanDistricts'), { ssr: false })
+const BusanGuides = dynamic(() => import('../src/components/BusanDistricts/BusanGuides'), { ssr: false })
 const JejuThemes = dynamic(() => import('../src/components/JejuThemes/JejuThemes'), { ssr: false })
 const WeatherWidget = dynamic(() => import('../src/components/WeatherWidget/WeatherWidget'), { ssr: false })
 const KakaoChannelButton = dynamic(() => import('../src/components/KakaoChannelButton/KakaoChannelButton'), { ssr: false })
@@ -54,6 +56,8 @@ export default function HomePage({ heroSlides }) {
       <QuickMenu />
       <PopularSpots />
       {CITY.key === 'seoul' && <SeoulCrowd />}
+      {CITY.key === 'busan' && <BusanDistricts />}
+      {CITY.key === 'busan' && <BusanGuides />}
       {CITY.key === 'jeju' && <JejuThemes />}
       {CITY.key === 'daejeon' && <TravelCourse />}
       <FestivalSection />

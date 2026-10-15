@@ -3,8 +3,8 @@ import fs from 'node:fs'
 
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const [cityKey, baseUrl] = process.argv.slice(2)
-const cityName = { seoul: '서울', jeju: '제주' }[cityKey]
-assert.ok(cityName && baseUrl, 'Usage: testCityPreview.mjs seoul|jeju http://localhost:PORT')
+const cityName = { seoul: '서울', busan: '부산', jeju: '제주' }[cityKey]
+assert.ok(cityName && baseUrl, 'Usage: testCityPreview.mjs seoul|busan|jeju http://localhost:PORT')
 const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH } : {}) })
 const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
 const errors = []
@@ -18,7 +18,7 @@ try {
   await page.waitForFunction(() => document.querySelectorAll('a[href^="/spot/"]').length > 0)
   assert.equal(await page.locator('[data-city]').getAttribute('data-city'), cityKey)
   assert.equal(await page.locator('.city-select').inputValue(), cityKey)
-  assert.deepEqual(await page.locator('.city-select option').allTextContents(), ['대전', '서울', '제주'])
+  assert.deepEqual(await page.locator('.city-select option').allTextContents(), ['대전', '서울', '부산', '제주'])
   assert.ok((await page.title()).includes(cityName))
   assert.equal(await page.locator('meta[name="robots"]').getAttribute('content'), 'noindex, nofollow')
   const pageText = await page.evaluate(() => {
@@ -43,6 +43,10 @@ try {
   const response = await page.goto(`${baseUrl}${detailPath}`, { waitUntil: 'domcontentloaded' })
   assert.equal(response.status(), 200, 'Own city detail failed')
   assert.ok(!(await page.title()).includes('대전'), 'Detail SEO leaked another city')
+  if (cityKey === 'busan') {
+    await page.goto(`${baseUrl}/travel?district=${encodeURIComponent('해운대구')}`, { waitUntil: 'domcontentloaded' })
+    await page.waitForFunction(() => document.querySelector('.district-btn.active')?.textContent.includes('해운대구'))
+  }
   const wrongCity = await page.goto(`${baseUrl}/spot/한빛탑-2779504`, { waitUntil: 'domcontentloaded' })
   assert.equal(wrongCity.status(), 404, 'Other city detail was exposed')
   // 서울은 주차가 연결됐으므로 미연결 도시만 확인한다

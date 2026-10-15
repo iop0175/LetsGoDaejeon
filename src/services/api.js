@@ -26,7 +26,7 @@ export const getParkingFacilities = async (pageNo = 1, numOfRows = 50) => {
   if (!CITY.parkingReady) return { success: false, items: [], totalCount: 0, error: '지역 주차장 API 연결 준비 중입니다.' };
   try {
     recordApiCall('parking');
-    const endpoint = CITY.key === 'seoul'
+    const endpoint = ['seoul', 'busan'].includes(CITY.key)
       ? `/api/parking?pageNo=${pageNo}&numOfRows=${numOfRows}`
       : `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`;
     const data = await safeFetch(
@@ -53,7 +53,7 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10, filters =
   if (!CITY.medicalReady) return { success: false, items: [], totalCount: 0, error: '지역 의료기관 API 연결 준비 중입니다.' };
   try {
     recordApiCall('medical');
-    if (CITY.key === 'seoul') {
+    if (['seoul', 'busan'].includes(CITY.key)) {
       const params = new URLSearchParams({ pageNo, numOfRows, ...filters });
       return await safeFetch(`/api/medical?${params}`, {}, 30000);
     }

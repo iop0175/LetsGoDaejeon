@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { CITY } from '../../src/config/cities.js'
 import { fetchKcisa } from './kcisa/[op].js'
+import { loadBusan, normalizeBusanStory } from '../../src/utils/busanApi.js'
 
 export const config = { maxDuration: 60 }
 
@@ -92,7 +93,16 @@ const fromDaejeon = async () => {
   }))
 }
 
-const CITY_SOURCES = { seoul: [fromSeoul], daejeon: [fromDaejeon], jeju: [] }
+const fromBusan = async () => (await loadBusan('festivals'))
+  .map(item => normalizeBusanStory(item, 'festivals'))
+  .filter(item => item.dates)
+  .map(item => toRow({
+    title: item.title, type: '축제', start: item.dates.start, end: item.dates.end,
+    site: item.address || item.district, contact: item.phone,
+    url: item.url, image: item.image, description: item.description
+  }))
+
+const CITY_SOURCES = { seoul: [fromSeoul], daejeon: [fromDaejeon], busan: [fromBusan], jeju: [] }
 
 export const collectEvents = async (today = todayKst()) => {
   const sources = [fromKcisa, () => fromTourApi(today), ...(CITY_SOURCES[CITY.key] || [])]
