@@ -30,6 +30,8 @@
   align-items: center;
   gap: 10px;
   text-decoration: none;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .logo-icon {
