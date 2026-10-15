@@ -7,6 +7,7 @@ import { MdLocalHospital, MdLocalPharmacy, MdHealthAndSafety } from 'react-icons
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
 import SEO, { SEO_DATA } from '../components/common/SEO';
 import { CITY, getCityPageSeo } from '../config/cities';
+import { getDirectionsUrl } from '../utils/mapLinks';
 // CSS는 pages/_app.jsx에서 import
 
 // 서울은 데이터가 커서 검색과 페이지 나누기를 /api/medical에서 한다
@@ -197,7 +198,7 @@ const MedicalPage = () => {
   const handleNavigate = (facility) => {
     const address = facility.locplc;
     if (address) {
-      window.open(`https://map.kakao.com/link/search/${encodeURIComponent(address)}`, '_blank');
+      window.open(getDirectionsUrl(language, { address, name: facility.hsptlNm }), '_blank');
     }
   };
 

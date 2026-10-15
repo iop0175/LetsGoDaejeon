@@ -10,6 +10,7 @@ import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
 import { generateSlug } from '../utils/slugUtils';
 import Icons from '../components/common/Icons';
 import SEO, { SEO_DATA } from '../components/common/SEO';
+import { getDirectionsUrl } from '../utils/mapLinks';
 // CSS는 pages/_app.jsx에서 import
 
 const AccommodationPage = () => {
@@ -207,7 +208,7 @@ const AccommodationPage = () => {
   const handleNavigate = (room) => {
     const address = room.romsAddr || room.romsDtlAddr;
     if (address) {
-      window.open(`https://map.kakao.com/link/search/${encodeURIComponent(address)}`, '_blank');
+      window.open(getDirectionsUrl(language, { address, name: room.romsNm }), '_blank');
     }
   };
 

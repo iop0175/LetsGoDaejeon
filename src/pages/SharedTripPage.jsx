@@ -8,6 +8,7 @@ import { getPublishedTripPlanDetail, toggleTripLike, checkTripLiked, getPlaceDet
 import { getCarRoute } from '../services/kakaoMobilityService'
 import { getReliableImageUrl, DEFAULT_IMAGE } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 // 일차별 경로 색상
@@ -1054,16 +1055,7 @@ const SharedTripPage = () => {
   // 장소 길찾기
   const handleDirection = async (place) => {
     const address = place.address || place.placeAddress
-    
-    if (address) {
-      // 주소로 검색
-      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(address)}`
-      window.open(kakaoSearchUrl, '_blank')
-    } else {
-      // 주소가 없으면 장소 이름으로 검색
-      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(place.placeName)}`
-      window.open(kakaoSearchUrl, '_blank')
-    }
+    window.open(getDirectionsUrl(language, { address, name: place.placeName }), '_blank')
   }
   
   if (loading) {

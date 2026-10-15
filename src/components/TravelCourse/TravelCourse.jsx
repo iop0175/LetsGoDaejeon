@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { FiArrowRight, FiClock, FiUser, FiMapPin, FiEye, FiHeart, FiX, FiNavigation } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getPublishedTripPlans } from '../../services/tripService'
+import { getDirectionsUrl } from '../../utils/mapLinks'
 // CSS는 _app.jsx에서 import
 
 // 여행코스 대체 이미지
@@ -107,13 +108,7 @@ const TravelCourse = memo(() => {
   // 길찾기
   const handleDirection = (spot) => {
     const address = spot.address || spot.placeAddress
-    if (address) {
-      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(address)}`
-      window.open(kakaoSearchUrl, '_blank')
-    } else if (spot.placeName) {
-      const kakaoSearchUrl = `https://map.kakao.com/link/search/${encodeURIComponent(spot.placeName)}`
-      window.open(kakaoSearchUrl, '_blank')
-    }
+    if (address || spot.placeName) window.open(getDirectionsUrl(language, { address, name: spot.placeName }), '_blank')
   }
 
   // 게시된 코스가 없으면 섹션 자체를 숨김

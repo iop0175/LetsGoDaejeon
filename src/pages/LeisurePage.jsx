@@ -11,6 +11,7 @@ import { DISTRICTS, extractDistrict } from '../utils/constants'
 import { generateSlug } from '../utils/slugUtils'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 const LeisurePage = () => {
@@ -430,7 +431,7 @@ const LeisurePage = () => {
                 <div className="modal-actions">
                   {selectedSpot.address && (
                     <a 
-                      href={`https://map.kakao.com/link/search/${encodeURIComponent(selectedSpot.address)}`}
+                      href={getDirectionsUrl(language, { address: selectedSpot.address, name: selectedSpot.title })}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="action-btn map"

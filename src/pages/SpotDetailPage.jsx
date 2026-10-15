@@ -13,6 +13,7 @@ import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtm
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 // XSS 방지를 위한 텍스트 새니타이징 함수
@@ -2077,7 +2078,7 @@ const SpotDetailPage = () => {
         )}
         {spot.addr1 && (
           <a 
-            href={`https://map.kakao.com/link/to/${encodeURIComponent(spot.title)},${spot.mapy},${spot.mapx}`}
+            href={getDirectionsUrl(language, { name: spot.title, address: spot.addr1, lat: spot.mapy, lng: spot.mapx })}
             target="_blank" rel="noopener noreferrer"
             className="sdp__bottom-btn sdp__bottom-btn--secondary"
           >

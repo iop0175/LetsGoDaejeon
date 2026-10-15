@@ -6,6 +6,7 @@ import { getParkingFacilities } from '../services/api'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import SEO, { SEO_DATA } from '../components/common/SEO'
 import { CITY, getCityPageSeo } from '../config/cities'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 const ParkingPage = () => {
@@ -333,7 +334,7 @@ const ParkingPage = () => {
 
                   {(item.addrRoad || item.addr) && (
                     <a 
-                      href={`https://map.kakao.com/link/search/${encodeURIComponent(item.addrRoad || item.addr)}`}
+                      href={getDirectionsUrl(language, { address: item.addrRoad || item.addr, name: item.name, lat: item.lat, lng: item.lon })}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="parking-nav-btn"

@@ -14,6 +14,7 @@ import { CITY } from '../config/cities'
 import LicenseBadge from '../components/common/LicenseBadge'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 const TravelPage = () => {
@@ -452,7 +453,7 @@ const TravelPage = () => {
                         {/* 길찾기 버튼 */}
                         {spot.address && (
                           <a 
-                            href={`https://map.kakao.com/link/search/${encodeURIComponent(spot.address)}`}
+                            href={getDirectionsUrl(language, { address: spot.address, name: spot.title, lat: spot.mapy, lng: spot.mapx })}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="spot-nav-btn"

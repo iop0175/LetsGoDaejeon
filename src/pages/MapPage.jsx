@@ -7,6 +7,7 @@ import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import { CITY } from '../config/cities'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
+import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
 
 const MapPage = () => {
@@ -651,7 +652,7 @@ const MapPage = () => {
             
             {selectedPlace.address && (
               <a
-                href={`https://map.kakao.com/link/search/${encodeURIComponent(selectedPlace.address)}`}
+                href={getDirectionsUrl(language, { address: selectedPlace.address, name: selectedPlace.name, lat: selectedPlace.lat, lng: selectedPlace.lng })}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="nav-btn"
