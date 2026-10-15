@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 
 // 클라이언트 전용 컴포넌트
 const TripPlannerPageContent = dynamic(
@@ -8,7 +9,7 @@ const TripPlannerPageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 여행 계획 만들기 | 대전으로 - Let\'s Go Daejeon',
     description: '나만의 대전 여행 일정을 쉽게 만들어보세요. 대전의 인기 관광지, 맛집, 문화시설을 드래그앤드롭으로 일정에 추가하고 최적의 여행 코스를 완성하세요.',
@@ -19,7 +20,7 @@ const SEO = {
     description: 'Create your own Daejeon travel itinerary easily. Add popular tourist spots, restaurants, and cultural facilities to your schedule with drag-and-drop.',
     keywords: 'Daejeon trip planner, Daejeon itinerary maker, Daejeon travel plan, plan Daejeon trip'
   }
-}
+} : getCityPageSeo('여행 계획 만들기', 'Trip Planner')
 
 export default function TripPlannerPage() {
   return (
@@ -28,15 +29,15 @@ export default function TripPlannerPage() {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/trip-planner" />
+        <link rel="canonical" href={`${SITE_URL}/trip-planner`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/trip-planner" />
+        <meta property="og:url" content={`${SITE_URL}/trip-planner`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
-        <meta property="og:site_name" content="대전으로" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
+        <meta property="og:site_name" content={CITY.name} />
         <meta property="og:locale" content="ko_KR" />
         
         {/* Twitter Card */}
@@ -53,7 +54,7 @@ export default function TripPlannerPage() {
               "@type": "WebApplication",
               "name": "대전 여행 플래너",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/trip-planner",
+            "url": `${SITE_URL}/trip-planner`,
               "applicationCategory": "TravelApplication",
               "operatingSystem": "Web Browser",
               "offers": {

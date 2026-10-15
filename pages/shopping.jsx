@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
 import { getTourSpots as getTourSpotsDb } from '../src/services/dbService'
 
@@ -9,7 +10,7 @@ const ShoppingPageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 쇼핑 | 대전으로 - Let\'s Go Daejeon',
     description: '대전의 백화점, 쇼핑몰, 전통시장, 아울렛 등 쇼핑 명소를 소개합니다. 갤러리아 타임월드, 대전 중앙시장, 유성 로데오거리 등을 만나보세요.',
@@ -20,7 +21,7 @@ const SEO = {
     description: 'Discover shopping destinations in Daejeon. From department stores to traditional markets and outlets.',
     keywords: 'Daejeon shopping, Daejeon mall, Daejeon market, Galleria Timeworld, Daejeon traditional market'
   }
-}
+} : getCityPageSeo('쇼핑', 'Shopping')
 
 export default function ShoppingPage({ initialData }) {
   return (
@@ -29,14 +30,14 @@ export default function ShoppingPage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/shopping" />
+        <link rel="canonical" href={`${SITE_URL}/shopping`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/shopping" />
+        <meta property="og:url" content={`${SITE_URL}/shopping`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +55,7 @@ export default function ShoppingPage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 쇼핑 명소 목록",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/shopping",
+              "url": `${SITE_URL}/shopping`,
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",
@@ -64,7 +65,7 @@ export default function ShoppingPage({ initialData }) {
                   "name": item.title || item.name,
                   "address": {
                     "@type": "PostalAddress",
-                    "addressLocality": "대전",
+                    "addressLocality": CITY.cityName,
                     "addressCountry": "KR",
                     "streetAddress": item.addr1 || item.address
                   }

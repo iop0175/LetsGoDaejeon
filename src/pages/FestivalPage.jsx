@@ -6,6 +6,7 @@ import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/d
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
+import { CITY } from '../config/cities'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
 // CSS는 pages/_app.jsx에서 import
@@ -604,7 +605,7 @@ const FestivalPage = () => {
               <>
                 <div className="performance-info-banner">
                   <FiInfo />
-                  <span>{language === 'ko' ? 'KCISA(한국문화정보원) 제공 대전 지역 공연 정보입니다.' : 'Performance information provided by KCISA for Daejeon area.'}</span>
+                  <span>{language === 'ko' ? `KCISA(한국문화정보원) 제공 ${CITY.cityName} 지역 공연 정보입니다.` : `Performance information provided by KCISA for ${CITY.cityNameEn}.`}</span>
                 </div>
                 
                 <div className="events-count">

@@ -1,0 +1,83 @@
+.app[data-city="seoul"] {
+  --primary-color: #9b303b;
+  --primary-dark: #76222c;
+  --secondary-color: #b47b39;
+  --accent-color: #9b303b;
+}
+
+.app[data-city="jeju"] {
+  --primary-color: #007b77;
+  --primary-dark: #005652;
+  --secondary-color: #bd651c;
+  --accent-color: #007b77;
+}
+
+.app[data-city="seoul"] .hero,
+.app[data-city="jeju"] .hero {
+  height: 78svh;
+  min-height: 540px;
+  max-height: 780px;
+}
+
+.app[data-city="seoul"] .hero-overlay,
+.app[data-city="jeju"] .hero-overlay {
+  background: linear-gradient(90deg, rgba(9, 23, 25, 0.78), rgba(9, 23, 25, 0.12));
+}
+
+.app[data-city="seoul"] .hero-title,
+.app[data-city="jeju"] .hero-title {
+  max-width: 760px;
+  font-size: 64px;
+  line-height: 1.15;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.app[data-city="seoul"] .hero-badge,
+.app[data-city="jeju"] .hero-badge {
+  background: transparent;
+  padding-left: 0;
+  font-weight: 700;
+}
+
+.app[data-city="seoul"] .hero-btn,
+.app[data-city="jeju"] .hero-btn {
+  background: var(--primary-color);
+  border-radius: 6px;
+  color: #fff;
+}
+
+.city-preview-banner {
+  margin-top: 72px;
+  padding: 12px 24px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  text-align: center;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.city-service-pending {
+  min-height: 55vh;
+  max-width: 900px;
+  margin: auto;
+  padding: 80px 24px;
+}
+
+.city-service-pending p { margin: 20px 0; }
+.city-service-pending a { color: var(--primary-color); }
+
+.app[data-city="seoul"] .weather-widget,
+.app[data-city="jeju"] .weather-widget { background: var(--primary-dark); }
+
+.app[data-city="seoul"] .festival-section,
+.app[data-city="jeju"] .festival-section { background: var(--bg-secondary); }
+
+@media (max-width: 640px) {
+  .app[data-city="seoul"] .hero,
+  .app[data-city="jeju"] .hero { min-height: 520px; height: 72svh; }
+  .app[data-city="seoul"] .hero-title,
+  .app[data-city="jeju"] .hero-title { font-size: 38px; max-width: 340px; }
+  .city-preview-banner { padding: 10px 16px; font-size: 12px; }
+  .city-preview-banner { margin-top: 64px; }
+}

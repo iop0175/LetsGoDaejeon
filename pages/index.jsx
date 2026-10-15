@@ -2,6 +2,7 @@ import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import HeroSection from '../src/components/HeroSection/HeroSection'
 import { getHeroSlides } from '../src/services/dbService'
+import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../src/config/cities'
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
 const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: true })
@@ -14,11 +15,11 @@ const KakaoChannelButton = dynamic(() => import('../src/components/KakaoChannelB
 
 // SEO 메타데이터
 const SEO = {
-  title: '대전으로 | Let\'s Go Daejeon - 대전 관광 여행 가이드',
-  description: '대전의 아름다운 관광지, 맛집, 축제, 문화시설을 소개합니다. 대전 여행의 모든 것을 한눈에!',
-  keywords: '대전, 대전 관광, 대전 여행, 대전 맛집, 대전 축제, 대전 가볼만한곳, 대전 명소, Daejeon, Daejeon Tourism',
-  url: 'https://www.letsgodaejeon.kr',
-  image: 'https://www.letsgodaejeon.kr/og-image.svg'
+  title: `${CITY.name} | ${CITY.englishName} - ${CITY.cityName} 관광 여행 가이드`,
+  description: `${CITY.cityName}의 관광지, 맛집, 공연과 문화시설을 소개합니다. ${CITY.cityName} 여행의 모든 것을 한눈에!`,
+  keywords: `${CITY.cityName}, ${CITY.cityName} 여행, ${CITY.cityName} 맛집, ${CITY.cityNameEn} Tourism`,
+  url: SITE_URL,
+  image: `${SITE_URL}${CITY.hero?.image || '/og-image.svg'}`
 }
 
 export default function HomePage({ heroSlides }) {
@@ -36,7 +37,7 @@ export default function HomePage({ heroSlides }) {
         <meta property="og:title" content={SEO.title} />
         <meta property="og:description" content={SEO.description} />
         <meta property="og:image" content={SEO.image} />
-        <meta property="og:site_name" content="대전으로" />
+        <meta property="og:site_name" content={CITY.name} />
         <meta property="og:locale" content="ko_KR" />
         
         {/* Twitter Card */}
@@ -50,7 +51,7 @@ export default function HomePage({ heroSlides }) {
       <HeroSection initialSlides={heroSlides} />
       <QuickMenu />
       <PopularSpots />
-      <TravelCourse />
+      {CITY.key === 'daejeon' && <TravelCourse />}
       <FestivalSection />
       <FoodSection />
       
@@ -60,7 +61,7 @@ export default function HomePage({ heroSlides }) {
       </div>
       
       {/* 카카오톡 채널 플로팅 버튼 */}
-      <KakaoChannelButton channelUrl="http://pf.kakao.com/_xnxgxkAX" />
+      {CITY.key === 'daejeon' && !IS_CITY_PREVIEW && <KakaoChannelButton channelUrl="http://pf.kakao.com/_xnxgxkAX" />}
     </>
   )
 }

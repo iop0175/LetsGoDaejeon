@@ -4,7 +4,9 @@
  */
 
 // 대전시 구 목록 (필터용)
-export const DISTRICTS = [
+import { CITY } from '../config/cities'
+
+const DAEJEON_DISTRICTS = [
   { id: 'all', ko: '전체 지역', en: 'All Districts' },
   { id: '동구', ko: '동구', en: 'Dong-gu' },
   { id: '중구', ko: '중구', en: 'Jung-gu' },
@@ -14,7 +16,11 @@ export const DISTRICTS = [
 ]
 
 // 대전시 구 이름 목록 (단순 배열)
-export const DISTRICT_NAMES = ['동구', '중구', '서구', '유성구', '대덕구']
+export const DISTRICTS = CITY.key === 'daejeon' ? DAEJEON_DISTRICTS : [
+  { id: 'all', ko: '전체 지역', en: 'All Districts' },
+  ...CITY.districtNames.map(district => ({ id: district, ko: district, en: district }))
+]
+export const DISTRICT_NAMES = DISTRICTS.filter(district => district.id !== 'all').map(district => district.id)
 
 // 구 이름 한/영 매핑
 export const DISTRICT_MAP = {
@@ -27,13 +33,11 @@ export const DISTRICT_MAP = {
 
 // 주소에서 구 정보 추출
 export const extractDistrict = (address) => {
-  if (!address) return { ko: '대전', en: 'Daejeon', district: null }
-  const match = address.match(/대전\s*(광역시|시)?\s*(\S+구)/)
-  if (match) {
-    const district = match[2]
+  const district = DISTRICT_NAMES.find(name => address?.includes(name))
+  if (district) {
     return { ko: district, en: DISTRICT_MAP[district] || district, district }
   }
-  return { ko: '대전', en: 'Daejeon', district: null }
+  return { ko: CITY.cityName, en: CITY.cityNameEn, district: null }
 }
 
 // 주소에서 동 추출

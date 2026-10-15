@@ -4,6 +4,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getDaejeonParking } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
+import { CITY } from '../config/cities'
 import Icons from '../components/common/Icons'
 import SEO, { SEO_DATA } from '../components/common/SEO'
 // CSS는 pages/_app.jsx에서 import
@@ -172,7 +173,7 @@ const MapPage = () => {
     if (!container) return
 
     const options = {
-      center: new window.kakao.maps.LatLng(36.3504, 127.3845), // 대전 중심
+      center: new window.kakao.maps.LatLng(CITY.center.y, CITY.center.x), // 활성 도시 중심
       level: 7
     }
 
@@ -303,8 +304,10 @@ const MapPage = () => {
   }
 
   // 대전시 대략 범위 (이상치 좌표 필터링용)
-  const isWithinDaejeonBounds = (lat, lng) => {
-    return lat >= 36.1 && lat <= 36.6 && lng >= 127.2 && lng <= 127.6
+  const isWithinCityBounds = (lat, lng) => {
+    if (CITY.key === 'daejeon') return lat >= 36.1 && lat <= 36.6 && lng >= 127.2 && lng <= 127.6
+    const { latMin, latMax, lngMin, lngMax } = CITY.bounds
+    return lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax
   }
 
   // 마커 업데이트
@@ -330,7 +333,7 @@ const MapPage = () => {
     places.forEach((place, idx) => {
       if (place.lat == null || place.lng == null) return
       if (!isValidCoord(place.lat, place.lng)) return
-      if (!isWithinDaejeonBounds(place.lat, place.lng)) return
+      if (!isWithinCityBounds(place.lat, place.lng)) return
       
       hasValidCoords = true
       const position = new window.kakao.maps.LatLng(place.lat, place.lng)
@@ -455,7 +458,7 @@ const MapPage = () => {
   const tabs = [
     { id: 'tour', label: t.pages.search.attractions, icon: <Icons.building size={16} /> },
     { id: 'food', label: t.pages.search.restaurants, icon: <Icons.food size={16} /> },
-    { id: 'parking', label: t.nav.parking, icon: <Icons.parking size={16} /> }
+    ...(CITY.localServicesReady ? [{ id: 'parking', label: t.nav.parking, icon: <Icons.parking size={16} /> }] : [])
   ]
 
   return (

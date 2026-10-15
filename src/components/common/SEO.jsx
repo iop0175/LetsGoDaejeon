@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import { useLanguage } from '../../context/LanguageContext'
+import { CITY, SITE_URL } from '../../config/cities'
 
 /**
  * SEO 컴포넌트 - 페이지별 메타 태그 관리 (Next.js용)
@@ -16,16 +17,17 @@ const SEO = ({
   title, 
   description, 
   keywords, 
-  image = 'https://www.letsgodaejeon.kr/og-image.svg',
+  image = `${SITE_URL}${CITY.hero?.image || '/og-image.svg'}`,
   url,
   type = 'website'
 }) => {
   const { language } = useLanguage()
-  
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
+
+  const siteUrl = SITE_URL
   const fullUrl = url ? `${siteUrl}${url}` : siteUrl
-  const siteName = language === 'ko' ? '대전으로' : "Let's Go Daejeon"
-  const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | Let's Go Daejeon`
+  const siteName = language === 'ko' ? CITY.name : CITY.englishName
+  const localizedTitle = title?.replaceAll('대전', CITY.cityName).replaceAll('Daejeon', CITY.cityNameEn)
+  const fullTitle = localizedTitle ? `${localizedTitle} | ${siteName}` : `${siteName} | ${CITY.englishName}`
   
   return (
     <Head>

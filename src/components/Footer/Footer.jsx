@@ -2,6 +2,7 @@ import { memo } from 'react'
 import Link from 'next/link'
 import { FiMapPin, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
+import { CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 const Footer = memo(() => {
@@ -47,7 +48,7 @@ const Footer = memo(() => {
             <div className="footer-link-group">
               <h4>{t.footer.relatedSites}</h4>
               <ul>
-                <li><a href="https://www.daejeon.go.kr" target="_blank" rel="noopener noreferrer">{t.footer.daejeonCity}</a></li>
+                <li><a href={CITY.governmentUrl} target="_blank" rel="noopener noreferrer">{t.footer.daejeonCity}</a></li>
                 <li><a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener noreferrer">{t.footer.visitKorea}</a></li>
                 <li><a href="#" target="_blank" rel="noopener noreferrer">{t.footer.tourCorp}</a></li>
               </ul>

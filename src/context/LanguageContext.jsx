@@ -1,13 +1,14 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { CITY } from '../config/cities'
 
 const LanguageContext = createContext()
 
 export const translations = {
   ko: {
     // 사이트 정보
-    siteName: '대전으로',
-    siteSubtitle: 'Let\'s Go Daejeon',
-    siteDescription: '대전광역시의 아름다운 관광지와 맛집, 축제 정보를 소개합니다.',
+    siteName: CITY.name,
+    siteSubtitle: CITY.englishName,
+    siteDescription: `${CITY.cityName}의 아름다운 관광지와 맛집, 축제 정보를 소개합니다.`,
 
     // 네비게이션
     nav: {
@@ -88,17 +89,18 @@ export const translations = {
 
     // 푸터
     footer: {
-      description: '대전광역시의 아름다운 관광지와 맛집, 축제 정보를 소개합니다. 대전의 숨겨진 매력을 발견해보세요.',
+      description: `${CITY.cityName}의 아름다운 관광지와 맛집, 축제 정보를 소개합니다. ${CITY.cityName}의 숨겨진 매력을 발견해보세요.`,
       tourInfo: '관광 정보',
       customerService: '고객 서비스',
       relatedSites: '관련 사이트',
       faq: '자주 묻는 질문',
       tourOffice: '관광 안내소',
       travelGuide: '여행 가이드',
-      daejeonCity: '대전광역시',
+      daejeonCity: CITY.aliases[0] || CITY.cityName,
       visitKorea: '대한민국 구석구석',
-      tourCorp: '대전관광공사',
-      copyright: '© 2026 대전으로. All rights reserved.',
+      // ponytail: 도시별 공식 관광기관명 미확인 시 null. UI에서 null이면 숨기거나 하드코딩하지 말 것.
+      tourCorp: CITY.tourismOrgName,
+      copyright: `© 2026 ${CITY.name}. All rights reserved.`,
       privacy: '개인정보처리방침',
       terms: '이용약관',
       copyrightPolicy: '저작권정책',
@@ -668,9 +670,9 @@ export const translations = {
 
   en: {
     // Site Info
-    siteName: 'To Daejeon',
-    siteSubtitle: 'Let\'s Go Daejeon',
-    siteDescription: 'Discover the beautiful tourist attractions, restaurants, and festivals of Daejeon.',
+    siteName: CITY.englishName,
+    siteSubtitle: CITY.englishName,
+    siteDescription: `Discover the beautiful tourist attractions, restaurants, and festivals of ${CITY.cityNameEn}.`,
 
     // Navigation
     nav: {
@@ -751,17 +753,17 @@ export const translations = {
 
     // Footer
     footer: {
-      description: 'Discover the beautiful tourist attractions, restaurants, and festivals of Daejeon.',
+      description: `Discover the beautiful tourist attractions, restaurants, and festivals of ${CITY.cityNameEn}.`,
       tourInfo: 'Tourism Info',
       customerService: 'Customer Service',
       relatedSites: 'Related Sites',
       faq: 'FAQ',
       tourOffice: 'Tourist Office',
       travelGuide: 'Travel Guide',
-      daejeonCity: 'Daejeon City',
+      daejeonCity: `${CITY.cityNameEn} City`,
       visitKorea: 'Visit Korea',
-      tourCorp: 'Daejeon Tourism',
-      copyright: '© 2026 To Daejeon. All rights reserved.',
+      tourCorp: CITY.tourismOrgName,
+      copyright: `© 2026 ${CITY.englishName}. All rights reserved.`,
       privacy: 'Privacy Policy',
       terms: 'Terms of Use',
       copyrightPolicy: 'Copyright Policy',
@@ -1335,6 +1337,17 @@ export const translations = {
   }
 }
 
+const localizeCity = (value) => {
+  if (typeof value === 'string') return value.replaceAll('대전', CITY.cityName).replaceAll('Daejeon', CITY.cityNameEn)
+  if (Array.isArray(value)) return value.map(localizeCity)
+  if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, entry]) => [key, localizeCity(entry)]))
+  return value
+}
+
+const cityTranslations = CITY.key === 'daejeon' ? translations : Object.fromEntries(
+  Object.entries(translations).map(([language, value]) => [language, localizeCity(value)])
+)
+
 export const LanguageProvider = ({ children }) => {
   // SSR 환경에서는 기본값 사용
   const [language, setLanguage] = useState('ko')
@@ -1357,7 +1370,7 @@ export const LanguageProvider = ({ children }) => {
     document.documentElement.lang = language
   }, [language, isHydrated])
 
-  const t = translations[language]
+  const t = cityTranslations[language] || cityTranslations.ko
 
   const toggleLanguage = () => {
     setLanguage(prev => prev === 'ko' ? 'en' : 'ko')

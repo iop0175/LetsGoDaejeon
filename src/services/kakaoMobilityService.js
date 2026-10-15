@@ -2,6 +2,7 @@
 // 경로 탐색 및 이동 시간 조회
 
 import { getRouteFromCache, saveRouteToCache, getCoordinateFromCache, saveCoordinateToCache, recordApiCall, API_TYPES } from './dbService.js'
+import { CITY } from '../config/cities.js'
 
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = process.env.NEXT_PUBLIC_WORKERS_API_URL || 'https://letsgodaejeon-api.eoynx.workers.dev'
@@ -91,9 +92,10 @@ export const getKakaoApiStats = () => {
   }
 }
 
-// 대전 지역 범위 체크 (위도: 36.19~36.51, 경도: 127.25~127.55)
-const isDaejeonArea = (lat, lng) => {
-  return lat >= 36.19 && lat <= 36.51 && lng >= 127.25 && lng <= 127.55
+// 활성 도시 범위 체크 (CITY.bounds, src/config/cities.js)
+const isWithinCityBounds = (lat, lng) => {
+  const { latMin, latMax, lngMin, lngMax } = CITY.bounds
+  return lat >= latMin && lat <= latMax && lng >= lngMin && lng <= lngMax
 }
 
 /**
@@ -124,18 +126,22 @@ export const getCoordinatesFromAddress = async (address) => {
     // 괄호 내용 제거 (예: 카이스트(KAIST) → 카이스트)
     const removeParentheses = (str) => str.replace(/\(.*?\)/g, '').trim()
     
-    // 대전 지역인지 확인하고 결과 반환하는 헬퍼
-    const returnIfDaejeon = (lat, lng) => {
-      if (isDaejeonArea(lat, lng)) {
+    // 활성 도시 지역인지 확인하고 결과 반환하는 헬퍼
+    const returnIfInCity = (lat, lng) => {
+      if (isWithinCityBounds(lat, lng)) {
         return { success: true, lng, lat }
       }
       return null
     }
-    
+
     // 검색어에서 핵심 키워드 추출
+    const cityNoisePattern = new RegExp(
+      `${[CITY.cityName, ...(CITY.aliases || [])].join('|')}|${(CITY.districtNames || []).join('|')}|\\d+`,
+      'g'
+    )
     const extractKeywords = (str) => {
       return removeParentheses(str)
-        .replace(/대전(광역시)?|유성구|서구|중구|동구|대덕구|\d+/g, '')
+        .replace(cityNoisePattern, '')
         .trim()
     }
     
@@ -147,12 +153,12 @@ export const getCoordinatesFromAddress = async (address) => {
       // 점수 계산 함수
       const getScore = (doc) => {
         const placeName = removeParentheses(doc.place_name).toLowerCase()
-        const inDaejeon = isDaejeonArea(parseFloat(doc.y), parseFloat(doc.x))
-        
+        const inCity = isWithinCityBounds(parseFloat(doc.y), parseFloat(doc.x))
+
         let score = 0
-        
-        // 대전 지역: +100점
-        if (inDaejeon) score += 100
+
+        // 활성 도시 지역: +100점
+        if (inCity) score += 100
         
         // 검색어 전체 포함: +50점
         const matchCount = keywordParts.filter(kw => placeName.includes(kw)).length
@@ -199,7 +205,7 @@ export const getCoordinatesFromAddress = async (address) => {
     const searchKeyword = async (query) => {
       const startTime = Date.now()
       const response = await fetch(
-        `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&x=127.385&y=36.351&radius=20000`
+        `${WORKERS_API_URL}/api/kakao/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&x=${CITY.center.x}&y=${CITY.center.y}&radius=20000`
       )
       const data = await response.json()
       trackKakaoApiCall('keyword_search', !!data.documents?.length, startTime, { query })
@@ -211,42 +217,42 @@ export const getCoordinatesFromAddress = async (address) => {
     // 1. 주소 검색 (원본)
     // 2. 키워드 검색 (원본)
     // 3. 괄호 제거 후 검색 (괄호가 있으면)
-    // 4. "대전" 추가 후 검색
+    // 4. 도시명(CITY.cityName) 추가 후 검색
     // ============================================================
-    
+
     const normalizedAddress = normalizeRoad(address)
     const hasParentheses = /\(.*?\)/.test(address)
     const withoutParentheses = hasParentheses ? normalizeRoad(removeParentheses(address)) : null
-    const withDaejeon = !address.includes('대전') ? `대전 ${normalizeRoad(removeParentheses(address))}` : null
-    
+    const withCityName = !address.includes(CITY.cityName) ? `${CITY.cityName} ${normalizeRoad(removeParentheses(address))}` : null
+
     // 결과를 캐시에 저장하고 반환하는 헬퍼
     const returnWithCache = (lat, lng) => {
       // 캐시 저장 (비동기, 결과 대기하지 않음)
       saveCoordinateToCache(address, lat, lng).catch(() => {})
-      
+
       return { success: true, lat, lng }
     }
-    
+
     // 1단계: 주소 검색 (원본)
     const addressDocs = await searchAddress(normalizedAddress)
     if (addressDocs.length > 0) {
       const { x, y } = addressDocs[0]
       const lat = parseFloat(y), lng = parseFloat(x)
-      if (isDaejeonArea(lat, lng)) {
+      if (isWithinCityBounds(lat, lng)) {
         return returnWithCache(lat, lng)
       }
     }
-    
+
     // 2단계: 키워드 검색 (원본)
     const keywordDocs = await searchKeyword(normalizedAddress)
     if (keywordDocs.length > 0) {
       const best = findBestMatch(keywordDocs, normalizedAddress)
       const lat = parseFloat(best.y), lng = parseFloat(best.x)
-      if (isDaejeonArea(lat, lng)) {
+      if (isWithinCityBounds(lat, lng)) {
         return returnWithCache(lat, lng)
       }
     }
-    
+
     // 3단계: 괄호 제거 후 검색 (괄호가 있으면)
     if (withoutParentheses && withoutParentheses !== normalizedAddress) {
       // 주소 검색
@@ -254,46 +260,46 @@ export const getCoordinatesFromAddress = async (address) => {
       if (noParen_addressDocs.length > 0) {
         const { x, y } = noParen_addressDocs[0]
         const lat = parseFloat(y), lng = parseFloat(x)
-        if (isDaejeonArea(lat, lng)) {
+        if (isWithinCityBounds(lat, lng)) {
           return returnWithCache(lat, lng)
         }
       }
-      
+
       // 키워드 검색
       const noParen_keywordDocs = await searchKeyword(withoutParentheses)
       if (noParen_keywordDocs.length > 0) {
         const best = findBestMatch(noParen_keywordDocs, withoutParentheses)
         const lat = parseFloat(best.y), lng = parseFloat(best.x)
-        if (isDaejeonArea(lat, lng)) {
+        if (isWithinCityBounds(lat, lng)) {
           return returnWithCache(lat, lng)
         }
       }
     }
-    
-    // 4단계: "대전" 추가 후 검색
-    if (withDaejeon) {
+
+    // 4단계: 도시명 추가 후 검색
+    if (withCityName) {
       // 주소 검색
-      const daejeon_addressDocs = await searchAddress(withDaejeon)
-      if (daejeon_addressDocs.length > 0) {
-        const { x, y } = daejeon_addressDocs[0]
+      const cityName_addressDocs = await searchAddress(withCityName)
+      if (cityName_addressDocs.length > 0) {
+        const { x, y } = cityName_addressDocs[0]
         const lat = parseFloat(y), lng = parseFloat(x)
-        if (isDaejeonArea(lat, lng)) {
+        if (isWithinCityBounds(lat, lng)) {
           return returnWithCache(lat, lng)
         }
       }
-      
+
       // 키워드 검색
-      const daejeon_keywordDocs = await searchKeyword(withDaejeon)
-      if (daejeon_keywordDocs.length > 0) {
-        const best = findBestMatch(daejeon_keywordDocs, withDaejeon)
+      const cityName_keywordDocs = await searchKeyword(withCityName)
+      if (cityName_keywordDocs.length > 0) {
+        const best = findBestMatch(cityName_keywordDocs, withCityName)
         const lat = parseFloat(best.y), lng = parseFloat(best.x)
-        if (isDaejeonArea(lat, lng)) {
+        if (isWithinCityBounds(lat, lng)) {
           return returnWithCache(lat, lng)
         }
       }
     }
     
-    // 최종 실패 - 대전 외 결과라도 반환 (캐시에도 저장)
+    // 최종 실패 - 도시 범위 밖 결과라도 반환 (캐시에도 저장)
     if (keywordDocs.length > 0) {
       const best = findBestMatch(keywordDocs, normalizedAddress)
       const lat = parseFloat(best.y), lng = parseFloat(best.x)

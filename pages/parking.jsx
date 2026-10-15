@@ -1,5 +1,6 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 
 // 클라이언트 전용 컴포넌트
 const ParkingPageContent = dynamic(
@@ -8,7 +9,7 @@ const ParkingPageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 주차장 | 대전으로 - Let\'s Go Daejeon',
     description: '대전의 공영주차장, 민영주차장 정보를 실시간으로 제공합니다. 주차 요금, 운영시간, 위치 정보를 확인하세요.',
@@ -19,7 +20,7 @@ const SEO = {
     description: 'Find public and private parking lots in Daejeon. Check parking fees, operating hours, and locations.',
     keywords: 'Daejeon parking, parking in Daejeon, Daejeon parking lots, Daejeon Station parking'
   }
-}
+} : getCityPageSeo('주차장', 'Parking')
 
 export default function ParkingPage() {
   return (
@@ -28,15 +29,15 @@ export default function ParkingPage() {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/parking" />
+        <link rel="canonical" href={`${SITE_URL}/parking`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/parking" />
+        <meta property="og:url" content={`${SITE_URL}/parking`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
-        <meta property="og:site_name" content="대전으로" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
+        <meta property="og:site_name" content={CITY.name} />
         <meta property="og:locale" content="ko_KR" />
         
         {/* Twitter Card */}

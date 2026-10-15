@@ -2,9 +2,10 @@
 import { supabase } from './supabase'
 import { toSecureUrl } from '../utils/imageUtils'
 import { parsePerformancePeriod, todayIsoDate } from '../utils/performancePeriod'
+import { CITY } from '../config/cities.js'
 
 // 테이블 설정 (TourAPI에 없는 데이터만 유지)
-const TABLE_CONFIGS = {
+const TABLE_CONFIGS = CITY.key === 'daejeon' ? {
   medical: {
     tableName: 'medical_facilities',
     uniqueField: 'hsptlNm'
@@ -13,7 +14,7 @@ const TABLE_CONFIGS = {
     tableName: 'parking_lots',
     uniqueField: 'name'
   }
-}
+} : {}
 
 /**
  * 데이터베이스에서 데이터 개수 가져오기
@@ -332,6 +333,7 @@ export const getHeroSlides = async (activeOnly = false) => {
     let query = supabase
       .from('hero_slides')
       .select('*')
+      .eq('city_key', CITY.key)
       .order('sort_order', { ascending: true })
     
     if (activeOnly) {
@@ -358,7 +360,7 @@ export const createHeroSlide = async (slide) => {
   try {
     const { data, error } = await supabase
       .from('hero_slides')
-      .insert([slide])
+      .insert([{ ...slide, city_key: slide.city_key || CITY.key }])
       .select()
       .single()
     
@@ -385,6 +387,7 @@ export const updateHeroSlide = async (id, updates) => {
       .from('hero_slides')
       .update(updateData)
       .eq('id', id)
+      .eq('city_key', CITY.key)
     
     if (error) throw error
     
@@ -406,6 +409,7 @@ export const deleteHeroSlide = async (id) => {
       .from('hero_slides')
       .delete()
       .eq('id', id)
+      .eq('city_key', CITY.key)
     
     if (error) throw error
     
@@ -1509,8 +1513,9 @@ export const getDbPerformances = async (activeOnly = true) => {
     let query = supabase
       .from('performances')
       .select('*')
+      .eq('city_key', CITY.key)
       .order('start_date', { ascending: true })
-    
+
     if (activeOnly) {
       query = query.eq('is_active', true)
     }
@@ -1553,15 +1558,16 @@ export const savePerformance = async (performance) => {
       image_url: performance.imageObject || null,
       description: decodeHtmlEntities(performance.description) || null,
       view_count: performance.viewCount || 0,
-      is_active: true
+      is_active: true,
+      city_key: CITY.key
     }
-    
-    // upsert: title로 중복 체크
+
+    // upsert: (title, city_key)로 중복 체크
     const { data, error } = await supabase
       .from('performances')
-      .upsert(performanceData, { 
-        onConflict: 'title',
-        ignoreDuplicates: false 
+      .upsert(performanceData, {
+        onConflict: 'title,city_key',
+        ignoreDuplicates: false
       })
       .select()
     
@@ -1601,16 +1607,17 @@ export const savePerformances = async (performances) => {
         image_url: p.imageObject || null,
         description: decodeHtmlEntities(p.description) || null,
         view_count: p.viewCount || 0,
-        is_active: true
+        is_active: true,
+        city_key: CITY.key
       }
     })
-    
+
     // 배치 upsert
     const { data, error } = await supabase
       .from('performances')
-      .upsert(performancesData, { 
-        onConflict: 'title',
-        ignoreDuplicates: false 
+      .upsert(performancesData, {
+        onConflict: 'title,city_key',
+        ignoreDuplicates: false
       })
       .select()
     
@@ -1637,6 +1644,7 @@ export const deletePerformance = async (id) => {
       .from('performances')
       .delete()
       .eq('id', id)
+      .eq('city_key', CITY.key)
     
     if (error) {
       console.error('공연 삭제 실패:', error)
@@ -1662,6 +1670,7 @@ export const deleteExpiredPerformances = async () => {
     const { data: dated, error: datedError } = await supabase
       .from('performances')
       .select('id, title, end_date')
+      .eq('city_key', CITY.key)
       .lt('end_date', today)
 
     if (datedError) {
@@ -1675,6 +1684,7 @@ export const deleteExpiredPerformances = async () => {
     const { data: undated, error: undatedError } = await supabase
       .from('performances')
       .select('id, title, event_period')
+      .eq('city_key', CITY.key)
       .is('end_date', null)
 
     if (undatedError) {
@@ -1724,6 +1734,7 @@ export const getPerformanceCount = async () => {
     const { count, error } = await supabase
       .from('performances')
       .select('*', { count: 'exact', head: true })
+      .eq('city_key', CITY.key)
       .eq('is_active', true)
     
     if (error) {
@@ -1787,6 +1798,7 @@ export const getTourSpotByContentId = async (contentId) => {
       .from('tour_spots')
       .select('*')
       .eq('content_id', contentId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .single()
     
     if (error) throw error
@@ -1816,7 +1828,8 @@ export const getTourSpots = async (contentTypeId, page = 1, pageSize = 20, searc
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
       .eq('content_type_id', contentTypeId)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (searchQuery && searchQuery.trim()) {
       countQuery = countQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
     }
@@ -1832,7 +1845,8 @@ export const getTourSpots = async (contentTypeId, page = 1, pageSize = 20, searc
       .from('tour_spots')
       .select('*')
       .eq('content_type_id', contentTypeId)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (searchQuery && searchQuery.trim()) {
       dataQuery = dataQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
     }
@@ -1866,6 +1880,7 @@ export const getAllTourSpots = async (contentTypeId, limit = 1000) => {
       .from('tour_spots')
       .select('*', { count: 'exact' })
       .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .limit(limit)
       .order('title', { ascending: true })
     
@@ -1900,7 +1915,7 @@ export const saveTourSpots = async (spots) => {
       title: spot.title,
       addr1: spot.addr1 || '',
       addr2: spot.addr2 || '',
-      areacode: spot.areacode || '3',
+      areacode: spot.areacode || CITY.tourApiAreaCode,
       sigungucode: spot.sigungucode || '',
       cat1: spot.cat1 || '',
       cat2: spot.cat2 || '',
@@ -1946,6 +1961,7 @@ export const deleteTourSpots = async (contentTypeId) => {
       .from('tour_spots')
       .delete()
       .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .select()
     
     if (error) {
@@ -1973,6 +1989,7 @@ export const getOrphanedTourSpots = async (contentTypeId, apiContentIds) => {
       .from('tour_spots')
       .select('id, content_id, title, intro_info, overview')
       .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('title', { ascending: true })
     
     if (error) throw error
@@ -2011,6 +2028,7 @@ export const deleteTourSpotsByIds = async (ids) => {
       .from('tour_spots')
       .delete()
       .in('id', ids)
+      .eq('areacode', CITY.tourApiAreaCode)
       .select()
     
     if (error) throw error
@@ -2032,11 +2050,12 @@ export const getTourSpotsCount = async (contentTypeId = null) => {
     let query = supabase
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
-    
+
     const { count, error } = await query
     if (error) throw error
     
@@ -2061,12 +2080,13 @@ export const syncTourSpotsOverview = async (contentTypeId = null, onProgress = n
       .from('tour_spots')
       .select('id, content_id, content_type_id, title')
       .is('overview', null)
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('id', { ascending: true })
-    
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
-    
+
     const { data: items, error: selectError } = await query
     if (selectError) throw selectError
     
@@ -2180,7 +2200,8 @@ export const getTourSpotsWithoutOverviewCount = async (contentTypeId = null) => 
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
       .is('overview', null)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
@@ -2206,19 +2227,21 @@ export const getTourSpotsWithoutEngCount = async (contentTypeId = null) => {
     let totalQuery = supabase
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (contentTypeId) {
       totalQuery = totalQuery.eq('content_type_id', contentTypeId)
     }
-    
+
     const { count: totalCount } = await totalQuery
-    
+
     // 영문 있는 개수 (title_en이 null이 아닌)
     let engQuery = supabase
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
       .not('title_en', 'is', null)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (contentTypeId) {
       engQuery = engQuery.eq('content_type_id', contentTypeId)
     }
@@ -2260,7 +2283,8 @@ export const getMappedEngContentIds = async (engContentTypeId = null) => {
       .from('tour_spots')
       .select('content_id_en')
       .not('content_id_en', 'is', null)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (korContentTypeId) {
       query = query.eq('content_type_id', korContentTypeId)
     }
@@ -2290,6 +2314,7 @@ export const getTourSpotsWithoutEng = async (contentTypeId = null, searchQuery =
       .from('tour_spots')
       .select('id, content_id, content_type_id, title, addr1, zipcode, firstimage, mapx, mapy')
       .is('title_en', null)
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('title', { ascending: true })
       .limit(limit)
     
@@ -2412,8 +2437,9 @@ export const syncTourSpotsEnglish = async (contentTypeId = null, onProgress = nu
       .from('tour_spots')
       .select('id, content_id, content_type_id, title, zipcode, firstimage')
       .is('title_en', null)
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('id', { ascending: true })
-    
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
@@ -2629,8 +2655,9 @@ export const syncTourSpotsIntroInfo = async (contentTypeId = null, onProgress = 
       .from('tour_spots')
       .select('id, content_id, content_type_id, title')
       .is('intro_info', null)
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('id', { ascending: true })
-    
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
@@ -2747,7 +2774,8 @@ export const getTourSpotsWithoutIntroCount = async (contentTypeId = null) => {
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
       .is('intro_info', null)
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (contentTypeId) {
       query = query.eq('content_type_id', contentTypeId)
     }
@@ -2775,6 +2803,7 @@ export const syncTourSpotsRoomInfo = async (onProgress = null) => {
       .from('tour_spots')
       .select('id, content_id, content_type_id, title')
       .eq('content_type_id', '32') // 숙박만
+      .eq('areacode', CITY.tourApiAreaCode)
       .is('room_info', null)
       .order('id', { ascending: true })
     
@@ -2894,6 +2923,7 @@ export const getTourSpotsWithoutRoomCount = async () => {
       .from('tour_spots')
       .select('*', { count: 'exact', head: true })
       .eq('content_type_id', '32') // 숙박만
+      .eq('areacode', CITY.tourApiAreaCode)
       .is('room_info', null)
     
     if (error) throw error
@@ -2925,12 +2955,13 @@ export const getTourFestivals = async (activeOnly = true, page = 1, pageSize = 2
     let countQuery = supabase
       .from('tour_festivals')
       .select('*', { count: 'exact', head: true })
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (activeOnly) {
       // event_end_date가 null이거나 오늘 이후인 경우
       countQuery = countQuery.or(`event_end_date.gte.${today},event_end_date.is.null`)
     }
-    
+
     if (searchQuery && searchQuery.trim()) {
       countQuery = countQuery.or(`title.ilike.%${searchQuery}%,addr1.ilike.%${searchQuery}%`)
     }
@@ -2945,7 +2976,8 @@ export const getTourFestivals = async (activeOnly = true, page = 1, pageSize = 2
     let dataQuery = supabase
       .from('tour_festivals')
       .select('*')
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (activeOnly) {
       // event_end_date가 null이거나 오늘 이후인 경우
       dataQuery = dataQuery.or(`event_end_date.gte.${today},event_end_date.is.null`)
@@ -2985,7 +3017,8 @@ export const getAllTourFestivals = async (activeOnly = true, limit = 500) => {
     let query = supabase
       .from('tour_festivals')
       .select('*', { count: 'exact' })
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (activeOnly) {
       // event_end_date가 null이거나 오늘 이후인 경우
       query = query.or(`event_end_date.gte.${today},event_end_date.is.null`)
@@ -3041,7 +3074,7 @@ export const saveTourFestivals = async (festivals) => {
       title: f.title,
       addr1: f.addr1 || '',
       addr2: f.addr2 || '',
-      areacode: f.areacode || '3',
+      areacode: f.areacode || CITY.tourApiAreaCode,
       sigungucode: f.sigungucode || '',
       cat1: f.cat1 || '',
       cat2: f.cat2 || '',
@@ -3090,6 +3123,7 @@ export const deleteExpiredTourFestivals = async () => {
       .from('tour_festivals')
       .delete()
       .lt('event_end_date', today)
+      .eq('areacode', CITY.tourApiAreaCode)
       .select()
     
     if (error) {
@@ -3114,6 +3148,7 @@ export const deleteAllTourFestivals = async () => {
       .from('tour_festivals')
       .delete()
       .neq('content_id', '')  // 모든 레코드 삭제
+      .eq('areacode', CITY.tourApiAreaCode)
       .select()
     
     if (error) {
@@ -3142,19 +3177,22 @@ export const getTourFestivalsCount = async (activeOnly = true) => {
     const { count: totalCount } = await supabase
       .from('tour_festivals')
       .select('*', { count: 'exact', head: true })
+      .eq('areacode', CITY.tourApiAreaCode)
     console.log('[DEBUG] getTourFestivalsCount - 전체 개수:', totalCount)
-    
+
     // event_end_date 샘플 확인
     const { data: sampleData } = await supabase
       .from('tour_festivals')
       .select('title, event_start_date, event_end_date')
+      .eq('areacode', CITY.tourApiAreaCode)
       .limit(3)
     console.log('[DEBUG] getTourFestivalsCount - 샘플 데이터:', sampleData)
-    
+
     let query = supabase
       .from('tour_festivals')
       .select('*', { count: 'exact', head: true })
-    
+      .eq('areacode', CITY.tourApiAreaCode)
+
     if (activeOnly) {
       // event_end_date가 null이거나 오늘 이후인 경우
       query = query.or(`event_end_date.gte.${today},event_end_date.is.null`)
@@ -3205,6 +3243,7 @@ export const getTourApiStats = async () => {
         .from('tour_spots')
         .select('*', { count: 'exact', head: true })
         .eq('content_type_id', typeId)
+        .eq('areacode', CITY.tourApiAreaCode)
         .not('title_en', 'is', null)
       
       const hasEngCount = engError ? 0 : (engCount || 0)
@@ -3632,6 +3671,7 @@ export const getNearbyRestaurants = async (lat, lng, excludeContentId, foodType 
       .from('tour_spots')
       .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
       .eq('content_type_id', '39')  // 음식점
+      .eq('areacode', CITY.tourApiAreaCode)
       .neq('content_id', excludeContentId)
       .gte('mapy', lat - latRange)
       .lte('mapy', lat + latRange)
@@ -3697,6 +3737,7 @@ export const getNearbyAccommodations = async (lat, lng, excludeContentId, limit 
       .from('tour_spots')
       .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
       .eq('content_type_id', '32')  // 숙박
+      .eq('areacode', CITY.tourApiAreaCode)
       .neq('content_id', excludeContentId)
       .not('firstimage', 'is', null)
       .gte('mapy', lat - latRange)
@@ -3752,6 +3793,7 @@ export const getNearbyShopping = async (lat, lng, excludeContentId, limit = 3) =
       .from('tour_spots')
       .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy, intro_info')
       .eq('content_type_id', '38')  // 쇼핑
+      .eq('areacode', CITY.tourApiAreaCode)
       .neq('content_id', excludeContentId)
       .not('firstimage', 'is', null)
       .gte('mapy', lat - latRange)
@@ -3822,6 +3864,7 @@ export const getNearbySpots = async (lat, lng, excludeContentId, limit = 4) => {
       .from('tour_spots')
       .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy')
       .in('content_type_id', ['12', '14', '15', '28'])  // 관광지, 문화시설, 축제, 레포츠
+      .eq('areacode', CITY.tourApiAreaCode)
       .neq('content_id', excludeContentId)
       .not('firstimage', 'is', null)
       .gte('mapy', lat - latRange)
@@ -3876,6 +3919,7 @@ export const getSpotsByDistrict = async (address, excludeContentId, limit = 4) =
       .from('tour_spots')
       .select('content_id, title, firstimage, firstimage2, addr1')
       .ilike('addr1', `%${district}%`)
+      .eq('areacode', CITY.tourApiAreaCode)
       .neq('content_id', excludeContentId)
       .not('firstimage', 'is', null)
       .limit(limit)
@@ -3907,6 +3951,7 @@ export const getRestaurantsWithoutAiDescCount = async () => {
       .from('tour_spots')
       .select('id, intro_info')
       .eq('content_type_id', '39')
+      .eq('areacode', CITY.tourApiAreaCode)
       .not('overview', 'is', null)
     
     if (error) throw error
@@ -3934,6 +3979,7 @@ export const getRestaurantsWithoutAiDesc = async (limit = 10) => {
       .from('tour_spots')
       .select('id, content_id, title, addr1, overview, intro_info')
       .eq('content_type_id', '39')
+      .eq('areacode', CITY.tourApiAreaCode)
       .not('overview', 'is', null)
       .order('id', { ascending: true })
     
@@ -4127,6 +4173,7 @@ export const getSpotsByTypeWithoutAiDescCount = async (contentTypeId) => {
       .from('tour_spots')
       .select('id, intro_info')
       .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .not('overview', 'is', null)
     
     if (error) throw error
@@ -4155,6 +4202,7 @@ export const getSpotsByTypeWithoutAiDesc = async (contentTypeId, limit = 10) => 
       .from('tour_spots')
       .select('id, content_id, title, addr1, overview, intro_info')
       .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .not('overview', 'is', null)
       .order('id', { ascending: true })
     

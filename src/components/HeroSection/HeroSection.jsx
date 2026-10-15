@@ -4,6 +4,7 @@ import { FiArrowRight, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getHeroSlides } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
+import { CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 const HeroSection = memo(({ initialSlides = [] }) => {
@@ -14,7 +15,17 @@ const HeroSection = memo(({ initialSlides = [] }) => {
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   // 기본 슬라이드 (DB에 데이터가 없을 때 사용)
-  const defaultSlides = useMemo(() => [
+  const defaultSlides = useMemo(() => CITY.hero ? [{
+    id: CITY.key,
+    title_ko: CITY.hero.ko.title,
+    title_en: CITY.hero.en.title,
+    subtitle_ko: CITY.hero.ko.subtitle,
+    subtitle_en: CITY.hero.en.subtitle,
+    description_ko: CITY.hero.ko.description,
+    description_en: CITY.hero.en.description,
+    imageUrl: CITY.hero.image,
+    link: '/travel'
+  }] : [
     {
       id: 1,
       title_ko: t.hero.slide1.title,
@@ -138,6 +149,7 @@ const HeroSection = memo(({ initialSlides = [] }) => {
               fill
               priority={index === 0}
               fetchPriority={index === 0 ? 'high' : 'auto'}
+              unoptimized={CITY.key !== 'daejeon'}
               sizes="100vw"
               style={{ objectFit: 'cover' }}
               quality={75}

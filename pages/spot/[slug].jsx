@@ -1,5 +1,6 @@
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
+import { CITY, SITE_URL } from '../../src/config/cities'
 import { useRouter } from 'next/router'
 import { generateSlug } from '../../src/utils/slugUtils'
 import { getReliableImageUrl, cleanIntroHtml } from '../../src/utils/imageUtils'
@@ -86,8 +87,8 @@ export default function SpotPage({ seoData }) {
                 "address": {
                   "@type": "PostalAddress",
                   "streetAddress": seoData.streetAddress || seoData.address,
-                  "addressLocality": seoData.district || "대전",
-                  "addressRegion": seoData.city || "대전광역시",
+                  "addressLocality": seoData.district || CITY.cityName,
+                  "addressRegion": seoData.city || CITY.aliases[0],
                   "addressCountry": "KR"
                 },
                 ...(seoData.phone && { "telephone": seoData.phone }),
@@ -145,6 +146,7 @@ export async function getStaticPaths() {
     const { data, error } = await serverSupabase
       .from('tour_spots')
       .select('content_id, title')
+      .eq('areacode', CITY.tourApiAreaCode)
       .limit(100)
 
     if (error) throw error
@@ -194,6 +196,7 @@ export async function getStaticProps({ params }) {
       .from('tour_spots')
       .select('content_id, title, addr1, overview, firstimage, firstimage2, tel, mapy, mapx, intro_info')
       .eq('content_id', contentId)
+      .eq('areacode', CITY.tourApiAreaCode)
       .single()
 
     if (error || !spotData) {
@@ -204,11 +207,11 @@ export async function getStaticProps({ params }) {
     const spotSlug = generateSlugServer(spotData.title, spotData.content_id)
     const seoDescription = spotData.overview 
       ? cleanIntroHtml(spotData.overview).slice(0, 150) 
-      : `${spotData.title} - 대전의 인기 관광지입니다. 주소: ${spotData.addr1 || '대전광역시'}`
+      : `${spotData.title} - ${CITY.cityName}의 인기 관광지입니다. 주소: ${spotData.addr1 || CITY.aliases[0]}`
     
     // 주소에서 시/구/상세주소 추출
     const addressParts = (spotData.addr1 || '').split(' ')
-    const city = addressParts.find(p => p.includes('시') || p.includes('광역시')) || '대전광역시'
+    const city = addressParts.find(p => p.includes('시') || p.includes('광역시')) || CITY.aliases[0]
     const district = addressParts.find(p => p.includes('구')) || ''
     const streetAddress = addressParts.slice(2).join(' ') || spotData.addr1
     
@@ -238,11 +241,11 @@ export async function getStaticProps({ params }) {
     
     const seoData = {
       name: spotData.title,
-      title: `${spotData.title} | 대전 관광지 - 대전으로`,
+      title: `${spotData.title} | ${CITY.cityName} 관광지 - ${CITY.name}`,
       description: seoDescription,
-      keywords: `${spotData.title}, 대전 ${spotData.title}, 대전 관광지, 대전 여행, ${spotData.addr1?.split(' ').slice(0, 2).join(' ')}`,
+      keywords: `${spotData.title}, ${CITY.cityName} ${spotData.title}, ${CITY.cityName} 관광지, ${CITY.cityName} 여행, ${spotData.addr1?.split(' ').slice(0, 2).join(' ')}`,
       image: getReliableImageUrl(spotData.firstimage || spotData.firstimage2),
-      canonicalUrl: `https://www.letsgodaejeon.kr/spot/${spotSlug}`,
+      canonicalUrl: `${SITE_URL}/spot/${spotSlug}`,
       address: spotData.addr1,
       city: city,
       district: district,

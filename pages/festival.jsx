@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
 import { getTourFestivals } from '../src/services/dbService'
 
@@ -9,7 +10,7 @@ const FestivalPageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 축제/행사 | 대전으로 - Let\'s Go Daejeon',
     description: '대전에서 열리는 축제와 행사 정보를 확인하세요. 대전 사이언스페스티벌, 유성온천문화축제, 계족산 맨발축제 등 다양한 행사를 소개합니다.',
@@ -20,7 +21,7 @@ const SEO = {
     description: 'Discover festivals and events in Daejeon. From Science Festival to Yuseong Hot Spring Festival and Gyejoksan Barefoot Festival.',
     keywords: 'Daejeon festivals, Daejeon events, Science Festival Daejeon, Yuseong Hot Spring Festival, Korea festivals'
   }
-}
+} : getCityPageSeo('공연·행사', 'Events')
 
 export default function FestivalPage({ initialData }) {
   return (
@@ -29,14 +30,14 @@ export default function FestivalPage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/festival" />
+        <link rel="canonical" href={`${SITE_URL}/festival`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/festival" />
+        <meta property="og:url" content={`${SITE_URL}/festival`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +55,7 @@ export default function FestivalPage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 축제/행사 목록",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/festival",
+              "url": `${SITE_URL}/festival`,
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",
@@ -69,7 +70,7 @@ export default function FestivalPage({ initialData }) {
                     "name": item.place || "대전",
                     "address": {
                       "@type": "PostalAddress",
-                      "addressLocality": "대전",
+                      "addressLocality": CITY.cityName,
                       "addressCountry": "KR"
                     }
                   }

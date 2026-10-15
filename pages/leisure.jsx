@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
 import { getTourSpots as getTourSpotsDb } from '../src/services/dbService'
 
@@ -9,7 +10,7 @@ const LeisurePageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 레저/스포츠 | 대전으로 - Let\'s Go Daejeon',
     description: '대전의 레저 스포츠 시설을 소개합니다. 골프장, 스키장, 워터파크, 캠핑장, 등산로 등 야외 활동을 즐길 수 있는 곳을 찾아보세요.',
@@ -20,7 +21,7 @@ const SEO = {
     description: 'Explore leisure and sports facilities in Daejeon. Find golf courses, water parks, camping sites, and hiking trails.',
     keywords: 'Daejeon leisure, Daejeon sports, Daejeon hiking, Daejeon camping, Daejeon golf, outdoor activities Daejeon'
   }
-}
+} : getCityPageSeo('레포츠', 'Leisure')
 
 export default function LeisurePage({ initialData }) {
   return (
@@ -29,14 +30,14 @@ export default function LeisurePage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/leisure" />
+        <link rel="canonical" href={`${SITE_URL}/leisure`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/leisure" />
+        <meta property="og:url" content={`${SITE_URL}/leisure`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +55,7 @@ export default function LeisurePage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 레저/스포츠 시설 목록",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/leisure",
+              "url": `${SITE_URL}/leisure`,
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",
@@ -64,7 +65,7 @@ export default function LeisurePage({ initialData }) {
                   "name": item.title || item.name,
                   "address": {
                     "@type": "PostalAddress",
-                    "addressLocality": "대전",
+                    "addressLocality": CITY.cityName,
                     "addressCountry": "KR",
                     "streetAddress": item.addr1 || item.address
                   }

@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
 import { generateSlug } from '../../utils/slugUtils'
+import { CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -87,9 +88,7 @@ const getFoodImage = (name, menu) => {
 
 // 주소에서 구 추출
 const extractDistrict = (address) => {
-  if (!address) return '대전'
-  const match = address.match(/대전\s*(시|광역시)?\s*(\S+구)/)
-  return match ? match[2] : '대전'
+  return CITY.districtNames.find(district => address?.includes(district)) || CITY.cityName
 }
 
 const FoodSection = memo(() => {
@@ -121,18 +120,18 @@ const FoodSection = memo(() => {
             ko: item.overview?.slice(0, 60) || `${item.title}의 맛있는 음식을 즐겨보세요`,
             en: (item.overview_en?.slice(0, 60) || item.overview?.slice(0, 60)) || `Enjoy delicious food at ${item.title_en || item.title}`
           },
-          rating: (4 + Math.random() * 0.9).toFixed(1),
+          rating: CITY.key === 'daejeon' ? (4 + Math.random() * 0.9).toFixed(1) : null,
           image: getReliableImageUrl(item.firstimage || item.firstimage2, getFoodImage(item.title, '')),
           location: { ko: extractDistrict(item.addr1), en: extractDistrict(item.addr1_en || item.addr1) }
         }))
         setFoods(formattedFoods)
       } else {
         // tour_spots에 데이터가 없으면 기본 데이터 사용
-        setFoods(defaultFoods)
+        setFoods(CITY.key === 'daejeon' ? defaultFoods : [])
       }
     } catch (error) {
       console.error('맛집 데이터 로드 실패:', error)
-      setFoods(defaultFoods)
+      setFoods(CITY.key === 'daejeon' ? defaultFoods : [])
     }
     setLoading(false)
   }
@@ -160,10 +159,10 @@ const FoodSection = memo(() => {
                     loading="lazy"
                     onError={(event) => { event.currentTarget.src = '/images/no-image.svg' }}
                   />
-                  <div className="food-rating">
+                  {food.rating && <div className="food-rating">
                     <FiStar />
                     {food.rating}
-                  </div>
+                  </div>}
                 </div>
                 <div className="food-content">
                   <div className="food-header">

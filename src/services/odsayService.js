@@ -2,6 +2,7 @@
 // 버스, 지하철 경로 탐색
 
 import { recordApiCall, API_TYPES } from './dbService.js'
+import { CITY } from '../config/cities.js'
 
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = process.env.NEXT_PUBLIC_WORKERS_API_URL || 'https://letsgodaejeon-api.eoynx.workers.dev'
@@ -283,10 +284,10 @@ const getBusColor = (busType) => {
 /**
  * 정류장/역 검색 (JSONP)
  * @param {string} stationName - 정류장 또는 역 이름
- * @param {string} cityCode - 도시 코드 (대전: 3)
+ * @param {string} cityCode - 도시 코드 (ODsay CID, 대전: 3)
  * @returns {Promise<Object>} 검색 결과
  */
-export const searchStation = (stationName, cityCode = '3') => {
+export const searchStation = (stationName, cityCode = CITY.odsayCityCode || '3') => {
   return new Promise((resolve) => {
     try {
       const callbackName = `odsayCallback_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`

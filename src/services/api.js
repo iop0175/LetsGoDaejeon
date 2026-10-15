@@ -3,6 +3,7 @@
 import { recordApiCall } from '../utils/apiStats';
 import { isPerformanceExpired, todayIsoDate } from '../utils/performancePeriod';
 import { safeFetch } from '../utils/fetchUtils';
+import { CITY } from '../config/cities.js';
 
 // Cloudflare Workers API 프록시 URL
 const WORKERS_API_URL = process.env.NEXT_PUBLIC_WORKERS_API_URL || 'https://letsgodaejeon-api.eoynx.workers.dev';
@@ -22,6 +23,7 @@ export const getTourSpotImage = (spotName) => {
 
 // 대전시 주차장 정보 조회 (XML API)
 export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
+  if (CITY.key !== 'daejeon') return { success: false, items: [], totalCount: 0, error: '지역 주차장 API 연결 준비 중입니다.' };
   try {
     recordApiCall('parking');
     const data = await safeFetch(
@@ -43,6 +45,7 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
 
 // 의료기관 조회
 export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
+  if (CITY.key !== 'daejeon') return { success: false, items: [], totalCount: 0, error: '지역 의료기관 API 연결 준비 중입니다.' };
   try {
     recordApiCall('medical');
     const data = await safeFetch(
@@ -112,18 +115,22 @@ export const getCulturalPerformances = async (options = {}) => {
 const PERFORMANCE_PAGE_SIZE = 1000;
 
 /**
- * 공연 1건이 대전 공연인지 판정.
+ * 공연 1건이 활성 도시(CITY)의 공연인지 판정.
  *
  * CNV_060 은 지역 파라미터도 지역 코드 필드도 없어서 문자열로 판단해야 한다.
- * - eventSite: "대전예술의전당" 처럼 장소명에 대전이 들어가는 다수 케이스
+ * - eventSite: "대전예술의전당" 처럼 장소명에 도시명이 들어가는 다수 케이스
  * - title: "[대전] ..." 처럼 KCISA가 지역을 괄호로 태깅한 케이스.
- *   "작은극장 다함", "소극장 고도" 같이 장소명에 대전이 없는 소극장이 여기서 걸린다.
+ *   "작은극장 다함", "소극장 고도" 같이 장소명에 도시명이 없는 소극장이 여기서 걸린다.
  *
- * title 에 '대전' 부분일치를 쓰면 "초대전"(초대展)이 걸려 전국 전시가 섞이므로
- * 반드시 괄호 포함 '[대전]' 으로만 본다.
+ * title 에 도시명 부분일치를 쓰면 "초대전"(초대展)처럼 전국 전시가 섞이므로
+ * 반드시 괄호 포함 '[도시명]' 으로만 본다.
  */
-const isDaejeonPerformance = (item) =>
-  (item.eventSite || '').includes('대전') || (item.title || '').includes('[대전]');
+const isCityPerformance = (item) => {
+  const names = [CITY.cityName, ...(CITY.aliases || [])];
+  return names.some((name) =>
+    (item.eventSite || '').includes(name) || (item.title || '').includes(`[${name}]`)
+  );
+};
 
 /**
  * 대전 지역 공연 정보 조회 (KCISA 전체를 페이징하며 대전의 현재/예정 공연만 수집)
@@ -157,7 +164,7 @@ export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}
       if (pageNo === 1) scannedTotal = result.totalCount || 0;
 
       for (const item of result.items) {
-        if (!isDaejeonPerformance(item)) continue;
+        if (!isCityPerformance(item)) continue;
         if (isPerformanceExpired(item.eventPeriod, today)) {
           expiredSkipped++;
           continue;
@@ -200,7 +207,7 @@ export const getDaejeonPerformances = async ({ onProgress, maxPages = 100 } = {}
 export const getTourApiSpots = async (options = {}) => {
   const {
     contentTypeId,      // 12:관광지, 14:문화시설, 28:레포츠, 32:숙박, 38:쇼핑, 39:음식점
-    areaCode = '3',     // 대전
+    areaCode = CITY.tourApiAreaCode,
     pageNo = 1,
     numOfRows = 100
   } = options;
@@ -251,7 +258,7 @@ export const getTourApiSpots = async (options = {}) => {
  */
 export const getTourApiFestivals = async (options = {}) => {
   const {
-    areaCode = '3',
+    areaCode = CITY.tourApiAreaCode,
     pageNo = 1,
     numOfRows = 100,
     eventStartDate = null  // YYYYMMDD 형식
@@ -508,7 +515,7 @@ export const CONTENT_TYPE_KOR_TO_ENG = {
 export const getTourApiSpotsEng = async (options = {}) => {
   const {
     contentTypeId,      // 국문 또는 영문 코드 모두 지원
-    areaCode = '3',     // 대전
+    areaCode = CITY.tourApiAreaCode,
     pageNo = 1,
     numOfRows = 100
   } = options;

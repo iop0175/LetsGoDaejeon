@@ -8,6 +8,7 @@ import { Noto_Sans_KR } from 'next/font/google'
 import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
+import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../src/config/cities'
 
 // Google Analytics ID
 const GA_TRACKING_ID = 'G-610JNHR72K'
@@ -29,6 +30,7 @@ import Footer from '../src/components/Footer/Footer'
 // 전역 CSS (Next.js에서는 _app에서만 import 가능)
 import '../src/styles/index.css'
 import '../src/styles/App.css'
+import '../src/styles/cityThemes.css'
 
 // 컴포넌트 CSS
 import '../src/components/Header/Header.css'
@@ -104,7 +106,7 @@ export default function App({ Component, pageProps }) {
   
   // canonical URL 생성
   const getCanonicalUrl = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
+    const baseUrl = SITE_URL
     const path = router.asPath.split('?')[0].split('#')[0] // 쿼리스트링, 해시 제거
     return path === '/' ? baseUrl : `${baseUrl}${path}`
   }
@@ -143,9 +145,9 @@ export default function App({ Component, pageProps }) {
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <link rel="canonical" href={getCanonicalUrl()} />
-        <meta name="robots" content="index, follow" />
+        <meta name="robots" content={IS_CITY_PREVIEW ? 'noindex, nofollow' : 'index, follow'} />
         {/* LCP 히어로 이미지 preload - fetchpriority=high */}
-        {router.pathname === '/' && (
+        {router.pathname === '/' && CITY.key === 'daejeon' && (
           <link
             rel="preload"
             as="image"
@@ -160,11 +162,17 @@ export default function App({ Component, pageProps }) {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <div className={`app ${notoSansKR.variable}`} style={{ fontFamily: 'var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif' }}>
+            <div data-city={CITY.key} className={`app ${notoSansKR.variable}`} style={{ fontFamily: 'var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif' }}>
               <SpeedInsights />
               {!isAdminPage && <Header />}
               <main className="main-content">
-                <Component {...pageProps} />
+                {IS_CITY_PREVIEW && <div className="city-preview-banner">{CITY.name} 내부 개발 미리보기 · 공개 운영 전 검증 중</div>}
+                {CITY.key !== 'daejeon' && ['/parking', '/medical', '/my-trip', '/shared-trip', '/shared-trips'].some(path => router.pathname === path || router.pathname.startsWith(`${path}/`)) ? (
+                  <>
+                    <Head><title>{`${CITY.cityName} 지역 서비스 준비 중 | ${CITY.name}`}</title></Head>
+                    <section className="city-service-pending"><h1>{CITY.cityName} 지역 서비스 준비 중</h1><p>지역 데이터 연결과 분리 검증 후 제공됩니다. 다른 도시 데이터는 표시하지 않습니다.</p><a href="/travel">{CITY.cityName} 관광지 둘러보기</a></section>
+                  </>
+                ) : <Component {...pageProps} />}
               </main>
               {!isAdminPage && <Footer />}
             </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, memo } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
+import { CITY } from '../../config/cities';
 import { WiThermometer, WiHumidity, WiStrongWind, WiBarometer, WiDust, WiRefresh, WiDaySunny, WiCloudy, WiRain, WiSnow, WiFog } from 'react-icons/wi';
 import { FiMapPin, FiClock, FiChevronUp, FiChevronDown } from 'react-icons/fi';
 // CSS는 _app.jsx에서 import
@@ -14,7 +15,7 @@ const WeatherWidget = memo(() => {
 
   const text = {
     ko: {
-      title: '대전 날씨 정보',
+      title: `${CITY.cityName} 날씨 정보`,
       subtitle: '실시간 기상센서 데이터',
       temperature: '온도',
       humidity: '습도',
@@ -27,7 +28,7 @@ const WeatherWidget = memo(() => {
       lastUpdate: '마지막 업데이트'
     },
     en: {
-      title: 'Daejeon Weather',
+      title: `${CITY.cityNameEn} Weather`,
       subtitle: 'Real-time sensor data',
       temperature: 'Temp',
       humidity: 'Humidity',
@@ -54,13 +55,13 @@ const WeatherWidget = memo(() => {
       // Open-Meteo API 사용 (무료, CORS 지원)
       // 대전 좌표: 36.3504, 127.3845
       const response = await fetch(
-        'https://api.open-meteo.com/v1/forecast?latitude=36.3504&longitude=127.3845&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,surface_pressure&hourly=temperature_2m&timezone=Asia/Seoul'
+        `https://api.open-meteo.com/v1/forecast?latitude=${CITY.center.y}&longitude=${CITY.center.x}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,surface_pressure&hourly=temperature_2m&timezone=Asia/Seoul`
       );
       const data = await response.json();
       
       if (data.current) {
         setWeatherData([{
-          snsrNm: '대전광역시',
+          snsrNm: CITY.cityName,
           temp: data.current.temperature_2m?.toFixed(1) || '22.5',
           humid: data.current.relative_humidity_2m || '65',
           windSpd: data.current.wind_speed_10m?.toFixed(1) || '2.3',
@@ -75,7 +76,7 @@ const WeatherWidget = memo(() => {
 
       // API 실패 시 샘플 데이터 표시
       setWeatherData([{
-        snsrNm: '대전광역시',
+        snsrNm: CITY.cityName,
         temp: '22.5',
         humid: '65',
         windSpd: '2.3',
@@ -160,7 +161,7 @@ const WeatherWidget = memo(() => {
         <div className="weather-title">
           <h3>{t.title}</h3>
           <span className="weather-location">
-            <FiMapPin /> {weather.snsrNm || '대전광역시'}
+            <FiMapPin /> {weather.snsrNm || CITY.cityName}
           </span>
         </div>
         <div className="weather-header-buttons">

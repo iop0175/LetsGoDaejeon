@@ -5,6 +5,7 @@ import { FiMenu, FiX, FiSearch, FiMapPin, FiGlobe, FiSun, FiMoon, FiUser, FiLogO
 import { useLanguage } from '../../context/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
+import { CITIES, CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 const Header = memo(() => {
@@ -25,16 +26,16 @@ const Header = memo(() => {
     { path: '/travel', label: t.nav.travel },
     { path: '/festival', label: t.nav.festival },
     { path: '/food', label: t.nav.food },
-    { path: '/shared-trips', label: language === 'ko' ? '여행코스' : 'Travel Courses' },
+    ...(CITY.key === 'daejeon' ? [{ path: '/shared-trips', label: language === 'ko' ? '여행코스' : 'Travel Courses' }] : []),
     { path: '/map', label: t.nav.map },
     { path: myTripPath, label: language === 'ko' ? '나의 여행' : 'My Trip', isMyTrip: true },
   ]
 
   const moreMenuItems = [
-    { path: '/parking', label: t.nav.parking },
+    ...(CITY.localServicesReady ? [{ path: '/parking', label: t.nav.parking }] : []),
     { path: '/culture', label: t.nav.culture },
     { path: '/leisure', label: language === 'ko' ? '레포츠' : 'Leisure' },
-    { path: '/medical', label: t.nav.medical },
+    ...(CITY.localServicesReady ? [{ path: '/medical', label: t.nav.medical }] : []),
     { path: '/shopping', label: t.nav.shopping },
     { path: '/accommodation', label: t.nav.accommodation },
   ]
@@ -76,6 +77,7 @@ const Header = memo(() => {
   }
 
   const userProfile = getUserProfile()
+  const liveCities = Object.values(CITIES).filter(city => city.publicUrl)
 
   return (
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
@@ -131,6 +133,18 @@ const Header = memo(() => {
         </nav>
 
         <div className="header-actions">
+          <select
+            className="city-select"
+            value={CITY.key}
+            onChange={(event) => window.location.assign(CITIES[event.target.value].publicUrl)}
+            aria-label={language === 'ko' ? '도시 선택' : 'Select city'}
+          >
+            {liveCities.map(city => (
+              <option key={city.key} value={city.key}>
+                {language === 'ko' ? city.cityName : city.cityNameEn}
+              </option>
+            ))}
+          </select>
           <button 
             className="theme-btn" 
             onClick={toggleTheme}

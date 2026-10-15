@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
 import { useLanguage } from '../src/context/LanguageContext'
 import { SEO_DATA } from '../src/components/common/SEO'
@@ -11,7 +12,7 @@ const FoodPageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 맛집 | 대전으로 - Let\'s Go Daejeon',
     description: '대전의 숨은 맛집부터 유명 맛집까지! 성심당, 칼국수, 두부두루치기 등 대전 대표 음식을 맛볼 수 있는 곳을 소개합니다.',
@@ -22,7 +23,7 @@ const SEO = {
     description: 'Discover the best restaurants in Daejeon! From Sungsimdang bakery to local specialties like Kalguksu and Dubu Duruchigi.',
     keywords: 'Daejeon restaurants, Daejeon food, Daejeon bakery, Sungsimdang, Korean food Daejeon, best restaurants Daejeon'
   }
-}
+} : getCityPageSeo('맛집', 'Restaurants')
 
 export default function FoodPage({ initialData }) {
   return (
@@ -31,14 +32,14 @@ export default function FoodPage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/food" />
+        <link rel="canonical" href={`${SITE_URL}/food`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/food" />
+        <meta property="og:url" content={`${SITE_URL}/food`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -56,7 +57,7 @@ export default function FoodPage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 맛집 목록",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/food",
+              "url": `${SITE_URL}/food`,
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",
@@ -66,8 +67,8 @@ export default function FoodPage({ initialData }) {
                   "name": item.name || item.title,
                   "address": {
                     "@type": "PostalAddress",
-                    "addressLocality": "대전",
-                    "addressRegion": "대전광역시",
+                    "addressLocality": CITY.cityName,
+                    "addressRegion": CITY.aliases[0],
                     "addressCountry": "KR",
                     "streetAddress": item.address || item.addr1
                   }

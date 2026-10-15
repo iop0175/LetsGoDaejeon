@@ -4,6 +4,7 @@ import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
+import { CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 // 기본 이미지 (이미지 없을 때 사용)
@@ -79,9 +80,7 @@ const defaultSpots = [
 
 // 주소에서 구 추출
 const extractDistrict = (address) => {
-  if (!address) return '대전'
-  const match = address.match(/대전\s*(시|광역시)?\s*(\S+구)/)
-  return match ? match[2] : '대전'
+  return CITY.districtNames.find(district => address?.includes(district)) || CITY.cityName
 }
 
 const PopularSpots = memo(() => {
@@ -118,11 +117,11 @@ const PopularSpots = memo(() => {
         setSpots(formattedSpots)
       } else {
         // tour_spots에 데이터가 없으면 기본 데이터 사용
-        setSpots(defaultSpots)
+        setSpots(CITY.key === 'daejeon' ? defaultSpots : [])
       }
     } catch (error) {
       console.error('관광지 데이터 로드 실패:', error)
-      setSpots(defaultSpots)
+      setSpots(CITY.key === 'daejeon' ? defaultSpots : [])
     } finally {
       setLoading(false)
     }

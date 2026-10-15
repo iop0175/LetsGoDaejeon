@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { FiMapPin, FiLoader, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi'
@@ -15,7 +16,7 @@ import Icons from '../src/components/common/Icons'
 import { supabase } from '../src/services/supabase'
 
 // SSG용 SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 관광지 | 대전으로',
     description: '대전의 인기 관광지와 명소를 소개합니다. 엑스포과학공원, 유성온천, 계족산, 대청호 등 대전 가볼만한 곳을 확인하세요.',
@@ -26,7 +27,7 @@ const SEO = {
     description: 'Discover popular tourist attractions in Daejeon. Explore Expo Science Park, Yuseong Hot Springs, Gyejoksan Mountain, and more.',
     keywords: 'Daejeon attractions, Daejeon sightseeing, Expo Science Park, Yuseong Hot Springs, Gyejoksan, Daecheongho Lake'
   }
-}
+} : getCityPageSeo('관광지', 'Attractions')
 
 export default function TravelPage({ initialSpots, totalCount }) {
   const { language, t } = useLanguage()
@@ -171,14 +172,14 @@ export default function TravelPage({ initialSpots, totalCount }) {
         <title>{seoData.title}</title>
         <meta name="description" content={seoData.description} />
         <meta name="keywords" content={seoData.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/travel" />
+        <link rel="canonical" href={`${SITE_URL}/travel`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/travel" />
+        <meta property="og:url" content={`${SITE_URL}/travel`} />
         <meta property="og:title" content={seoData.title} />
         <meta property="og:description" content={seoData.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:locale" content={language === 'ko' ? 'ko_KR' : 'en_US'} />
         
         {/* Twitter Card */}
@@ -382,6 +383,7 @@ export async function getStaticProps() {
       .from('tour_spots')
       .select('*', { count: 'exact' })
       .eq('content_type_id', 12) // 관광지 타입
+      .eq('areacode', CITY.tourApiAreaCode)
       .order('title', { ascending: true })
       .limit(500)
 

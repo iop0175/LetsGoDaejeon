@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
 import { getTourSpots as getTourSpotsDb } from '../src/services/dbService'
 
@@ -9,7 +10,7 @@ const CulturePageContent = dynamic(
 )
 
 // SEO 메타데이터
-const SEO = {
+const SEO = CITY.key === 'daejeon' ? {
   ko: {
     title: '대전 문화시설 | 대전으로 - Let\'s Go Daejeon',
     description: '대전의 박물관, 미술관, 도서관, 공연장 등 문화시설을 소개합니다. 국립중앙과학관, 대전시립미술관, 한밭도서관 등을 만나보세요.',
@@ -20,7 +21,7 @@ const SEO = {
     description: 'Explore museums, galleries, libraries, and theaters in Daejeon. Visit National Science Museum, Daejeon Museum of Art, and more.',
     keywords: 'Daejeon museums, Daejeon galleries, Daejeon libraries, National Science Museum Korea, Daejeon cultural facilities'
   }
-}
+} : getCityPageSeo('문화시설', 'Culture')
 
 export default function CulturePage({ initialData }) {
   return (
@@ -29,14 +30,14 @@ export default function CulturePage({ initialData }) {
         <title>{SEO.ko.title}</title>
         <meta name="description" content={SEO.ko.description} />
         <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/culture" />
+        <link rel="canonical" href={`${SITE_URL}/culture`} />
         
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://www.letsgodaejeon.kr/culture" />
+        <meta property="og:url" content={`${SITE_URL}/culture`} />
         <meta property="og:title" content={SEO.ko.title} />
         <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content="https://www.letsgodaejeon.kr/og-image.svg" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
         <meta property="og:site_name" content="대전으로" />
         <meta property="og:locale" content="ko_KR" />
         
@@ -54,7 +55,7 @@ export default function CulturePage({ initialData }) {
               "@type": "ItemList",
               "name": "대전 문화시설 목록",
               "description": SEO.ko.description,
-              "url": "https://www.letsgodaejeon.kr/culture",
+              "url": `${SITE_URL}/culture`,
               "numberOfItems": initialData?.length || 0,
               "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
                 "@type": "ListItem",
@@ -64,7 +65,7 @@ export default function CulturePage({ initialData }) {
                   "name": item.title || item.fcltyNm,
                   "address": {
                     "@type": "PostalAddress",
-                    "addressLocality": "대전",
+                    "addressLocality": CITY.cityName,
                     "addressCountry": "KR",
                     "streetAddress": item.addr1 || item.locplc
                   }
