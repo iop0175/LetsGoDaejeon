@@ -34,6 +34,7 @@ export default function TravelPage({ initialSpots, totalCount }) {
   const { user } = useAuth()
   const router = useRouter()
   const seoData = SEO[language] || SEO.ko
+  const displayName = (spot) => (language === 'en' && (spot.nameEn || spot.title_en)) || spot.name || spot.title
 
   const [allSpots, setAllSpots] = useState(initialSpots || [])
   const [loading, setLoading] = useState(!initialSpots)
@@ -111,7 +112,7 @@ export default function TravelPage({ initialSpots, totalCount }) {
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim()
       result = result.filter(item => {
-        const name = (item.name || item.title || '').toLowerCase()
+        const name = [item.name || item.title, item.nameEn || item.title_en].join(' ').toLowerCase()
         const address = (item.address || '').toLowerCase()
         return name.includes(query) || address.includes(query)
       })
@@ -308,13 +309,13 @@ export default function TravelPage({ initialSpots, totalCount }) {
                     <div className="spot-image">
                       <img 
                         src={getReliableImageUrl(spot.imageUrl || spot.image)}
-                        alt={spot.name || spot.title}
+                        alt={displayName(spot)}
                         loading="lazy"
                         itemProp="image"
                       />
                     </div>
                     <div className="spot-content">
-                      <h3 className="spot-title" itemProp="name">{spot.name || spot.title}</h3>
+                      <h3 className="spot-title" itemProp="name">{displayName(spot)}</h3>
                       <div className="spot-info">
                         <span className="spot-location">
                           <FiMapPin />
@@ -394,6 +395,7 @@ export async function getStaticProps() {
       id: item.id || null,
       contentId: item.content_id || null,
       name: item.title || null,
+      nameEn: item.title_en || null,
       address: item.addr1 || item.addr2 || null,
       intro: item.overview || null,
       imageUrl: item.firstimage || item.firstimage2 || null,
