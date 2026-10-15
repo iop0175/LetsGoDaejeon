@@ -11,6 +11,7 @@ const ALLOWED_ORIGINS = [
   // 서울 확장용 (도메인 연결 전까지는 미사용 origin)
   'https://www.letsgoseoul.kr',
   'https://letsgoseoul.vercel.app',
+  'https://letsgojeju.vercel.app',
   'http://localhost:5173',        // 개발용 (Vite)
   'http://localhost:3000',        // 개발용 (Next.js)
   'http://localhost:3001',        // 개발용 (Next.js 대체 포트)
