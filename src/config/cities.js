@@ -64,7 +64,7 @@ export const CITIES = {
     districtNames: ['제주시', '서귀포시'],
     odsayCityCode: null,
     domain: null,
-    publicUrl: null,
+    publicUrl: 'https://letsgojeju.vercel.app',
     tourismOrgName: '제주관광공사',
     governmentUrl: 'https://www.jeju.go.kr',
     parkingReady: false,
