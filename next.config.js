@@ -57,7 +57,8 @@ const nextConfig = {
         hostname: 'frqzcjaavws6yb7a.public.blob.vercel-storage.com',
       },
     ],
-    unoptimized: false,
+    // Vercel 이미지 최적화 한도 초과로 /_next/image가 402를 내므로 원본 주소를 그대로 쓴다
+    unoptimized: true,
   },
   
   // 환경변수 설정 (클라이언트에서 사용할 변수)
