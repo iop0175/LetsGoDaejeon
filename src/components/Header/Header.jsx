@@ -32,10 +32,10 @@ const Header = memo(() => {
   ]
 
   const moreMenuItems = [
-    ...(CITY.localServicesReady ? [{ path: '/parking', label: t.nav.parking }] : []),
+    ...(CITY.parkingReady ? [{ path: '/parking', label: t.nav.parking }] : []),
     { path: '/culture', label: t.nav.culture },
     { path: '/leisure', label: language === 'ko' ? '레포츠' : 'Leisure' },
-    ...(CITY.localServicesReady ? [{ path: '/medical', label: t.nav.medical }] : []),
+    ...(CITY.medicalReady ? [{ path: '/medical', label: t.nav.medical }] : []),
     { path: '/shopping', label: t.nav.shopping },
     { path: '/accommodation', label: t.nav.accommodation },
   ]

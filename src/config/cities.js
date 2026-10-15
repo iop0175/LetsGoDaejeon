@@ -19,7 +19,8 @@ export const CITIES = {
     publicUrl: 'https://www.letsgodaejeon.kr',
     tourismOrgName: '대전관광공사',
     governmentUrl: 'https://www.daejeon.go.kr',
-    localServicesReady: true
+    parkingReady: true,
+    medicalReady: true
   },
   seoul: {
     key: 'seoul',
@@ -42,7 +43,8 @@ export const CITIES = {
     publicUrl: 'https://letsgoseoul.vercel.app',
     tourismOrgName: '서울관광재단',
     governmentUrl: 'https://www.seoul.go.kr',
-    localServicesReady: false,
+    parkingReady: true,
+    medicalReady: true,
     hero: {
       image: '/images/hero/seoul.jpg',
       ko: { title: 'SEOUL · 서울으로', subtitle: '골목과 문화 사이, 서울', description: '도심의 공원부터 새로운 취향의 거리까지, 나만의 서울을 만나보세요.' },
@@ -65,7 +67,8 @@ export const CITIES = {
     publicUrl: null,
     tourismOrgName: '제주관광공사',
     governmentUrl: 'https://www.jeju.go.kr',
-    localServicesReady: false,
+    parkingReady: false,
+    medicalReady: false,
     hero: {
       image: '/images/hero/jeju.jpg',
       ko: { title: 'JEJU · 제주로', subtitle: '바람 따라, 제주로', description: '바다를 걷고 오름을 오르며, 섬의 속도로 여행하세요.' },

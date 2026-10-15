@@ -2,14 +2,17 @@ import { useState, useEffect, useMemo } from 'react'
 import { FiMapPin, FiClock, FiInfo, FiLoader, FiNavigation, FiPhone } from 'react-icons/fi'
 import { FaCar, FaParking } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
-import { getDaejeonParking } from '../services/api'
+import { getParkingFacilities } from '../services/api'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import SEO, { SEO_DATA } from '../components/common/SEO'
+import { CITY, getCityPageSeo } from '../config/cities'
 // CSS는 pages/_app.jsx에서 import
 
 const ParkingPage = () => {
   const { language, t } = useLanguage()
-  const seoData = SEO_DATA.parking[language] || SEO_DATA.parking.ko
+  const seoData = CITY.key === 'daejeon'
+    ? (SEO_DATA.parking[language] || SEO_DATA.parking.ko)
+    : getCityPageSeo('주차장', 'Parking')[language]
   const [allParkingData, setAllParkingData] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -29,7 +32,7 @@ const ParkingPage = () => {
     setError(null)
     try {
       // 전체 데이터를 한 번에 불러옴 (1000개)
-      const result = await getDaejeonParking(1, 1000)
+      const result = await getParkingFacilities(1, 3000)
       if (result.success) {
         setAllParkingData(result.items)
       } else {
@@ -146,8 +149,8 @@ const ParkingPage = () => {
             </h1>
             <p>
               {language === 'ko' 
-                ? `대전시 내 ${allParkingData.length}개 주차장 정보를 확인하세요.`
-                : `Check information for ${allParkingData.length} parking lots in Daejeon.`}
+                ? `${CITY.cityName} 내 ${allParkingData.length}개 주차장 정보를 확인하세요.`
+                : `Check information for ${allParkingData.length} parking lots in ${CITY.cityNameEn}.`}
             </p>
           </div>
         </div>

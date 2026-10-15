@@ -1,16 +1,24 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { getAllDbData } from '../services/dbService';
+import { getMedicalFacilities } from '../services/api';
 import { FiMapPin, FiPhone, FiNavigation, FiSearch } from 'react-icons/fi';
 import { MdLocalHospital, MdLocalPharmacy, MdHealthAndSafety } from 'react-icons/md';
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants';
 import SEO, { SEO_DATA } from '../components/common/SEO';
+import { CITY, getCityPageSeo } from '../config/cities';
 // CSS는 pages/_app.jsx에서 import
+
+// 서울은 데이터가 커서 검색과 페이지 나누기를 /api/medical에서 한다
+const SERVER_FILTERED = CITY.key === 'seoul';
 
 const MedicalPage = () => {
   const { language } = useLanguage();
-  const seoData = SEO_DATA.medical[language] || SEO_DATA.medical.ko;
+  const seoData = CITY.key === 'daejeon'
+    ? (SEO_DATA.medical[language] || SEO_DATA.medical.ko)
+    : getCityPageSeo('의료기관', 'Medical Facilities')[language];
   const [allFacilities, setAllFacilities] = useState([]); // 전체 데이터
+  const [serverResult, setServerResult] = useState({ items: [], totalCount: 0, dongs: [] });
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,7 +30,7 @@ const MedicalPage = () => {
   const text = {
     ko: {
       title: '의료기관',
-      subtitle: '대전 지역 의료기관 정보',
+      subtitle: `${CITY.cityName} 지역 의료기관 정보`,
       loading: '불러오는 중...',
       noResults: '검색 결과가 없습니다',
       searchPlaceholder: '병원명 또는 주소 검색',
@@ -37,7 +45,7 @@ const MedicalPage = () => {
     },
     en: {
       title: 'Medical Facilities',
-      subtitle: 'Medical facility information in Daejeon',
+      subtitle: `Medical facility information in ${CITY.cityNameEn}`,
       loading: 'Loading...',
       noResults: 'No results found',
       searchPlaceholder: 'Search by name or address',
@@ -63,8 +71,24 @@ const MedicalPage = () => {
 
   // 최초 1회 전체 데이터 로드
   useEffect(() => {
-    fetchAllFacilities();
+    if (!SERVER_FILTERED) fetchAllFacilities();
   }, []);
+
+  // 필터나 페이지가 바뀌면 서버에서 다시 조회 (입력 중 연속 호출은 묶는다)
+  useEffect(() => {
+    if (!SERVER_FILTERED) return;
+    setLoading(true);
+    let active = true;
+    const timer = setTimeout(async () => {
+      const result = await getMedicalFacilities(currentPage, itemsPerPage, {
+        q: searchQuery, type: selectedType, district: districtFilter, dong: dongFilter
+      });
+      if (!active) return;
+      setServerResult(result.success ? result : { items: [], totalCount: 0, dongs: [] });
+      setLoading(false);
+    }, 300);
+    return () => { active = false; clearTimeout(timer); };
+  }, [currentPage, searchQuery, selectedType, districtFilter, dongFilter]);
 
   const fetchAllFacilities = async () => {
     setLoading(true);
@@ -96,6 +120,7 @@ const MedicalPage = () => {
 
   // 선택된 구에 해당하는 동 목록 추출 (중복 제거)
   const availableDongs = useMemo(() => {
+    if (SERVER_FILTERED) return serverResult.dongs || [];
     if (districtFilter === 'all') return [];
     
     const dongs = new Set();
@@ -108,7 +133,7 @@ const MedicalPage = () => {
     });
     
     return Array.from(dongs).sort();
-  }, [allFacilities, districtFilter]);
+  }, [allFacilities, districtFilter, serverResult]);
 
   // 구 변경 시 동 필터 초기화 및 페이지 리셋
   useEffect(() => {
@@ -159,9 +184,12 @@ const MedicalPage = () => {
 
   // 현재 페이지에 해당하는 데이터
   const paginatedFacilities = useMemo(() => {
+    if (SERVER_FILTERED) return serverResult.items;
     const startIndex = (currentPage - 1) * itemsPerPage;
     return filteredFacilities.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredFacilities, currentPage, itemsPerPage]);
+  }, [filteredFacilities, currentPage, itemsPerPage, serverResult]);
+
+  const resultCount = SERVER_FILTERED ? serverResult.totalCount : filteredFacilities.length;
 
   const handleNavigate = (facility) => {
     const address = facility.locplc;
@@ -175,7 +203,7 @@ const MedicalPage = () => {
     return <MdLocalHospital />;
   };
 
-  const totalPages = Math.ceil(filteredFacilities.length / itemsPerPage);
+  const totalPages = Math.ceil(resultCount / itemsPerPage);
 
   return (
     <>
@@ -253,7 +281,7 @@ const MedicalPage = () => {
         </div>
 
         <div className="medical-summary">
-          {t.totalCount.replace('{count}', filteredFacilities.length)}
+          {t.totalCount.replace('{count}', resultCount)}
         </div>
 
         {loading ? (

@@ -4,7 +4,7 @@
  */
 
 // 대전시 구 목록 (필터용)
-import { CITY } from '../config/cities'
+import { CITY } from '../config/cities.js'
 
 const DAEJEON_DISTRICTS = [
   { id: 'all', ko: '전체 지역', en: 'All Districts' },

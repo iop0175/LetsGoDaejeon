@@ -22,12 +22,15 @@ export const getTourSpotImage = (spotName) => {
 // ============================
 
 // 대전시 주차장 정보 조회 (XML API)
-export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
-  if (CITY.key !== 'daejeon') return { success: false, items: [], totalCount: 0, error: '지역 주차장 API 연결 준비 중입니다.' };
+export const getParkingFacilities = async (pageNo = 1, numOfRows = 50) => {
+  if (!CITY.parkingReady) return { success: false, items: [], totalCount: 0, error: '지역 주차장 API 연결 준비 중입니다.' };
   try {
     recordApiCall('parking');
+    const endpoint = CITY.key === 'seoul'
+      ? `/api/parking?pageNo=${pageNo}&numOfRows=${numOfRows}`
+      : `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`;
     const data = await safeFetch(
-      `${WORKERS_API_URL}/api/daejeon/parking?numOfRows=${numOfRows}&pageNo=${pageNo}`,
+      endpoint,
       {},
       API_TIMEOUT
     );
@@ -43,11 +46,17 @@ export const getDaejeonParking = async (pageNo = 1, numOfRows = 50) => {
   }
 };
 
+export const getDaejeonParking = getParkingFacilities;
+
 // 의료기관 조회
-export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10) => {
-  if (CITY.key !== 'daejeon') return { success: false, items: [], totalCount: 0, error: '지역 의료기관 API 연결 준비 중입니다.' };
+export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10, filters = {}) => {
+  if (!CITY.medicalReady) return { success: false, items: [], totalCount: 0, error: '지역 의료기관 API 연결 준비 중입니다.' };
   try {
     recordApiCall('medical');
+    if (CITY.key === 'seoul') {
+      const params = new URLSearchParams({ pageNo, numOfRows, ...filters });
+      return await safeFetch(`/api/medical?${params}`, {}, 30000);
+    }
     const data = await safeFetch(
       `${WORKERS_API_URL}/api/daejeon/medical?pageNo=${pageNo}&numOfRows=${numOfRows}`,
       {},
@@ -593,6 +602,7 @@ export const getTourApiDetailEng = async (contentId) => {
 
 export default {
   // 대전 공공데이터 (TourAPI에 없는 데이터)
+  getParkingFacilities,
   getDaejeonParking,
   getMedicalFacilities,
   getTourSpotImage,

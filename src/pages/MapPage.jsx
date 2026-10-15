@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { FiMapPin, FiList, FiX, FiNavigation, FiPhone, FiClock, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getDaejeonParking } from '../services/api'
+import { getParkingFacilities } from '../services/api'
 import { getAllDbData, getTourSpots as getTourSpotsDb } from '../services/dbService'
 import { DISTRICTS, DISTRICT_NAMES, getDongFromAddr } from '../utils/constants'
 import { CITY } from '../config/cities'
@@ -264,7 +264,7 @@ const MapPage = () => {
           }
           break
         case 'parking':
-          result = await getDaejeonParking(1, 1000)
+          result = await getParkingFacilities(1, 3000)
           if (result.success) {
             setAllPlaces(result.items.map(item => ({
               id: item.parkingId || item.name,
@@ -458,7 +458,7 @@ const MapPage = () => {
   const tabs = [
     { id: 'tour', label: t.pages.search.attractions, icon: <Icons.building size={16} /> },
     { id: 'food', label: t.pages.search.restaurants, icon: <Icons.food size={16} /> },
-    ...(CITY.localServicesReady ? [{ id: 'parking', label: t.nav.parking, icon: <Icons.parking size={16} /> }] : [])
+    ...(CITY.parkingReady ? [{ id: 'parking', label: t.nav.parking, icon: <Icons.parking size={16} /> }] : [])
   ]
 
   return (
