@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { FiCalendar, FiMapPin, FiClock, FiLoader, FiUser, FiX, FiInfo, FiPhone, FiExternalLink, FiMusic } from 'react-icons/fi'
 import { useLanguage } from '../context/LanguageContext'
-import { getAllDbData, getDbPerformances, getTourFestivals } from '../services/dbService'
+import { getEvents, isFestivalType } from '../services/api'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
@@ -174,62 +174,23 @@ const FestivalPage = () => {
       setError(null)
       
       try {
-        // 먼저 tour_festivals에서 데이터 시도
-        const tourResult = await getTourFestivals(true, 1, 1000)
-        
-        if (tourResult.success && tourResult.items.length > 0) {
-          // TourAPI 데이터 사용
-          const formattedEvents = tourResult.items.map((item, index) => ({
-            id: item.id || item.content_id || index + 1,
-            contentId: item.content_id,
-            title: item.title,
-            title_en: item.title_en, // 영어 제목
-            theme: '', // TourAPI에는 테마가 없음
-            place: '',
-            placeDetail: item.addr1 || item.addr2,
-            placeDetail_en: item.addr1_en, // 영어 주소
-            beginDate: item.event_start_date 
-              ? `${item.event_start_date.slice(0, 4)}-${item.event_start_date.slice(4, 6)}-${item.event_start_date.slice(6, 8)}`
-              : '',
-            endDate: item.event_end_date
-              ? `${item.event_end_date.slice(0, 4)}-${item.event_end_date.slice(4, 6)}-${item.event_end_date.slice(6, 8)}`
-              : '',
-            image: getReliableImageUrl(item.firstimage || item.firstimage2, '/images/no-image.svg'),
-            tel: item.tel,
-            overview: item.overview,
-            overview_en: item.overview_en, // 영어 설명
-            mapx: item.mapx,
-            mapy: item.mapy,
-            intro_info: item.intro_info, // 소개정보 (주최, 공연시간, 이용요금 등)
-            _source: 'tourapi'
-          }))
-          setAllEvents(formattedEvents)
-        } else {
-          // tour_festivals에 데이터가 없으면 기존 festivals 테이블 시도
-          const dbResult = await getAllDbData('festival')
-          
-          if (dbResult.success && dbResult.items.length > 0) {
-            const formattedEvents = dbResult.items.map((item, index) => ({
-              id: item._id || item.eventSeq || index + 1,
-              title: item.title,
-              theme: item.themeCdNm,
-              place: item.placeCdNm,
-              placeDetail: item.placeDetail,
-              target: item.targetCdNm,
-              management: item.managementCdNm,
-              beginDate: item.beginDt,
-              endDate: item.endDt,
-              beginTime: item.beginTm,
-              endTime: item.endTm,
-              isHot: item.hotYn === 'Y',
-              isRecommended: item.recommendationYn === 'Y',
-              image: item.imageUrl
-            }))
-            setAllEvents(formattedEvents)
-          } else {
-            setError(t.common.syncRequired)
-          }
-        }
+        // 오늘 진행 중인 축제·행사만 자동으로 온다(/api/events). 관리자는 숨김만 관리한다.
+        const events = (await getEvents()).filter(item => isFestivalType(item.type))
+        // 오늘 열리는 축제가 없으면 빈 탭 대신 공연·전시 탭을 먼저 보여준다
+        if (events.length === 0 && !router.query.tab) setActiveTab('performance')
+        setAllEvents(events.map((item, index) => ({
+          id: item.id || index + 1,
+          title: item.title,
+          theme: item.type || '',
+          place: '',
+          placeDetail: item.event_site,
+          beginDate: item.start_date,
+          endDate: item.end_date,
+          image: getReliableImageUrl(item.image_url, '/images/no-image.svg'),
+          tel: item.contact_point,
+          overview: item.description,
+          url: item.url
+        })))
       } catch (err) {
         console.error('행사 데이터 로드 실패:', err)
         setError(t.common.loadFailed)
@@ -250,8 +211,8 @@ const FestivalPage = () => {
       setPerformanceError(null)
       
       try {
-        // DB에서 활성화된 공연만 불러오기
-        const dbPerformances = await getDbPerformances(true)
+        // 오늘 진행 중인 공연·전시만 자동으로 온다(/api/events)
+        const dbPerformances = (await getEvents()).filter(item => !isFestivalType(item.type))
         
         if (dbPerformances && dbPerformances.length > 0) {
           // 검색어가 있으면 필터링
@@ -293,7 +254,7 @@ const FestivalPage = () => {
           if (performanceSearchQuery.length >= 2) {
             setPerformanceError(t.common.noResults)
           } else {
-            setPerformanceError(language === 'ko' ? '등록된 공연이 없습니다. 관리자에게 문의하세요.' : 'No performances available.')
+            setPerformanceError(language === 'ko' ? '오늘 진행 중인 공연·전시가 없습니다.' : 'No performances or exhibitions running today.')
           }
         }
       } catch (err) {
@@ -407,7 +368,7 @@ const FestivalPage = () => {
             ) : (
               <>
                 {/* 필터 섹션 */}
-                <div className="filter-section">
+                {(availableThemes.length > 0 || availablePlaces.length > 0) && <div className="filter-section">
                   {availableThemes.length > 0 && (
                     <div className="theme-filters">
                       <span className="filter-label">{t.pages.festival.theme}:</span>
@@ -453,7 +414,7 @@ const FestivalPage = () => {
                       </div>
                     </div>
                   )}
-                </div>
+                </div>}
                 
                 {/* 정렬 + 개수 표시 */}
                 <div className="sort-count-row">

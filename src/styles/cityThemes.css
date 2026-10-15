@@ -1,8 +1,13 @@
+/* 서울: 단청 붉은색과 먹색. 제주: 바다 청록과 현무암, 감귤 포인트 */
 .app[data-city="seoul"] {
   --primary-color: #9b303b;
   --primary-dark: #76222c;
   --secondary-color: #b47b39;
   --accent-color: #9b303b;
+  --bg-gradient: linear-gradient(135deg, #9b303b 0%, #76222c 100%);
+  --city-ink: 38, 18, 21;
+  --city-tint: rgba(155, 48, 59, 0.1);
+  --city-photo: url('/images/hero/seoul.jpg');
 }
 
 .app[data-city="jeju"] {
@@ -10,6 +15,77 @@
   --primary-dark: #005652;
   --secondary-color: #bd651c;
   --accent-color: #007b77;
+  --bg-gradient: linear-gradient(135deg, #007b77 0%, #005652 100%);
+  --city-ink: 10, 30, 32;
+  --city-tint: rgba(0, 123, 119, 0.1);
+  --city-photo: url('/images/hero/jeju.jpg');
+}
+
+.app[data-city="seoul"] .nav-link.active,
+.app[data-city="jeju"] .nav-link.active {
+  background: var(--city-tint);
+}
+
+/* 페이지마다 제각각이던 그라데이션 머리 영역을 도시 사진 + 먹색 오버레이 한 가지로 통일 */
+.app[data-city="seoul"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero, .search-hero, .planner-hero),
+.app[data-city="jeju"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero, .search-hero, .planner-hero) {
+  background:
+    linear-gradient(90deg, rgba(var(--city-ink), 0.88) 0%, rgba(var(--city-ink), 0.55) 100%),
+    var(--city-photo) center 40% / cover no-repeat;
+  color: #fff;
+}
+
+.app[data-city="seoul"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1,
+.app[data-city="jeju"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1 {
+  font-size: 40px;
+  letter-spacing: -0.02em;
+}
+
+.app[data-city="seoul"] .page-hero,
+.app[data-city="jeju"] .page-hero {
+  height: 240px;
+}
+
+/* 페이지마다 하드코딩된 보라, 주황, 남색, 하늘색 강조를 도시 색 하나로 모은다 */
+.app[data-city="seoul"] .login-btn,
+.app[data-city="jeju"] .login-btn {
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.app[data-city="seoul"] :is(.travel-page, .food-page, .festival-page, .leisure-page, .culture-page, .accommodation-page, .shopping-page, .medical-page, .parking-page) :is(button, a).active,
+.app[data-city="jeju"] :is(.travel-page, .food-page, .festival-page, .leisure-page, .culture-page, .accommodation-page, .shopping-page, .medical-page, .parking-page) :is(button, a).active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: #fff;
+}
+
+.app[data-city="seoul"] .festival-page .theme-badge,
+.app[data-city="jeju"] .festival-page .theme-badge,
+.app[data-city="seoul"] .festival-page .tab-btn.active::after,
+.app[data-city="jeju"] .festival-page .tab-btn.active::after {
+  background: var(--primary-color);
+}
+
+.app[data-city="seoul"] .festival-page strong,
+.app[data-city="jeju"] .festival-page strong {
+  color: var(--primary-color);
+}
+
+.app[data-city="seoul"] .medical-page :is(.medical-icon, .navigate-btn),
+.app[data-city="jeju"] .medical-page :is(.medical-icon, .navigate-btn) {
+  background: var(--primary-color);
+}
+
+.app[data-city="seoul"] .medical-page .medical-type,
+.app[data-city="jeju"] .medical-page .medical-type {
+  background: var(--city-tint);
+  color: var(--primary-dark);
+}
+
+/* 미리보기 배너가 헤더 높이만큼 이미 밀어 두었으므로 페이지 자체의 헤더 여백은 겹치지 않게 당긴다 */
+.city-preview-banner + * {
+  margin-top: -72px;
 }
 
 .app[data-city="seoul"] .hero,
@@ -80,4 +156,9 @@
   .app[data-city="jeju"] .hero-title { font-size: 38px; max-width: 340px; }
   .city-preview-banner { padding: 10px 16px; font-size: 12px; }
   .city-preview-banner { margin-top: 64px; }
+  .city-preview-banner + * { margin-top: -64px; }
+  .app[data-city="seoul"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1,
+  .app[data-city="jeju"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1 { font-size: 28px; }
+  .app[data-city="seoul"] .page-hero,
+  .app[data-city="jeju"] .page-hero { height: 200px; }
 }

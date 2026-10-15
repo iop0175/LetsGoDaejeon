@@ -45,6 +45,19 @@ export const CITIES = {
     governmentUrl: 'https://www.seoul.go.kr',
     parkingReady: true,
     medicalReady: true,
+    // 대전 문구를 도시명만 바꿔 쓰면 "과학의 도시 서울"처럼 어색해지는 문구는 도시별로 덮어쓴다
+    pageCopy: {
+      ko: {
+        travel: { subtitle: '궁궐과 골목, 한강까지 오늘의 서울을 걸어보세요' },
+        festival: { subtitle: '오늘 서울에서 열리는 축제와 공연, 전시' },
+        food: { subtitle: '오래된 노포부터 새로 뜨는 맛집까지, 서울의 한 끼' }
+      },
+      en: {
+        travel: { subtitle: 'Walk today\'s Seoul, from palaces and alleys to the Han River' },
+        festival: { subtitle: 'Festivals, shows and exhibitions on in Seoul today' },
+        food: { subtitle: 'From decades-old eateries to new favorites, a taste of Seoul' }
+      }
+    },
     hero: {
       image: '/images/hero/seoul.jpg',
       ko: { title: 'SEOUL · 서울으로', subtitle: '골목과 문화 사이, 서울', description: '도심의 공원부터 새로운 취향의 거리까지, 나만의 서울을 만나보세요.' },
@@ -69,6 +82,18 @@ export const CITIES = {
     governmentUrl: 'https://www.jeju.go.kr',
     parkingReady: false,
     medicalReady: false,
+    pageCopy: {
+      ko: {
+        travel: { subtitle: '오름과 바다, 돌담길 사이로 만나는 제주의 풍경' },
+        festival: { subtitle: '오늘 제주에서 열리는 축제와 공연, 전시' },
+        food: { subtitle: '흑돼지와 고기국수, 해녀가 차린 바다 밥상' }
+      },
+      en: {
+        travel: { subtitle: 'Volcanic hills, the sea and stone-wall lanes of Jeju' },
+        festival: { subtitle: 'Festivals, shows and exhibitions on in Jeju today' },
+        food: { subtitle: 'Black pork, meat noodles and the haenyeo\'s table from the sea' }
+      }
+    },
     hero: {
       image: '/images/hero/jeju.jpg',
       ko: { title: 'JEJU · 제주로', subtitle: '바람 따라, 제주로', description: '바다를 걷고 오름을 오르며, 섬의 속도로 여행하세요.' },

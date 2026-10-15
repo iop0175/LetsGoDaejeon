@@ -10,6 +10,8 @@ const PopularSpots = dynamic(() => import('../src/components/PopularSpots/Popula
 const FestivalSection = dynamic(() => import('../src/components/FestivalSection/FestivalSection'), { ssr: true })
 const FoodSection = dynamic(() => import('../src/components/FoodSection/FoodSection'), { ssr: true })
 const TravelCourse = dynamic(() => import('../src/components/TravelCourse/TravelCourse'), { ssr: true })
+const SeoulCrowd = dynamic(() => import('../src/components/SeoulCrowd/SeoulCrowd'), { ssr: false })
+const JejuThemes = dynamic(() => import('../src/components/JejuThemes/JejuThemes'), { ssr: false })
 const WeatherWidget = dynamic(() => import('../src/components/WeatherWidget/WeatherWidget'), { ssr: false })
 const KakaoChannelButton = dynamic(() => import('../src/components/KakaoChannelButton/KakaoChannelButton'), { ssr: false })
 
@@ -51,6 +53,8 @@ export default function HomePage({ heroSlides }) {
       <HeroSection initialSlides={heroSlides} />
       <QuickMenu />
       <PopularSpots />
+      {CITY.key === 'seoul' && <SeoulCrowd />}
+      {CITY.key === 'jeju' && <JejuThemes />}
       {CITY.key === 'daejeon' && <TravelCourse />}
       <FestivalSection />
       <FoodSection />

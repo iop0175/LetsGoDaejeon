@@ -1344,8 +1344,13 @@ const localizeCity = (value) => {
   return value
 }
 
+const withPageCopy = (value, language) => ({
+  ...value,
+  pages: Object.fromEntries(Object.entries(value.pages).map(([page, copy]) => [page, { ...copy, ...CITY.pageCopy?.[language]?.[page] }]))
+})
+
 const cityTranslations = CITY.key === 'daejeon' ? translations : Object.fromEntries(
-  Object.entries(translations).map(([language, value]) => [language, localizeCity(value)])
+  Object.entries(translations).map(([language, value]) => [language, withPageCopy(localizeCity(value), language)])
 )
 
 export const LanguageProvider = ({ children }) => {

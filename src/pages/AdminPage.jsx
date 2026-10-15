@@ -5,7 +5,7 @@ import {
   FiMenu, FiX, FiBarChart2, FiDatabase, FiCoffee, FiHeart, FiCloud,
   FiTruck, FiRefreshCw, FiExternalLink, FiActivity, FiTrendingUp,
   FiEdit2, FiTrash2, FiPlus, FiImage, FiSave, FiXCircle, FiLoader, FiSearch,
-  FiNavigation, FiEye, FiToggleLeft, FiToggleRight, FiMusic, FiDownload,
+  FiNavigation, FiEye, FiEyeOff, FiToggleLeft, FiToggleRight, FiMusic, FiDownload,
   FiGlobe, FiSun, FiInfo, FiServer, FiArrowUp, FiArrowDown
 } from 'react-icons/fi'
 import { useAuth } from '../context/AuthContext'
@@ -13,7 +13,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { 
   getMedicalFacilities, getDaejeonParking,
-  getDaejeonPerformances,
+  getEvents,
   getTourApiSpots, getTourApiFestivals, getTourApiCounts,
   getTourApiDetail,
   getTourApiSpotsEng,
@@ -26,8 +26,7 @@ import {
   getPageVisitStats, getTodayPageVisitStats, getMostVisitedPageDB,
   getPopularSearchQueries, getTodayPopularSearchQueries, getSearchStats,
   getPageVisitStatsByPeriod,
-  getDbPerformances, savePerformances, deletePerformance, deleteExpiredPerformances,
-  getPerformanceCount,
+  setEventHidden, deleteExpiredPerformances,
   saveTourSpots, deleteTourSpots, getTourSpotsCount,
   saveTourFestivals, deleteAllTourFestivals, deleteExpiredTourFestivals, getTourFestivalsCount,
   getTourApiStats, syncTourSpotsOverview, getTourSpotsWithoutOverviewCount,
@@ -207,14 +206,9 @@ const AdminPage = () => {
   const [tripImageUploading, setTripImageUploading] = useState(false) // 업로드 중 상태
 
   // 공연 관리 상태
-  const [dbPerformances, setDbPerformances] = useState([]) // DB에 저장된 공연 목록
-  const [apiPerformances, setApiPerformances] = useState([]) // KCISA API에서 불러온 공연 목록
+  const [dbPerformances, setDbPerformances] = useState([]) // 자동 게시 행사 목록 (/api/events?all=1)
   const [performancesLoading, setPerformancesLoading] = useState(false)
-  const [performanceSyncLoading, setPerformanceSyncLoading] = useState(false)
-  // 전체 페이징이 수십 초 걸리므로 진행 상황을 버튼에 노출한다.
-  const [performanceSyncProgress, setPerformanceSyncProgress] = useState('')
   const [performanceDeleteLoading, setPerformanceDeleteLoading] = useState(false)
-  const [performanceDbCount, setPerformanceDbCount] = useState(0)
 
   // TourAPI 관리 상태
   const [tourApiCounts, setTourApiCounts] = useState({}) // API에서 가져온 각 타입별 개수
@@ -1162,84 +1156,22 @@ const AdminPage = () => {
   
   // ==================== 공연 관리 함수 ====================
   
-  // DB에 저장된 공연 목록 로드
+  // 자동 게시 행사 목록 로드 (시작 전·숨김 포함)
   const loadDbPerformances = useCallback(async () => {
     setPerformancesLoading(true)
-    try {
-      const performances = await getDbPerformances(false) // 전체 조회
-      setDbPerformances(performances)
-      const count = await getPerformanceCount()
-      setPerformanceDbCount(count)
-    } catch (err) {
-      console.error('공연 목록 로드 실패:', err)
-    }
+    setDbPerformances(await getEvents(true))
     setPerformancesLoading(false)
   }, [])
-  
-  // KCISA API에서 공연 데이터 가져오기
-  const loadApiPerformances = useCallback(async () => {
-    setPerformanceSyncLoading(true)
-    setPerformanceSyncProgress('')
-    try {
-      // title='대전' 검색은 제목에 대전이 든 공연만 잡아 대전 공연 대부분을 놓치고,
-      // "초대전"까지 걸려 전국 전시가 섞였다. 전체를 페이징하며 지역으로 거른다.
-      const result = await getDaejeonPerformances({
-        onProgress: ({ scanned, total, found }) => {
-          setPerformanceSyncProgress(
-            total
-              ? `${scanned.toLocaleString()}/${total.toLocaleString()} 검색, 대전 ${found}건`
-              : `${scanned.toLocaleString()}건 검색, 대전 ${found}건`
-          )
-        }
-      })
-      if (result.success && result.items) {
-        // 지역 판정과 종료일 필터는 getDaejeonPerformances 가 이미 처리한다.
-        setApiPerformances(result.items)
-        return { success: true, count: result.items.length }
-      }
-      return { success: false }
-    } catch (err) {
-      console.error('KCISA API 호출 실패:', err)
-      return { success: false, error: err.message }
-    } finally {
-      setPerformanceSyncLoading(false)
-      setPerformanceSyncProgress('')
+
+  // 행사 숨기기/다시 보이기. 삭제하면 다음 수집 때 다시 올라오므로 숨김으로만 관리한다.
+  const handleToggleEventHidden = useCallback(async (event) => {
+    const result = await setEventHidden(event, !event.hidden)
+    if (!result.success) {
+      alert(result.error || (language === 'ko' ? '변경 실패' : 'Update failed'))
+      return
     }
-  }, [])
-  
-  // API 공연 데이터를 DB에 저장
-  const handleSyncPerformances = useCallback(async () => {
-    if (apiPerformances.length === 0) {
-      // 먼저 API에서 데이터 로드
-      const loadResult = await loadApiPerformances()
-      if (!loadResult.success) {
-        alert(language === 'ko' ? 'API에서 공연 데이터를 불러오지 못했습니다.' : 'Failed to load performance data from API.')
-        return
-      }
-    }
-    
-    const confirmMsg = language === 'ko'
-      ? `${apiPerformances.length}개의 대전 지역 공연을 DB에 저장하시겠습니까?`
-      : `Save ${apiPerformances.length} Daejeon performances to DB?`
-    
-    if (!window.confirm(confirmMsg)) return
-    
-    setPerformanceSyncLoading(true)
-    try {
-      const result = await savePerformances(apiPerformances)
-      if (result.success) {
-        alert(language === 'ko' 
-          ? `${result.savedCount}개 공연이 저장되었습니다.` 
-          : `${result.savedCount} performances saved.`)
-        loadDbPerformances()
-      } else {
-        alert(result.error || '저장 실패')
-      }
-    } catch (err) {
-      alert(language === 'ko' ? '저장 중 오류가 발생했습니다.' : 'Error saving performances.')
-    }
-    setPerformanceSyncLoading(false)
-  }, [apiPerformances, language, loadApiPerformances, loadDbPerformances])
+    setDbPerformances(prev => prev.map(item => item.title === event.title ? { ...item, hidden: !event.hidden } : item))
+  }, [language])
   
   // 만료된 공연 삭제
   const handleDeleteExpiredPerformances = useCallback(async () => {
@@ -1264,27 +1196,6 @@ const AdminPage = () => {
       alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error deleting performances.')
     }
     setPerformanceDeleteLoading(false)
-  }, [language, loadDbPerformances])
-  
-  // 개별 공연 삭제
-  const handleDeletePerformance = useCallback(async (performance) => {
-    const confirmMsg = language === 'ko'
-      ? `"${performance.title}" 공연을 삭제하시겠습니까?`
-      : `Delete "${performance.title}"?`
-    
-    if (!window.confirm(confirmMsg)) return
-    
-    try {
-      const result = await deletePerformance(performance.id)
-      if (result.success) {
-        alert(language === 'ko' ? '삭제되었습니다.' : 'Deleted.')
-        loadDbPerformances()
-      } else {
-        alert(result.error || '삭제 실패')
-      }
-    } catch (err) {
-      alert(language === 'ko' ? '삭제 중 오류가 발생했습니다.' : 'Error deleting performance.')
-    }
   }, [language, loadDbPerformances])
   
   // ============================================================
@@ -2788,11 +2699,10 @@ const AdminPage = () => {
             onClick={() => {
               setActiveSection('performances')
               loadDbPerformances()
-              loadApiPerformances()
             }}
           >
             <FiMusic style={{ color: activeSection === 'performances' ? 'white' : '#9c27b0' }} />
-            <span>{language === 'ko' ? '공연 관리' : 'Performances'}</span>
+            <span>{language === 'ko' ? '행사 관리' : 'Events'}</span>
           </button>
           
           <button 
@@ -2940,7 +2850,7 @@ const AdminPage = () => {
             </button>
           )}
           {activeSection === 'performances' && (
-            <button className="refresh-btn" onClick={() => { loadDbPerformances(); loadApiPerformances(); }}>
+            <button className="refresh-btn" onClick={loadDbPerformances}>
               <FiRefreshCw />
             </button>
           )}
@@ -3760,35 +3670,25 @@ const AdminPage = () => {
             </div>
           )}
           
-          {/* 공연 관리 섹션 */}
+          {/* 축제·행사 관리 섹션: 게시는 /api/events가 자동으로 한다. 여기서는 숨김만 관리한다. */}
           {activeSection === 'performances' && (
             <div className="performances-management">
-              {/* 통계 및 액션 버튼 */}
               <div className="performances-header">
                 <div className="performance-stats">
-                  <div className="stat-badge">
-                    <FiDatabase />
-                    <span>DB: {performanceDbCount}개</span>
-                  </div>
                   <div className="stat-badge api">
                     <FiCloud />
-                    <span>API: {apiPerformances.length}개 (대전 지역)</span>
+                    <span>{language === 'ko' ? `자동 게시 ${dbPerformances.filter(perf => !perf.hidden).length}건` : `${dbPerformances.filter(perf => !perf.hidden).length} auto-posted`}</span>
+                  </div>
+                  <div className="stat-badge">
+                    <FiDatabase />
+                    <span>{language === 'ko' ? `숨김 ${dbPerformances.filter(perf => perf.hidden).length}건` : `${dbPerformances.filter(perf => perf.hidden).length} hidden`}</span>
                   </div>
                 </div>
-                
                 <div className="performance-actions">
-                  <button 
-                    className="btn-sync"
-                    onClick={handleSyncPerformances}
-                    disabled={performanceSyncLoading}
-                  >
-                    {performanceSyncLoading ? (
-                      <><FiLoader className="spinning" /> {performanceSyncProgress || '동기화 중...'}</>
-                    ) : (
-                      <><FiDownload /> {language === 'ko' ? 'API → DB 저장' : 'Sync from API'}</>
-                    )}
+                  <button className="btn-sync" onClick={loadDbPerformances} disabled={performancesLoading}>
+                    <FiRefreshCw /> {language === 'ko' ? '새로고침' : 'Refresh'}
                   </button>
-                  <button 
+                  <button
                     className="btn-delete-expired"
                     onClick={handleDeleteExpiredPerformances}
                     disabled={performanceDeleteLoading}
@@ -3796,16 +3696,20 @@ const AdminPage = () => {
                     {performanceDeleteLoading ? (
                       <><FiLoader className="spinning" /> 삭제 중...</>
                     ) : (
-                      <><FiTrash2 /> {language === 'ko' ? '만료 공연 삭제' : 'Delete Expired'}</>
+                      <><FiTrash2 /> {language === 'ko' ? '만료 기록 정리' : 'Clean up expired'}</>
                     )}
                   </button>
                 </div>
               </div>
-              
-              {/* DB 저장된 공연 목록 */}
+
               <div className="performance-section">
-                <h3><FiDatabase /> {language === 'ko' ? 'DB에 저장된 공연' : 'Saved Performances'}</h3>
-                
+                <h3><FiCloud /> {language === 'ko' ? '진행 중·예정 행사' : 'Current and upcoming events'}</h3>
+                <p className="sub-text">
+                  {language === 'ko'
+                    ? '문화포털, 관광공사, 지자체 API에서 매시간 자동으로 가져오고 오늘 진행 중인 행사만 사이트에 게시됩니다. 숨긴 행사는 다음 갱신(최대 1시간)부터 사라집니다.'
+                    : 'Events are pulled hourly from public APIs and only those running today are posted. Hidden events disappear at the next refresh (up to 1 hour).'}
+                </p>
+
                 {performancesLoading ? (
                   <div className="loading-container">
                     <FiLoader className="spinning" size={32} />
@@ -3817,21 +3721,19 @@ const AdminPage = () => {
                       <thead>
                         <tr>
                           <th>{language === 'ko' ? '이미지' : 'Image'}</th>
-                          <th>{language === 'ko' ? '공연명' : 'Title'}</th>
+                          <th>{language === 'ko' ? '행사명' : 'Title'}</th>
                           <th>{language === 'ko' ? '분류' : 'Type'}</th>
                           <th>{language === 'ko' ? '기간' : 'Period'}</th>
                           <th>{language === 'ko' ? '장소' : 'Venue'}</th>
-                          <th>{language === 'ko' ? '요금' : 'Price'}</th>
                           <th>{language === 'ko' ? '상태' : 'Status'}</th>
                           <th>{language === 'ko' ? '관리' : 'Actions'}</th>
                         </tr>
                       </thead>
                       <tbody>
                         {dbPerformances.map(perf => {
-                          // 만료 삭제와 같은 기준(KST)을 써야 경계 시간대에 표시와 동작이 어긋나지 않는다.
-                          const isExpired = perf.end_date && perf.end_date < todayIsoDate()
+                          const isUpcoming = perf.start_date > todayIsoDate()
                           return (
-                            <tr key={perf.id} className={isExpired ? 'expired' : ''}>
+                            <tr key={perf.title} className={perf.hidden ? 'expired' : ''}>
                               <td>
                                 <div className="perf-thumbnail">
                                   {perf.image_url ? (
@@ -3851,27 +3753,24 @@ const AdminPage = () => {
                                 )}
                               </td>
                               <td><span className="perf-type-badge">{perf.type || '-'}</span></td>
-                              <td className="perf-period">
-                                {perf.start_date && perf.end_date 
-                                  ? `${perf.start_date} ~ ${perf.end_date}`
-                                  : perf.event_period || '-'}
-                              </td>
+                              <td className="perf-period">{`${perf.start_date} ~ ${perf.end_date}`}</td>
                               <td>{perf.event_site || '-'}</td>
-                              <td className="perf-charge">{perf.charge || '-'}</td>
                               <td>
-                                {isExpired ? (
-                                  <span className="status-badge expired">만료</span>
+                                {perf.hidden ? (
+                                  <span className="status-badge expired">{language === 'ko' ? '숨김' : 'Hidden'}</span>
+                                ) : isUpcoming ? (
+                                  <span className="status-badge">{language === 'ko' ? '예정' : 'Upcoming'}</span>
                                 ) : (
-                                  <span className="status-badge active">진행중</span>
+                                  <span className="status-badge active">{language === 'ko' ? '게시 중' : 'Live'}</span>
                                 )}
                               </td>
                               <td>
-                                <button 
+                                <button
                                   className="btn-delete"
-                                  onClick={() => handleDeletePerformance(perf)}
-                                  title={language === 'ko' ? '삭제' : 'Delete'}
+                                  onClick={() => handleToggleEventHidden(perf)}
+                                  title={perf.hidden ? (language === 'ko' ? '다시 보이기' : 'Show') : (language === 'ko' ? '숨기기' : 'Hide')}
                                 >
-                                  <FiTrash2 />
+                                  {perf.hidden ? <FiEye /> : <FiEyeOff />}
                                 </button>
                               </td>
                             </tr>
@@ -3883,36 +3782,10 @@ const AdminPage = () => {
                 ) : (
                   <div className="no-data">
                     <FiMusic size={48} />
-                    <p>{language === 'ko' ? 'DB에 저장된 공연이 없습니다.' : 'No performances in database.'}</p>
-                    <p className="sub-text">{language === 'ko' ? '"API → DB 저장" 버튼을 클릭하여 공연 데이터를 가져오세요.' : 'Click "Sync from API" to import performances.'}</p>
+                    <p>{language === 'ko' ? '진행 중이거나 예정된 행사가 없습니다.' : 'No current or upcoming events.'}</p>
                   </div>
                 )}
               </div>
-              
-              {/* API에서 불러온 공연 미리보기 */}
-              {apiPerformances.length > 0 && (
-                <div className="performance-section api-preview">
-                  <h3><FiCloud /> {language === 'ko' ? 'API에서 불러온 공연 (대전 지역, 미만료)' : 'API Performances (Daejeon, Active)'}</h3>
-                  <div className="api-performances-grid">
-                    {apiPerformances.slice(0, 12).map((perf, idx) => (
-                      <div key={idx} className="api-perf-card">
-                        {perf.imageObject && (
-                          <img src={perf.imageObject} alt={perf.title} className="api-perf-img" />
-                        )}
-                        <div className="api-perf-info">
-                          <h4>{perf.title}</h4>
-                          <p className="api-perf-period">{perf.eventPeriod}</p>
-                          <p className="api-perf-site">{perf.eventSite}</p>
-                          {perf.charge && <p className="api-perf-charge">{perf.charge}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {apiPerformances.length > 12 && (
-                    <p className="more-info">...외 {apiPerformances.length - 12}개 더 있음</p>
-                  )}
-                </div>
-              )}
             </div>
           )}
           

@@ -136,7 +136,8 @@ export default function TravelPage({ initialSpots, totalCount }) {
     
     // 정렬
     if (sortBy === 'name') {
-      result.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      // 서버와 브라우저의 기본 로캘이 달라 순서가 어긋나면 하이드레이션이 깨지므로 로캘을 고정한다
+      result.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ko'))
     } else if (sortBy === 'views') {
       result.sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0))
     }

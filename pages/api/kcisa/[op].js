@@ -71,6 +71,58 @@ const getTagValue = (xml, tag) => {
   return match ? match[1].trim() : ''
 }
 
+// 행사 자동 수집(/api/events/sync)도 같은 경로로 KCISA를 부른다.
+export const fetchKcisa = async (op, query = {}) => {
+  const apiKey = (process.env.KCISA_API_KEY || '').trim()
+  if (!apiKey) return { success: false, items: [], totalCount: 0, message: 'KCISA_API_KEY missing' }
+
+  const kcisaUrl = new URL(`${KCISA_BASE}/${op}/request`)
+  kcisaUrl.searchParams.set('serviceKey', apiKey)
+  for (const [key, value] of Object.entries(query)) {
+    if (ALLOWED_PARAMS.has(key) && value) {
+      kcisaUrl.searchParams.set(key, Array.isArray(value) ? value[0] : value)
+    }
+  }
+
+  const ip = await resolveKcisaIp()
+  const text = await requestKcisa(kcisaUrl.toString(), ip)
+
+  const resultCode = getTagValue(text, 'resultCode')
+  const resultMsg = getTagValue(text, 'resultMsg')
+
+  if (resultCode !== '0000' && resultCode !== '0') {
+    return {
+      success: false,
+      resultCode,
+      resultMsg,
+      items: [],
+      totalCount: 0,
+      // 업스트림이 XML이 아닐 때(차단/에러 페이지 등) 원인을 버리지 않도록 남김
+      upstreamBody: text.slice(0, 300)
+    }
+  }
+
+  const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || []
+  const items = itemMatches.map((itemXml) => ({
+    title: getTagValue(itemXml, 'title'),
+    type: getTagValue(itemXml, 'type'),
+    period: getTagValue(itemXml, 'period'),
+    eventPeriod: getTagValue(itemXml, 'eventPeriod'),
+    eventSite: getTagValue(itemXml, 'eventSite'),
+    charge: getTagValue(itemXml, 'charge'),
+    contactPoint: getTagValue(itemXml, 'contactPoint'),
+    url: getTagValue(itemXml, 'url'),
+    imageObject: getTagValue(itemXml, 'imageObject'),
+    description: getTagValue(itemXml, 'description'),
+    viewCount: parseInt(getTagValue(itemXml, 'viewCount') || '0')
+  }))
+
+  // 업스트림 전체 건수를 페이지 건수와 구분해 돌려준다.
+  // 이게 없으면 호출부가 마지막 페이지를 판단할 수 없어 끝까지 페이징하지 못한다.
+  const upstreamTotal = parseInt(getTagValue(text, 'totalCount') || '0')
+  return { success: true, resultCode, resultMsg, totalCount: upstreamTotal || items.length, pageCount: items.length, items }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -83,67 +135,15 @@ export default async function handler(req, res) {
     return res.status(404).json({ success: false, items: [], totalCount: 0, message: 'Unknown operation' })
   }
 
-  const apiKey = (process.env.KCISA_API_KEY || '').trim()
-  if (!apiKey) {
-    return res.status(500).json({ success: false, items: [], totalCount: 0, message: 'KCISA_API_KEY missing' })
-  }
-
-  const kcisaUrl = new URL(`${KCISA_BASE}/${op}/request`)
-  kcisaUrl.searchParams.set('serviceKey', apiKey)
-  for (const [key, value] of Object.entries(query)) {
-    if (ALLOWED_PARAMS.has(key) && value) {
-      kcisaUrl.searchParams.set(key, Array.isArray(value) ? value[0] : value)
-    }
-  }
-
   try {
-    const ip = await resolveKcisaIp()
-    const text = await requestKcisa(kcisaUrl.toString(), ip)
-
-    const resultCode = getTagValue(text, 'resultCode')
-    const resultMsg = getTagValue(text, 'resultMsg')
-
-    if (resultCode !== '0000' && resultCode !== '0') {
-      return res.status(200).json({
-        success: false,
-        resultCode,
-        resultMsg,
-        items: [],
-        totalCount: 0,
-        // 업스트림이 XML이 아닐 때(차단/에러 페이지 등) 원인을 버리지 않도록 남김
-        upstreamBody: text.slice(0, 300)
-      })
+    const result = await fetchKcisa(op, query)
+    if (!result.success) {
+      return res.status(result.message === 'KCISA_API_KEY missing' ? 500 : 200).json(result)
     }
-
-    const itemMatches = text.match(/<item>([\s\S]*?)<\/item>/g) || []
-    const items = itemMatches.map((itemXml) => ({
-      title: getTagValue(itemXml, 'title'),
-      type: getTagValue(itemXml, 'type'),
-      period: getTagValue(itemXml, 'period'),
-      eventPeriod: getTagValue(itemXml, 'eventPeriod'),
-      eventSite: getTagValue(itemXml, 'eventSite'),
-      charge: getTagValue(itemXml, 'charge'),
-      contactPoint: getTagValue(itemXml, 'contactPoint'),
-      url: getTagValue(itemXml, 'url'),
-      imageObject: getTagValue(itemXml, 'imageObject'),
-      description: getTagValue(itemXml, 'description'),
-      viewCount: parseInt(getTagValue(itemXml, 'viewCount') || '0')
-    }))
-
-    // 업스트림 전체 건수를 페이지 건수와 구분해 돌려준다.
-    // 이게 없으면 호출부가 마지막 페이지를 판단할 수 없어 끝까지 페이징하지 못한다.
-    const upstreamTotal = parseInt(getTagValue(text, 'totalCount') || '0')
 
     // 공연 목록은 자주 바뀌지 않으므로 엣지에 캐시해 업스트림 호출을 줄인다.
     res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate=86400')
-    return res.status(200).json({
-      success: true,
-      resultCode,
-      resultMsg,
-      totalCount: upstreamTotal || items.length,
-      pageCount: items.length,
-      items
-    })
+    return res.status(200).json(result)
   } catch (error) {
     // DNS/TLS/타임아웃을 구분할 수 있게 원인 코드를 같이 돌려준다.
     return res.status(200).json({

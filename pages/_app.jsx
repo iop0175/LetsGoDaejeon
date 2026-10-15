@@ -31,6 +31,8 @@ import Footer from '../src/components/Footer/Footer'
 import '../src/styles/index.css'
 import '../src/styles/App.css'
 import '../src/styles/cityThemes.css'
+import '../src/components/SeoulCrowd/SeoulCrowd.css'
+import '../src/components/JejuThemes/JejuThemes.css'
 
 // 컴포넌트 CSS
 import '../src/components/Header/Header.css'

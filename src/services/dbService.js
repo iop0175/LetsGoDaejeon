@@ -1662,6 +1662,18 @@ export const deletePerformance = async (id) => {
  * 만료된 공연 삭제 (종료일이 오늘 이전이거나 날짜 데이터가 없는 공연)
  * @returns {Promise<Object>} 삭제 결과
  */
+/**
+ * 자동 게시 행사 숨기기/다시 보이기. performances에 (title, city_key) 행을 두고 is_active로 표시한다.
+ * 로그인한 관리자만 쓸 수 있다(RLS).
+ */
+export const setEventHidden = async (event, hidden) => {
+  const { hidden: _hidden, id, created_at, updated_at, ...row } = event
+  const { error } = await supabase
+    .from('performances')
+    .upsert({ ...row, is_active: !hidden, city_key: CITY.key }, { onConflict: 'title,city_key' })
+  return error ? { success: false, error: error.message } : { success: true }
+}
+
 export const deleteExpiredPerformances = async () => {
   try {
     const today = todayIsoDate()

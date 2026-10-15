@@ -1,0 +1,119 @@
+.seoul-crowd {
+  background: var(--bg-primary);
+}
+
+.seoul-crowd__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.seoul-crowd__head .section-title {
+  margin-bottom: 8px;
+}
+
+.seoul-crowd__time {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+/* 카드 대신 한 장의 목록판. 칸 사이 선만 두어 한눈에 비교되게 한다 */
+.seoul-crowd__list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.seoul-crowd__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-content: start;
+  gap: 8px 12px;
+  min-height: 112px;
+  padding: 16px;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
+}
+
+.seoul-crowd__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seoul-crowd__level {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* 혼잡도는 의미 색만 쓴다: 여유 초록, 보통 회청, 약간 붐빔 주황, 붐빔 빨강 */
+.seoul-crowd__level--0 { background: #e6f4ea; color: #1e6b34; }
+.seoul-crowd__level--1 { background: #eaf0f6; color: #36506b; }
+.seoul-crowd__level--2 { background: #fdf0dc; color: #8a4b08; }
+.seoul-crowd__level--3 { background: #fbe4e4; color: #a12626; }
+
+.seoul-crowd__people {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.seoul-crowd__forecast {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 4px;
+}
+
+.seoul-crowd__dot {
+  flex: 1;
+  padding: 2px 0;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.seoul-crowd__skeleton {
+  grid-column: 1 / -1;
+  height: 80px;
+  border-radius: 4px;
+  background: var(--bg-secondary);
+}
+
+.dark-theme .seoul-crowd__level--0 { background: rgba(52, 168, 83, 0.18); color: #8fd6a4; }
+.dark-theme .seoul-crowd__level--1 { background: rgba(120, 150, 180, 0.18); color: #b5c7da; }
+.dark-theme .seoul-crowd__level--2 { background: rgba(230, 140, 30, 0.18); color: #f2bd7a; }
+.dark-theme .seoul-crowd__level--3 { background: rgba(220, 60, 60, 0.2); color: #f29a9a; }
+
+@media (max-width: 1024px) {
+  .seoul-crowd__list { grid-template-columns: repeat(3, 1fr); }
+}
+
+@media (max-width: 768px) {
+  .seoul-crowd__head { flex-direction: column; align-items: flex-start; }
+  .seoul-crowd__list { grid-template-columns: repeat(2, 1fr); }
+  .seoul-crowd__item { min-height: 0; padding: 12px; }
+}

@@ -121,6 +121,23 @@ export const getCulturalPerformances = async (options = {}) => {
   }
 };
 
+/**
+ * 자동 게시 행사 목록 (/api/events). performances 행과 같은 모양으로 돌려준다.
+ * @param {boolean} includeAll - 관리자용: 시작 전·숨김 행사까지 포함
+ */
+export const getEvents = async (includeAll = false) => {
+  try {
+    const data = await safeFetch(`/api/events${includeAll ? '?all=1' : ''}`, {}, 30000);
+    return data.success ? data.items : [];
+  } catch (error) {
+    console.warn('행사 API 오류:', error.message);
+    return [];
+  }
+};
+
+// 축제 탭과 공연 탭을 나누는 기준. 서울 문화행사 분류("축제-문화/예술", "교육/체험")와 TourAPI 축제를 축제 쪽으로 본다.
+export const isFestivalType = (type) => /축제|행사|체험/.test(type || '');
+
 const PERFORMANCE_PAGE_SIZE = 1000;
 
 /**
