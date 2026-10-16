@@ -10,6 +10,7 @@ import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
 import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../src/config/cities'
+import { trackEvent, classifyLink } from '../src/utils/analytics'
 
 // Google Analytics ID
 const GA_TRACKING_ID = 'G-610JNHR72K'
@@ -113,6 +114,24 @@ export default function App({ Component, pageProps }) {
   useEffect(() => {
     loadKakaoMapSDK(router.pathname)
   }, [router.pathname])
+
+  // 길찾기·전화 클릭은 링크 위임으로 한 번에 수집한다
+  useEffect(() => {
+    const onClick = (e) => {
+      const link = e.target instanceof Element ? e.target.closest('a[href]') : null
+      const name = link && classifyLink(link.getAttribute('href'))
+      if (name) trackEvent(name, { ui_language: router.locale })
+    }
+    document.addEventListener('click', onClick)
+    return () => document.removeEventListener('click', onClick)
+  }, [router.locale])
+
+  // 장소 상세 조회
+  useEffect(() => {
+    if (router.pathname === '/spot/[slug]') {
+      trackEvent('spot_view', { place_type: String(pageProps?.seoData?.contentTypeId || ''), ui_language: router.locale })
+    }
+  }, [router.asPath]) // eslint-disable-line react-hooks/exhaustive-deps
   
   return (
     <>
