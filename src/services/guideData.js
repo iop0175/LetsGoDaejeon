@@ -3,7 +3,7 @@ import { toListItem } from './seoData'
 
 const COLUMNS = 'content_id, content_type_id, title, title_en, addr1, addr1_en, firstimage, firstimage2, tel, mapx, mapy, modified_time'
 
-export async function fetchGuideSpots(guide, limit = 18) {
+export async function fetchGuideSpots(guide, limit = 11) {
   try {
     const { createClient } = await import('@supabase/supabase-js')
     const db = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)

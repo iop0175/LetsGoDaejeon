@@ -18,7 +18,7 @@ export default function DistrictPage({ district, spots }) {
     <>
       <SeoHead title={`${title} | ${en ? CITY.englishName : CITY.name}`} description={description} path={`/area/${district}`} crumbs={[{ name: en ? 'Home' : '홈', path: '/' }, { name: en ? 'Guides' : '여행 코스', path: '/guides' }, { name: district, path: `/area/${district}` }]} ld={[itemListLd(loc, title, links)]} />
       <section className="content-hub">
-        <header className="content-hub__hero"><div><p>{en ? 'NEIGHBORHOOD GUIDE' : '지역별 여행'}</p><h1>{title}</h1><span>{description}</span></div></header>
+        <header className="content-hub__hero content-hub__hero--editorial" style={{ '--hero-image': `url(${spots[0]?.image || CITY.hero?.image || '/images/hero/hero-1.webp'})` }}><div><p>{en ? 'NEIGHBORHOOD GUIDE' : '지역별 여행'}</p><h1>{title}</h1><span>{description}</span></div></header>
         <div className="content-hub__container"><PlaceGrid items={spots} locale={loc} /><nav className="content-hub__related"><h2>{en ? 'Other areas' : '다른 지역 보기'}</h2><div>{CITY.districtNames.filter((item) => item !== district).map((item) => <Link href={`/area/${item}`} key={item}>{item}</Link>)}</div></nav></div>
       </section>
     </>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { FiCloudRain, FiWind, FiSun, FiActivity, FiMapPin } from 'react-icons/fi'
+import { FiCloudRain, FiWind, FiSun, FiActivity, FiMapPin, FiClock } from 'react-icons/fi'
 import SeoHead from '../src/components/common/SeoHead'
 import SeoulCrowd from '../src/components/SeoulCrowd/SeoulCrowd'
 import { CITY } from '../src/config/cities'
@@ -27,16 +27,17 @@ export default function LivePage({ live }) {
     <>
       <SeoHead title={`${title} | ${en ? CITY.englishName : CITY.name}`} description={description} path="/live" crumbs={[{ name: en ? 'Home' : '홈', path: '/' }, { name: title, path: '/live' }]} />
       <section className="content-hub live-hub">
-        <header className="content-hub__hero"><div><p>{en ? 'LIVE CITY' : '실시간 도시 정보'}</p><h1>{title}</h1><span>{description}</span>{updated && <small>{en ? `Updated ${updated}` : `${updated} 기준`}</small>}</div></header>
+        <header className="content-hub__hero content-hub__hero--utility"><div><div className="live-hub__status"><i />{en ? 'Live travel data' : '실시간 여행 데이터'}{updated && <small>{en ? `Updated ${updated}` : `${updated} 기준`}</small>}</div><h1>{title}</h1><span>{description}</span></div></header>
         <div className="content-hub__container">
           <div className="live-hub__grid">
-            <article><FiSun /><span>{en ? 'Weather' : '날씨'}</span><strong>{weatherText}</strong><b>{weather.temperature_2m ?? '-'}°C</b><p>{en ? 'Feels like' : '체감'} {weather.apparent_temperature ?? '-'}°C</p></article>
-            <article><FiCloudRain /><span>{en ? 'Rain' : '비'}</span><strong>{live?.daily?.rainChance ?? '-'}%</strong><p>{en ? 'Maximum chance today' : '오늘 최대 강수확률'}</p></article>
-            <article><FiActivity /><span>{en ? 'Air quality' : '미세먼지'}</span><strong>{live?.air?.pm2_5 != null ? airLabel(live.air.pm2_5, en) : '-'}</strong><p>PM2.5 {live?.air?.pm2_5 ?? '-'}㎍/㎥</p></article>
-            <article><FiWind /><span>{en ? 'Wind' : '바람'}</span><strong>{weather.wind_speed_10m ?? '-'} km/h</strong><p>{en ? 'Current wind speed' : '현재 풍속'}</p></article>
-            {live?.sea && <article><FiMapPin /><span>{en ? 'Sea' : '바다'}</span><strong>{live.sea.wave_height ?? '-'} m</strong><p>{en ? 'Wave height' : '현재 파고'} · {live.sea.sea_surface_temperature ?? '-'}°C</p></article>}
+            <article className="live-hub__metric live-hub__metric--weather"><div className="live-hub__metric-icon"><FiSun /></div><span>{en ? 'Current weather' : '현재 날씨'}</span><strong>{weatherText}</strong><b>{weather.temperature_2m ?? '-'}°</b><p>{en ? 'Feels like' : '체감'} {weather.apparent_temperature ?? '-'}° · {en ? 'Sunset' : '일몰'} {live?.daily?.sunset?.slice(11, 16) || '-'}</p></article>
+            <article className="live-hub__metric"><div className="live-hub__metric-icon"><FiCloudRain /></div><span>{en ? 'Rain' : '비'}</span><strong>{live?.daily?.rainChance ?? '-'}%</strong><p>{en ? 'Maximum chance today' : '오늘 최대 강수확률'}</p></article>
+            <article className={`live-hub__metric live-hub__metric--air-${live?.air?.pm2_5 <= 15 ? 'good' : live?.air?.pm2_5 <= 35 ? 'normal' : 'bad'}`}><div className="live-hub__metric-icon"><FiActivity /></div><span>{en ? 'Air quality' : '미세먼지'}</span><strong>{live?.air?.pm2_5 != null ? airLabel(live.air.pm2_5, en) : '-'}</strong><p>PM2.5 {live?.air?.pm2_5 ?? '-'}㎍/㎥</p></article>
+            <article className="live-hub__metric"><div className="live-hub__metric-icon"><FiWind /></div><span>{en ? 'Wind' : '바람'}</span><strong>{weather.wind_speed_10m ?? '-'} <small>km/h</small></strong><p>{en ? 'Current wind speed' : '현재 풍속'}</p></article>
+            <article className="live-hub__metric"><div className="live-hub__metric-icon"><FiClock /></div><span>{en ? 'Daylight' : '해 뜨고 지는 시간'}</span><strong>{live?.daily?.sunrise?.slice(11, 16) || '-'}</strong><p>{en ? 'Sunset' : '일몰'} {live?.daily?.sunset?.slice(11, 16) || '-'}</p></article>
+            {live?.sea && <article className="live-hub__metric live-hub__metric--sea"><div className="live-hub__metric-icon"><FiMapPin /></div><span>{en ? 'Sea conditions' : '바다 상태'}</span><strong>{live.sea.wave_height ?? '-'} <small>m</small></strong><p>{en ? 'Wave height · Water' : '파고 · 수온'} {live.sea.sea_surface_temperature ?? '-'}°C</p></article>}
           </div>
-          <nav className="content-hub__related"><h2>{en ? 'Useful right now' : '지금 필요한 정보'}</h2><div><Link href="/festival">{en ? 'Events today' : '오늘 행사'}</Link>{CITY.parkingReady && <Link href="/parking">{en ? 'Find parking' : '주차장 찾기'}</Link>}{CITY.medicalReady && <Link href="/medical">{en ? 'Hospitals & pharmacies' : '병원·약국 찾기'}</Link>}<Link href="/map">{en ? 'Tourist map' : '여행 지도'}</Link></div></nav>
+          <nav className="content-hub__related live-hub__actions"><h2>{en ? 'Useful right now' : '지금 필요한 정보'}</h2><div><Link href="/festival"><span>{en ? 'Events today' : '오늘 행사'}</span><b>→</b></Link>{CITY.parkingReady && <Link href="/parking"><span>{en ? 'Find parking' : '주차장 찾기'}</span><b>→</b></Link>}{CITY.medicalReady && <Link href="/medical"><span>{en ? 'Hospitals & pharmacies' : '병원·약국 찾기'}</span><b>→</b></Link>}<Link href="/map"><span>{en ? 'Tourist map' : '여행 지도'}</span><b>→</b></Link></div></nav>
         </div>
         {CITY.key === 'seoul' && <SeoulCrowd />}
       </section>

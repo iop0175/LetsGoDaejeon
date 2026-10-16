@@ -18,14 +18,14 @@ export default function GuidesPage({ guides }) {
     <>
       <SeoHead title={`${title} | ${en ? CITY.englishName : CITY.name}`} description={description} path="/guides" crumbs={[{ name: en ? 'Home' : '홈', path: '/' }, { name: title, path: '/guides' }]} ld={[itemListLd(loc, title, items)]} />
       <section className="content-hub">
-        <header className="content-hub__hero"><div><p>{en ? 'PLAN BY INTEREST' : '상황별 여행 준비'}</p><h1>{title}</h1><span>{description}</span></div></header>
+        <header className="content-hub__hero content-hub__hero--editorial" style={{ '--hero-image': `url(${CITY.hero?.image || '/images/hero/hero-1.webp'})` }}><div><p>{en ? 'PLAN BY INTEREST' : '상황별 여행 준비'}</p><h1>{title}</h1><span>{description}</span><Link className="content-hub__hero-action" href="/trip-planner">{en ? 'Build my itinerary' : '내 일정 만들기'} <b aria-hidden="true">→</b></Link></div></header>
         <div className="content-hub__container">
           <div className="content-hub__guides">
             {guides.map((item, index) => (
               <Link href={`/guides/${item.slug}`} className="content-hub__guide" key={item.slug}>
                 <span>{String(index + 1).padStart(2, '0')}</span>
-                <div><h2>{item[loc].title}</h2><p>{item[loc].description}</p></div>
-                <b aria-hidden="true">→</b>
+                <div><h2>{item[loc].title}</h2><p>{item[loc].description}</p><div className="content-hub__tags">{item.keywords.slice(0, 3).map((keyword) => <em key={keyword}>{keyword}</em>)}</div></div>
+                <b className="content-hub__guide-arrow" aria-hidden="true">→</b>
               </Link>
             ))}
           </div>

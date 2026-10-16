@@ -27,7 +27,7 @@ export default function EventDetailPage({ event }) {
     <>
       <SeoHead title={`${event.title} | ${city} 행사`} description={description.slice(0, 160)} path={pagePath} type="article" image={event.image_url} hasEnglish={false} crumbs={[{ name: en ? 'Home' : '홈', path: '/' }, { name: en ? 'Events' : '축제·행사', path: '/festival' }, { name: event.title, path: pagePath }]} ld={[eventLd]} />
       <article className="content-hub event-detail">
-        <header className="content-hub__hero"><div><p>{en ? `${city.toUpperCase()} EVENT` : `${city} 축제·행사`}</p><h1>{event.title}</h1><span>{event.type || (en ? 'Event' : '행사')}</span></div></header>
+        <header className="content-hub__hero content-hub__hero--editorial" style={{ '--hero-image': `url(${event.image_url || CITY.hero?.image || '/images/hero/hero-1.webp'})` }}><div><p>{en ? `${city.toUpperCase()} EVENT` : `${city} 축제·행사`}</p><h1>{event.title}</h1><span>{event.type || (en ? 'Event' : '행사')}</span></div></header>
         <div className="content-hub__container">
           {event.image_url && <div className="event-detail__image"><Image src={getReliableImageUrl(event.image_url)} alt={event.title} fill priority sizes="(max-width: 900px) 100vw, 900px" /></div>}
           <div className="event-detail__facts">
