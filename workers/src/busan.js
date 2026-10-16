@@ -6,6 +6,8 @@ const SERVICES = {
   medical: 'B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire'
 }
 
+const MEDICAL_REGIONS = { busan: '부산광역시', jeju: '제주특별자치도' }
+
 export async function fetchBusan(request, env) {
   const incoming = new URL(request.url)
   const resource = incoming.pathname.split('/').pop()
@@ -17,7 +19,7 @@ export async function fetchBusan(request, env) {
   upstream.searchParams.set('serviceKey', key)
   upstream.searchParams.set('pageNo', String(Math.min(1000, Math.max(1, Number(incoming.searchParams.get('pageNo')) || 1))))
   upstream.searchParams.set('numOfRows', String(Math.min(1000, Math.max(1, Number(incoming.searchParams.get('numOfRows')) || 100))))
-  if (resource === 'medical') upstream.searchParams.set('Q0', '부산광역시')
+  if (resource === 'medical') upstream.searchParams.set('Q0', MEDICAL_REGIONS[incoming.searchParams.get('region')] || MEDICAL_REGIONS.busan)
   else upstream.searchParams.set('resultType', 'json')
   try {
     const response = await fetch(upstream, { signal: AbortSignal.timeout(20000) })

@@ -25,11 +25,12 @@ export function parseBusanResponse(data) {
   return { totalCount: Number(body.totalCount), items: array(body.items?.item || body.item) }
 }
 
-export async function loadBusan(resource) {
-  const saved = cache.get(resource)
+export async function loadBusan(resource, region = 'busan') {
+  const cacheKey = resource + ':' + region
+  const saved = cache.get(cacheKey)
   if (saved && Date.now() - saved.at < 3600000) return saved.items
   const fetchPage = async pageNo => {
-    const response = await fetch(`${WORKER}/api/busan/${resource}?pageNo=${pageNo}&numOfRows=1000`, {
+    const response = await fetch(`${WORKER}/api/busan/${resource}?pageNo=${pageNo}&numOfRows=1000&region=${region}`, {
       headers: { Origin: 'https://letsgobusan.vercel.app' }, signal: AbortSignal.timeout(25000)
     })
     if (!response.ok) throw new Error(`부산 API 조회 실패 (${response.status})`)
@@ -41,7 +42,7 @@ export async function loadBusan(resource) {
   for (let pageNo = 2; pageNo <= Math.ceil(first.totalCount / 1000); pageNo++) pages.push(fetchPage(pageNo))
   const items = [first, ...await Promise.all(pages)].flatMap(page => page.items)
   if (items.length < first.totalCount) throw new Error('부산 API 일부 데이터가 누락됐습니다.')
-  cache.set(resource, { at: Date.now(), items })
+  cache.set(cacheKey, { at: Date.now(), items })
   return items
 }
 

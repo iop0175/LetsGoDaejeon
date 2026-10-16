@@ -11,7 +11,7 @@ import { getDirectionsUrl } from '../utils/mapLinks';
 // CSS는 pages/_app.jsx에서 import
 
 // 서울은 데이터가 커서 검색과 페이지 나누기를 /api/medical에서 한다
-const SERVER_FILTERED = ['seoul', 'busan'].includes(CITY.key);
+const SERVER_FILTERED = ['seoul', 'busan', 'jeju'].includes(CITY.key);
 
 const MedicalPage = () => {
   const { language } = useLanguage();
@@ -69,7 +69,7 @@ const MedicalPage = () => {
     { id: '병원', label: t.hospital, icon: <MdLocalHospital /> },
     { id: '의원', label: t.clinic, icon: <MdLocalHospital /> },
     { id: '약국', label: t.pharmacy, icon: <MdLocalPharmacy /> }
-  ].filter(type => CITY.key !== 'busan' || type.id !== '약국');
+  ].filter(type => !['busan', 'jeju'].includes(CITY.key) || type.id !== '약국');
 
   // 최초 1회 전체 데이터 로드
   useEffect(() => {
@@ -226,7 +226,7 @@ const MedicalPage = () => {
         </div>
 
       <div className="container">
-        {CITY.key === 'busan' && <p className="section-subtitle">{language === 'ko' ? '국립중앙의료원 병의원 정보입니다. 약국은 포함되지 않으며, 방문 전 진료 여부를 전화로 확인해 주세요.' : 'Hospital and clinic information from the National Medical Center. Pharmacies are not included. Call before visiting.'}</p>}
+        {['busan', 'jeju'].includes(CITY.key) && <p className="section-subtitle">{language === 'ko' ? '국립중앙의료원 병의원 정보입니다. 약국은 포함되지 않으며, 방문 전 진료 여부를 전화로 확인해 주세요.' : 'Hospital and clinic information from the National Medical Center. Pharmacies are not included. Call before visiting.'}</p>}
         <div className="medical-search">
           <FiSearch />
           <input

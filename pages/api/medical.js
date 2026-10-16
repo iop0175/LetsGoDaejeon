@@ -58,13 +58,13 @@ const loadAll = async (key) => {
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false, items: [], totalCount: 0 })
-  if (!['seoul', 'busan'].includes(CITY.key)) return res.status(404).json({ success: false, items: [], totalCount: 0 })
+  if (!['seoul', 'busan', 'jeju'].includes(CITY.key)) return res.status(404).json({ success: false, items: [], totalCount: 0 })
 
   const key = process.env.SEOUL_OPENAPI_KEY?.trim()
   if (CITY.key === 'seoul' && !key) return res.status(503).json({ success: false, items: [], totalCount: 0, error: '서울 의료 API 키가 없습니다.' })
 
   try {
-    const all = CITY.key === 'busan' ? (await loadBusan('medical')).map(normalizeBusanMedical) : await loadAll(key)
+    const all = CITY.key !== 'seoul' ? (await loadBusan('medical', CITY.key)).map(normalizeBusanMedical) : await loadAll(key)
     const filters = {
       q: String(req.query.q || ''),
       type: String(req.query.type || 'all'),

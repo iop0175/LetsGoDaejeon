@@ -124,7 +124,7 @@ export const CITIES = {
     tourismOrgName: '제주관광공사',
     governmentUrl: 'https://www.jeju.go.kr',
     parkingReady: false,
-    medicalReady: false,
+    medicalReady: true,
     pageCopy: {
       ko: {
         travel: { subtitle: '오름과 바다, 돌담길 사이로 만나는 제주의 풍경' },

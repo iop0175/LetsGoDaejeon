@@ -53,7 +53,7 @@ export const getMedicalFacilities = async (pageNo = 1, numOfRows = 10, filters =
   if (!CITY.medicalReady) return { success: false, items: [], totalCount: 0, error: '지역 의료기관 API 연결 준비 중입니다.' };
   try {
     recordApiCall('medical');
-    if (['seoul', 'busan'].includes(CITY.key)) {
+    if (['seoul', 'busan', 'jeju'].includes(CITY.key)) {
       const params = new URLSearchParams({ pageNo, numOfRows, ...filters });
       return await safeFetch(`/api/medical?${params}`, {}, 30000);
     }
