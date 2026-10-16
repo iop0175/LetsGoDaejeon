@@ -3,6 +3,8 @@
 import { createClient } from '@supabase/supabase-js'
 import { CITY, SITE_URL } from '../config/cities'
 import { generateLocalizedSlug } from './slugUtils'
+import { getCityGuides } from '../config/cityGuides'
+import { eventSlug } from './eventSlug'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
@@ -27,6 +29,10 @@ const mainPages = () => [
   { path: '/shopping', changefreq: 'weekly', priority: '0.8' },
   { path: '/map', changefreq: 'monthly', priority: '0.7' },
   { path: '/trip-planner', changefreq: 'monthly', priority: '0.7' },
+  { path: '/guides', changefreq: 'weekly', priority: '0.9' },
+  { path: '/live', changefreq: 'daily', priority: '0.8' },
+  ...getCityGuides(CITY.key).map((guide) => ({ path: `/guides/${guide.slug}`, changefreq: 'weekly', priority: '0.8' })),
+  ...CITY.districtNames.map((district) => ({ path: `/area/${district}`, changefreq: 'weekly', priority: '0.8' })),
   ...(CITY.key === 'daejeon' ? [{ path: '/shared-trips', changefreq: 'weekly', priority: '0.7' }] : []),
   ...(CITY.key === 'busan' ? [{ path: '/busan-guide', changefreq: 'weekly', priority: '0.7' }] : []),
   ...(CITY.parkingReady ? [{ path: '/parking', changefreq: 'monthly', priority: '0.6' }] : []),
@@ -68,7 +74,7 @@ export async function generateMainSitemap() {
 }
 
 // 콘텐츠 유형별 장소 사이트맵 (1000건씩 끝까지 읽는다)
-async function generateSpotSitemap(contentTypeId, priority) {
+async function generateSpotEntries(contentTypeId, priority) {
   const rows = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await supabase
@@ -87,7 +93,7 @@ async function generateSpotSitemap(contentTypeId, priority) {
     if (!data || data.length < 1000) break
   }
 
-  const entries = rows.map((spot) => {
+  return rows.map((spot) => {
     const date = (spot.updated_at || spot.modified_time || '').slice(0, 10) || today()
     const paths = { kr: `/spot/${generateLocalizedSlug({ title: spot.title, contentId: spot.content_id }, 'kr')}` }
     if (spot.title_en) {
@@ -95,13 +101,32 @@ async function generateSpotSitemap(contentTypeId, priority) {
     }
     return urlEntries({ paths, lastmod: date, changefreq: 'weekly', priority })
   }).join('\n')
+}
 
-  return wrapInUrlset(entries)
+async function generateSpotSitemap(contentTypeId, priority) {
+  return wrapInUrlset(await generateSpotEntries(contentTypeId, priority))
 }
 
 export const generateTravelSitemap = () => generateSpotSitemap(12, '0.8')
 export const generateCultureSitemap = () => generateSpotSitemap(14, '0.7')
-export const generateFestivalSitemap = () => generateSpotSitemap(15, '0.8')
+export const generateFestivalSitemap = async () => {
+  const spotEntries = await generateSpotEntries(15, '0.8')
+  let eventEntries = ''
+  try {
+    const { collectEvents, mergeEvents, todayKst } = await import('../../pages/api/events')
+    const date = todayKst()
+    const { rows } = await collectEvents(date)
+    eventEntries = mergeEvents(rows, [], date, true).map((event) => urlEntries({
+      paths: { kr: `/event/${eventSlug(event)}` },
+      lastmod: date,
+      changefreq: 'daily',
+      priority: '0.8'
+    })).join('\n')
+  } catch (error) {
+    console.error('Event sitemap error:', error)
+  }
+  return wrapInUrlset([spotEntries, eventEntries].filter(Boolean).join('\n'))
+}
 export const generateLeisureSitemap = () => generateSpotSitemap(28, '0.7')
 export const generateAccommodationSitemap = () => generateSpotSitemap(32, '0.7')
 export const generateShoppingSitemap = () => generateSpotSitemap(38, '0.6')

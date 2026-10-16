@@ -46,3 +46,13 @@
 .dark-theme .weather-sidebar .weather-widget {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
+.home-guides { padding: 4rem 0; }
+.home-guides__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.home-guides__head > a { flex: none; color: var(--city-primary, #2563eb); font-weight: 800; text-decoration: none; }
+.home-guides__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.home-guides__grid > a { display: flex; flex-direction: column; gap: .5rem; padding: 1.35rem; border: 1px solid var(--border-color, #e5e7eb); border-radius: 1rem; background: var(--bg-secondary, #fff); color: inherit; text-decoration: none; }
+.home-guides__grid strong { font-size: 1.05rem; }
+.home-guides__grid span { color: var(--text-secondary, #666); line-height: 1.55; }
+.home-guides__live { margin-top: 1rem; padding: 1rem 1.25rem; border-radius: .85rem; background: color-mix(in srgb, var(--city-primary, #2563eb) 10%, transparent); }
+.home-guides__live a { color: inherit; font-weight: 800; text-decoration: none; }
+@media (max-width: 640px) { .home-guides__grid { grid-template-columns: 1fr; } .home-guides__head { align-items: flex-start; } }

@@ -54,6 +54,13 @@ export const buildRss = () => {
     <lastBuildDate>${date}</lastBuildDate>
     <atom:link href="${SITE_URL}/rss.xml" rel="self" type="application/rss+xml"/>
 ${items}
+    <item>
+      <title>${escapeXml(`${CITY.cityName} 테마별 여행 코스`)}</title>
+      <link>${SITE_URL}/kr/guides</link>
+      <description>${escapeXml(`${CITY.cityName} 당일치기, 가족 여행, 비 오는 날 추천 코스를 확인하세요.`)}</description>
+      <pubDate>${date}</pubDate>
+      <guid>${SITE_URL}/kr/guides</guid>
+    </item>
   </channel>
 </rss>`
 }

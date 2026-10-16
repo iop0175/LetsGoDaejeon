@@ -973,9 +973,9 @@ const SpotDetailPage = () => {
       ? `${productionDomain}/spot/${spotSlug}` 
       : currentUrl
     
-    const shareTitle = spot?.title || '대전 관광지'
+    const shareTitle = spot?.title || `${CITY.cityName} 관광지`
     const shareImage = allImages?.[0] || spot?.firstimage || ''
-    const shareDescription = spot?.overview?.substring(0, 100) || spot?.addr1 || '대전으로 떠나는 여행'
+    const shareDescription = spot?.overview?.substring(0, 100) || spot?.addr1 || `${CITY.cityName}으로 떠나는 여행`
     
     // 카카오 SDK 사용
     if (window.Kakao && window.Kakao.isInitialized()) {
@@ -985,7 +985,7 @@ const SpotDetailPage = () => {
           content: {
             title: shareTitle,
             description: shareDescription,
-            imageUrl: shareImage || 'https://letsgodaejeon.vercel.app/images/og-image.png',
+            imageUrl: shareImage || `${productionDomain}${CITY.hero?.image || '/images/og-image.png'}`,
             link: {
               mobileWebUrl: shareUrl,
               webUrl: shareUrl,
@@ -1012,7 +1012,7 @@ const SpotDetailPage = () => {
       if (navigator.share) {
         navigator.share({
           title: shareTitle,
-          text: `${shareTitle} - 대전으로에서 확인하세요!`,
+          text: `${shareTitle} - ${CITY.name}에서 확인하세요!`,
           url: shareUrl
         }).catch(() => {
           handleCopyLink()
@@ -1499,6 +1499,18 @@ const SpotDetailPage = () => {
               <Icons.globe size={16} />
               {t.detail.visitWebsite}
             </a>
+          </section>
+        )}
+
+        {CITY.districtNames.find((district) => spot?.addr1?.includes(district)) && (
+          <section className="sdp__section">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.map size={18} /></span>
+              <h2 className="sdp__section-title">{language === 'ko' ? '이 지역 더 둘러보기' : 'Explore this area'}</h2>
+            </div>
+            <Link className="sdp__website-link" href={`/area/${CITY.districtNames.find((district) => spot?.addr1?.includes(district))}`}>
+              {CITY.districtNames.find((district) => spot?.addr1?.includes(district))} {language === 'ko' ? '여행 가이드' : 'local guide'}
+            </Link>
           </section>
         )}
 

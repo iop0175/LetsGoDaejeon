@@ -26,12 +26,14 @@ const Header = memo(() => {
     { path: '/travel', label: t.nav.travel },
     { path: '/festival', label: t.nav.festival },
     { path: '/food', label: t.nav.food },
-    ...(CITY.key === 'daejeon' ? [{ path: '/shared-trips', label: language === 'ko' ? '여행코스' : 'Travel Courses' }] : []),
+    { path: '/guides', label: language === 'ko' ? '여행코스' : 'Guides' },
+    ...(CITY.key === 'daejeon' ? [{ path: '/shared-trips', label: language === 'ko' ? '공유일정' : 'Shared Trips' }] : []),
     { path: '/map', label: t.nav.map },
     { path: myTripPath, label: language === 'ko' ? '나의 여행' : 'My Trip', isMyTrip: true },
   ]
 
   const moreMenuItems = [
+    { path: '/live', label: language === 'ko' ? '실시간 여행' : 'Live' },
     ...(CITY.parkingReady ? [{ path: '/parking', label: t.nav.parking }] : []),
     { path: '/culture', label: t.nav.culture },
     { path: '/leisure', label: language === 'ko' ? '레포츠' : 'Leisure' },

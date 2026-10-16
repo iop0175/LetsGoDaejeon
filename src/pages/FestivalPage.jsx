@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { getEvents, isFestivalType } from '../services/api'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
+import { eventSlug } from '../utils/eventSlug'
 import LicenseBadge from '../components/common/LicenseBadge'
 import { CITY } from '../config/cities'
 import Icons from '../components/common/Icons'
@@ -448,7 +449,7 @@ const FestivalPage = () => {
                     <div 
                       key={event.id} 
                       className="event-card"
-                      onClick={() => event.contentId ? router.push(`/spot/${generateSlug(event.title, event.contentId)}`) : setSelectedEvent(event)}
+                      onClick={() => event.contentId ? router.push(`/spot/${generateSlug(event.title, event.contentId)}`) : router.push(`/event/${eventSlug(event)}`)}
                     >
                       <div className="event-image">
                         <img 

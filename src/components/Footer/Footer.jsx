@@ -46,6 +46,8 @@ const Footer = memo(() => {
               <ul>
                 <li><Link href="/map">{t.nav.map}</Link></li>
                 <li><Link href="/trip-planner">{language === 'ko' ? '여행 일정 만들기' : 'Trip planner'}</Link></li>
+                <li><Link href="/guides">{language === 'ko' ? '테마별 여행 코스' : 'Travel guides'}</Link></li>
+                <li><Link href="/live">{language === 'ko' ? '실시간 여행 현황' : 'Live city conditions'}</Link></li>
                 {CITY.key === 'daejeon' && <li><Link href="/shared-trips">{language === 'ko' ? '여행코스' : 'Travel Courses'}</Link></li>}
                 {CITY.parkingReady && <li><Link href="/parking">{t.nav.parking}</Link></li>}
                 {CITY.medicalReady && <li><Link href="/medical">{t.nav.medical}</Link></li>}
