@@ -1,0 +1,93 @@
+/* 도시별 추가 기능 페이지(오늘의 코스, 지하철, 해수욕장, 버스) */
+.feature-hub .feature-heading { margin: 28px 0 16px; font-size: 24px; letter-spacing: -.025em; }
+.feature-note { margin: 24px 0; color: var(--text-secondary, var(--hub-muted)); font-size: 14px; line-height: 1.7; }
+.feature-note--error { color: #c0392b; }
+.feature-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.feature-chips button { min-height: 40px; padding: 8px 14px; border: 1px solid var(--hub-line); border-radius: 8px; background: var(--bg-primary, #fff); color: inherit; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
+.feature-chips button:hover { border-color: var(--hub-ink); }
+.feature-chips button.is-active { border-color: var(--hub-ink); background: var(--hub-ink); color: #fff; }
+.feature-chips button:focus-visible, .bus-search button:focus-visible, .bus-lanes button:focus-visible { outline: 2px solid #2f6fed; outline-offset: 2px; }
+
+.subway-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.subway-card { border: 1px solid var(--hub-line); border-radius: 12px; background: var(--bg-secondary, #fff); overflow: hidden; }
+.subway-card > header { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--hub-line); }
+.subway-card > header b { padding: 3px 10px; border-radius: 999px; color: #fff; font-size: 13px; }
+.subway-card > header span { color: var(--text-secondary, var(--hub-muted)); font-size: 14px; font-weight: 700; }
+.subway-card ul { margin: 0; padding: 0; list-style: none; }
+.subway-card li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; }
+.subway-card li + li { border-top: 1px solid var(--hub-line); }
+.subway-card li div { min-width: 0; }
+.subway-card li strong { display: block; font-size: 15px; }
+.subway-card li small { display: block; margin-top: 3px; color: var(--text-secondary, var(--hub-muted)); font-size: 12px; }
+.subway-card li em { flex: none; font-size: 17px; font-style: normal; font-weight: 800; color: #1e5fd8; font-variant-numeric: tabular-nums; }
+
+.beach-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.beach-card { padding: 20px; border: 1px solid var(--hub-line); border-radius: 12px; background: var(--bg-secondary, #fff); }
+.beach-card > header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px; }
+.beach-card h2 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+.beach-card > header b { flex: none; padding: 3px 10px; border-radius: 999px; font-size: 12px; background: var(--hub-soft); }
+.beach-card--good > header b { background: #e3f6ec; color: #11704a; }
+.beach-card--warn > header b { background: #fdf0d5; color: #8a5a00; }
+.beach-card--bad > header b { background: #fde4e1; color: #a52a1d; }
+.beach-card dl { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px 10px; margin: 0; }
+.beach-card dt { color: var(--text-secondary, var(--hub-muted)); font-size: 12px; }
+.beach-card dd { margin: 3px 0 0; font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.beach-card dd small { color: var(--text-secondary, var(--hub-muted)); font-size: 12px; font-weight: 600; }
+
+.bus-search { display: flex; gap: 8px; margin-bottom: 14px; }
+.bus-search input { flex: 1; min-width: 0; min-height: 48px; padding: 0 14px; border: 1px solid var(--hub-line); border-radius: 8px; background: var(--bg-primary, #fff); color: inherit; font: inherit; font-size: 16px; }
+.bus-search button { min-width: 84px; border: 0; border-radius: 8px; background: var(--hub-ink); color: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.bus-search button:disabled { opacity: .6; }
+.bus-lanes { margin: 20px 0 0; padding: 0; list-style: none; border: 1px solid var(--hub-line); border-radius: 12px; overflow: hidden; }
+.bus-lanes li + li { border-top: 1px solid var(--hub-line); }
+.bus-lanes button { display: grid; grid-template-columns: 64px 1fr auto; gap: 12px; align-items: center; width: 100%; padding: 14px 16px; border: 0; background: var(--bg-secondary, #fff); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.bus-lanes button:hover { background: var(--hub-soft); }
+.bus-lanes b { font-size: 18px; }
+.bus-lanes small { color: var(--text-secondary, var(--hub-muted)); font-variant-numeric: tabular-nums; }
+.bus-route { margin-top: 20px; }
+.bus-route__back { margin-bottom: 14px; padding: 6px 0; border: 0; background: none; color: var(--text-secondary, var(--hub-muted)); font: inherit; font-weight: 700; cursor: pointer; }
+.bus-route h2 { margin: 0 0 18px; font-size: 24px; letter-spacing: -.025em; }
+.bus-route h2 b { margin-right: 8px; padding: 2px 10px; border-radius: 8px; background: var(--hub-ink); color: #fff; }
+.bus-route dl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 0 0 24px; }
+.bus-route dl div { padding: 14px 16px; border: 1px solid var(--hub-line); border-radius: 10px; }
+.bus-route dt { color: var(--text-secondary, var(--hub-muted)); font-size: 12px; }
+.bus-route dd { margin: 4px 0 0; font-size: 17px; font-weight: 800; }
+.bus-route h3 { margin: 26px 0 12px; font-size: 17px; }
+.bus-stops { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 24px; margin: 0; padding-left: 28px; }
+.bus-stops li { padding: 9px 0; border-bottom: 1px solid var(--hub-line); }
+.bus-stops li::marker { color: var(--text-secondary, var(--hub-muted)); font-size: 12px; }
+.bus-stops small { margin-left: 8px; color: var(--text-secondary, var(--hub-muted)); font-variant-numeric: tabular-nums; }
+
+.today-plan { display: grid; gap: 14px; margin: 30px 0; padding: 0; list-style: none; }
+.today-plan > li { display: grid; grid-template-columns: 64px 1fr; gap: 16px; align-items: start; }
+.today-plan__time { padding-top: 14px; color: var(--text-secondary, var(--hub-muted)); font-size: 14px; font-weight: 800; }
+.today-plan__card { display: grid; grid-template-columns: 200px 1fr; gap: 18px; align-items: center; padding: 12px; border: 1px solid var(--hub-line); border-radius: 12px; background: var(--bg-secondary, #fff); color: inherit; text-decoration: none; }
+.today-plan__card:hover { border-color: var(--hub-ink); }
+.today-plan__image { position: relative; aspect-ratio: 4 / 3; border-radius: 8px; overflow: hidden; background: var(--hub-soft); }
+.today-plan__image img { object-fit: cover; }
+.today-plan__card h2 { margin: 0 0 6px; font-size: 19px; letter-spacing: -.02em; }
+.today-plan__card p { margin: 0 0 10px; color: var(--text-secondary, var(--hub-muted)); font-size: 14px; }
+.today-plan__card b { font-size: 14px; }
+.today-events { margin: 0 0 30px; padding: 0; list-style: none; border: 1px solid var(--hub-line); border-radius: 12px; overflow: hidden; }
+.today-events li + li { border-top: 1px solid var(--hub-line); }
+.today-events a { display: block; padding: 14px 16px; color: inherit; text-decoration: none; }
+.today-events a:hover { background: var(--hub-soft); }
+.today-events strong { display: block; font-size: 15px; }
+.today-events span { color: var(--text-secondary, var(--hub-muted)); font-size: 13px; }
+
+@media (max-width: 860px) {
+  .beach-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bus-route dl { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 620px) {
+  .subway-grid, .beach-grid, .bus-stops { grid-template-columns: 1fr; }
+  .today-plan > li { grid-template-columns: 1fr; gap: 6px; }
+  .today-plan__time { padding-top: 0; }
+  .today-plan__card { grid-template-columns: 112px 1fr; gap: 12px; }
+  .today-plan__card h2 { font-size: 16px; }
+  .bus-lanes button { grid-template-columns: 52px 1fr; }
+  .bus-lanes small { grid-column: 2; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .feature-chips button, .today-plan__card { transition: border-color .15s ease, background-color .15s ease; }
+}

@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { CITY, SITE_URL } from '../config/cities'
 import { generateLocalizedSlug } from './slugUtils'
 import { getCityGuides } from '../config/cityGuides'
+import { getCityFeatures } from '../config/cityFeatures'
 import { eventSlug } from './eventSlug'
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -31,6 +32,7 @@ const mainPages = () => [
   { path: '/trip-planner', changefreq: 'monthly', priority: '0.7' },
   { path: '/guides', changefreq: 'weekly', priority: '0.9' },
   { path: '/live', changefreq: 'daily', priority: '0.8' },
+  ...getCityFeatures(CITY.key).map((feature) => ({ path: feature.path, changefreq: 'daily', priority: '0.8' })),
   ...getCityGuides(CITY.key).map((guide) => ({ path: `/guides/${guide.slug}`, changefreq: 'weekly', priority: '0.8' })),
   ...CITY.districtNames.map((district) => ({ path: `/area/${district}`, changefreq: 'weekly', priority: '0.8' })),
   ...(CITY.key === 'daejeon' ? [{ path: '/shared-trips', changefreq: 'weekly', priority: '0.7' }] : []),

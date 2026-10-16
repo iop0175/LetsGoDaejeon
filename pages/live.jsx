@@ -4,6 +4,7 @@ import { FiCloudRain, FiWind, FiSun, FiActivity, FiMapPin, FiClock } from 'react
 import SeoHead from '../src/components/common/SeoHead'
 import SeoulCrowd from '../src/components/SeoulCrowd/SeoulCrowd'
 import { CITY } from '../src/config/cities'
+import { getCityFeatures } from '../src/config/cityFeatures'
 import { fetchLiveData } from '../src/services/liveData'
 
 const WEATHER = {
@@ -37,7 +38,7 @@ export default function LivePage({ live }) {
             <article className="live-hub__metric"><div className="live-hub__metric-icon"><FiClock /></div><span>{en ? 'Daylight' : '해 뜨고 지는 시간'}</span><strong>{live?.daily?.sunrise?.slice(11, 16) || '-'}</strong><p>{en ? 'Sunset' : '일몰'} {live?.daily?.sunset?.slice(11, 16) || '-'}</p></article>
             {live?.sea && <article className="live-hub__metric live-hub__metric--sea"><div className="live-hub__metric-icon"><FiMapPin /></div><span>{en ? 'Sea conditions' : '바다 상태'}</span><strong>{live.sea.wave_height ?? '-'} <small>m</small></strong><p>{en ? 'Wave height · Water' : '파고 · 수온'} {live.sea.sea_surface_temperature ?? '-'}°C</p></article>}
           </div>
-          <nav className="content-hub__related live-hub__actions"><h2>{en ? 'Useful right now' : '지금 필요한 정보'}</h2><div><Link href="/festival"><span>{en ? 'Events today' : '오늘 행사'}</span><b>→</b></Link>{CITY.parkingReady && <Link href="/parking"><span>{en ? 'Find parking' : '주차장 찾기'}</span><b>→</b></Link>}{CITY.medicalReady && <Link href="/medical"><span>{en ? 'Hospitals & pharmacies' : '병원·약국 찾기'}</span><b>→</b></Link>}<Link href="/map"><span>{en ? 'Tourist map' : '여행 지도'}</span><b>→</b></Link></div></nav>
+          <nav className="content-hub__related live-hub__actions"><h2>{en ? 'Useful right now' : '지금 필요한 정보'}</h2><div><Link href="/festival"><span>{en ? 'Events today' : '오늘 행사'}</span><b>→</b></Link>{getCityFeatures(CITY.key).map((feature) => <Link href={feature.path} key={feature.id}><span>{en ? feature.en : feature.ko}</span><b>→</b></Link>)}{CITY.parkingReady && <Link href="/parking"><span>{en ? 'Find parking' : '주차장 찾기'}</span><b>→</b></Link>}{CITY.medicalReady && <Link href="/medical"><span>{en ? 'Hospitals & pharmacies' : '병원·약국 찾기'}</span><b>→</b></Link>}<Link href="/map"><span>{en ? 'Tourist map' : '여행 지도'}</span><b>→</b></Link></div></nav>
         </div>
         {CITY.key === 'seoul' && <SeoulCrowd />}
       </section>

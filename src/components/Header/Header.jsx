@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { useTheme } from '../../context/ThemeContext'
 import { useAuth } from '../../context/AuthContext'
 import { CITIES, CITY } from '../../config/cities'
+import { getCityFeatures } from '../../config/cityFeatures'
 // CSS는 _app.jsx에서 import
 
 const Header = memo(() => {
@@ -34,6 +35,7 @@ const Header = memo(() => {
 
   const moreMenuItems = [
     { path: '/live', label: language === 'ko' ? '실시간 여행' : 'Live' },
+    ...getCityFeatures(CITY.key).map((feature) => ({ path: feature.path, label: language === 'ko' ? feature.ko : feature.en })),
     ...(CITY.parkingReady ? [{ path: '/parking', label: t.nav.parking }] : []),
     { path: '/culture', label: t.nav.culture },
     { path: '/leisure', label: language === 'ko' ? '레포츠' : 'Leisure' },

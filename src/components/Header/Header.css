@@ -61,7 +61,7 @@
 .nav-list {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 2px;
 }
 
 .nav-item {
@@ -70,8 +70,9 @@
 }
 
 .nav-link {
-  padding: 10px 20px;
-  font-size: 1rem;
+  padding: 10px 14px;
+  white-space: nowrap;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: 8px;
@@ -100,8 +101,9 @@
   cursor: pointer;
   background: none;
   border: none;
-  padding: 10px 20px;
-  font-size: 1rem;
+  padding: 10px 14px;
+  white-space: nowrap;
+  font-size: 0.95rem;
   font-weight: 500;
   color: var(--text-secondary);
   border-radius: 8px;
@@ -694,4 +696,20 @@
   .mobile-menu-btn {
     width: 36px;
   }
+}
+
+/* 메뉴 항목이 늘어나도 한 글자씩 줄바꿈되지 않게, 좁은 데스크톱에서는 간격을 더 줄인다 */
+@media (min-width: 769px) and (max-width: 1180px) {
+  .nav-link, .more-btn { padding: 8px 8px; font-size: 0.88rem; }
+  .logo-sub { display: none; }
+}
+@media (min-width: 769px) and (max-width: 1000px) {
+  .header-container { padding: 0 12px; }
+  .logo { gap: 6px; }
+  .logo-icon { font-size: 1.5rem; }
+  .logo-main { font-size: 1.05rem; }
+  .nav-link, .more-btn { padding: 8px 5px; font-size: 0.8rem; }
+}
+@media (min-width: 769px) and (max-width: 860px) {
+  .logo-text { display: none; }
 }
