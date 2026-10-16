@@ -1,22 +1,13 @@
-import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import SeoHead from '../src/components/common/SeoHead'
 
-// 클라이언트 전용 컴포넌트
-const PrivacyPageContent = dynamic(
-  () => import('../src/pages/PrivacyPage'),
-  { ssr: false }
-)
+const PageContent = dynamic(() => import('../src/pages/PrivacyPage'), { ssr: false })
 
-export default function PrivacyPage() {
+export default function PrivacyPageWrapper() {
   return (
     <>
-      <Head>
-        <title>개인정보처리방침 | 대전으로</title>
-        <meta name="description" content="대전으로 서비스 개인정보처리방침" />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/privacy" />
-      </Head>
-
-      <PrivacyPageContent />
+      <SeoHead page="privacy" path="/privacy" />
+      <PageContent />
     </>
   )
 }

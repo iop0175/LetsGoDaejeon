@@ -1,41 +1,39 @@
 import dynamic from 'next/dynamic'
-import Head from 'next/head'
-import { CITY, SITE_URL } from '../../src/config/cities'
 import { useRouter } from 'next/router'
-import { generateSlug } from '../../src/utils/slugUtils'
+import { CITY } from '../../src/config/cities'
+import SeoHead from '../../src/components/common/SeoHead'
+import { FallbackContext, FallbackLoading } from '../../src/components/common/PageFallback'
+import { generateLocalizedSlug } from '../../src/utils/slugUtils'
 import { getReliableImageUrl, cleanIntroHtml } from '../../src/utils/imageUtils'
+import { SCHEMA_TYPE_BY_CONTENT_TYPE, absoluteUrl } from '../../src/utils/seo'
 
-// 기존 SpotDetailPage 컴포넌트 동적 import (CSR로 모든 기능 유지)
+// 기존 SpotDetailPage 컴포넌트는 그대로 쓰고(CSR), 로딩 중과 서버 HTML에는 장소 정보를 먼저 보여 준다.
 const SpotDetailPageComponent = dynamic(
   () => import('../../src/pages/SpotDetailPage'),
-  { ssr: false }
+  { ssr: false, loading: FallbackLoading }
 )
 
-// slug 생성 함수 (서버 사이드용, 한국어 유지)
-const generateSlugServer = (title, contentId) => {
-  if (!title) return String(contentId || 'unknown')
-  let slug = title
-  // 소문자로 변환 (영문만)
-  slug = slug.split('').map(char => /[A-Z]/.test(char) ? char.toLowerCase() : char).join('')
-  // 마침표(.)를 하이픈(-)으로 변환
-  slug = slug.replace(/\./g, '-')
-  // 특수문자 제거 (한글, 영문, 숫자, 공백, 하이픈만 유지)
-  slug = slug.replace(/[^가-힣a-z0-9\s-]/g, '')
-  // 연속된 공백을 하나로, 공백을 하이픈으로
-  slug = slug.replace(/\s+/g, ' ').trim().replace(/\s/g, '-')
-  // 연속된 하이픈 정리, 시작/끝 하이픈 제거
-  slug = slug.replace(/-+/g, '-').replace(/^-|-$/g, '')
-  // contentId 추가
-  slug = contentId ? `${slug}-${contentId}` : slug || String(contentId || 'unknown')
-  // Next.js에서 자동으로 URL 인코딩하므로 인코딩하지 않음
-  return slug
+// contentTypeId → 목록 경로와 이름
+const CATEGORY = {
+  12: { path: '/travel', ko: '관광지', en: 'Attraction', enPlural: 'Attractions' },
+  14: { path: '/culture', ko: '문화시설', en: 'Cultural Venue', enPlural: 'Cultural Venues' },
+  15: { path: '/festival', ko: '축제·행사', en: 'Event', enPlural: 'Events' },
+  28: { path: '/leisure', ko: '레포츠', en: 'Activity', enPlural: 'Activities' },
+  32: { path: '/accommodation', ko: '숙소', en: 'Accommodation', enPlural: 'Accommodation' },
+  38: { path: '/shopping', ko: '쇼핑', en: 'Shop', enPlural: 'Shopping' },
+  39: { path: '/food', ko: '맛집', en: 'Restaurant', enPlural: 'Restaurants' }
+}
+
+const plain = (html, max) => {
+  const text = cleanIntroHtml(html || '', ' ').replace(/\s+/g, ' ').trim()
+  return text.length > max ? `${text.slice(0, max - 1).trim()}…` : text
 }
 
 export default function SpotPage({ seoData }) {
   const router = useRouter()
+  const loc = router.locale === 'en' ? 'en' : 'kr'
 
-  // 로딩 상태 (fallback)
-  if (router.isFallback) {
+  if (router.isFallback || !seoData) {
     return (
       <div className="sdp">
         <div className="sdp__loading">
@@ -46,221 +44,199 @@ export default function SpotPage({ seoData }) {
     )
   }
 
+  const view = seoData[loc]
+  const category = CATEGORY[seoData.contentTypeId] || CATEGORY[12]
+  const homeLabel = loc === 'en' ? 'Home' : '홈'
+  const categoryLabel = loc === 'en' ? category.enPlural : category.ko
+  const schemaType = SCHEMA_TYPE_BY_CONTENT_TYPE[seoData.contentTypeId] || 'TouristAttraction'
+  const cityName = loc === 'en' ? CITY.cityNameEn : CITY.cityName
+  const pageUrl = absoluteUrl(loc, `/spot/${view.slug}`)
+
+  const placeLd = {
+    '@context': 'https://schema.org',
+    '@type': schemaType,
+    name: view.name,
+    description: view.description,
+    ...(seoData.image && { image: seoData.image }),
+    address: {
+      '@type': 'PostalAddress',
+      streetAddress: view.address,
+      addressLocality: seoData.district || cityName,
+      addressRegion: loc === 'en' ? CITY.cityNameEn : (CITY.aliases[0] || CITY.cityName),
+      addressCountry: 'KR'
+    },
+    ...(seoData.phone && { telephone: seoData.phone }),
+    ...(seoData.lat && seoData.lng && {
+      geo: { '@type': 'GeoCoordinates', latitude: Number(seoData.lat), longitude: Number(seoData.lng) }
+    }),
+    url: pageUrl,
+    inLanguage: loc === 'en' ? 'en' : 'ko'
+  }
+
+  const faqLd = seoData.faqItems?.length && loc === 'kr' ? {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: seoData.faqItems.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: { '@type': 'Answer', text: item.answer }
+    }))
+  } : null
+
+  const details = [
+    view.address && { label: loc === 'en' ? 'Address' : '주소', value: view.address },
+    seoData.phone && { label: loc === 'en' ? 'Phone' : '전화', value: seoData.phone }
+  ].filter(Boolean)
+
   return (
     <>
-      {/* SEO 메타데이터 (SSG로 사전 렌더링) */}
-      {seoData && (
-        <Head>
-          <title>{seoData.title}</title>
-          <meta name="description" content={seoData.description} />
-          <meta name="keywords" content={seoData.keywords} />
-          <link rel="canonical" href={seoData.canonicalUrl} />
-          
-          {/* Open Graph */}
-          <meta property="og:type" content="article" />
-          <meta property="og:url" content={seoData.canonicalUrl} />
-          <meta property="og:title" content={seoData.title} />
-          <meta property="og:description" content={seoData.description} />
-          <meta property="og:image" content={seoData.image} />
-          <meta property="og:image:width" content="1200" />
-          <meta property="og:image:height" content="630" />
-          <meta property="og:site_name" content="대전으로" />
-          <meta property="og:locale" content="ko_KR" />
-          
-          {/* Twitter Card */}
-          <meta name="twitter:card" content="summary_large_image" />
-          <meta name="twitter:url" content={seoData.canonicalUrl} />
-          <meta name="twitter:title" content={seoData.title} />
-          <meta name="twitter:description" content={seoData.description} />
-          <meta name="twitter:image" content={seoData.image} />
-          
-          {/* 구조화된 데이터 (Schema.org) - TouristAttraction */}
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@type": "TouristAttraction",
-                "name": seoData.name,
-                "description": seoData.description,
-                "image": seoData.image,
-                "address": {
-                  "@type": "PostalAddress",
-                  "streetAddress": seoData.streetAddress || seoData.address,
-                  "addressLocality": seoData.district || CITY.cityName,
-                  "addressRegion": seoData.city || CITY.aliases[0],
-                  "addressCountry": "KR"
-                },
-                ...(seoData.phone && { "telephone": seoData.phone }),
-                ...(seoData.lat && seoData.lng && {
-                  "geo": {
-                    "@type": "GeoCoordinates",
-                    "latitude": seoData.lat,
-                    "longitude": seoData.lng
-                  }
-                }),
-                "url": seoData.canonicalUrl
-              })
-            }}
-          />
-          
-          {/* 구조화된 데이터 (Schema.org) - FAQPage (AI 생성 FAQ가 있을 때만) */}
-          {seoData.faqItems && seoData.faqItems.length > 0 && (
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{
-                __html: JSON.stringify({
-                  "@context": "https://schema.org",
-                  "@type": "FAQPage",
-                  "mainEntity": seoData.faqItems.map(item => ({
-                    "@type": "Question",
-                    "name": item.question,
-                    "acceptedAnswer": {
-                      "@type": "Answer",
-                      "text": item.answer
-                    }
-                  }))
-                })
-              }}
-            />
-          )}
-        </Head>
-      )}
-      
-      {/* 기존 SpotDetailPage 컴포넌트 (CSR로 모든 기능 유지) */}
-      <SpotDetailPageComponent />
+      <SeoHead
+        title={view.title}
+        description={view.description}
+        keywords={view.keywords}
+        path={`/spot/${view.slug}`}
+        paths={{ kr: `/spot/${seoData.kr.slug}`, en: `/spot/${seoData.en.slug}` }}
+        image={seoData.image}
+        imageAlt={view.name}
+        type="article"
+        hasEnglish={seoData.hasEnglish}
+        crumbs={[
+          { name: homeLabel, path: '/' },
+          { name: categoryLabel, path: category.path },
+          { name: view.name, path: `/spot/${view.slug}` }
+        ]}
+        ld={[placeLd, faqLd]}
+      />
+      <FallbackContext.Provider
+        value={{
+          h1: view.name,
+          intro: view.description,
+          image: seoData.image,
+          imageAlt: view.name,
+          details,
+          links: [{ name: categoryLabel, path: category.path }]
+        }}
+      >
+        <SpotDetailPageComponent />
+      </FallbackContext.Provider>
     </>
   )
 }
 
-// SSG - 빌드 시 생성할 경로 목록 (slug 기반, 한국어 유지)
+const getServerClient = async () => {
+  const { createClient } = await import('@supabase/supabase-js')
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+}
+
+// 상위 100곳은 빌드 때 만들고 나머지는 처음 요청될 때 만든다(ISR). 영어판은 영문명이 있는 곳만 만든다.
 export async function getStaticPaths() {
   try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const serverSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-
-    // 상위 100개 관광지만 미리 생성 (나머지는 ISR)
-    const { data, error } = await serverSupabase
+    const db = await getServerClient()
+    const { data, error } = await db
       .from('tour_spots')
-      .select('content_id, title')
+      .select('content_id, title, title_en')
       .eq('areacode', CITY.tourApiAreaCode)
+      .not('firstimage', 'is', null)
+      .order('modified_time', { ascending: false, nullsFirst: false })
       .limit(100)
-
     if (error) throw error
 
     const paths = (data || [])
-      .filter(item => item.content_id && item.title)
-      .map(item => ({
-        params: { slug: generateSlugServer(item.title, item.content_id) }
-      }))
+      .filter((item) => item.content_id && item.title)
+      .flatMap((item) => [
+        { params: { slug: generateLocalizedSlug({ title: item.title, contentId: item.content_id }, 'kr') }, locale: 'kr' },
+        ...(item.title_en
+          ? [{ params: { slug: generateLocalizedSlug({ title: item.title, titleEn: item.title_en, contentId: item.content_id }, 'en') }, locale: 'en' }]
+          : [])
+      ])
 
-    return {
-      paths,
-      // ISR: 없는 페이지는 요청 시 생성
-      fallback: 'blocking'
-    }
+    return { paths, fallback: 'blocking' }
   } catch (err) {
     console.error('getStaticPaths error:', err)
-    return {
-      paths: [],
-      fallback: 'blocking'
-    }
+    return { paths: [], fallback: 'blocking' }
   }
 }
 
-// SSG - SEO 메타데이터만 사전 렌더링
-export async function getStaticProps({ params }) {
-  const { slug } = params
-
-  // URL 디코딩 후 contentId 추출 (마지막 숫자 부분)
-  const decodedSlug = decodeURIComponent(slug)
-  const contentIdMatch = decodedSlug.match(/-(\d+)$/)
-  const contentId = contentIdMatch ? contentIdMatch[1] : (decodedSlug.match(/^\d+$/) ? decodedSlug : null)
-
-  if (!contentId) {
-    return { notFound: true }
+const parseFaq = (introInfo) => {
+  const raw = introInfo?.faq
+  if (!raw) return []
+  if (Array.isArray(raw)) return raw.filter((item) => item.question && item.answer)
+  if (typeof raw !== 'string') return []
+  const items = []
+  let question = null
+  for (const line of raw.split('\n').map((l) => l.trim()).filter(Boolean)) {
+    if (line.startsWith('Q.')) question = line.replace(/^Q\.\s*/, '')
+    else if (line.startsWith('A.') && question) {
+      items.push({ question, answer: line.replace(/^A\.\s*/, '') })
+      question = null
+    }
   }
+  return items
+}
+
+export async function getStaticProps({ params, locale }) {
+  const decodedSlug = decodeURIComponent(params.slug)
+  const contentId = decodedSlug.match(/-(\d+)$/)?.[1] || (/^\d+$/.test(decodedSlug) ? decodedSlug : null)
+  if (!contentId) return { notFound: true }
 
   try {
-    const { createClient } = await import('@supabase/supabase-js')
-    const serverSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    )
-
-    // 관광지 기본 정보 가져오기 (SEO용 + FAQ용 intro_info 추가)
-    const { data: spotData, error } = await serverSupabase
+    const db = await getServerClient()
+    const { data: row, error } = await db
       .from('tour_spots')
-      .select('content_id, title, addr1, overview, firstimage, firstimage2, tel, mapy, mapx, intro_info')
+      .select('content_id, content_type_id, title, title_en, addr1, addr1_en, overview, overview_en, firstimage, firstimage2, tel, mapy, mapx, intro_info')
       .eq('content_id', contentId)
       .eq('areacode', CITY.tourApiAreaCode)
       .single()
+    if (error || !row) return { notFound: true }
 
-    if (error || !spotData) {
-      return { notFound: true }
-    }
+    const contentTypeId = Number(row.content_type_id) || 12
+    const category = CATEGORY[contentTypeId] || CATEGORY[12]
+    const addressParts = (row.addr1 || '').split(' ')
+    const district = addressParts.find((part) => /[구군]$/.test(part)) || ''
+    const hasEnglish = Boolean(row.title_en)
+    const rawImage = row.firstimage || row.firstimage2
+    const image = rawImage ? getReliableImageUrl(rawImage) : null
 
-    // SEO 데이터 생성
-    const spotSlug = generateSlugServer(spotData.title, spotData.content_id)
-    const seoDescription = spotData.overview 
-      ? cleanIntroHtml(spotData.overview).slice(0, 150) 
-      : `${spotData.title} - ${CITY.cityName}의 인기 관광지입니다. 주소: ${spotData.addr1 || CITY.aliases[0]}`
-    
-    // 주소에서 시/구/상세주소 추출
-    const addressParts = (spotData.addr1 || '').split(' ')
-    const city = addressParts.find(p => p.includes('시') || p.includes('광역시')) || CITY.aliases[0]
-    const district = addressParts.find(p => p.includes('구')) || ''
-    const streetAddress = addressParts.slice(2).join(' ') || spotData.addr1
-    
-    // FAQ 데이터 파싱 (AI 생성 FAQ가 있는 경우)
-    let faqItems = []
-    const introInfo = spotData.intro_info
-    if (introInfo?.faq) {
-      let rawFaq = introInfo.faq
-      if (typeof rawFaq === 'string') {
-        // 텍스트 형식 파싱 (Q. ... A. ... 형식)
-        const lines = rawFaq.split('\n').filter(line => line.trim())
-        let currentQ = null
-        for (const line of lines) {
-          const trimmed = line.trim()
-          if (trimmed.startsWith('Q.')) {
-            currentQ = trimmed.replace(/^Q\.\s*/, '')
-          } else if (trimmed.startsWith('A.') && currentQ) {
-            faqItems.push({ question: currentQ, answer: trimmed.replace(/^A\.\s*/, '') })
-            currentQ = null
-          }
-        }
-      } else if (Array.isArray(rawFaq)) {
-        // 배열 형식
-        faqItems = rawFaq.filter(item => item.question && item.answer)
+    const build = (loc) => {
+      const en = loc === 'en'
+      // 영문명에 붙은 한글 병기 "(서래마을)"는 검색 결과 제목에서 뺀다
+      const name = en ? (row.title_en || row.title).replace(/\s*\([^)]*[가-힣][^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim() : row.title
+      const siteName = en ? CITY.englishName : CITY.name
+      const cityName = en ? CITY.cityNameEn : CITY.cityName
+      const address = en ? (row.addr1_en || row.addr1) : row.addr1
+      const overview = plain(en ? row.overview_en : row.overview, 155)
+      const fallbackDescription = en
+        ? `${name} is a ${category.en.toLowerCase()} in ${cityName}.${address ? ` Address: ${address}.` : ''}${row.tel ? ` Phone: ${row.tel}.` : ''} See photos, location and nearby places on ${siteName}.`
+        : `${name}은(는) ${cityName}${district ? ` ${district}` : ''}에 있는 ${category.ko}입니다.${address ? ` 주소: ${address}.` : ''}${row.tel ? ` 전화: ${row.tel}.` : ''} 사진과 위치, 주변 정보를 ${siteName}에서 확인하세요.`
+      return {
+        slug: generateLocalizedSlug({ title: row.title, titleEn: en ? row.title_en : null, contentId: row.content_id }, loc),
+        name,
+        address,
+        title: en ? `${name} - ${category.en} in ${cityName} | ${siteName}` : `${name} - ${cityName} ${category.ko} | ${siteName}`,
+        description: overview || fallbackDescription,
+        keywords: en
+          ? `${name}, ${name} ${cityName}, ${cityName} ${category.enPlural.toLowerCase()}, things to do in ${cityName}`
+          : `${name}, ${cityName} ${name}, ${cityName} ${category.ko}, ${cityName} 여행, ${addressParts.slice(0, 2).join(' ')}`
       }
     }
-    
-    const seoData = {
-      name: spotData.title,
-      title: `${spotData.title} | ${CITY.cityName} 관광지 - ${CITY.name}`,
-      description: seoDescription,
-      keywords: `${spotData.title}, ${CITY.cityName} ${spotData.title}, ${CITY.cityName} 관광지, ${CITY.cityName} 여행, ${spotData.addr1?.split(' ').slice(0, 2).join(' ')}`,
-      image: getReliableImageUrl(spotData.firstimage || spotData.firstimage2),
-      canonicalUrl: `${SITE_URL}/spot/${spotSlug}`,
-      address: spotData.addr1,
-      city: city,
-      district: district,
-      streetAddress: streetAddress,
-      phone: spotData.tel,
-      lat: spotData.mapy,
-      lng: spotData.mapx,
-      faqItems: faqItems.length > 0 ? faqItems : null
-    }
+
+    const faqItems = parseFaq(row.intro_info)
 
     return {
       props: {
-        seoData
+        seoData: {
+          contentTypeId,
+          hasEnglish,
+          image,
+          district,
+          phone: row.tel || null,
+          lat: row.mapy || null,
+          lng: row.mapx || null,
+          faqItems: faqItems.length ? faqItems : null,
+          kr: build('kr'),
+          en: build('en')
+        }
       },
-      // 1시간마다 재생성 (ISR)
       revalidate: 3600
     }
   } catch (err) {

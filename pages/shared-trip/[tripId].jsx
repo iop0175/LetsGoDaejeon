@@ -1,4 +1,5 @@
-import Head from 'next/head'
+import SeoHead from '../../src/components/common/SeoHead'
+import { CITY, SITE_URL } from '../../src/config/cities'
 import dynamic from 'next/dynamic'
 import { supabase } from '../../src/services/supabase'
 
@@ -10,7 +11,7 @@ const SharedTripPageContent = dynamic(
 
 // 이미지 URL 안전하게 처리
 const getSafeImageUrl = (url) => {
-  if (!url) return 'https://www.letsgodaejeon.kr/og-image.svg'
+  if (!url) return null
   if (url.startsWith('//')) return `https:${url}`
   if (url.startsWith('http://')) return url.replace('http://', 'https://')
   return url
@@ -18,9 +19,9 @@ const getSafeImageUrl = (url) => {
 
 export default function SharedTripPage({ tripData, placesData }) {
   const tripName = tripData?.title || tripData?.name || '공유된 여행'
-  const tripDescription = tripData?.description || `${tripName} - 대전 여행 코스를 확인하세요.`
+  const tripDescription = tripData?.description || `${tripName} - ${CITY.cityName} 여행 코스를 확인하세요.`
   const tripImage = getSafeImageUrl(tripData?.thumbnail_url)
-  const authorName = tripData?.author_nickname || '대전으로 사용자'
+  const authorName = tripData?.author_nickname || `${CITY.name} 사용자`
   
   // 장소 목록 추출 (SEO용)
   const allPlaces = placesData || []
@@ -35,8 +36,8 @@ export default function SharedTripPage({ tripData, placesData }) {
     "touristType": "Individual",
     "provider": {
       "@type": "Organization",
-      "name": "대전으로",
-      "url": "https://www.letsgodaejeon.kr"
+      "name": CITY.name,
+      "url": SITE_URL
     },
     "author": {
       "@type": "Person",
@@ -45,11 +46,11 @@ export default function SharedTripPage({ tripData, placesData }) {
     "itinerary": allPlaces.length > 0 ? allPlaces.map((place, idx) => ({
       "@type": "TouristDestination",
       "name": place.place_name,
-      "description": place.place_description || `${place.place_name} - 대전 여행 명소`,
+      "description": place.place_description || `${place.place_name} - ${CITY.cityName} 여행 명소`,
       "address": {
         "@type": "PostalAddress",
         "streetAddress": place.place_address,
-        "addressLocality": "대전",
+        "addressLocality": CITY.cityName,
         "addressCountry": "KR"
       },
       ...(place.place_image && { "image": getSafeImageUrl(place.place_image) }),
@@ -68,70 +69,22 @@ export default function SharedTripPage({ tripData, placesData }) {
   
   return (
     <>
-      <Head>
-        <title>{tripName} | 대전 여행 코스 - 대전으로</title>
-        <meta name="description" content={tripDescription} />
-        <meta name="keywords" content={`대전 여행 코스, 대전 추천 일정, 대전 여행 계획, ${tripName}, ${allPlaces.map(p => p.place_name).join(', ')}`} />
-        
-        {/* Canonical URL */}
-        <link rel="canonical" href={`https://www.letsgodaejeon.kr/shared-trip/${tripData?.id}`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="article" />
-        <meta property="og:url" content={`https://www.letsgodaejeon.kr/shared-trip/${tripData?.id}`} />
-        <meta property="og:title" content={tripName} />
-        <meta property="og:description" content={tripDescription} />
-        <meta property="og:image" content={tripImage} />
-        <meta property="og:image:width" content="1200" />
-        <meta property="og:image:height" content="630" />
-        <meta property="og:site_name" content="대전으로" />
-        <meta property="og:locale" content="ko_KR" />
-        <meta property="article:author" content={authorName} />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content={`https://www.letsgodaejeon.kr/shared-trip/${tripData?.id}`} />
-        <meta name="twitter:title" content={tripName} />
-        <meta name="twitter:description" content={tripDescription} />
-        <meta name="twitter:image" content={tripImage} />
-        
-        {/* Schema.org 구조화 데이터 (TouristTrip) */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaData) }}
-        />
-        
-        {/* BreadcrumbList 구조화 데이터 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "BreadcrumbList",
-              "itemListElement": [
-                {
-                  "@type": "ListItem",
-                  "position": 1,
-                  "name": "홈",
-                  "item": "https://www.letsgodaejeon.kr"
-                },
-                {
-                  "@type": "ListItem",
-                  "position": 2,
-                  "name": "여행 코스",
-                  "item": "https://www.letsgodaejeon.kr/shared-trips"
-                },
-                {
-                  "@type": "ListItem",
-                  "position": 3,
-                  "name": tripName,
-                  "item": `https://www.letsgodaejeon.kr/shared-trip/${tripData?.id}`
-                }
-              ]
-            })
-          }}
-        />
-      </Head>
+      <SeoHead
+        title={`${tripName} | ${CITY.cityName} 여행 코스 - ${CITY.name}`}
+        description={tripDescription}
+        keywords={`${CITY.cityName} 여행 코스, ${CITY.cityName} 추천 일정, ${CITY.cityName} 여행 계획, ${tripName}, ${allPlaces.map(p => p.place_name).join(', ')}`}
+        path={`/shared-trip/${tripData?.id}`}
+        image={tripImage}
+        imageAlt={tripName}
+        type="article"
+        hasEnglish={false}
+        crumbs={[
+          { name: '홈', path: '/' },
+          { name: '여행 코스', path: '/shared-trips' },
+          { name: tripName, path: `/shared-trip/${tripData?.id}` }
+        ]}
+        ld={[schemaData]}
+      />
 
       <SharedTripPageContent />
     </>
@@ -151,7 +104,8 @@ export async function getStaticPaths() {
     if (error) throw error
     
     const paths = trips?.map(trip => ({
-      params: { tripId: String(trip.id) } // 문자열로 변환
+      params: { tripId: String(trip.id) }, // 문자열로 변환
+      locale: 'kr'
     })) || []
     
     return {

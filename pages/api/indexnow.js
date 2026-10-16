@@ -1,9 +1,9 @@
+import { SITE_URL } from '../../src/config/cities'
 // IndexNow API 엔드포인트
 // POST /api/indexnow - URL 제출
 // GET /api/indexnow?url=... - 단일 URL 제출
 
 const INDEXNOW_KEY = '6d0d01a5802bbad93fbd878628659588'
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.letsgodaejeon.kr'
 
 // IndexNow 지원 검색엔진
 const SEARCH_ENGINES = [
@@ -24,7 +24,7 @@ async function submitToIndexNow(urls) {
           'Content-Type': 'application/json; charset=utf-8',
         },
         body: JSON.stringify({
-          host: 'letsgodaejeon.kr',
+          host: new URL(SITE_URL).host,
           key: INDEXNOW_KEY,
           keyLocation: `${SITE_URL}/${INDEXNOW_KEY}.txt`,
           urlList: urlList.map(url => url.startsWith('http') ? url : `${SITE_URL}${url}`),

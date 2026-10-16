@@ -1,5 +1,3 @@
-import Head from 'next/head'
-import { useLanguage } from '../../context/LanguageContext'
 import { CITY, SITE_URL } from '../../config/cities'
 
 /**
@@ -13,48 +11,9 @@ import { CITY, SITE_URL } from '../../config/cities'
  * @param {string} props.url - 페이지 URL
  * @param {string} props.type - OG 타입 (website, article 등)
  */
-const SEO = ({ 
-  title, 
-  description, 
-  keywords, 
-  image = `${SITE_URL}${CITY.hero?.image || '/og-image.svg'}`,
-  url,
-  type = 'website'
-}) => {
-  const { language } = useLanguage()
-
-  const siteUrl = SITE_URL
-  const fullUrl = url ? `${siteUrl}${url}` : siteUrl
-  const siteName = language === 'ko' ? CITY.name : CITY.englishName
-  const localizedTitle = title?.replaceAll('대전', CITY.cityName).replaceAll('Daejeon', CITY.cityNameEn)
-  const fullTitle = localizedTitle ? `${localizedTitle} | ${siteName}` : `${siteName} | ${CITY.englishName}`
-  
-  return (
-    <Head>
-      {/* 기본 메타 태그 */}
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      {keywords && <meta name="keywords" content={keywords} />}
-      <link rel="canonical" href={fullUrl} />
-      
-      {/* Open Graph */}
-      <meta property="og:type" content={type} />
-      <meta property="og:url" content={fullUrl} />
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      <meta property="og:site_name" content={siteName} />
-      <meta property="og:locale" content={language === 'ko' ? 'ko_KR' : 'en_US'} />
-      
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={fullUrl} />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-    </Head>
-  )
-}
+// 메타 태그는 pages/ 아래 각 페이지가 SeoHead로 한 번만 내보낸다.
+// 화면 컴포넌트가 이 컴포넌트를 불러도 canonical·robots가 중복되지 않도록 아무것도 그리지 않는다.
+const SEO = () => null
 
 // 페이지별 기본 SEO 데이터
 export const SEO_DATA = {

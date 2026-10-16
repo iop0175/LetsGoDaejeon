@@ -1,104 +1,38 @@
-import Head from 'next/head'
-import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
-import { getTourSpots as getTourSpotsDb } from '../src/services/dbService'
+import { useRouter } from 'next/router'
+import SeoHead from '../src/components/common/SeoHead'
+import { FallbackContext, FallbackLoading } from '../src/components/common/PageFallback'
+import { getPageSeo } from '../src/config/pageSeo'
+import { fetchSpotList, toLinkItems } from '../src/services/seoData'
+import { itemListLd } from '../src/utils/seo'
 
-// 클라이언트 전용 컴포넌트
-const CulturePageContent = dynamic(
-  () => import('../src/pages/CulturePage'),
-  { ssr: false, loading: () => <div className="loading-spinner"><div className="spinner"></div></div> }
-)
+// 클라이언트 전용 화면. 로딩 중에는 서버가 만든 목록(FallbackContext)을 보여 준다.
+const PageContent = dynamic(() => import('../src/pages/CulturePage'), { ssr: false, loading: FallbackLoading })
 
-// SEO 메타데이터
-const SEO = CITY.key === 'daejeon' ? {
-  ko: {
-    title: '대전 문화시설 | 대전으로 - Let\'s Go Daejeon',
-    description: '대전의 박물관, 미술관, 도서관, 공연장 등 문화시설을 소개합니다. 국립중앙과학관, 대전시립미술관, 한밭도서관 등을 만나보세요.',
-    keywords: '대전 문화시설, 대전 박물관, 대전 미술관, 대전 도서관, 국립중앙과학관, 대전시립미술관, 한밭도서관, Daejeon museum, Daejeon culture'
-  },
-  en: {
-    title: 'Daejeon Cultural Facilities | Let\'s Go Daejeon',
-    description: 'Explore museums, galleries, libraries, and theaters in Daejeon. Visit National Science Museum, Daejeon Museum of Art, and more.',
-    keywords: 'Daejeon museums, Daejeon galleries, Daejeon libraries, National Science Museum Korea, Daejeon cultural facilities'
-  }
-} : getCityPageSeo('문화시설', 'Culture')
+export default function CulturePageWrapper({ items, totalCount }) {
+  const { locale } = useRouter()
+  const loc = locale === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('culture', loc, { count: totalCount })
+  const list = toLinkItems(items, loc)
+  const home = loc === 'en' ? 'Home' : '홈'
 
-export default function CulturePage({ initialData }) {
   return (
     <>
-      <Head>
-        <title>{SEO.ko.title}</title>
-        <meta name="description" content={SEO.ko.description} />
-        <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href={`${SITE_URL}/culture`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${SITE_URL}/culture`} />
-        <meta property="og:title" content={SEO.ko.title} />
-        <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
-        <meta property="og:site_name" content="대전으로" />
-        <meta property="og:locale" content="ko_KR" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={SEO.ko.title} />
-        <meta name="twitter:description" content={SEO.ko.description} />
-        
-        {/* Schema.org 구조화 데이터 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "ItemList",
-              "name": "대전 문화시설 목록",
-              "description": SEO.ko.description,
-              "url": `${SITE_URL}/culture`,
-              "numberOfItems": initialData?.length || 0,
-              "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
-                "@type": "ListItem",
-                "position": index + 1,
-                "item": {
-                  "@type": "Museum",
-                  "name": item.title || item.fcltyNm,
-                  "address": {
-                    "@type": "PostalAddress",
-                    "addressLocality": CITY.cityName,
-                    "addressCountry": "KR",
-                    "streetAddress": item.addr1 || item.locplc
-                  }
-                }
-              })) || []
-            })
-          }}
-        />
-      </Head>
-
-      <CulturePageContent />
+      <SeoHead
+        page="culture"
+        count={totalCount}
+        path="/culture"
+        crumbs={[{ name: home, path: '/' }, { name: seo.h1, path: '/culture' }]}
+        ld={[itemListLd(loc, seo.h1, list)]}
+      />
+      <FallbackContext.Provider value={{ h1: seo.h1, intro: seo.description, items: list }}>
+        <PageContent />
+      </FallbackContext.Provider>
     </>
   )
 }
 
 export async function getStaticProps() {
-  try {
-    // 문화시설 데이터 로드 (contentTypeId: 14)
-    const result = await getTourSpotsDb('14', 1, 100)
-    
-    return {
-      props: {
-        initialData: result.success ? result.items : []
-      },
-      revalidate: 3600 // 1시간마다 재생성
-    }
-  } catch (error) {
-    console.error('Culture page static props error:', error)
-    return {
-      props: {
-        initialData: []
-      },
-      revalidate: 3600
-    }
-  }
+  const { items, totalCount } = await fetchSpotList(14, 60)
+  return { props: { items, totalCount }, revalidate: 3600 }
 }

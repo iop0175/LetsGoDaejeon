@@ -125,6 +125,17 @@ export const mergeEvents = (collected, managed, today, includeAll = false) => {
     .sort((a, b) => a.end_date.localeCompare(b.end_date))
 }
 
+// 같은 서버 인스턴스가 살아 있는 동안은 수집 결과를 재사용한다. 외부 공공 API 여러 곳을 부르는 수집이 느려서(수 초~수십 초),
+// 엣지 캐시가 비었을 때 첫 방문자가 오래 기다리지 않도록 한다. 관리용(all=1)은 항상 새로 모은다.
+const COLLECT_TTL_MS = 10 * 60 * 1000
+let collectCache = null
+const collectCached = async (today, force) => {
+  if (!force && collectCache && collectCache.today === today && Date.now() - collectCache.at < COLLECT_TTL_MS) return collectCache.value
+  const value = await collectEvents(today)
+  if (!value.failed.length) collectCache = { today, at: Date.now(), value }
+  return value
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ success: false, items: [] })
 
@@ -132,7 +143,7 @@ export default async function handler(req, res) {
   const includeAll = req.query.all === '1'
   const database = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   const [{ rows, failed }, managed] = await Promise.all([
-    collectEvents(today),
+    collectCached(today, includeAll),
     database.from('performances').select('*').eq('city_key', CITY.key)
   ])
   if (managed.error) return res.status(502).json({ success: false, items: [], error: managed.error.message })

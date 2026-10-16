@@ -1,109 +1,87 @@
-import Head from 'next/head'
-import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
 import dynamic from 'next/dynamic'
-import { getTourFestivals } from '../src/services/dbService'
+import { useRouter } from 'next/router'
+import SeoHead from '../src/components/common/SeoHead'
+import { FallbackContext, FallbackLoading } from '../src/components/common/PageFallback'
+import { getPageSeo } from '../src/config/pageSeo'
+import { CITY } from '../src/config/cities'
+import { absoluteUrl } from '../src/utils/seo'
 
-// 클라이언트 전용 컴포넌트 (react-router-dom 사용)
-const FestivalPageContent = dynamic(
-  () => import('../src/pages/FestivalPage'),
-  { ssr: false, loading: () => <div className="loading-spinner"><div className="spinner"></div></div> }
-)
+const PageContent = dynamic(() => import('../src/pages/FestivalPage'), { ssr: false, loading: FallbackLoading })
 
-// SEO 메타데이터
-const SEO = CITY.key === 'daejeon' ? {
-  ko: {
-    title: '대전 축제/행사 | 대전으로 - Let\'s Go Daejeon',
-    description: '대전에서 열리는 축제와 행사 정보를 확인하세요. 대전 사이언스페스티벌, 유성온천문화축제, 계족산 맨발축제 등 다양한 행사를 소개합니다.',
-    keywords: '대전 축제, 대전 행사, 대전 이벤트, 대전 사이언스페스티벌, 유성온천문화축제, 계족산 맨발축제, Daejeon festival, Daejeon event'
-  },
-  en: {
-    title: 'Daejeon Festivals & Events | Let\'s Go Daejeon',
-    description: 'Discover festivals and events in Daejeon. From Science Festival to Yuseong Hot Spring Festival and Gyejoksan Barefoot Festival.',
-    keywords: 'Daejeon festivals, Daejeon events, Science Festival Daejeon, Yuseong Hot Spring Festival, Korea festivals'
+const fmt = (date) => (date || '').slice(0, 10)
+
+export default function FestivalPageWrapper({ events }) {
+  const { locale } = useRouter()
+  const loc = locale === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('festival', loc, { count: events.length })
+  const home = loc === 'en' ? 'Home' : '홈'
+  const cityName = loc === 'en' ? CITY.cityNameEn : CITY.cityName
+
+  const list = events.map((event) => ({
+    name: event.title,
+    period: `${fmt(event.start_date)} ~ ${fmt(event.end_date)}`,
+    sub: event.event_site
+  }))
+
+  const eventLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: seo.h1,
+    numberOfItems: events.length,
+    itemListElement: events.slice(0, 20).map((event, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Event',
+        name: event.title,
+        startDate: fmt(event.start_date),
+        endDate: fmt(event.end_date),
+        eventStatus: 'https://schema.org/EventScheduled',
+        eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+        location: {
+          '@type': 'Place',
+          name: event.event_site || cityName,
+          address: { '@type': 'PostalAddress', addressLocality: cityName, addressCountry: 'KR' }
+        },
+        ...(event.image_url ? { image: event.image_url } : {}),
+        url: absoluteUrl(loc, '/festival')
+      }
+    }))
   }
-} : getCityPageSeo('공연·행사', 'Events')
 
-export default function FestivalPage({ initialData }) {
   return (
     <>
-      <Head>
-        <title>{SEO.ko.title}</title>
-        <meta name="description" content={SEO.ko.description} />
-        <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href={`${SITE_URL}/festival`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${SITE_URL}/festival`} />
-        <meta property="og:title" content={SEO.ko.title} />
-        <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
-        <meta property="og:site_name" content="대전으로" />
-        <meta property="og:locale" content="ko_KR" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={SEO.ko.title} />
-        <meta name="twitter:description" content={SEO.ko.description} />
-        
-        {/* Schema.org 구조화 데이터 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "ItemList",
-              "name": "대전 축제/행사 목록",
-              "description": SEO.ko.description,
-              "url": `${SITE_URL}/festival`,
-              "numberOfItems": initialData?.length || 0,
-              "itemListElement": initialData?.slice(0, 10).map((item, index) => ({
-                "@type": "ListItem",
-                "position": index + 1,
-                "item": {
-                  "@type": "Event",
-                  "name": item.title || item.name,
-                  "startDate": item.startDate || item.eventstartdate,
-                  "endDate": item.endDate || item.eventenddate,
-                  "location": {
-                    "@type": "Place",
-                    "name": item.place || "대전",
-                    "address": {
-                      "@type": "PostalAddress",
-                      "addressLocality": CITY.cityName,
-                      "addressCountry": "KR"
-                    }
-                  }
-                }
-              })) || []
-            })
-          }}
-        />
-      </Head>
-
-      <FestivalPageContent />
+      <SeoHead
+        page="festival"
+        path="/festival"
+        crumbs={[{ name: home, path: '/' }, { name: seo.h1, path: '/festival' }]}
+        ld={[eventLd]}
+      />
+      <FallbackContext.Provider value={{ h1: seo.h1, intro: seo.description, items: list }}>
+        <PageContent />
+      </FallbackContext.Provider>
     </>
   )
 }
 
+// 진행 중인 행사를 서버에서 모아 미리 그려 둔다. 수집이 실패하면 빈 목록으로 두고 곧 다시 시도한다.
 export async function getStaticProps() {
   try {
-    // 축제/행사 데이터 로드
-    const result = await getTourFestivals(1, 100)
-    
-    return {
-      props: {
-        initialData: result.success ? result.items : []
-      },
-      revalidate: 3600 // 1시간마다 재생성
-    }
-  } catch (error) {
-    console.error('Festival page static props error:', error)
-    return {
-      props: {
-        initialData: []
-      },
-      revalidate: 3600
-    }
+    const { collectEvents, mergeEvents, todayKst } = await import('./api/events')
+    const today = todayKst()
+    const { rows } = await collectEvents(today)
+    const events = mergeEvents(rows, [], today)
+      .slice(0, 60)
+      .map((row) => ({
+        title: row.title,
+        start_date: row.start_date,
+        end_date: row.end_date,
+        event_site: row.event_site || null,
+        image_url: row.image_url || null
+      }))
+    return { props: { events }, revalidate: events.length ? 3600 : 300 }
+  } catch (err) {
+    console.error('festival getStaticProps error:', err)
+    return { props: { events: [] }, revalidate: 300 }
   }
 }

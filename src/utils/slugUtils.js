@@ -64,6 +64,19 @@ export const generateSlug = (title, contentId) => {
 }
 
 /**
+ * 언어별 slug. 영어 페이지는 영문명이 있으면 영문 slug를 써서 주소에도 영어 키워드가 들어가게 한다.
+ * 어느 slug로 들어와도 끝의 contentId로 같은 장소를 찾는다.
+ */
+export const generateLocalizedSlug = ({ title, titleEn, contentId }, locale = 'kr') => {
+  if (locale === 'en' && titleEn) {
+    // 영문명에 섞인 한글 병기(예: "Seorae Village(서래마을)")는 빼고 영문만 주소에 쓴다
+    const ascii = titleEn.replace(/[^\u0000-\u007F]+/g, ' ').replace(/\(\s*\)/g, ' ').trim()
+    if (/[a-zA-Z]/.test(ascii)) return generateSlug(ascii, contentId)
+  }
+  return generateSlug(title, contentId)
+}
+
+/**
  * Slug에서 contentId 추출
  * @param {string} slug - URL slug (인코딩되거나 디코딩된 상태 모두 지원)
  * @returns {string|null} contentId

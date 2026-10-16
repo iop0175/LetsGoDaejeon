@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react'
+import Link from 'next/link'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Navigation, Autoplay } from 'swiper/modules'
 import { FiArrowRight, FiArrowLeft, FiCalendar, FiMapPin, FiLoader } from 'react-icons/fi'
@@ -154,7 +155,7 @@ const FestivalSection = memo(() => {
           >
             {festivals.map((festival) => (
               <SwiperSlide key={festival.id}>
-                <a href={festival.href || (festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival')} className="festival-card">
+                <Link href={festival.href || (festival.contentId ? `/spot/${generateSlug(festival.title[language] || festival.title.ko, festival.contentId)}` : '/festival')} className="festival-card">
                   <div className="festival-image">
                     <img
                       src={festival.image} 
@@ -181,19 +182,19 @@ const FestivalSection = memo(() => {
                       )}
                     </div>
                   </div>
-                </a>
+                </Link>
               </SwiperSlide>
             ))}
           </Swiper>
         )}
         
         <div className="section-more">
-          <a href={sectionMode === 'performance' ? '/festival?tab=performance' : '/festival'} className="btn btn-primary">
+          <Link href={sectionMode === 'performance' ? '/festival?tab=performance' : '/festival'} className="btn btn-primary">
             {sectionMode === 'performance'
               ? (t.festivalSection.viewAllPerformances || '문화공연 전체보기')
               : t.festivalSection.viewAll}
             <FiArrowRight />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

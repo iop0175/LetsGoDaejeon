@@ -1,52 +1,27 @@
-import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
+import { useRouter } from 'next/router'
+import SeoHead from '../src/components/common/SeoHead'
+import { FallbackContext, FallbackLoading } from '../src/components/common/PageFallback'
+import { getPageSeo } from '../src/config/pageSeo'
 
-// 클라이언트 전용 컴포넌트
-const MedicalPageContent = dynamic(
-  () => import('../src/pages/MedicalPage'),
-  { ssr: false, loading: () => <div className="loading-spinner"><div className="spinner"></div></div> }
-)
+const PageContent = dynamic(() => import('../src/pages/MedicalPage'), { ssr: false, loading: FallbackLoading })
 
-// SEO 메타데이터
-const SEO = CITY.key === 'daejeon' ? {
-  ko: {
-    title: '대전 의료시설 | 대전으로 - Let\'s Go Daejeon',
-    description: '대전의 병원, 약국, 의료시설 정보를 제공합니다. 충남대학교병원, 을지대학교병원, 건양대학교병원 등 주요 의료기관을 소개합니다.',
-    keywords: '대전 병원, 대전 의료, 대전 약국, 충남대학교병원, 을지대학교병원, 건양대학교병원, Daejeon hospital, Daejeon medical'
-  },
-  en: {
-    title: 'Daejeon Medical Facilities | Let\'s Go Daejeon',
-    description: 'Find hospitals, pharmacies, and medical facilities in Daejeon. Major hospitals and healthcare services information.',
-    keywords: 'Daejeon hospital, Daejeon medical, Daejeon pharmacy, healthcare Daejeon, medical tourism Daejeon'
-  }
-} : getCityPageSeo('의료시설', 'Medical Facilities')
+export default function MedicalPageWrapper() {
+  const { locale } = useRouter()
+  const loc = locale === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('medical', loc)
+  const home = loc === 'en' ? 'Home' : '홈'
 
-export default function MedicalPage() {
   return (
     <>
-      <Head>
-        <title>{SEO.ko.title}</title>
-        <meta name="description" content={SEO.ko.description} />
-        <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href={`${SITE_URL}/medical`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${SITE_URL}/medical`} />
-        <meta property="og:title" content={SEO.ko.title} />
-        <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
-        <meta property="og:site_name" content={CITY.name} />
-        <meta property="og:locale" content="ko_KR" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={SEO.ko.title} />
-        <meta name="twitter:description" content={SEO.ko.description} />
-      </Head>
-
-      <MedicalPageContent />
+      <SeoHead
+        page="medical"
+        path="/medical"
+        crumbs={[{ name: home, path: '/' }, { name: seo.h1 || seo.title, path: '/medical' }]}
+      />
+      <FallbackContext.Provider value={{ h1: seo.h1, intro: seo.description }}>
+        <PageContent />
+      </FallbackContext.Provider>
     </>
   )
 }

@@ -49,12 +49,20 @@ for (const contentTypeId of ENG_TYPES) {
 const byName = new Map(engItems.map(item => [extractKorNameFromEng(item.title), item]).filter(([name]) => name))
 const byImage = new Map(engItems.filter(item => item.firstimage).map(item => [item.firstimage, item]))
 
-const { data: korItems, error } = await database
-  .from('tour_spots')
-  .select('id, title, firstimage')
-  .eq('areacode', areaCode)
-  .or('title_en.is.null,title_en.eq.')
-if (error) throw error
+// Supabase는 한 번에 1000행까지만 주므로 끝까지 나누어 읽는다
+const korItems = []
+for (let from = 0; ; from += 1000) {
+  const { data, error } = await database
+    .from('tour_spots')
+    .select('id, title, firstimage')
+    .eq('areacode', areaCode)
+    .or('title_en.is.null,title_en.eq.')
+    .order('id')
+    .range(from, from + 999)
+  if (error) throw error
+  korItems.push(...data)
+  if (data.length < 1000) break
+}
 
 const matches = korItems
   .map(kor => ({ kor, eng: byName.get(normalizeKorTitle(kor.title)) || (kor.firstimage && byImage.get(kor.firstimage)) }))

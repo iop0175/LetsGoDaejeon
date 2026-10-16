@@ -1,21 +1,17 @@
-import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import SeoHead from '../src/components/common/SeoHead'
+import { CITY } from '../src/config/cities'
 
-// 클라이언트 전용 컴포넌트 (관리자 전용)
-const AdminPageContent = dynamic(
+const PageContent = dynamic(
   () => import('../src/pages/AdminPage'),
   { ssr: false, loading: () => <div className="loading-spinner"><div className="spinner"></div></div> }
 )
 
-export default function AdminPage() {
+export default function AdminPageWrapper() {
   return (
     <>
-      <Head>
-        <title>관리자 | 대전으로</title>
-        <meta name="robots" content="noindex, nofollow" />
-      </Head>
-
-      <AdminPageContent />
+      <SeoHead title={`관리자 | ${CITY.name}`} description={`관리자`} path="/admin" noindex hasEnglish={false} />
+      <PageContent />
     </>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react'
+import Link from 'next/link'
 import { FiArrowRight, FiStar, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
@@ -151,7 +152,7 @@ const FoodSection = memo(() => {
         ) : (
           <div className="food-grid">
             {foods.map((food) => (
-              <a key={food.id} href={food.contentId ? `/spot/${generateSlug(food.name[language] || food.name.ko, food.contentId)}` : '/food'} className="food-card">
+              <Link key={food.id} href={food.contentId ? `/spot/${generateSlug(food.name[language] || food.name.ko, food.contentId)}` : '/food'} className="food-card">
                 <div className="food-image">
                   <img
                     src={food.image} 
@@ -172,16 +173,16 @@ const FoodSection = memo(() => {
                   <p className="food-description">{food.description[language] || food.description.ko}</p>
                   <span className="food-location">{food.location[language] || food.location.ko}</span>
                 </div>
-              </a>
+              </Link>
             ))}
           </div>
         )}
         
         <div className="section-more">
-          <a href="/food" className="btn btn-secondary" aria-label={`${t.foodSection.title} - ${t.foodSection.viewMore}`}>
+          <Link href="/food" className="btn btn-secondary" aria-label={`${t.foodSection.title} - ${t.foodSection.viewMore}`}>
             {t.foodSection.viewMore}
             <FiArrowRight />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

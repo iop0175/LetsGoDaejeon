@@ -1,8 +1,10 @@
-import Head from 'next/head'
+import { useRouter } from 'next/router'
+import SeoHead from '../src/components/common/SeoHead'
+import { getPageSeo } from '../src/config/pageSeo'
 import dynamic from 'next/dynamic'
 import HeroSection from '../src/components/HeroSection/HeroSection'
 import { getHeroSlides } from '../src/services/dbService'
-import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../src/config/cities'
+import { CITY, IS_CITY_PREVIEW } from '../src/config/cities'
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
 const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: true })
@@ -17,40 +19,21 @@ const JejuThemes = dynamic(() => import('../src/components/JejuThemes/JejuThemes
 const WeatherWidget = dynamic(() => import('../src/components/WeatherWidget/WeatherWidget'), { ssr: false })
 const KakaoChannelButton = dynamic(() => import('../src/components/KakaoChannelButton/KakaoChannelButton'), { ssr: false })
 
-// SEO 메타데이터
-const SEO = {
-  title: `${CITY.name} | ${CITY.englishName} - ${CITY.cityName} 관광 여행 가이드`,
-  description: `${CITY.cityName}의 관광지, 맛집, 공연과 문화시설을 소개합니다. ${CITY.cityName} 여행의 모든 것을 한눈에!`,
-  keywords: `${CITY.cityName}, ${CITY.cityName} 여행, ${CITY.cityName} 맛집, ${CITY.cityNameEn} Tourism`,
-  url: SITE_URL,
-  image: `${SITE_URL}${CITY.hero?.image || '/og-image.svg'}`
-}
-
 export default function HomePage({ heroSlides }) {
+  const { locale } = useRouter()
+  const loc = locale === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('home', loc)
+
   return (
     <>
-      <Head>
-        <title>{SEO.title}</title>
-        <meta name="description" content={SEO.description} />
-        <meta name="keywords" content={SEO.keywords} />
-        <link rel="canonical" href={SEO.url} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={SEO.url} />
-        <meta property="og:title" content={SEO.title} />
-        <meta property="og:description" content={SEO.description} />
-        <meta property="og:image" content={SEO.image} />
-        <meta property="og:site_name" content={CITY.name} />
-        <meta property="og:locale" content="ko_KR" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:url" content={SEO.url} />
-        <meta name="twitter:title" content={SEO.title} />
-        <meta name="twitter:description" content={SEO.description} />
-        <meta name="twitter:image" content={SEO.image} />
-      </Head>
+      <SeoHead
+        page="home"
+        path="/"
+        image={CITY.hero?.image}
+        imageAlt={seo.title}
+        includeSiteLd
+      />
+      <h1 className="visually-hidden">{seo.title}</h1>
 
       <HeroSection initialSlides={heroSlides} />
       <QuickMenu />

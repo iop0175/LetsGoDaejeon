@@ -5,6 +5,7 @@
 export const CITIES = {
   daejeon: {
     key: 'daejeon',
+    seoHighlights: {'ko':['성심당','엑스포과학공원','유성온천','계족산 황톳길','대청호'],'en':['Sungsimdang Bakery','Expo Science Park','Yuseong Hot Springs','Gyejoksan Mountain','Daecheong Lake']},
     cityName: '대전',
     cityNameEn: 'Daejeon',
     aliases: ['대전광역시'],
@@ -24,6 +25,7 @@ export const CITIES = {
   },
   seoul: {
     key: 'seoul',
+    seoHighlights: {'ko':['경복궁','북촌한옥마을','명동','한강공원','홍대'],'en':['Gyeongbokgung Palace','Bukchon Hanok Village','Myeongdong','Han River Parks','Hongdae']},
     cityName: '서울',
     cityNameEn: 'Seoul',
     aliases: ['서울특별시'],
@@ -66,6 +68,7 @@ export const CITIES = {
   },
   busan: {
     key: 'busan',
+    seoHighlights: {'ko':['해운대','광안리','감천문화마을','자갈치시장','태종대'],'en':['Haeundae Beach','Gwangalli Beach','Gamcheon Culture Village','Jagalchi Market','Taejongdae']},
     cityName: '부산',
     cityNameEn: 'Busan',
     aliases: ['부산광역시'],
@@ -105,6 +108,7 @@ export const CITIES = {
   },
   jeju: {
     key: 'jeju',
+    seoHighlights: {'ko':['성산일출봉','한라산','협재해수욕장','우도','애월'],'en':['Seongsan Ilchulbong','Hallasan Mountain','Hyeopjae Beach','Udo Island','Aewol']},
     cityName: '제주',
     cityNameEn: 'Jeju',
     aliases: ['제주특별자치도', '제주시', '서귀포시'],

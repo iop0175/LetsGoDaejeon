@@ -1,22 +1,13 @@
-import Head from 'next/head'
 import dynamic from 'next/dynamic'
+import SeoHead from '../src/components/common/SeoHead'
 
-// 클라이언트 전용 컴포넌트
-const TermsPageContent = dynamic(
-  () => import('../src/pages/TermsPage'),
-  { ssr: false }
-)
+const PageContent = dynamic(() => import('../src/pages/TermsPage'), { ssr: false })
 
-export default function TermsPage() {
+export default function TermsPageWrapper() {
   return (
     <>
-      <Head>
-        <title>이용약관 | 대전으로</title>
-        <meta name="description" content="대전으로 서비스 이용약관" />
-        <link rel="canonical" href="https://www.letsgodaejeon.kr/terms" />
-      </Head>
-
-      <TermsPageContent />
+      <SeoHead page="terms" path="/terms" />
+      <PageContent />
     </>
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect, memo } from 'react'
+import Link from 'next/link'
 import TravelCard from '../TravelCard/TravelCard'
 import { FiArrowRight, FiLoader } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
@@ -155,10 +156,10 @@ const PopularSpots = memo(() => {
           </div>
         )}
         <div className="section-more">
-          <a href="/travel" className="btn btn-secondary" aria-label={`${t.popularSpots.title} - ${t.popularSpots.viewMore}`}>
+          <Link href="/travel" className="btn btn-secondary" aria-label={`${t.popularSpots.title} - ${t.popularSpots.viewMore}`}>
             {t.popularSpots.viewMore}
             <FiArrowRight />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

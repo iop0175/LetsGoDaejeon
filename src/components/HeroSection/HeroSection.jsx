@@ -1,4 +1,5 @@
 import { useState, useEffect, memo, useMemo, useCallback } from 'react'
+import Link from 'next/link'
 import Image from 'next/image'
 import { FiArrowRight, FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
@@ -159,14 +160,14 @@ const HeroSection = memo(({ initialSlides = [] }) => {
               <span className="hero-badge">{getLocalizedText(slide, 'title')}</span>
               <h2 className="hero-title">{getLocalizedText(slide, 'subtitle')}</h2>
               <p className="hero-description">{getLocalizedText(slide, 'description')}</p>
-              <a 
+              <Link 
                 href={slide.link || '/'} 
                 className="hero-btn"
                 aria-label={`${getLocalizedText(slide, 'subtitle')} - ${t.hero.viewMore}`}
               >
                 {t.hero.viewMore}
                 <FiArrowRight />
-              </a>
+              </Link>
             </div>
           </div>
         ))}

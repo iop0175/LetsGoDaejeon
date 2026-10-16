@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect } from 'react'
+import { createContext, useContext, useEffect } from 'react'
+import { useRouter } from 'next/router'
 import { CITY } from '../config/cities'
 
 const LanguageContext = createContext()
@@ -1353,36 +1354,36 @@ const cityTranslations = CITY.key === 'daejeon' ? translations : Object.fromEntr
   Object.entries(translations).map(([language, value]) => [language, withPageCopy(localizeCity(value), language)])
 )
 
+// 언어는 주소(/kr, /en)가 정한다. 같은 페이지를 서버에서 각 언어로 따로 렌더링하므로 검색 로봇도 번역 화면을 그대로 본다.
+export const localeToLanguage = (locale) => (locale === 'en' ? 'en' : 'ko')
+export const languageToLocale = (language) => (language === 'en' ? 'en' : 'kr')
+
 export const LanguageProvider = ({ children }) => {
-  // SSR 환경에서는 기본값 사용
-  const [language, setLanguage] = useState('ko')
-  const [isHydrated, setIsHydrated] = useState(false)
+  const router = useRouter()
+  const language = localeToLanguage(router.locale)
 
-  // 클라이언트에서 hydration 후 실제 언어 적용
+  // Next는 언어를 바꿀 때 html lang에 로케일 코드(kr)를 그대로 쓰므로, 이동이 끝난 뒤 올바른 코드(ko/en)로 되돌린다
   useEffect(() => {
-    const saved = localStorage.getItem('language')
-    if (saved) {
-      setLanguage(saved)
-    }
-    setIsHydrated(true)
-  }, [])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    if (isHydrated) {
-      localStorage.setItem('language', language)
-    }
-    document.documentElement.lang = language
-  }, [language, isHydrated])
+    const apply = () => { document.documentElement.lang = language }
+    apply()
+    router.events.on('routeChangeComplete', apply)
+    return () => router.events.off('routeChangeComplete', apply)
+  }, [language, router.events])
 
   const t = cityTranslations[language] || cityTranslations.ko
 
-  const toggleLanguage = () => {
-    setLanguage(prev => prev === 'ko' ? 'en' : 'ko')
+  const setLanguage = (next) => {
+    const locale = languageToLocale(next)
+    if (locale === router.locale) return
+    // 다음 방문 때 같은 언어로 보내기 위해 선택을 쿠키에 남긴다
+    document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=31536000; samesite=lax`
+    router.push(router.asPath, router.asPath, { locale })
   }
 
+  const toggleLanguage = () => setLanguage(language === 'ko' ? 'en' : 'ko')
+
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, toggleLanguage, t }}>
+    <LanguageContext.Provider value={{ language, locale: languageToLocale(language), setLanguage, toggleLanguage, t }}>
       {children}
     </LanguageContext.Provider>
   )

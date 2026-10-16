@@ -1,5 +1,8 @@
-import Head from 'next/head'
-import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
+import Link from 'next/link'
+import { CITY } from '../src/config/cities'
+import SeoHead from '../src/components/common/SeoHead'
+import { getPageSeo } from '../src/config/pageSeo'
+import { itemListLd } from '../src/utils/seo'
 import { useState, useEffect, useMemo } from 'react'
 import { useRouter } from 'next/router'
 import { FiMapPin, FiLoader, FiCamera, FiPhone, FiExternalLink, FiNavigation, FiPlus, FiCalendar, FiCheck, FiChevronLeft, FiChevronRight, FiSearch } from 'react-icons/fi'
@@ -10,30 +13,18 @@ import { getAllDbData, getTourSpots as getTourSpotsDb } from '../src/services/db
 import { getUserTripPlans, addTripPlace } from '../src/services/tripService'
 import { getReliableImageUrl, cleanIntroHtml, sanitizeIntroHtml } from '../src/utils/imageUtils'
 import { DISTRICTS, extractDistrict, getDongFromAddr } from '../src/utils/constants'
-import { generateSlug } from '../src/utils/slugUtils'
+import { generateSlug, generateLocalizedSlug } from '../src/utils/slugUtils'
 import LicenseBadge from '../src/components/common/LicenseBadge'
 import Icons from '../src/components/common/Icons'
 import { supabase } from '../src/services/supabase'
-
-// SSG용 SEO 메타데이터
-const SEO = CITY.key === 'daejeon' ? {
-  ko: {
-    title: '대전 관광지 | 대전으로',
-    description: '대전의 인기 관광지와 명소를 소개합니다. 엑스포과학공원, 유성온천, 계족산, 대청호 등 대전 가볼만한 곳을 확인하세요.',
-    keywords: '대전 관광지, 대전 명소, 대전 가볼만한곳, 엑스포과학공원, 유성온천, 계족산, 대청호, 한밭수목원, 대전 여행지'
-  },
-  en: {
-    title: 'Daejeon Attractions | Let\'s Go Daejeon',
-    description: 'Discover popular tourist attractions in Daejeon. Explore Expo Science Park, Yuseong Hot Springs, Gyejoksan Mountain, and more.',
-    keywords: 'Daejeon attractions, Daejeon sightseeing, Expo Science Park, Yuseong Hot Springs, Gyejoksan, Daecheongho Lake'
-  }
-} : getCityPageSeo('관광지', 'Attractions')
 
 export default function TravelPage({ initialSpots, totalCount }) {
   const { language, t } = useLanguage()
   const { user } = useAuth()
   const router = useRouter()
-  const seoData = SEO[language] || SEO.ko
+  const locale = language === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('travel', locale, { count: totalCount })
+  const spotPath = (spot) => `/spot/${generateLocalizedSlug({ title: spot.name, titleEn: spot.nameEn, contentId: spot.contentId }, locale)}`
   const displayName = (spot) => (language === 'en' && (spot.nameEn || spot.title_en)) || spot.name || spot.title
 
   const [allSpots, setAllSpots] = useState(initialSpots || [])
@@ -172,36 +163,23 @@ export default function TravelPage({ initialSpots, totalCount }) {
   }, [districtFilter])
 
   const handleSpotClick = (spot) => {
-    const slug = generateSlug(spot.name || spot.title, spot.contentId || spot.id)
-    router.push(`/spot/${slug}`)
+    router.push(spotPath(spot))
   }
 
   return (
     <>
-      <Head>
-        <title>{seoData.title}</title>
-        <meta name="description" content={seoData.description} />
-        <meta name="keywords" content={seoData.keywords} />
-        <link rel="canonical" href={`${SITE_URL}/travel`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${SITE_URL}/travel`} />
-        <meta property="og:title" content={seoData.title} />
-        <meta property="og:description" content={seoData.description} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
-        <meta property="og:locale" content={language === 'ko' ? 'ko_KR' : 'en_US'} />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={seoData.title} />
-        <meta name="twitter:description" content={seoData.description} />
-      </Head>
+      <SeoHead
+        page="travel"
+        count={totalCount}
+        path="/travel"
+        crumbs={[{ name: language === 'ko' ? '홈' : 'Home', path: '/' }, { name: seo.h1, path: '/travel' }]}
+        ld={[itemListLd(locale, seo.h1, allSpots.slice(0, 20).map((spot) => ({ name: displayName(spot), path: spotPath(spot), image: spot.imageUrl })))]}
+      />
 
       <div className="travel-page">
         <div className="page-hero">
           <div className="page-hero-content">
-            <h1>{t.pages?.travel?.title || '관광지'}</h1>
+            <h1>{seo.h1}</h1>
             <p>{t.pages?.travel?.subtitle || '대전의 아름다운 관광지를 만나보세요'}</p>
           </div>
         </div>
@@ -324,7 +302,9 @@ export default function TravelPage({ initialSpots, totalCount }) {
                       />
                     </div>
                     <div className="spot-content">
-                      <h3 className="spot-title" itemProp="name">{displayName(spot)}</h3>
+                      <h3 className="spot-title" itemProp="name">
+                        <Link href={spotPath(spot)} onClick={(e) => e.stopPropagation()} style={{ color: 'inherit', textDecoration: 'none' }}>{displayName(spot)}</Link>
+                      </h3>
                       <div className="spot-info">
                         <span className="spot-location">
                           <FiMapPin />
@@ -373,6 +353,20 @@ export default function TravelPage({ initialSpots, totalCount }) {
               )}
             </>
           )}
+
+          {/* 검색 로봇과 보조기기를 위한 전체 장소 목록 (화면의 12개씩 보기와 별개로 모든 장소에 링크) */}
+          {allSpots.length > 0 && (
+            <details className="all-spots-index">
+              <summary>{language === 'ko' ? `${seo.h1} 전체 목록 (${allSpots.length}곳)` : `All ${allSpots.length} places`}</summary>
+              <ul>
+                {allSpots.map((spot) => (
+                  <li key={`index-${spot.contentId || spot.id}`}>
+                    <Link href={spotPath(spot)}>{displayName(spot)}</Link>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
         </div>
       </div>
     </>
@@ -391,7 +385,7 @@ export async function getStaticProps() {
 
     const { data, error, count } = await serverSupabase
       .from('tour_spots')
-      .select('*', { count: 'exact' })
+      .select('content_id, title, title_en, addr1, addr2, firstimage, firstimage2, tel, mapx, mapy', { count: 'exact' })
       .eq('content_type_id', 12) // 관광지 타입
       .eq('areacode', CITY.tourApiAreaCode)
       .order('title', { ascending: true })
@@ -406,7 +400,6 @@ export async function getStaticProps() {
       name: item.title || null,
       nameEn: item.title_en || null,
       address: item.addr1 || item.addr2 || null,
-      intro: item.overview || null,
       imageUrl: item.firstimage || item.firstimage2 || null,
       phone: item.tel || null,
       viewCount: item.view_count || 0,

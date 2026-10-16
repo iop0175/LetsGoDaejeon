@@ -1,73 +1,27 @@
-import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import { CITY, SITE_URL, getCityPageSeo } from '../src/config/cities'
+import { useRouter } from 'next/router'
+import SeoHead from '../src/components/common/SeoHead'
+import { FallbackContext, FallbackLoading } from '../src/components/common/PageFallback'
+import { getPageSeo } from '../src/config/pageSeo'
 
-// 클라이언트 전용 컴포넌트
-const TripPlannerPageContent = dynamic(
-  () => import('../src/pages/TripPlannerPage'),
-  { ssr: false, loading: () => <div className="loading-spinner"><div className="spinner"></div></div> }
-)
+const PageContent = dynamic(() => import('../src/pages/TripPlannerPage'), { ssr: false, loading: FallbackLoading })
 
-// SEO 메타데이터
-const SEO = CITY.key === 'daejeon' ? {
-  ko: {
-    title: '대전 여행 계획 만들기 | 대전으로 - Let\'s Go Daejeon',
-    description: '나만의 대전 여행 일정을 쉽게 만들어보세요. 대전의 인기 관광지, 맛집, 문화시설을 드래그앤드롭으로 일정에 추가하고 최적의 여행 코스를 완성하세요.',
-    keywords: '대전 여행 계획, 대전 일정 만들기, 대전 여행 플래너, 대전 코스 추천, Daejeon trip planner, Daejeon itinerary'
-  },
-  en: {
-    title: 'Create Daejeon Trip Plan | Let\'s Go Daejeon',
-    description: 'Create your own Daejeon travel itinerary easily. Add popular tourist spots, restaurants, and cultural facilities to your schedule with drag-and-drop.',
-    keywords: 'Daejeon trip planner, Daejeon itinerary maker, Daejeon travel plan, plan Daejeon trip'
-  }
-} : getCityPageSeo('여행 계획 만들기', 'Trip Planner')
+export default function TripPlannerPageWrapper() {
+  const { locale } = useRouter()
+  const loc = locale === 'en' ? 'en' : 'kr'
+  const seo = getPageSeo('tripPlanner', loc)
+  const home = loc === 'en' ? 'Home' : '홈'
 
-export default function TripPlannerPage() {
   return (
     <>
-      <Head>
-        <title>{SEO.ko.title}</title>
-        <meta name="description" content={SEO.ko.description} />
-        <meta name="keywords" content={SEO.ko.keywords} />
-        <link rel="canonical" href={`${SITE_URL}/trip-planner`} />
-        
-        {/* Open Graph */}
-        <meta property="og:type" content="website" />
-        <meta property="og:url" content={`${SITE_URL}/trip-planner`} />
-        <meta property="og:title" content={SEO.ko.title} />
-        <meta property="og:description" content={SEO.ko.description} />
-        <meta property="og:image" content={`${SITE_URL}/og-image.svg`} />
-        <meta property="og:site_name" content={CITY.name} />
-        <meta property="og:locale" content="ko_KR" />
-        
-        {/* Twitter Card */}
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={SEO.ko.title} />
-        <meta name="twitter:description" content={SEO.ko.description} />
-        
-        {/* Schema.org 구조화 데이터 */}
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              "@context": "https://schema.org",
-              "@type": "WebApplication",
-              "name": "대전 여행 플래너",
-              "description": SEO.ko.description,
-            "url": `${SITE_URL}/trip-planner`,
-              "applicationCategory": "TravelApplication",
-              "operatingSystem": "Web Browser",
-              "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "KRW"
-              }
-            })
-          }}
-        />
-      </Head>
-
-      <TripPlannerPageContent />
+      <SeoHead
+        page="tripPlanner"
+        path="/trip-planner"
+        crumbs={[{ name: home, path: '/' }, { name: seo.h1 || seo.title, path: '/trip-planner' }]}
+      />
+      <FallbackContext.Provider value={{ h1: seo.h1, intro: seo.description }}>
+        <PageContent />
+      </FallbackContext.Provider>
     </>
   )
 }

@@ -1,6 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+
+  // 한국어/영어를 별도 URL(/kr, /en)로 제공한다. 접두어 없는 주소는 default 로케일로 받아 미들웨어가 /kr 또는 /en으로 보낸다.
+  i18n: {
+    locales: ['default', 'kr', 'en'],
+    defaultLocale: 'default',
+    localeDetection: false
+  },
   distDir: process.env.NEXT_DIST_DIR || '.next',
   
   // Turbopack 설정 (Next.js 16+)

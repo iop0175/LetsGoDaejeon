@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import Head from 'next/head'
 import Script from 'next/script'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { SpeedInsights } from '@vercel/speed-insights/next'
@@ -22,8 +23,8 @@ const notoSansKR = Noto_Sans_KR({
   variable: '--font-noto-sans-kr',
 })
 
-// Header는 클라이언트 전용 (인터랙션 필요)
-const Header = dynamic(() => import('../src/components/Header/Header'), { ssr: false })
+// Header는 서버에서도 그려 메뉴 링크가 첫 HTML에 들어가게 한다
+import Header from '../src/components/Header/Header'
 // Footer는 SSR 활성화 (CLS 방지)
 import Footer from '../src/components/Footer/Footer'
 
@@ -108,13 +109,6 @@ export default function App({ Component, pageProps }) {
   const router = useRouter()
   const isAdminPage = router.pathname.startsWith('/admin')
   
-  // canonical URL 생성
-  const getCanonicalUrl = () => {
-    const baseUrl = SITE_URL
-    const path = router.asPath.split('?')[0].split('#')[0] // 쿼리스트링, 해시 제거
-    return path === '/' ? baseUrl : `${baseUrl}${path}`
-  }
-  
   useEffect(() => {
     loadKakaoMapSDK(router.pathname)
   }, [router.pathname])
@@ -148,8 +142,6 @@ export default function App({ Component, pageProps }) {
       
       <Head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="canonical" href={getCanonicalUrl()} />
-        <meta name="robots" content={IS_CITY_PREVIEW ? 'noindex, nofollow' : 'index, follow'} />
         {/* LCP 히어로 이미지 preload - fetchpriority=high */}
         {router.pathname === '/' && CITY.key === 'daejeon' && (
           <link
@@ -176,7 +168,7 @@ export default function App({ Component, pageProps }) {
                 ].some(path => router.pathname === path || router.pathname.startsWith(`${path}/`)) ? (
                   <>
                     <Head><title>{`${CITY.cityName} 지역 서비스 준비 중 | ${CITY.name}`}</title></Head>
-                    <section className="city-service-pending"><h1>{CITY.cityName} 지역 서비스 준비 중</h1><p>지역 데이터 연결과 분리 검증 후 제공됩니다. 다른 도시 데이터는 표시하지 않습니다.</p><a href="/travel">{CITY.cityName} 관광지 둘러보기</a></section>
+                    <section className="city-service-pending"><h1>{CITY.cityName} 지역 서비스 준비 중</h1><p>지역 데이터 연결과 분리 검증 후 제공됩니다. 다른 도시 데이터는 표시하지 않습니다.</p><Link href="/travel">{CITY.cityName} 관광지 둘러보기</Link></section>
                   </>
                 ) : <Component {...pageProps} />}
               </main>

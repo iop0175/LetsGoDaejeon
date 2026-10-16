@@ -136,7 +136,7 @@ const Header = memo(() => {
           <select
             className="city-select"
             value={CITY.key}
-            onChange={(event) => window.location.assign(CITIES[event.target.value].publicUrl)}
+            onChange={(event) => window.location.assign(`${CITIES[event.target.value].publicUrl}/${router.locale === 'en' ? 'en' : 'kr'}`)}
             aria-label={language === 'ko' ? '도시 선택' : 'Select city'}
           >
             {liveCities.map(city => (
@@ -148,19 +148,20 @@ const Header = memo(() => {
           <button 
             className="theme-btn" 
             onClick={toggleTheme}
-            aria-label="테마 변경"
+            aria-label={language === 'ko' ? '테마 변경' : 'Toggle theme'}
           >
             {isDark ? <FiSun /> : <FiMoon />}
           </button>
           <button 
             className="lang-btn" 
             onClick={toggleLanguage}
-            aria-label="언어 변경"
+            aria-label={language === 'ko' ? 'English로 보기' : '한국어로 보기'}
+            lang={language === 'ko' ? 'en' : 'ko'}
           >
             <FiGlobe />
             <span>{language === 'ko' ? 'EN' : '한'}</span>
           </button>
-          <button className="search-btn" aria-label="검색" onClick={handleSearchClick}>
+          <button className="search-btn" aria-label={language === 'ko' ? '검색' : 'Search'} onClick={handleSearchClick}>
             <FiSearch />
           </button>
           
@@ -226,7 +227,7 @@ const Header = memo(() => {
           <button
             className="mobile-menu-btn"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="메뉴"
+            aria-label={language === 'ko' ? '메뉴' : 'Menu'}
           >
             {isMobileMenuOpen ? <FiX /> : <FiMenu />}
           </button>

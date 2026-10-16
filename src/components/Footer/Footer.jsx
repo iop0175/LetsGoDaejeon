@@ -1,12 +1,12 @@
 import { memo } from 'react'
 import Link from 'next/link'
-import { FiMapPin, FiMail, FiInstagram, FiFacebook, FiYoutube } from 'react-icons/fi'
+import { FiMapPin, FiMail } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { CITY } from '../../config/cities'
 // CSS는 _app.jsx에서 import
 
 const Footer = memo(() => {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   return (
     <footer className="footer">
@@ -33,16 +33,22 @@ const Footer = memo(() => {
               <h4>{t.footer.tourInfo}</h4>
               <ul>
                 <li><Link href="/travel">{t.nav.travel}</Link></li>
-                <li><Link href="/festival">{t.nav.festival}</Link></li>
                 <li><Link href="/food">{t.nav.food}</Link></li>
+                <li><Link href="/festival">{t.nav.festival}</Link></li>
+                <li><Link href="/culture">{t.nav.culture}</Link></li>
+                <li><Link href="/leisure">{language === 'ko' ? '레포츠' : 'Leisure'}</Link></li>
+                <li><Link href="/accommodation">{t.nav.accommodation}</Link></li>
+                <li><Link href="/shopping">{t.nav.shopping}</Link></li>
               </ul>
             </div>
             <div className="footer-link-group">
-              <h4>{t.footer.customerService}</h4>
+              <h4>{language === 'ko' ? '여행 도구' : 'Travel tools'}</h4>
               <ul>
-                <li><a href="#">{t.footer.faq}</a></li>
-                <li><a href="#">{t.footer.tourOffice}</a></li>
-                <li><a href="#">{t.footer.travelGuide}</a></li>
+                <li><Link href="/map">{t.nav.map}</Link></li>
+                <li><Link href="/trip-planner">{language === 'ko' ? '여행 일정 만들기' : 'Trip planner'}</Link></li>
+                {CITY.key === 'daejeon' && <li><Link href="/shared-trips">{language === 'ko' ? '여행코스' : 'Travel Courses'}</Link></li>}
+                {CITY.parkingReady && <li><Link href="/parking">{t.nav.parking}</Link></li>}
+                {CITY.medicalReady && <li><Link href="/medical">{t.nav.medical}</Link></li>}
               </ul>
             </div>
             <div className="footer-link-group">
@@ -50,24 +56,12 @@ const Footer = memo(() => {
               <ul>
                 <li><a href={CITY.governmentUrl} target="_blank" rel="noopener noreferrer">{t.footer.daejeonCity}</a></li>
                 <li><a href="https://www.visitkorea.or.kr" target="_blank" rel="noopener noreferrer">{t.footer.visitKorea}</a></li>
-                <li><a href="#" target="_blank" rel="noopener noreferrer">{t.footer.tourCorp}</a></li>
               </ul>
             </div>
           </div>
         </div>
 
         <div className="footer-bottom">
-          <div className="footer-social">
-            <a href="#" aria-label="Instagram" className="social-link">
-              <FiInstagram />
-            </a>
-            <a href="#" aria-label="Facebook" className="social-link">
-              <FiFacebook />
-            </a>
-            <a href="#" aria-label="YouTube" className="social-link">
-              <FiYoutube />
-            </a>
-          </div>
           <div className="footer-copyright">
             <p className="footer-disclaimer">
               {t.footer.disclaimer || '본 사이트는 대전광역시 공식 홈페이지가 아니며, 관광 정보 제공을 목적으로 운영되는 민간 사이트입니다.'}

@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import Link from 'next/link'
 import { FiMap, FiCalendar, FiActivity, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { CITY } from '../../config/cities'
@@ -25,12 +26,12 @@ const QuickMenu = memo(() => {
         </div>
         <div className="quick-menu-grid">
           {quickMenuItems.map((item, index) => (
-            <a key={index} href={item.link} className="quick-menu-item">
+            <Link key={index} href={item.link} className="quick-menu-item">
               <div className="quick-menu-icon">
                 <item.icon />
               </div>
               <span className="quick-menu-label">{item.label}</span>
-            </a>
+            </Link>
           ))}
         </div>
       </div>
