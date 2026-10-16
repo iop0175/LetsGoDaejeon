@@ -6,6 +6,7 @@ import DOMPurify from 'dompurify'
 import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
+import { CITY } from '../config/cities'
 import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots, getNearbyAccommodations, getNearbyShopping } from '../services/dbService'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
@@ -357,7 +358,10 @@ const SpotDetailPage = () => {
   const generateSpotDescription = (spot, contentType, language) => {
     if (!spot) return null
     
-    const name = spot.title || '이 장소'
+    // 영어 화면에서는 영문명(한글 병기 제외)을 쓴다
+    const name = (language === 'en' && spot.title_en
+      ? spot.title_en.replace(/\s*\([^)]*[가-힣][^)]*\)\s*/g, ' ').replace(/\s+/g, ' ').trim()
+      : spot.title) || '이 장소'
     const address = spot.addr1 || ''
     const overview = (language === 'en' && spot.overview_en ? spot.overview_en : spot.overview) || ''
     const intro = spot.intro_info || {}
@@ -620,7 +624,8 @@ const SpotDetailPage = () => {
       
       return `${name}은 ${locationText}에 위치한 ${type}로, ${feature}을 주제로 한 ${form} 공간이다. ${target}에게 적합해 ${intent} 목적으로 많이 방문한다.`
     } else {
-      const locationText = district || city
+      // 한글 구 이름이 영어 문장에 섞이지 않도록 도시 영문명을 쓴다
+      const locationText = CITY.cityNameEn
       
       // Restaurant (39) specific template
       if (contentType === '39') {
