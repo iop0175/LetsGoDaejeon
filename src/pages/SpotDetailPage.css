@@ -2420,3 +2420,15 @@
   border-radius: 10px;
   font-weight: 500;
 }
+
+/* 첫 화면 빠른 실행 */
+.sdp__quick { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 4px; }
+.sdp__quick-btn { display: inline-flex; flex: 1 1 0; min-width: 96px; min-height: 44px; align-items: center; justify-content: center; gap: 6px; padding: 10px 14px; border: 1px solid #d9dde4; border-radius: 10px; background: #fff; color: #222; font-size: 14px; font-weight: 700; text-decoration: none; }
+.sdp__quick-btn--primary { border-color: #de2f5f; background: #de2f5f; color: #fff; }
+.sdp__quick-btn:focus-visible { outline: 2px solid #2f6fed; outline-offset: 2px; }
+.sdp--dark .sdp__quick-btn { border-color: #2d2d35; background: #1a1a1e; color: #eee; }
+.sdp--dark .sdp__quick-btn--primary { border-color: #de2f5f; background: #de2f5f; color: #fff; }
+.sdp__nearlinks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 10px 0 2px; font-size: 13px; }
+.sdp__nearlinks span { color: #687083; font-weight: 700; }
+.sdp__nearlinks a { max-width: 100%; padding: 5px 10px; overflow: hidden; border-radius: 999px; background: #f2f4f8; color: #222; font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
+.sdp--dark .sdp__nearlinks a { background: #26262d; color: #eee; }

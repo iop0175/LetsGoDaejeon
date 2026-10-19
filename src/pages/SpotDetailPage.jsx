@@ -756,6 +756,10 @@ const SpotDetailPage = () => {
     setRelatedTripsLoading(false)
   }
   
+  // 상단 링크용: 주변 관광지가 없으면 맛집·카페·쇼핑·숙박 순으로 채운다
+  const nearLinks = [relatedSpots, nearbyRestaurants, nearbyCafes, nearbyShopping, nearbyAccommodations]
+    .flat().filter((item, index, list) => item?.contentId && item?.name && list.findIndex((other) => other.contentId === item.contentId) === index).slice(0, 3)
+
   // 좌표 기반 주변 관광지 로드 함수
   const loadRelatedSpots = async (lat, lng, excludeId) => {
     setRelatedLoading(true)
@@ -1240,6 +1244,22 @@ const SpotDetailPage = () => {
             {contentConfig.name?.[language]}
           </span>
           <h1 className="sdp__title">{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h1>
+          {/* 첫 화면에서 바로 누를 수 있는 빠른 실행 (하단 고정 버튼은 광고에 가려지기 쉽다) */}
+          <div className="sdp__quick" role="group" aria-label={language === 'ko' ? '빠른 실행' : 'Quick actions'}>
+            {spot.addr1 && (
+              <a href={getDirectionsUrl(language, { name: spot.title, address: spot.addr1, lat: spot.mapy, lng: spot.mapx })} target="_blank" rel="noopener noreferrer" className="sdp__quick-btn sdp__quick-btn--primary">
+                <Icons.compass size={16} /> {t.ui.directions}
+              </a>
+            )}
+            {spot.tel && (
+              <a href={`tel:${spot.tel.replace(/[^0-9-]/g, '')}`} className="sdp__quick-btn">
+                <Icons.phone size={16} /> {language === 'ko' ? '전화' : 'Call'}
+              </a>
+            )}
+            <Link href="/today" className="sdp__quick-btn">
+              {language === 'ko' ? '오늘의 코스' : "Today's plan"}
+            </Link>
+          </div>
           
           {/* 장소 설명 요약 */}
           {(() => {
@@ -1250,6 +1270,16 @@ const SpotDetailPage = () => {
             )
           })()}
           
+
+          {nearLinks.length > 0 && (
+            <nav className="sdp__nearlinks" aria-label={language === 'ko' ? '근처 장소' : 'Nearby places'}>
+              <span>{language === 'ko' ? '근처 가볼 만한 곳' : 'Nearby'}</span>
+              {nearLinks.map((related) => (
+                <Link key={related.contentId} href={`/spot/${generateSlug(related.name, related.contentId)}`}>{related.name}</Link>
+              ))}
+            </nav>
+          )}
+
           {/* 통계 정보 (조회수, 좋아요, 리뷰, 평점) */}
           <div className="sdp__stats">
             <span className="sdp__stat-item">
