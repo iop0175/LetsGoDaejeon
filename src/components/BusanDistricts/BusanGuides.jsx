@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '../../context/LanguageContext'
 import { safeFetch } from '../../utils/fetchUtils'
+import SectionHeading from '../common/SectionHeading'
 
 export default function BusanGuides({ full = false }) {
   const { language } = useLanguage()
@@ -31,8 +32,7 @@ export default function BusanGuides({ full = false }) {
   return (
     <section className="section busan-guides">
       <div className="container">
-        <h2 className="section-title">{ko ? '부산이 들려주는 여행과 한 끼' : 'Busan stories and local tables'}</h2>
-        <p className="section-subtitle">{ko ? '부산광역시·비짓부산의 공식 추천입니다. 원문은 한국어로 제공됩니다.' : 'Official recommendations from Busan and Visit Busan. Stories are provided in Korean.'}</p>
+        <SectionHeading eyebrow={ko ? '부산 여행 이야기' : 'BUSAN STORIES'} title={ko ? '부산에서 만나는 여행과 한 끼' : 'Busan stories and local tables'} description={ko ? '부산광역시·비짓부산의 추천 여행과 맛집을 모았습니다. 원문은 한국어로 제공됩니다.' : 'Travel and food recommendations from Busan and Visit Busan. Original stories are in Korean.'} />
         <div className="busan-guides__controls">
           <div role="group" aria-label={ko ? '콘텐츠 종류' : 'Content type'}>
             {['themes', 'food'].map(value => <button key={value} type="button" aria-pressed={type === value} onClick={() => { setType(value); setPage(1) }}>{value === 'themes' ? (ko ? '추천 테마여행' : 'Travel themes') : (ko ? '부산 미식' : 'Local food')}</button>)}
@@ -46,6 +46,7 @@ export default function BusanGuides({ full = false }) {
               <span className="busan-guides__district">{item.district}</span>
               <h3>{item.title}</h3>
               <p>{item.intro}</p>
+              <span className="content-source-compact">{ko ? '자료: 부산광역시 · 비짓부산' : 'Source: Busan Metropolitan City · Visit Busan'}</span>
               <details>
                 <summary>{ko ? '여행 정보 펼치기' : 'Show details (Korean)'}</summary>
                 <p>{item.description}</p>

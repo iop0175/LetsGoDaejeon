@@ -13,6 +13,7 @@ import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../serv
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
+import SourceNote from '../components/common/SourceNote'
 import Icons from '../components/common/Icons'
 import { getDirectionsUrl } from '../utils/mapLinks'
 // CSS는 pages/_app.jsx에서 import
@@ -2112,6 +2113,9 @@ const SpotDetailPage = () => {
 
         {/* 저작권 */}
         <section className="sdp__license">
+          <SourceNote sources={[{ name: language === 'ko' ? '한국관광공사 TourAPI · 장소 정보' : 'Korea Tourism Organization · TourAPI place data', url: 'https://api.visitkorea.or.kr/' }]}>
+            {language === 'ko' ? `콘텐츠 ID: ${spot.content_id || contentId} · 공공 관광정보를 바탕으로 구성했습니다. 사진의 저작권 및 이용조건은 원 제공자의 안내를 따릅니다.` : `Content ID: ${spot.content_id || contentId}. Based on public tourism data. Image rights and usage terms belong to the original providers.`}
+          </SourceNote>
           <LicenseBadge type="kto" />
         </section>
       </main>

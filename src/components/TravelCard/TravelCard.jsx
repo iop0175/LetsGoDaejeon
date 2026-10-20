@@ -8,7 +8,7 @@ import { generateSlug } from '../../utils/slugUtils'
 const DEFAULT_IMAGE = '/images/no-image.svg'
 
 const TravelCard = memo(({ id, contentId, title, location, category, image, duration }) => {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [imgSrc, setImgSrc] = useState(image || DEFAULT_IMAGE)
 
   const handleImageError = () => {
@@ -46,6 +46,7 @@ const TravelCard = memo(({ id, contentId, title, location, category, image, dura
         <span className="travel-card-link">
           {t.common.viewDetails} <FiArrowRight />
         </span>
+        {contentId && <span className="content-source-compact">{language === 'ko' ? '자료: 한국관광공사 TourAPI' : 'Source: Korea Tourism Organization · TourAPI'}</span>}
       </div>
     </Link>
   )

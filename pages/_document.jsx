@@ -15,6 +15,12 @@ export default class AppDocument extends Document {
 
           {/* 네이버 사이트 소유 확인 */}
           <meta name="naver-site-verification" content="3dae5e0fb04d30964913bdedff8cea8116f3c850" />
+          {process.env.NEXT_PUBLIC_BING_VERIFICATION && (
+            <meta name="msvalidate.01" content={process.env.NEXT_PUBLIC_BING_VERIFICATION} />
+          )}
+          {process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION && (
+            <meta name="google-site-verification" content={process.env.NEXT_PUBLIC_GOOGLE_VERIFICATION} />
+          )}
 
           {/* Google AdSense - 사이트 승인 심사가 서버 렌더 HTML을 읽으므로 _app의 next/script 대신 여기에 둠 */}
           <script

@@ -181,6 +181,15 @@
   .festival-image {
     height: 180px;
   }
+
+  /* 헤딩이 세로로 쌓이면 버튼이 왼쪽에 쏠리므로 가운데 정렬 */
+  .festival-section .city-section-heading__actions {
+    align-self: stretch;
+  }
+
+  .festival-nav {
+    justify-content: center;
+  }
 }
 
 /* 다크모드 스타일 */

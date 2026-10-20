@@ -1,0 +1,37 @@
+.city-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  text-align: left;
+}
+.city-section-heading__copy { min-width: 0; max-width: 720px; }
+.city-section-heading__eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: var(--primary-color);
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+}
+.city-section-heading__eyebrow::before { content: ''; width: 24px; height: 2px; background: currentColor; }
+.city-section-heading h2 { margin: 0; color: var(--text-primary); font-size: 1.875rem; font-weight: 700; line-height: 1.4; word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
+.city-section-heading p { margin: 10px 0 0; color: var(--text-secondary); font-size: 1rem; line-height: 1.7; word-break: keep-all; overflow-wrap: anywhere; }
+.city-section-heading__actions { flex: none; }
+.city-section-heading__actions > a { color: var(--primary-color); font-weight: 600; text-decoration: none; }
+.content-source { margin: 28px 0; padding: 20px 24px; border: 1px solid var(--border-color, #dce4e7); border-left: 3px solid var(--primary-color); border-radius: 12px; background: var(--bg-secondary, #f7f9fa); color: var(--text-secondary); font-size: .875rem; line-height: 1.7; overflow-wrap: anywhere; }
+.content-source__title { display: flex; align-items: center; gap: 8px; color: var(--text-primary); font-weight: 700; }
+.content-source ul { margin: 10px 0; padding-left: 20px; }
+.content-source a { color: var(--primary-color); text-decoration: underline; text-underline-offset: 3px; }
+.content-source p { margin: 8px 0 0; }
+.content-source-compact { display: block; margin-top: 12px; color: var(--text-secondary); font-size: .75rem; font-weight: 400; line-height: 1.6; }
+@media (max-width: 768px) {
+  .city-section-heading { align-items: flex-start; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+  .city-section-heading h2 { font-size: 1.5rem; }
+  .city-section-heading p { font-size: .9375rem; margin-top: 8px; }
+  .content-source { padding: 16px; }
+  .home-guides, .popular-spots.section, .food-section.section, .travel-course.section, .festival-section { padding-top: 48px; padding-bottom: 48px; }
+}

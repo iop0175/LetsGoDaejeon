@@ -9,6 +9,7 @@ import { getCarRoute } from '../services/kakaoMobilityService'
 import { getReliableImageUrl, DEFAULT_IMAGE } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import { getDirectionsUrl } from '../utils/mapLinks'
+import SourceNote from '../components/common/SourceNote'
 // CSS는 pages/_app.jsx에서 import
 
 // 일차별 경로 색상
@@ -1240,6 +1241,7 @@ const SharedTripPage = () => {
       </section>
       
       {/* 하단 CTA */}
+      <div className="container"><SourceNote sources={[{ name: language === 'ko' ? `작성자: ${trip.authorNickname || t.ui.anonymous}` : `Author: ${trip.authorNickname || t.ui.anonymous}` }]}>{language === 'ko' ? '여행자가 직접 작성한 일정과 후기입니다. 공식 관광 안내가 아니며, 장소별 정보는 해당 운영기관에 확인해 주세요.' : 'This itinerary and its notes were shared by a traveler, not a tourism authority. Confirm place details with each operator.'}</SourceNote></div>
       <div className="shared-trip-cta">
         <div className="container">
           <p>{t.trip.createYourOwn}</p>

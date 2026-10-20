@@ -23,6 +23,8 @@ assert.deepEqual(
 )
 
 assert.equal(toRow({ title: 'A &amp; B', start: '2026-10-15' }).event_period, '20261015 ~ 20261015')
+assert.equal(toRow({ title: '출처 테스트', sourceName: '한국관광공사 TourAPI', sourceUrl: 'https://api.visitkorea.or.kr/' }).source_name, '한국관광공사 TourAPI')
+assert.equal(toRow({ title: '미기록' }).source_name, null)
 assert.ok(isCityKcisa({ title: '[제주] 공연', eventSite: '문예회관' }, ['제주']))
 assert.ok(isCityKcisa({ title: '전시', eventSite: '제주현대미술관' }, ['제주']))
 assert.ok(!isCityKcisa({ title: '제주 초대전', eventSite: '서울 갤러리' }, ['제주']))

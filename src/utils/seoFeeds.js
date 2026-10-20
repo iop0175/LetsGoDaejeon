@@ -1,11 +1,10 @@
-import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../config/cities'
+import { CITY, SITE_URL } from '../config/cities'
 import { getPageSeo } from '../config/pageSeo'
 
 const escapeXml = (text) => String(text).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 // 도시별 robots.txt: 사이트맵 주소가 항상 이 도시의 주소를 가리키게 한다.
 export const buildRobots = () => {
-  if (IS_CITY_PREVIEW) return 'User-agent: *\nDisallow: /\n'
   return `User-agent: *
 Allow: /
 

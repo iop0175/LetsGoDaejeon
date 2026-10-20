@@ -94,7 +94,38 @@ const Header = memo(() => {
           </span>
         </Link>
 
-        <nav className={`nav ${isMobileMenuOpen ? 'open' : ''}`}>
+        <nav className={`nav ${isMobileMenuOpen ? 'open' : ''}`} id="site-navigation" aria-label={language === 'ko' ? '주 메뉴' : 'Main navigation'}>
+          <div className="mobile-tools">
+            <label className="mobile-city-label" htmlFor="mobile-city-select">{language === 'ko' ? '도시 선택' : 'Select city'}</label>
+            <select
+              id="mobile-city-select"
+              className="city-select"
+              value={CITY.key}
+              onChange={(event) => window.location.assign(`${CITIES[event.target.value].publicUrl}/${router.locale === 'en' ? 'en' : 'kr'}`)}
+            >
+              {liveCities.map(city => (
+                <option key={city.key} value={city.key}>{language === 'ko' ? city.cityName : city.cityNameEn}</option>
+              ))}
+            </select>
+            <div className="mobile-tool-row">
+              <button type="button" onClick={toggleLanguage} lang={language === 'ko' ? 'en' : 'ko'}>
+                <FiGlobe /> {language === 'ko' ? 'English' : '한국어'}
+              </button>
+              <button type="button" onClick={toggleTheme}>
+                {isDark ? <FiSun /> : <FiMoon />} {language === 'ko' ? '테마' : 'Theme'}
+              </button>
+            </div>
+            {user ? (
+              <div className="mobile-tool-row">
+                <Link href="/profile"><FiUser /> {language === 'ko' ? '내 프로필' : 'Profile'}</Link>
+                <button type="button" onClick={handleLogout}><FiLogOut /> {language === 'ko' ? '로그아웃' : 'Log out'}</button>
+              </div>
+            ) : (
+              <button type="button" className="mobile-login" onClick={handleKakaoLogin}>
+                {language === 'ko' ? '카카오로 로그인' : 'Log in with Kakao'}
+              </button>
+            )}
+          </div>
           <ul className="nav-list">
             {navItems.map((item) => (
               <li key={item.path} className="nav-item">
@@ -232,6 +263,8 @@ const Header = memo(() => {
             className="mobile-menu-btn"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label={language === 'ko' ? '메뉴' : 'Menu'}
+            aria-expanded={isMobileMenuOpen}
+            aria-controls="site-navigation"
           >
             {isMobileMenuOpen ? <FiX /> : <FiMenu />}
           </button>

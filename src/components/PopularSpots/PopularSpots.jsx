@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
 import { CITY } from '../../config/cities'
+import SectionHeading from '../common/SectionHeading'
 // CSS는 _app.jsx에서 import
 
 // 기본 이미지 (이미지 없을 때 사용)
@@ -131,10 +132,7 @@ const PopularSpots = memo(() => {
   return (
     <section className="popular-spots section">
       <div className="container">
-        <div className="section-header">
-          <h2 className="section-title">{t.popularSpots.title}</h2>
-          <p className="section-subtitle">{t.popularSpots.subtitle}</p>
-        </div>
+        <SectionHeading eyebrow={language === 'ko' ? '여행의 발견' : 'EXPLORE'} title={language === 'ko' ? `${CITY.cityName}에서 가볼 만한 곳` : `Explore ${CITY.cityNameEn}`} description={language === 'ko' ? '익숙한 명소부터 새로운 풍경까지, 다음 여행지를 찾아보세요.' : 'Discover landmarks and quieter corners for your next visit.'} />
         {loading ? (
           <div className="spots-loading">
             <FiLoader className="loading-spinner" />

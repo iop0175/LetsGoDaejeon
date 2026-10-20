@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import SeoHead from '../../src/components/common/SeoHead'
 import PlaceGrid from '../../src/components/ContentHub/PlaceGrid'
 import ShareButtons from '../../src/components/ContentHub/ShareButtons'
+import SourceNote from '../../src/components/common/SourceNote'
 import { CITY } from '../../src/config/cities'
 import { getCityGuide, getCityGuides } from '../../src/config/cityGuides'
 import { fetchGuideSpots } from '../../src/services/guideData'
@@ -29,6 +30,9 @@ export default function GuideDetailPage({ guide, spots }) {
           </div>
           <div className="content-hub__intro"><p>{copy.intro}</p></div>
           <section><h2>{en ? 'Recommended stops' : '추천 장소'}</h2><PlaceGrid items={spots} locale={loc} /></section>
+          <SourceNote sources={[{ name: en ? 'Korea Tourism Organization · TourAPI place data' : '한국관광공사 TourAPI · 장소 정보', url: 'https://api.visitkorea.or.kr/' }, { name: en ? `${CITY.englishName} · editorial itinerary` : `${CITY.name} · 자체 편집 여행 코스` }]}>
+            {en ? 'The route and introduction are independently curated, not an official itinerary from a tourism authority.' : '장소 정보를 바탕으로 운영자가 구성한 추천 코스이며, 관광기관이 지정한 공식 코스가 아닙니다.'}
+          </SourceNote>
           <nav className="content-hub__related"><h2>{en ? 'Plan more' : '함께 보기'}</h2><div><Link href="/guides">{en ? 'All guides' : '전체 여행 코스'}</Link><Link href="/trip-planner">{en ? 'Build my itinerary' : '내 일정 만들기'}</Link><Link href="/live">{en ? 'Live city conditions' : '실시간 여행 현황'}</Link></div></nav>
         </div>
       </article>

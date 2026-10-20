@@ -4,6 +4,7 @@ import { FiArrowRight, FiClock, FiUser, FiMapPin, FiEye, FiHeart, FiX, FiNavigat
 import { useLanguage } from '../../context/LanguageContext'
 import { getPublishedTripPlans } from '../../services/tripService'
 import { getDirectionsUrl } from '../../utils/mapLinks'
+import SectionHeading from '../common/SectionHeading'
 // CSS는 _app.jsx에서 import
 
 // 여행코스 대체 이미지
@@ -119,12 +120,7 @@ const TravelCourse = memo(() => {
   return (
     <section className="travel-course section">
       <div className="container">
-        <div className="section-header">
-          <h2 className="section-title">{t.travelCourse.title}</h2>
-          <p className="section-subtitle">
-            {language === 'ko' ? '다른 여행자들이 공유한 코스를 둘러보세요' : 'Explore courses shared by other travelers'}
-          </p>
-        </div>
+        <SectionHeading eyebrow={language === 'ko' ? '여행자의 기록' : 'TRAVEL JOURNALS'} title={t.travelCourse.title} description={language === 'ko' ? '다른 여행자들이 공유한 일정에서 나만의 여행 힌트를 찾아보세요.' : 'Find inspiration in itineraries shared by fellow travelers.'} />
         
         {loading ? (
           <div className="course-loading">

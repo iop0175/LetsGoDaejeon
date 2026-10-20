@@ -3,10 +3,11 @@ import Link from 'next/link'
 import { FiMap, FiCalendar, FiActivity, FiCoffee, FiSun, FiHeart } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { CITY } from '../../config/cities'
+import SectionHeading from '../common/SectionHeading'
 // CSS는 _app.jsx에서 import
 
 const QuickMenu = memo(() => {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const quickMenuItems = [
     { icon: FiMap, label: t.quickMenu.travelCourse, link: '/travel' },
@@ -20,10 +21,7 @@ const QuickMenu = memo(() => {
   return (
     <section className="quick-menu">
       <div className="container">
-        <div className="quick-menu-header">
-          <h2 className="section-title">{t.quickMenu.title}</h2>
-          <p className="section-subtitle">{t.quickMenu.subtitle}</p>
-        </div>
+        <SectionHeading eyebrow={language === 'ko' ? '여행의 시작' : 'START EXPLORING'} title={language === 'ko' ? '어떤 여행을 찾으세요?' : 'Find your kind of trip'} description={language === 'ko' ? '가보고 싶은 곳과 즐길 거리를 골라보세요.' : 'Choose places to visit and things to enjoy.'} />
         <div className="quick-menu-grid">
           {quickMenuItems.map((item, index) => (
             <Link key={index} href={item.link} className="quick-menu-item">

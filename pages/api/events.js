@@ -22,7 +22,7 @@ const decode = (text) => (text || '')
   .replace(/&nbsp;/g, ' ').replace(/&lsquo;|&rsquo;/g, "'").replace(/&ldquo;|&rdquo;/g, '"').replace(/&amp;/g, '&')
   .trim()
 
-export const toRow = ({ title, type, start, end, site, charge, contact, url, image, description }) => ({
+export const toRow = ({ title, type, start, end, site, charge, contact, url, image, description, sourceName, sourceUrl }) => ({
   title: decode(title),
   type: type || null,
   event_period: `${compact(start)} ~ ${compact(end || start)}`,
@@ -34,6 +34,8 @@ export const toRow = ({ title, type, start, end, site, charge, contact, url, ima
   url: url || null,
   image_url: image || null,
   description: decode(description) || null,
+  source_name: sourceName || null,
+  source_url: sourceUrl || null,
   view_count: 0,
   is_active: true,
   city_key: CITY.key
@@ -50,7 +52,8 @@ const fromKcisa = async () => {
     const [start, end] = (item.eventPeriod || '').split('~').map(part => iso(part.trim()))
     return start && toRow({
       title: item.title, type: item.type || '공연·전시', start, end, site: item.eventSite, charge: item.charge,
-      contact: item.contactPoint, url: item.url, image: item.imageObject, description: item.description
+      contact: item.contactPoint, url: item.url, image: item.imageObject, description: item.description,
+      sourceName: '한국문화정보원 · 문화공공데이터광장', sourceUrl: 'https://www.culture.go.kr/data/'
     })
   })
 }
@@ -64,7 +67,8 @@ const fromTourApi = async (today) => {
   const items = data.response?.body?.items?.item || []
   return (Array.isArray(items) ? items : [items]).map(item => toRow({
     title: item.title, type: '축제', start: iso(item.eventstartdate), end: iso(item.eventenddate),
-    site: item.addr1, contact: item.tel, image: item.firstimage
+    site: item.addr1, contact: item.tel, image: item.firstimage,
+    sourceName: '한국관광공사 TourAPI', sourceUrl: 'https://api.visitkorea.or.kr/'
   }))
 }
 
@@ -78,7 +82,8 @@ const fromSeoul = async () => {
   return pages.flat().map(item => toRow({
     title: item.TITLE, type: item.CODENAME, start: item.STRTDATE?.slice(0, 10), end: item.END_DATE?.slice(0, 10),
     site: [item.GUNAME, item.PLACE].filter(Boolean).join(' '), charge: item.USE_FEE || item.IS_FREE,
-    contact: item.INQUIRY, url: item.ORG_LINK || item.HMPG_ADDR, image: item.MAIN_IMG, description: item.PROGRAM
+    contact: item.INQUIRY, url: item.ORG_LINK || item.HMPG_ADDR, image: item.MAIN_IMG, description: item.PROGRAM,
+    sourceName: '서울특별시 · 서울 열린데이터광장', sourceUrl: 'https://data.seoul.go.kr/'
   }))
 }
 
@@ -89,7 +94,8 @@ const fromDaejeon = async () => {
   }))
   return pages.flat().map(item => toRow({
     title: item.title, type: item.themeCdNm, start: item.beginDt, end: item.endDt,
-    site: item.placeDetail || item.placeCdNm, contact: item.managementCdNm
+    site: item.placeDetail || item.placeCdNm, contact: item.managementCdNm,
+    sourceName: '대전광역시 공공데이터', sourceUrl: 'https://www.daejeon.go.kr/'
   }))
 }
 
@@ -99,7 +105,8 @@ const fromBusan = async () => (await loadBusan('festivals'))
   .map(item => toRow({
     title: item.title, type: '축제', start: item.dates.start, end: item.dates.end,
     site: item.address || item.district, contact: item.phone,
-    url: item.url, image: item.image, description: item.description
+    url: item.url, image: item.image, description: item.description,
+    sourceName: '부산광역시 · Visit Busan', sourceUrl: 'https://www.visitbusan.net/'
   }))
 
 const CITY_SOURCES = { seoul: [fromSeoul], daejeon: [fromDaejeon], busan: [fromBusan], jeju: [] }

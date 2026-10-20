@@ -6,6 +6,7 @@ import { getTourSpots as getTourSpotsDb } from '../../services/dbService'
 import { getReliableImageUrl } from '../../utils/imageUtils'
 import { generateSlug } from '../../utils/slugUtils'
 import { CITY } from '../../config/cities'
+import SectionHeading from '../common/SectionHeading'
 // CSS는 _app.jsx에서 import
 
 // 기본 맛집 데이터 (API 실패 시 폴백)
@@ -140,10 +141,7 @@ const FoodSection = memo(() => {
   return (
     <section className="food-section section">
       <div className="container">
-        <div className="section-header">
-          <h2 className="section-title">{t.foodSection.title}</h2>
-          <p className="section-subtitle">{t.foodSection.subtitle}</p>
-        </div>
+        <SectionHeading eyebrow={language === 'ko' ? '여행의 한 끼' : 'LOCAL FLAVORS'} title={language === 'ko' ? `${CITY.cityName}에서 맛보는 한 끼` : `A taste of ${CITY.cityNameEn}`} description={t.foodSection.subtitle} />
         
         {loading ? (
           <div className="food-loading">
@@ -172,6 +170,7 @@ const FoodSection = memo(() => {
                   </div>
                   <p className="food-description">{food.description[language] || food.description.ko}</p>
                   <span className="food-location">{food.location[language] || food.location.ko}</span>
+                  {food.contentId && <span className="content-source-compact">{language === 'ko' ? '자료: 한국관광공사 TourAPI' : 'Source: Korea Tourism Organization · TourAPI'}</span>}
                 </div>
               </Link>
             ))}

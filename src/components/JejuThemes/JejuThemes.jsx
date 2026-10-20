@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { FiArrowUpRight } from 'react-icons/fi'
 import { useLanguage } from '../../context/LanguageContext'
 import { safeFetch } from '../../utils/fetchUtils'
+import SectionHeading from '../common/SectionHeading'
 
 // 비짓제주 테마여행. 철에 맞는 글을 /api/jeju-themes가 골라 준다. 원문은 비짓제주로 연결한다.
 const JejuThemes = () => {
@@ -21,12 +22,7 @@ const JejuThemes = () => {
   return (
     <section className="section jeju-themes">
       <div className="container">
-        <div className="jeju-themes__head">
-          <h2 className="section-title">{ko ? '이번 철 제주 테마여행' : 'Jeju themes for this season'}</h2>
-          <p className="section-subtitle">
-            {ko ? '제주관광공사 비짓제주가 추천하는 여행 이야기' : 'Travel stories recommended by Visit Jeju'}
-          </p>
-        </div>
+        <SectionHeading eyebrow={ko ? '제주 여행 이야기' : 'JEJU STORIES'} title={ko ? '계절 따라 만나는 제주' : 'Jeju through the seasons'} description={ko ? '제주관광공사 비짓제주가 추천하는 여행 이야기' : 'Travel stories recommended by Visit Jeju'} />
 
         <div className="jeju-themes__grid" aria-busy={!themes}>
           {(themes || Array.from({ length: 6 }, () => null)).map((theme, index) => theme ? (
@@ -36,6 +32,7 @@ const JejuThemes = () => {
               </div>
               <h3>{theme.title}</h3>
               {theme.intro && <p>{theme.intro}</p>}
+              <span className="content-source-compact">{ko ? '자료: 제주관광공사 · 비짓제주' : 'Source: Jeju Tourism Organization · Visit Jeju'}</span>
               <span className="jeju-themes__link">
                 {ko ? '비짓제주에서 읽기' : 'Read on Visit Jeju'} <FiArrowUpRight />
               </span>

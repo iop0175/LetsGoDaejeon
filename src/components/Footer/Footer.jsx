@@ -68,7 +68,7 @@ const Footer = memo(() => {
         <div className="footer-bottom">
           <div className="footer-copyright">
             <p className="footer-disclaimer">
-              {t.footer.disclaimer || '본 사이트는 대전광역시 공식 홈페이지가 아니며, 관광 정보 제공을 목적으로 운영되는 민간 사이트입니다.'}
+              {language === 'ko' ? `${CITY.name}는 ${CITY.aliases[0]} 및 관광기관의 공식 홈페이지가 아닙니다. 관광 정보 제공을 목적으로 운영하는 민간 여행 안내 사이트입니다.` : `${CITY.englishName} is an independently operated travel guide, not an official website of the ${CITY.cityNameEn} government or tourism authority.`}
             </p>
             <p>{t.footer.copyright}</p>
             <p className="footer-data-source">{t.footer.dataSource}</p>

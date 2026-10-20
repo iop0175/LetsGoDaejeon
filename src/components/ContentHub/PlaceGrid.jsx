@@ -20,6 +20,7 @@ export default function PlaceGrid({ items = [], locale = 'kr' }) {
               <span className="content-hub__number">{String(index + 1).padStart(2, '0')}</span>
               <h3>{name}</h3>
               {address && <p>{address}</p>}
+              {item.contentId && <span className="content-source-compact">{locale === 'en' ? 'Source: Korea Tourism Organization · TourAPI' : '자료: 한국관광공사 TourAPI'}</span>}
               <span className="content-hub__place-action">{locale === 'en' ? 'View place' : '장소 보기'} <b aria-hidden="true">→</b></span>
             </div>
           </Link>

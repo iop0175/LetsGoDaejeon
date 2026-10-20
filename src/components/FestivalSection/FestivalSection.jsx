@@ -7,6 +7,7 @@ import { useLanguage } from '../../context/LanguageContext'
 import { getEvents, isFestivalType } from '../../services/api'
 import { getReliableImageUrl } from '../../utils/imageUtils'
 import { generateSlug } from '../../utils/slugUtils'
+import SectionHeading from '../common/SectionHeading'
 import 'swiper/css'
 import 'swiper/css/navigation'
 // CSS는 _app.jsx에서 import
@@ -105,6 +106,7 @@ const FestivalSection = memo(() => {
       summary: item.description || '',
       summary_en: item.description || '',
       theme: item.type || '',
+      sourceName: item.source_name || (language === 'ko' ? '운영자 등록 · 원 제공처 미기록' : 'Editor · original provider not recorded'),
       href: `/festival?tab=${mode}`
     })))
     setLoading(false)
@@ -113,11 +115,7 @@ const FestivalSection = memo(() => {
   return (
     <section className="festival-section">
       <div className="container">
-        <div className="festival-header">
-          <div className="festival-title-area">
-            <h2 className="section-title">{t.festivalSection.title}</h2>
-            <p className="section-subtitle">{t.festivalSection.subtitle}</p>
-          </div>
+        <SectionHeading eyebrow={language === 'ko' ? '지금 만나는 문화' : 'WHAT’S ON'} title={t.festivalSection.title} description={t.festivalSection.subtitle}>
           <div className="festival-nav">
             <button className="nav-btn prev-btn" aria-label="이전">
               <FiArrowLeft />
@@ -126,7 +124,7 @@ const FestivalSection = memo(() => {
               <FiArrowRight />
             </button>
           </div>
-        </div>
+        </SectionHeading>
         
         {loading ? (
           <div className="festival-loading">
@@ -167,6 +165,7 @@ const FestivalSection = memo(() => {
                   </div>
                   <div className="festival-content">
                     <h3 className="festival-name">{festival.title[language] || festival.title.ko}</h3>
+                    <span className="content-source-compact">{language === 'ko' ? '자료: ' : 'Source: '}{festival.sourceName}</span>
                     <div className="festival-info">
                       {festival.period && (
                         <span className="info-row">
