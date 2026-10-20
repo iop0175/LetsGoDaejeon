@@ -204,3 +204,116 @@
 .app[data-city="busan"] .hero-btn {
   box-shadow: 0 2px 0 var(--secondary-color);
 }
+
+/* ───────── 도시별 정체성 ─────────
+   색만 다르던 네 사이트에 모양, 글꼴, 장식을 도시마다 따로 준다.
+   대전: 과학도시, 선명한 격자와 각진 카드 / 서울: 궁궐 단청, 명조 제목과 금빛 선
+   부산: 바다, 크게 둥근 카드와 물결 / 제주: 돌담과 오름, 비대칭 곡선과 넉넉한 여백 */
+
+.app[data-city="daejeon"] {
+  --secondary-color: #00a3b8;
+  --city-tint: rgba(0, 102, 204, 0.08);
+  --border-radius: 10px;
+  --shadow-sm: 0 0 0 1px rgba(0, 102, 204, 0.12);
+  --shadow-md: 0 6px 18px rgba(0, 70, 140, 0.14);
+  --shadow-lg: 0 12px 28px rgba(0, 70, 140, 0.2);
+}
+
+.app[data-city="seoul"] {
+  --border-radius: 4px;
+  --gold: #b47b39;
+  --shadow-sm: 0 0 0 1px rgba(155, 48, 59, 0.14);
+  --shadow-md: 0 6px 16px rgba(38, 18, 21, 0.14);
+  --shadow-lg: 0 12px 26px rgba(38, 18, 21, 0.2);
+  --city-heading-font: var(--font-noto-serif-kr), 'AppleMyungjo', 'Noto Serif KR', serif;
+}
+
+.app[data-city="busan"] {
+  --border-radius: 22px;
+  --shadow-sm: 0 4px 14px rgba(11, 95, 158, 0.1);
+  --shadow-md: 0 10px 24px rgba(11, 95, 158, 0.16);
+  --shadow-lg: 0 16px 34px rgba(11, 95, 158, 0.22);
+}
+
+.app[data-city="jeju"] {
+  --border-radius: 28px;
+  --shadow-sm: 0 3px 12px rgba(0, 86, 82, 0.08);
+  --shadow-md: 0 10px 24px rgba(0, 86, 82, 0.13);
+  --shadow-lg: 0 16px 34px rgba(0, 86, 82, 0.18);
+}
+
+/* 라이트 모드에서만 바탕을 바꾼다. 다크 모드의 바탕색은 건드리지 않는다 */
+html:not(.dark-theme) .app[data-city="daejeon"] { --bg-secondary: #f1f6fb; }
+html:not(.dark-theme) .app[data-city="seoul"] { --bg-secondary: #f8f4ee; }
+html:not(.dark-theme) .app[data-city="busan"] { --bg-secondary: #eef5fa; }
+html:not(.dark-theme) .app[data-city="jeju"] { --bg-secondary: #f5f2ea; }
+
+/* 섹션 제목 */
+.app[data-city="seoul"] .city-section-heading h2,
+.app[data-city="seoul"] .hero-title { font-family: var(--city-heading-font); font-weight: 700; letter-spacing: -0.03em; }
+.app[data-city="busan"] .city-section-heading h2 { font-weight: 800; letter-spacing: -0.035em; }
+.app[data-city="jeju"] .city-section-heading h2 { font-weight: 500; letter-spacing: -0.02em; }
+.app[data-city="daejeon"] .city-section-heading h2 { font-weight: 800; letter-spacing: -0.03em; }
+
+/* 제목 위 작은 표식 */
+.app[data-city="daejeon"] .city-section-heading__eyebrow::before {
+  width: 20px; height: 8px; border: 0;
+  background: repeating-linear-gradient(90deg, currentColor 0 4px, transparent 4px 7px);
+}
+.app[data-city="seoul"] .city-section-heading__eyebrow::before {
+  width: 28px; height: 5px; background: none;
+  border-top: 1px solid var(--gold); border-bottom: 1px solid var(--gold);
+}
+.app[data-city="busan"] .city-section-heading__eyebrow::before {
+  width: 28px; height: 8px; background: currentColor; border: 0; border-radius: 0;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 8'%3E%3Cpath d='M0 4 Q3.5 0 7 4 T14 4 T21 4 T28 4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 28 8'%3E%3Cpath d='M0 4 Q3.5 0 7 4 T14 4 T21 4 T28 4' fill='none' stroke='black' stroke-width='2'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+.app[data-city="jeju"] .city-section-heading__eyebrow::before {
+  width: 10px; height: 10px; border-radius: 50%; background: var(--secondary-color);
+}
+
+/* 카드 모양 */
+.app[data-city="daejeon"] :is(.travel-card, .festival-card, .food-card, .quick-menu-item) { border-top: 3px solid var(--primary-color); }
+.app[data-city="seoul"] :is(.travel-card, .festival-card, .food-card, .quick-menu-item) { border-top: 2px solid var(--gold); }
+.app[data-city="jeju"] :is(.travel-card, .festival-card, .food-card, .quick-menu-item) { border-radius: 28px 8px 28px 8px; }
+.app[data-city="busan"] .quick-menu-icon { border-radius: 40% 60% 55% 45% / 55% 45% 60% 40%; }
+.app[data-city="seoul"] .quick-menu-icon { border-radius: 4px; }
+.app[data-city="daejeon"] .quick-menu-icon { border-radius: 10px; }
+
+/* 대전 바탕에는 가는 격자, 부산 바탕 위쪽에는 물결, 제주는 여백을 넓게 */
+.app[data-city="daejeon"] .quick-menu {
+  background-image:
+    linear-gradient(rgba(0, 102, 204, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 102, 204, 0.05) 1px, transparent 1px);
+  background-size: 28px 28px;
+}
+.app[data-city="busan"] .quick-menu { position: relative; }
+.app[data-city="busan"] .quick-menu::before {
+  content: ''; position: absolute; left: 0; right: 0; top: -23px; height: 24px; z-index: 1; pointer-events: none;
+  background: var(--bg-secondary);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 24 V12 Q15 0 30 12 T60 12 T90 12 T120 12 V24 Z'/%3E%3C/svg%3E") 0 0 / 120px 24px repeat-x;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 24' preserveAspectRatio='none'%3E%3Cpath d='M0 24 V12 Q15 0 30 12 T60 12 T90 12 T120 12 V24 Z'/%3E%3C/svg%3E") 0 0 / 120px 24px repeat-x;
+}
+.app[data-city="jeju"] :is(.quick-menu, .popular-spots.section, .food-section.section, .festival-section) { padding-top: 88px; padding-bottom: 88px; }
+
+/* 버튼과 히어로 */
+.app[data-city="daejeon"] .hero-btn { border-radius: 8px; }
+.app[data-city="seoul"] .hero-btn { border-radius: 2px; box-shadow: 0 3px 0 var(--gold); }
+.app[data-city="busan"] .hero-btn { border-radius: 999px; }
+.app[data-city="jeju"] .hero-btn { border-radius: 999px 999px 999px 8px; }
+.app[data-city="seoul"] .hero-title::after {
+  content: ''; display: block; width: 56px; height: 3px; margin-top: 18px; background: var(--gold);
+}
+
+/* 모바일에서는 큰 곡선과 여백을 한 단계 줄인다 */
+@media (max-width: 640px) {
+  .app[data-city="busan"] { --border-radius: 18px; }
+  .app[data-city="jeju"] { --border-radius: 22px; }
+  .app[data-city="jeju"] :is(.travel-card, .festival-card, .food-card, .quick-menu-item) { border-radius: 22px 8px 22px 8px; }
+  .app[data-city="jeju"] :is(.quick-menu, .popular-spots.section, .food-section.section, .festival-section) { padding-top: 64px; padding-bottom: 64px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app[data-city] :is(.travel-card, .festival-card, .food-card, .quick-menu-item) { transition: none; }
+}

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import { SpeedInsights } from '@vercel/speed-insights/next'
-import { Noto_Sans_KR } from 'next/font/google'
+import { Noto_Sans_KR, Noto_Serif_KR } from 'next/font/google'
 import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
@@ -22,6 +22,15 @@ const notoSansKR = Noto_Sans_KR({
   display: 'optional', // swap → optional: 폰트 로딩 시 CLS 방지
   preload: true,
   variable: '--font-noto-sans-kr',
+})
+
+// 서울 제목용 명조. 서울에서만 쓰이므로 preload 하지 않아 다른 도시의 첫 로딩을 늘리지 않는다
+const notoSerifKR = Noto_Serif_KR({
+  weight: ['600', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+  preload: false,
+  variable: '--font-noto-serif-kr',
 })
 
 // Header는 서버에서도 그려 메뉴 링크가 첫 HTML에 들어가게 한다
@@ -178,7 +187,7 @@ export default function App({ Component, pageProps }) {
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <div data-city={CITY.key} className={`app ${notoSansKR.variable}`} style={{ fontFamily: 'var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif' }}>
+            <div data-city={CITY.key} className={`app ${notoSansKR.variable} ${notoSerifKR.variable}`} style={{ fontFamily: 'var(--font-noto-sans-kr), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif' }}>
               <SpeedInsights />
               {!isAdminPage && <Header />}
               <main className="main-content">
