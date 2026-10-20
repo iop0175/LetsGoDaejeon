@@ -99,7 +99,7 @@
   .live-hub__actions > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 620px) {
-  .content-hub__hero > div, .content-hub__container { width: min(100% - 32px, 1120px); }
+  .content-hub__hero > div, .content-hub__container { width: min(100% - 40px, 1120px); }
   .content-hub__hero--editorial { min-height: 390px; padding: 54px 0 38px; }
   .content-hub__hero--editorial::before { background: rgba(10, 18, 31, .7); }
   .content-hub__hero h1 { font-size: 36px; line-height: 1.12; }
