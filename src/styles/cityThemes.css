@@ -302,6 +302,14 @@ html:not(.dark-theme) .app[data-city="jeju"] { --bg-secondary: #f5f2ea; }
 .app[data-city="seoul"] .hero-btn { border-radius: 2px; box-shadow: 0 3px 0 var(--gold); }
 .app[data-city="busan"] .hero-btn { border-radius: 999px; }
 .app[data-city="jeju"] .hero-btn { border-radius: 999px 999px 999px 8px; }
+/* 바로가기 아이콘 바탕이 도시와 상관없이 파랑이라 도시 색 틴트로 바꾼다 */
+.app[data-city] .quick-menu-icon { background: var(--city-tint); color: var(--primary-color); }
+
+/* 페이지 CSS가 따로 칠한 보라색 아이콘을 도시 색으로 */
+.app[data-city] :is(.travel-card-info, .festival-info) svg { color: var(--primary-color); }
+
+/* 한글이 단어 중간에서 줄바꿈되지 않게 */
+.app[data-city] :is(.hero-title, .hero-subtitle, .hero-description) { word-break: keep-all; overflow-wrap: break-word; }
 .app[data-city="seoul"] .hero-title::after {
   content: ''; display: block; width: 56px; height: 3px; margin-top: 18px; background: var(--gold);
 }
