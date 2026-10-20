@@ -105,11 +105,6 @@
   color: var(--primary-dark);
 }
 
-/* 미리보기 배너가 헤더 높이만큼 이미 밀어 두었으므로 페이지 자체의 헤더 여백은 겹치지 않게 당긴다 */
-.city-preview-banner + * {
-  margin-top: -72px;
-}
-
 .app[data-city="seoul"] .hero,
 .app[data-city="busan"] .hero,
 .app[data-city="jeju"] .hero {
@@ -150,16 +145,6 @@
   color: #fff;
 }
 
-.city-preview-banner {
-  margin-top: 72px;
-  padding: 12px 24px;
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  text-align: center;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border-color);
-}
-
 .city-service-pending {
   min-height: 55vh;
   max-width: 900px;
@@ -185,9 +170,6 @@
   .app[data-city="seoul"] .hero-title,
   .app[data-city="busan"] .hero-title,
   .app[data-city="jeju"] .hero-title { font-size: 38px; max-width: 340px; }
-  .city-preview-banner { padding: 10px 16px; font-size: 12px; }
-  .city-preview-banner { margin-top: 64px; }
-  .city-preview-banner + * { margin-top: -64px; }
   .app[data-city="seoul"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1,
   .app[data-city="busan"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1,
   .app[data-city="jeju"] :is(.page-hero, .parking-hero, .medical-hero, .culture-hero, .accommodation-hero, .shopping-hero) h1 { font-size: 28px; }
@@ -392,3 +374,16 @@ html:not(.dark-theme) .app[data-city] .sdp__license { background: var(--bg-secon
 .app[data-city="seoul"] :is(.content-hub__guide, .content-hub__place) { border-radius: 4px; }
 .app[data-city="daejeon"] :is(.content-hub__guide, .content-hub__place) { border-radius: 10px; }
 .app[data-city] :is(.content-hub__hero h1, .content-hub__guide h2) { word-break: keep-all; }
+
+/* ───────── 마무리: 도시 분위기에 더 맞추기 ───────── */
+
+/* 종류별로 제각각이던 카테고리 배지(초록, 보라 등)를 도시 색으로. 인라인 색이라 important가 필요하다 */
+.app[data-city] :is(.sdp__badge, .travel-card-category, .food-location-badge) { background-color: var(--primary-color) !important; color: #fff; }
+.app[data-city="seoul"] :is(.sdp__badge, .travel-card-category) { border-radius: 2px; }
+
+/* 서울 히어로는 초록빛 먹색 대신 단청 먹색 */
+.app[data-city="seoul"] .hero-overlay { background: linear-gradient(90deg, rgba(38, 18, 21, 0.8), rgba(38, 18, 21, 0.1)); }
+
+/* 선택 영역과 폼 컨트롤 색도 도시 색으로 */
+.app[data-city] { accent-color: var(--primary-color); }
+.app[data-city] ::selection { background: var(--city-tint); color: var(--primary-dark); }

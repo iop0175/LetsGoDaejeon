@@ -9,7 +9,7 @@ import { Noto_Sans_KR, Noto_Serif_KR } from 'next/font/google'
 import { LanguageProvider } from '../src/context/LanguageContext'
 import { ThemeProvider } from '../src/context/ThemeContext'
 import { AuthProvider } from '../src/context/AuthContext'
-import { CITY, SITE_URL, IS_CITY_PREVIEW } from '../src/config/cities'
+import { CITY, SITE_URL } from '../src/config/cities'
 import { trackEvent, classifyLink } from '../src/utils/analytics'
 
 // Google Analytics ID
@@ -191,7 +191,6 @@ export default function App({ Component, pageProps }) {
               <SpeedInsights />
               {!isAdminPage && <Header />}
               <main className="main-content">
-                {IS_CITY_PREVIEW && <div className="city-preview-banner">{CITY.name} 내부 개발 미리보기 · 공개 운영 전 검증 중</div>}
                 {CITY.key !== 'daejeon' && [
                   ...(CITY.parkingReady ? [] : ['/parking']),
                   ...(CITY.medicalReady ? [] : ['/medical']),
