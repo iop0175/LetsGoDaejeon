@@ -236,7 +236,12 @@ export const translations = {
       },
       leisure: {
         title: '레포츠',
-        subtitle: '대전에서 즐기는 레저와 스포츠'
+        subtitle: '대전에서 즐기는 레저와 스포츠',
+        loading: '레포츠 정보를 불러오는 중...',
+        sortByName: '가나다순',
+        sortByViews: '조회수순',
+        closed: '휴무일',
+        directions: '길찾기'
       },
       parking: {
         title: '대전 주차장 안내',
