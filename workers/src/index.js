@@ -4,6 +4,7 @@
  */
 
 import { fetchBusan } from './busan.js';
+import { fetchDaejeonTransit } from './daejeonTransit.js';
 
 // 허용된 Origin 목록
 const ALLOWED_ORIGINS = [
@@ -743,6 +744,10 @@ export default {
     // API 라우팅
     if (pathname.startsWith('/api/busan/')) {
       const result = await fetchBusan(request, env);
+      return jsonResponse(result.data, result.status, origin);
+    }
+    if (pathname.startsWith('/api/daejeon-transit/')) {
+      const result = await fetchDaejeonTransit(request, env);
       return jsonResponse(result.data, result.status, origin);
     }
     if (pathname.startsWith('/api/odsay')) {

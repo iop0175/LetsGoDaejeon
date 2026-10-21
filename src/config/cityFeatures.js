@@ -3,7 +3,8 @@ const FEATURES = [
   { id: 'today', path: '/today', ko: '오늘의 추천 코스', en: "Today's picks", cities: ['daejeon', 'seoul', 'busan', 'jeju'] },
   { id: 'subway', path: '/subway', ko: '지하철 실시간 도착', en: 'Live subway arrivals', cities: ['seoul'] },
   { id: 'beaches', path: '/beaches', ko: '해수욕장 바다 컨디션', en: 'Beach sea conditions', cities: ['busan', 'jeju'] },
-  { id: 'bus', path: '/bus', ko: '버스 노선 검색', en: 'Bus route finder', cities: ['daejeon'] }
+  { id: 'bus', path: '/bus', ko: '버스 노선 검색', en: 'Bus route finder', cities: ['daejeon'] },
+  { id: 'traffic', path: '/traffic', ko: '실시간 교통정보', en: 'Live traffic', cities: ['daejeon'] }
 ]
 
 export const getCityFeatures = (cityKey) => FEATURES.filter((feature) => feature.cities.includes(cityKey))

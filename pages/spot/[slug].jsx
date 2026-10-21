@@ -122,6 +122,16 @@ export default function SpotPage({ seoData }) {
       >
         <SpotDetailPageComponent />
       </FallbackContext.Provider>
+      {seoData.busStops?.length > 0 && loc === 'kr' && (
+        <section className="pk-nearby pk-nearby--spot">
+          <h2>{view.name} 근처 버스정류장</h2>
+          <ul className="bt-nearby">
+            {seoData.busStops.map((stop) => (
+              <li key={stop.id}><Link href={`/bus/stop/${stop.slug}`}>{stop.name}</Link><small>약 {stop.meters}m · {stop.routeCount}개 노선</small></li>
+            ))}
+          </ul>
+        </section>
+      )}
       {seoData.parking?.length > 0 && (
         <section className="pk-nearby pk-nearby--spot">
           <h2>{loc === 'en' ? `Parking near ${view.name}` : `${view.name} 근처 주차장`}</h2>
@@ -232,6 +242,17 @@ export async function getStaticProps({ params, locale }) {
 
     const faqItems = parseFaq(row.intro_info)
 
+    // 근처 버스정류장 3곳(대전만). 목록 파일이 없거나 좌표가 없으면 건너뛴다.
+    let busStops = []
+    if (CITY.key === 'daejeon' && contentTypeId !== 15) {
+      try {
+        const { nearestStops } = await import('../../src/services/busData')
+        busStops = nearestStops({ lat: Number(row.mapy), lon: Number(row.mapx) }, 3, 0.5)
+      } catch (err) {
+        console.error('Nearby bus stops error:', err.message)
+      }
+    }
+
     // 근처 주차장 3곳. 주차장 API가 실패해도 장소 페이지는 그대로 만든다.
     let parking = []
     if (CITY.parkingReady && contentTypeId !== 15) {
@@ -259,6 +280,7 @@ export async function getStaticProps({ params, locale }) {
           lng: row.mapx || null,
           faqItems: faqItems.length ? faqItems : null,
           parking,
+          busStops,
           kr: build('kr'),
           en: build('en')
         }

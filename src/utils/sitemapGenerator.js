@@ -158,9 +158,21 @@ export async function generateParkingSitemap() {
   return wrapInUrlset(entries.join('\n'))
 }
 
+// 대전 버스 노선·정류장 페이지. 영어판은 색인하지 않으므로 한국어 주소만 싣는다.
+export async function generateBusSitemap() {
+  if (CITY.key !== 'daejeon') return wrapInUrlset('')
+  const { routes, stops, routePath, stopPath, builtAt } = await import('../services/busData')
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(builtAt) ? builtAt : today()
+  const entries = [
+    ...routes.map((route) => urlEntries({ paths: { kr: routePath(route) }, lastmod: date, changefreq: 'monthly', priority: '0.7' })),
+    ...stops.map((stop) => urlEntries({ paths: { kr: stopPath(stop) }, lastmod: date, changefreq: 'monthly', priority: '0.5' }))
+  ]
+  return wrapInUrlset(entries.join('\n'))
+}
+
 export function generateSitemapIndex() {
   const date = today()
-  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival', ...(CITY.parkingReady ? ['parking'] : [])]
+  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival', ...(CITY.parkingReady ? ['parking'] : []), ...(CITY.key === 'daejeon' ? ['bus'] : [])]
   const entries = names.map((name) => `  <sitemap>
     <loc>${SITE_URL}/sitemap-${name}.xml</loc>
     <lastmod>${date}</lastmod>
