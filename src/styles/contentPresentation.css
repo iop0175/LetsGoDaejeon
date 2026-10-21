@@ -35,3 +35,17 @@
   .content-source { padding: 16px; }
   .home-guides, .popular-spots.section, .food-section.section, .travel-course.section, .festival-section { padding-top: 48px; padding-bottom: 48px; }
 }
+
+/* 다음 여행지 추천: 다른 도시 사이트로 가는 카드. 도시마다 자기 색을 쓴다 */
+.next-trip { margin: 32px 0 0; padding: 24px 20px; }
+.next-trip__title { margin: 0 0 14px; color: var(--text-primary); font-size: 1.125rem; font-weight: 800; line-height: 1.4; word-break: keep-all; }
+.next-trip__list { display: grid; gap: 10px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.next-trip__card { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 10px 14px 10px 10px; border: 1px solid var(--border-color, #e3e7ee); border-left: 4px solid var(--next-color); border-radius: var(--border-radius, 12px); background: var(--card-bg, #fff); color: var(--text-primary); text-decoration: none; }
+.next-trip__card img { flex: none; width: 60px; height: 60px; border-radius: calc(var(--border-radius, 12px) / 2); object-fit: cover; }
+.next-trip__card span { display: grid; min-width: 0; flex: 1; gap: 2px; }
+.next-trip__card strong { font-size: 1rem; }
+.next-trip__card em { overflow: hidden; color: var(--text-secondary); font-size: .8125rem; font-style: normal; text-overflow: ellipsis; white-space: nowrap; }
+.next-trip__card b { flex: none; color: var(--next-color); font-size: 1.25rem; }
+.next-trip__card:active { background: var(--bg-secondary, #f5f7fa); }
+.next-trip__card:focus-visible { outline: 2px solid var(--next-color); outline-offset: 2px; }
+@media (max-width: 768px) { .next-trip__list { grid-template-columns: 1fr; } }

@@ -5,6 +5,7 @@ import { FiCalendar, FiMapPin, FiPhone, FiExternalLink } from 'react-icons/fi'
 import SeoHead from '../../src/components/common/SeoHead'
 import ShareButtons from '../../src/components/ContentHub/ShareButtons'
 import SourceNote from '../../src/components/common/SourceNote'
+import NextTrip from '../../src/components/common/NextTrip'
 import { CITY } from '../../src/config/cities'
 import { eventSlug } from '../../src/utils/eventSlug'
 import { getReliableImageUrl } from '../../src/utils/imageUtils'
@@ -41,6 +42,7 @@ export default function EventDetailPage({ event }) {
             {en ? 'Event details are summarized from the provider. Check the organizer’s announcement for changes.' : '제공처의 행사 정보를 정리한 안내입니다. 변경·취소 여부는 주최기관에 확인해 주세요.'}
           </SourceNote>
           <nav className="content-hub__related"><h2>{en ? 'Plan your visit' : '방문 준비'}</h2><div>{event.url && <a href={event.url} target="_blank" rel="noopener noreferrer">{en ? 'Official website' : '공식 안내'} <FiExternalLink /></a>}<Link href="/festival">{en ? 'All events' : '전체 행사'}</Link><Link href="/live">{en ? 'Live conditions' : '실시간 현황'}</Link>{CITY.parkingReady && <Link href="/parking">{en ? 'Nearby parking' : '주차장 찾기'}</Link>}</div></nav>
+          <NextTrip />
         </div>
       </article>
     </>

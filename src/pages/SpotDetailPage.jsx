@@ -13,6 +13,7 @@ import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../serv
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
 import { generateSlug } from '../utils/slugUtils'
 import LicenseBadge from '../components/common/LicenseBadge'
+import NextTrip from '../components/common/NextTrip'
 import SourceNote from '../components/common/SourceNote'
 import Icons from '../components/common/Icons'
 import { getDirectionsUrl } from '../utils/mapLinks'
@@ -2115,6 +2116,8 @@ const SpotDetailPage = () => {
             </div>
           )}
         </section>
+
+        <NextTrip />
 
         {/* 저작권 */}
         <section className="sdp__license">

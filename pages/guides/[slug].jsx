@@ -4,6 +4,7 @@ import SeoHead from '../../src/components/common/SeoHead'
 import PlaceGrid from '../../src/components/ContentHub/PlaceGrid'
 import ShareButtons from '../../src/components/ContentHub/ShareButtons'
 import SourceNote from '../../src/components/common/SourceNote'
+import NextTrip from '../../src/components/common/NextTrip'
 import { CITY } from '../../src/config/cities'
 import { getCityGuide, getCityGuides } from '../../src/config/cityGuides'
 import { fetchGuideSpots } from '../../src/services/guideData'
@@ -34,6 +35,7 @@ export default function GuideDetailPage({ guide, spots }) {
             {en ? 'The route and introduction are independently curated, not an official itinerary from a tourism authority.' : '장소 정보를 바탕으로 운영자가 구성한 추천 코스이며, 관광기관이 지정한 공식 코스가 아닙니다.'}
           </SourceNote>
           <nav className="content-hub__related"><h2>{en ? 'Plan more' : '함께 보기'}</h2><div><Link href="/guides">{en ? 'All guides' : '전체 여행 코스'}</Link><Link href="/trip-planner">{en ? 'Build my itinerary' : '내 일정 만들기'}</Link><Link href="/live">{en ? 'Live city conditions' : '실시간 여행 현황'}</Link></div></nav>
+          <NextTrip />
         </div>
       </article>
     </>
