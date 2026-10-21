@@ -5,6 +5,7 @@
 export const CITIES = {
   daejeon: {
     key: 'daejeon',
+    gaId: 'G-610JNHR72K', // 도시마다 GA4 속성을 따로 쓴다
     seoHighlights: {'ko':['성심당','엑스포과학공원','유성온천','계족산 황톳길','대청호'],'en':['Sungsimdang Bakery','Expo Science Park','Yuseong Hot Springs','Gyejoksan Mountain','Daecheong Lake']},
     cityName: '대전',
     cityNameEn: 'Daejeon',
@@ -25,6 +26,7 @@ export const CITIES = {
   },
   seoul: {
     key: 'seoul',
+    gaId: 'G-QSVD5ZTVK2',
     seoHighlights: {'ko':['경복궁','북촌한옥마을','명동','한강공원','홍대'],'en':['Gyeongbokgung Palace','Bukchon Hanok Village','Myeongdong','Han River Parks','Hongdae']},
     cityName: '서울',
     cityNameEn: 'Seoul',
@@ -68,6 +70,7 @@ export const CITIES = {
   },
   busan: {
     key: 'busan',
+    gaId: 'G-527Y3MZR0L',
     seoHighlights: {'ko':['해운대','광안리','감천문화마을','자갈치시장','태종대'],'en':['Haeundae Beach','Gwangalli Beach','Gamcheon Culture Village','Jagalchi Market','Taejongdae']},
     cityName: '부산',
     cityNameEn: 'Busan',
@@ -108,6 +111,7 @@ export const CITIES = {
   },
   jeju: {
     key: 'jeju',
+    gaId: 'G-PECZLH9B7X',
     seoHighlights: {'ko':['성산일출봉','한라산','협재해수욕장','우도','애월'],'en':['Seongsan Ilchulbong','Hallasan Mountain','Hyeopjae Beach','Udo Island','Aewol']},
     cityName: '제주',
     cityNameEn: 'Jeju',

@@ -12,8 +12,8 @@ import { AuthProvider } from '../src/context/AuthContext'
 import { CITY, SITE_URL } from '../src/config/cities'
 import { trackEvent, classifyLink } from '../src/utils/analytics'
 
-// Google Analytics ID
-const GA_TRACKING_ID = 'G-610JNHR72K'
+// Google Analytics ID는 도시별 속성(src/config/cities.js의 gaId)
+const GA_TRACKING_ID = CITY.gaId
 
 // Next.js Font 최적화 - CLS 최소화를 위해 optional 사용
 const notoSansKR = Noto_Sans_KR({
