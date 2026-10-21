@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { getDirectionsUrl } from '../src/utils/mapLinks.js'
+import { classifyLink } from '../src/utils/analytics.js'
 
 assert.equal(
   getDirectionsUrl('ko', { address: '부산 해운대구' }),
@@ -17,5 +18,11 @@ assert.equal(
   getDirectionsUrl('en', { name: 'Haeundae', lat: 35.1587, lng: 129.1604 }),
   'https://www.google.com/maps/dir/?api=1&destination=35.1587%2C129.1604'
 )
+
+// 상세 페이지 지도 버튼 세 종류가 모두 길찾기로 집계되는지
+assert.equal(classifyLink('https://map.kakao.com/link/search/x'), 'directions_click')
+assert.equal(classifyLink('https://map.naver.com/v5/search/x'), 'directions_click')
+assert.equal(classifyLink('https://www.google.com/maps/dir/?api=1'), 'directions_click')
+assert.equal(classifyLink('/map?lat=1&lng=2'), null)
 
 console.log('Language-aware map links: passed')

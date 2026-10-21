@@ -1,4 +1,4 @@
-import { CITY } from '../config/cities'
+import { CITY } from '../config/cities.js'
 
 export const trackEvent = (name, params = {}, tries = 0) => {
   if (typeof window === 'undefined') return
@@ -12,7 +12,7 @@ export const trackEvent = (name, params = {}, tries = 0) => {
 
 // 링크 클릭을 이벤트 이름으로 분류한다. 해당 없으면 null.
 export const classifyLink = (href = '') => {
-  if (/^https:\/\/map\.kakao\.com\/link\//.test(href) || /^https:\/\/www\.google\.com\/maps\/dir\//.test(href)) return 'directions_click'
+  if (/^https:\/\/map\.kakao\.com\/link\//.test(href) || /^https:\/\/map\.naver\.com\//.test(href) || /^https:\/\/www\.google\.com\/maps\/dir\//.test(href)) return 'directions_click'
   if (href.startsWith('tel:')) return 'call_click'
   return null
 }

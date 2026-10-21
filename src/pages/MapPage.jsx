@@ -13,7 +13,14 @@ import { getDirectionsUrl } from '../utils/mapLinks'
 const MapPage = () => {
   const { language, t } = useLanguage()
   const seoData = SEO_DATA.map[language] || SEO_DATA.map.ko
-  const [activeTab, setActiveTab] = useState('tour')
+  // 상세 페이지에서 넘어오면 ?lat=&lng=&tab=&focus= 로 그 장소 주변을 먼저 보여준다
+  const focusRef = useRef((() => {
+    const params = new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search)
+    const lat = parseFloat(params.get('lat'))
+    const lng = parseFloat(params.get('lng'))
+    return Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng, id: params.get('focus'), tab: params.get('tab') } : null
+  })())
+  const [activeTab, setActiveTab] = useState(focusRef.current?.tab === 'food' ? 'food' : 'tour')
   const [allPlaces, setAllPlaces] = useState([]) // 전체 데이터
   const [loading, setLoading] = useState(true)
   const [selectedPlace, setSelectedPlace] = useState(null)
@@ -398,8 +405,20 @@ const MapPage = () => {
     setMarkers(newMarkers)
     markersRef.current = newMarkers // ref도 동시에 업데이트
 
-    // 지도 범위 조정 (선택된 장소가 없을 때만 - ref 사용으로 확실히 체크)
-    if (hasValidCoords && newMarkers.length > 0 && !selectedPlaceRef.current) {
+    const focus = focusRef.current
+    if (focus) {
+      // 한 번만 적용: 넘어온 장소를 중심으로 가까이 보여주고, 목록에 있으면 바로 선택한다
+      focusRef.current = null
+      map.setLevel(4)
+      map.setCenter(new window.kakao.maps.LatLng(focus.lat, focus.lng))
+      const target = newMarkers.find((marker) => String(marker.placeId) === String(focus.id))
+      if (target) {
+        selectedPlaceRef.current = target.place
+        setSelectedPlace(target.place)
+        window.kakao.maps.event.trigger(target, 'click')
+      }
+    } else if (hasValidCoords && newMarkers.length > 0 && !selectedPlaceRef.current) {
+      // 지도 범위 조정 (선택된 장소가 없을 때만 - ref 사용으로 확실히 체크)
       map.setBounds(bounds)
       const level = map.getLevel()
       if (level > 7) {

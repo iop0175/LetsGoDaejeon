@@ -3912,6 +3912,47 @@ export const getNearbySpots = async (lat, lng, excludeContentId, limit = 4) => {
 }
 
 /**
+ * 좌표 기반 같은 종류 장소 조회 (cat3가 있으면 같은 세부 분류, 없으면 같은 콘텐츠 타입)
+ */
+export const getNearbySameKind = async (lat, lng, excludeContentId, contentTypeId, cat3, limit = 8) => {
+  try {
+    if (!lat || !lng) return { success: false, spots: [] }
+    const latRange = 0.03  // 약 3km 범위
+    const lngRange = 0.036
+    let query = supabase
+      .from('tour_spots')
+      .select('content_id, title, firstimage, firstimage2, addr1, mapx, mapy')
+      .eq('content_type_id', contentTypeId)
+      .eq('areacode', CITY.tourApiAreaCode)
+      .neq('content_id', excludeContentId)
+      .not('firstimage', 'is', null)
+      .gte('mapy', lat - latRange)
+      .lte('mapy', lat + latRange)
+      .gte('mapx', lng - lngRange)
+      .lte('mapx', lng + lngRange)
+    if (cat3) query = query.eq('cat3', cat3)
+    const { data, error } = await query.limit(40)
+    if (error) throw error
+
+    const spots = (data || []).map(item => {
+      const distance = calculateDistance(lat, lng, parseFloat(item.mapy), parseFloat(item.mapx))
+      return {
+        contentId: item.content_id,
+        name: item.title,
+        imageUrl: item.firstimage || item.firstimage2,
+        address: item.addr1,
+        distance,
+        distanceText: distance < 1 ? `${Math.round(distance * 1000)}m` : `${distance.toFixed(1)}km`
+      }
+    }).sort((a, b) => a.distance - b.distance).slice(0, limit)
+    return { success: true, spots }
+  } catch (err) {
+    console.error('같은 종류 장소 조회 에러:', err)
+    return { success: false, spots: [] }
+  }
+}
+
+/**
  * 주변 관광지 조회 (같은 구 지역)
  * @param {string} address - 주소 (예: 대전광역시 유성구...)
  * @param {string} excludeContentId - 제외할 관광지 contentId

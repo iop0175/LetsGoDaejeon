@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -7,7 +7,8 @@ import { useLanguage } from '../context/LanguageContext'
 import { useTheme } from '../context/ThemeContext'
 import { useAuth } from '../context/AuthContext'
 import { CITY } from '../config/cities'
-import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots, getNearbyAccommodations, getNearbyShopping } from '../services/dbService'
+import { getTourSpotByContentId, incrementSpotViews, getSpotStats, toggleSpotLike, checkSpotLiked, getSpotReviews, createSpotReview, deleteSpotReview, getSpotsByDistrict, getNearbyRestaurants, getNearbySpots, getNearbyAccommodations, getNearbyShopping, getNearbySameKind } from '../services/dbService'
+import { trackEvent } from '../utils/analytics'
 import { getTourApiImages, getTourApiDetail } from '../services/api'
 import { getUserTripPlans, addTripPlace, getTripsContainingPlace } from '../services/tripService'
 import { getReliableImageUrl, handleImageError, cleanIntroHtml, sanitizeIntroHtml, toSecureUrl } from '../utils/imageUtils'
@@ -73,6 +74,40 @@ const CONTENT_TYPE_CONFIG = {
   '39': { name: { ko: '음식점', en: 'Restaurant' }, color: '#F44336', path: '/food' },
   '15': { name: { ko: '축제/행사', en: 'Festival' }, color: '#FF5722', path: '/festival' }
 }
+
+// 섹션 바로가기 탭 (화면에 나오는 순서)
+const SECTION_TABS = ['location', 'about', 'nearby', 'reviews']
+const SECTION_TAB_LABELS = {
+  location: { ko: '위치', en: 'Location' },
+  about: { ko: '소개', en: 'About' },
+  nearby: { ko: '주변', en: 'Nearby' },
+  reviews: { ko: '리뷰', en: 'Reviews' }
+}
+
+// 옆으로 넘겨 보는 근처 장소 카드 목록
+const PlaceRail = ({ items, event, loading }) => (
+  <ul className="sdp__rail-track">
+    {loading && items.length === 0
+      ? [0, 1, 2].map((key) => (
+        <li key={key} className="sdp__rail-skeleton" aria-hidden="true"><span /><b /><i /></li>
+      ))
+      : items.map((item, index) => (
+        <li key={item.contentId}>
+          <Link
+            href={`/spot/${generateSlug(item.name, item.contentId)}`}
+            className="sdp__rail-card"
+            onClick={() => trackEvent(event, { position: index + 1, place_kind: item.kind || '' })}
+          >
+            <span className="sdp__rail-img">
+              <Image src={getReliableImageUrl(item.imageUrl)} alt="" width={160} height={120} sizes="160px" loading="lazy" onError={handleImageError} />
+            </span>
+            <strong>{item.name}</strong>
+            <em>{[item.kind, item.distanceText].filter(Boolean).join(' · ')}</em>
+          </Link>
+        </li>
+      ))}
+  </ul>
+)
 
 // 콘텐츠 타입별 intro_info 필드 매핑
 const INTRO_FIELDS = {
@@ -213,7 +248,17 @@ const SpotDetailPage = () => {
   const [nearbyAccommodations, setNearbyAccommodations] = useState([])
   const [nearbyShopping, setNearbyShopping] = useState([])
   const [nearbyPlacesLoading, setNearbyPlacesLoading] = useState(false)
-  
+
+  // 같은 종류(같은 메뉴·같은 분류) 근처 장소
+  const [sameKind, setSameKind] = useState([])
+
+  // 섹션 바로가기 탭
+  const headerRef = useRef(null)
+  const infoRef = useRef(null)
+  const [showTabs, setShowTabs] = useState(false)
+  const [activeTab, setActiveTab] = useState('about')
+  const [descOpen, setDescOpen] = useState(false)
+
   // 연관 여행코스 상태
   const [relatedTrips, setRelatedTrips] = useState([])
   const [relatedTripsLoading, setRelatedTripsLoading] = useState(false)
@@ -644,7 +689,15 @@ const SpotDetailPage = () => {
     const loadSpot = async () => {
       setLoading(true)
       setError(null)
-      
+      // 상세에서 상세로 이동할 때 이전 장소의 주변 목록이 남지 않게 비운다
+      setRelatedSpots([])
+      setNearbyRestaurants([])
+      setNearbyCafes([])
+      setNearbyAccommodations([])
+      setNearbyShopping([])
+      setSameKind([])
+      setDescOpen(false)
+
       try {
         const result = await getTourSpotByContentId(contentId)
         
@@ -706,20 +759,16 @@ const SpotDetailPage = () => {
           // 쇼핑(38)인 경우
           const isShopping = spotData.content_type_id === '38'
           
-          if (isTouristSpot && spotData.mapy && spotData.mapx) {
-            // 좌표 기반 주변 관광지 로드
-            loadRelatedSpots(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
-            // 근처 맛집/카페 로드
-            loadNearbyFood(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
-          } else if (isRestaurant && spotData.mapy && spotData.mapx) {
-            // 맛집: 주변 숙박/쇼핑 로드
-            loadNearbyPlaces(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
-          } else if (isAccommodation && spotData.mapy && spotData.mapx) {
-            // 숙박: 주변 맛집/카페 로드
-            loadNearbyFood(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
-          } else if (isShopping && spotData.mapy && spotData.mapx) {
-            // 쇼핑: 주변 맛집/카페 로드
-            loadNearbyFood(parseFloat(spotData.mapy), parseFloat(spotData.mapx), contentId)
+          if ((isTouristSpot || isRestaurant || isAccommodation || isShopping) && spotData.mapy && spotData.mapx) {
+            const lat = parseFloat(spotData.mapy)
+            const lng = parseFloat(spotData.mapx)
+            // 상단 가로 목록에 쓰도록 종류와 상관없이 관광지·맛집·카페를 모두 불러온다
+            loadRelatedSpots(lat, lng, contentId)
+            loadNearbyFood(lat, lng, contentId)
+            // 맛집: 주변 숙박/쇼핑도 로드
+            if (isRestaurant) loadNearbyPlaces(lat, lng, contentId)
+            getNearbySameKind(lat, lng, contentId, spotData.content_type_id, spotData.cat3, 8)
+              .then((res) => res.success && setSameKind(res.spots))
           } else if (spotData.addr1) {
             // 주소 기반 주변 관광지 로드 (fallback)
             loadRelatedSpotsByAddress(spotData.addr1, contentId)
@@ -758,15 +807,81 @@ const SpotDetailPage = () => {
     setRelatedTripsLoading(false)
   }
   
-  // 상단 링크용: 주변 관광지가 없으면 맛집·카페·쇼핑·숙박 순으로 채운다
-  const nearLinks = [relatedSpots, nearbyRestaurants, nearbyCafes, nearbyShopping, nearbyAccommodations]
-    .flat().filter((item, index, list) => item?.contentId && item?.name && list.findIndex((other) => other.contentId === item.contentId) === index).slice(0, 3)
+  // 상단 가로 목록: 장소 종류에 맞춰 다음에 갈 만한 곳을 먼저 둔다
+  const ko = language === 'ko'
+  const isCafeSpot = spot?.cat3 === 'A05020900' || /카페|커피|디저트|베이커리/.test(spot?.title || '')
+  const tag = (list, label) => list.map((item) => ({ ...item, kind: label }))
+  const spotsTagged = tag(relatedSpots, ko ? '가볼 곳' : 'Sight')
+  const foodTagged = tag(nearbyRestaurants, ko ? '맛집' : 'Food')
+  const cafeTagged = tag(nearbyCafes, ko ? '카페' : 'Cafe')
+  const shopTagged = tag(nearbyShopping, ko ? '쇼핑' : 'Shop')
+  const [railTitle, railGroups] = {
+    '39': isCafeSpot
+      ? [ko ? '커피 마시고 들르기 좋은 곳' : 'After your coffee', [spotsTagged, foodTagged, shopTagged]]
+      : [ko ? '식사 후 들르기 좋은 곳' : 'After your meal', [cafeTagged, spotsTagged, shopTagged]],
+    '32': [ko ? '숙소 근처에서 식사하기' : 'Eat near your stay', [foodTagged, cafeTagged, spotsTagged]],
+    '38': [ko ? '쇼핑하다 쉬어 가기' : 'Take a break nearby', [cafeTagged, foodTagged, spotsTagged]]
+  }[spot?.content_type_id] || [ko ? '둘러본 뒤 근처 맛집' : 'Eat nearby', [foodTagged, cafeTagged, spotsTagged]]
+  const railItems = railGroups.flat()
+    .filter((item, index, list) => item?.contentId && item?.name && list.findIndex((other) => other.contentId === item.contentId) === index)
+    .slice(0, 8)
+  const railIds = new Set(railItems.map((item) => item.contentId))
+  // 같은 종류 목록은 위 가로 목록과 겹치지 않게 한다
+  const sameKindItems = sameKind.filter((item) => !railIds.has(item.contentId)).slice(0, 6)
+  const sameKindLabel = {
+    A05020100: ko ? '한식' : 'Korean', A05020200: ko ? '양식' : 'Western', A05020300: ko ? '일식' : 'Japanese',
+    A05020400: ko ? '중식' : 'Chinese', A05020700: ko ? '이색 음식' : 'unique', A05020900: ko ? '카페' : 'cafe'
+  }[spot?.cat3]
+  const sameKindTitle = sameKindLabel
+    ? (ko ? `이 근처 다른 ${sameKindLabel}${sameKindLabel === '카페' ? '' : ' 맛집'}` : `Other ${sameKindLabel} spots nearby`)
+    : (ko ? `이 근처 다른 ${CONTENT_TYPE_CONFIG[spot?.content_type_id]?.name?.ko || "장소"}` : `More ${(CONTENT_TYPE_CONFIG[spot?.content_type_id]?.name?.en || "places").toLowerCase()} nearby`)
+  const district = CITY.districtNames.find((name) => spot?.addr1?.includes(name))
+  const mapHref = spot?.mapy && spot?.mapx
+    ? `/map?lat=${spot.mapy}&lng=${spot.mapx}&tab=${spot.content_type_id === '39' ? 'food' : 'tour'}&focus=${contentId}`
+    : '/map'
+
+  // 헤더 아래로 섹션 탭을 띄우고, 지금 보고 있는 섹션을 표시한다
+  useEffect(() => {
+    if (loading) return
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const headerBottom = headerRef.current?.getBoundingClientRect().bottom || 0
+      setShowTabs((infoRef.current?.getBoundingClientRect().bottom ?? Infinity) < headerBottom)
+      const line = headerBottom + 64
+      let current = null
+      for (const id of SECTION_TABS) {
+        const el = document.getElementById(`sdp-${id}`)
+        if (el && el.getBoundingClientRect().top <= line) current = id
+      }
+      if (current) setActiveTab(current)
+    }
+    const onScroll = () => { if (!frame) frame = requestAnimationFrame(update) }
+    update()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+    }
+  }, [loading, contentId])
+
+  const goToSection = (id) => {
+    const el = document.getElementById(`sdp-${id}`)
+    if (!el) return
+    const offset = (headerRef.current?.getBoundingClientRect().bottom || 0) + 52
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    window.scrollTo({ top: el.getBoundingClientRect().top + window.scrollY - offset, behavior: reduce ? 'auto' : 'smooth' })
+    setActiveTab(id)
+    trackEvent('detail_tab_click', { tab: id })
+  }
 
   // 좌표 기반 주변 관광지 로드 함수
   const loadRelatedSpots = async (lat, lng, excludeId) => {
     setRelatedLoading(true)
     try {
-      const result = await getNearbySpots(lat, lng, excludeId, 4)
+      const result = await getNearbySpots(lat, lng, excludeId, 6)
       if (result.success) {
         setRelatedSpots(result.spots)
       }
@@ -796,8 +911,8 @@ const SpotDetailPage = () => {
     try {
       // 맛집 3개, 카페 3개 동시 로드
       const [restaurantResult, cafeResult] = await Promise.all([
-        getNearbyRestaurants(lat, lng, excludeId, 'restaurant', 3),
-        getNearbyRestaurants(lat, lng, excludeId, 'cafe', 3)
+        getNearbyRestaurants(lat, lng, excludeId, 'restaurant', 4),
+        getNearbyRestaurants(lat, lng, excludeId, 'cafe', 4)
       ])
       
       if (restaurantResult.success) {
@@ -1154,7 +1269,28 @@ const SpotDetailPage = () => {
   return (
     <div className={`sdp ${isDark ? 'sdp--dark' : ''}`}>
       {/* 상단 헤더 */}
-      <header className="sdp__header">
+      <header className="sdp__header" ref={headerRef}>
+        <nav
+          className={`sdp__tabs ${showTabs ? 'sdp__tabs--visible' : ''}`}
+          aria-label={ko ? '섹션 바로가기' : 'Jump to section'}
+          aria-hidden={!showTabs}
+        >
+          {SECTION_TABS
+            .filter((id) => id !== 'about' || spot.overview || spot.overview_en || Object.keys(spot.intro_info || {}).length)
+            .filter((id) => id !== 'nearby' || sameKindItems.length || relatedSpots.length || nearbyRestaurants.length || nearbyCafes.length || nearbyAccommodations.length || nearbyShopping.length)
+            .map((id) => (
+              <button
+                key={id}
+                type="button"
+                tabIndex={showTabs ? 0 : -1}
+                className={`sdp__tab ${activeTab === id ? 'sdp__tab--active' : ''}`}
+                aria-current={activeTab === id ? 'true' : undefined}
+                onClick={() => goToSection(id)}
+              >
+                {SECTION_TAB_LABELS[id][ko ? 'ko' : 'en']}
+              </button>
+            ))}
+        </nav>
         <button className="sdp__header-btn" onClick={() => router.back()}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
@@ -1241,11 +1377,25 @@ const SpotDetailPage = () => {
       {/* 메인 컨텐츠 */}
       <main className="sdp__main">
         {/* 기본 정보 */}
-        <section className="sdp__info">
+        <section className="sdp__info" ref={infoRef}>
           <span className="sdp__badge" style={{ backgroundColor: contentConfig.color }}>
             {contentConfig.name?.[language]}
           </span>
           <h1 className="sdp__title">{language === 'en' && spot.title_en ? spot.title_en : spot.title}</h1>
+          {(district || contentConfig.path) && (
+            <nav className="sdp__wayfind" aria-label={ko ? '이 지역과 종류 더 보기' : 'More like this'}>
+              {district && (
+                <Link href={`/area/${district}`} onClick={() => trackEvent('wayfind_click', { target: 'area' })}>
+                  {ko ? `${district} 가볼 곳·맛집` : `More in ${district}`}
+                </Link>
+              )}
+              {contentConfig.path && (
+                <Link href={contentConfig.path} onClick={() => trackEvent('wayfind_click', { target: 'category' })}>
+                  {ko ? `${CITY.cityName} ${contentConfig.name.ko} 전체` : `All ${contentConfig.name.en.toLowerCase()} in ${CITY.cityNameEn}`}
+                </Link>
+              )}
+            </nav>
+          )}
           {/* 첫 화면에서 바로 누를 수 있는 빠른 실행 (하단 고정 버튼은 광고에 가려지기 쉽다) */}
           <div className="sdp__quick" role="group" aria-label={language === 'ko' ? '빠른 실행' : 'Quick actions'}>
             {spot.addr1 && (
@@ -1267,24 +1417,31 @@ const SpotDetailPage = () => {
           {(() => {
             const desc = generateSpotDescription(spot, spot.content_type_id, language)
             if (!desc) return null
+            // 세 줄까지만 보여 근처 목록이 첫 화면에 걸리게 한다. 전체 문장은 그대로 문서에 남는다
+            const long = desc.length > 90
             return (
-              <p className="sdp__description">{desc}</p>
+              <>
+                <p className={`sdp__description ${long && !descOpen ? 'sdp__description--clamped' : ''}`}>{desc}</p>
+                {long && (
+                  <button type="button" className="sdp__description-more" aria-expanded={descOpen} onClick={() => setDescOpen(!descOpen)}>
+                    {descOpen ? (ko ? '접기' : 'Less') : (ko ? '더 보기' : 'More')}
+                  </button>
+                )}
+              </>
             )
           })()}
           
 
-          {nearLinks.length > 0 && (
-            <nav className="sdp__nearlinks" aria-label={language === 'ko' ? '근처 장소' : 'Nearby places'}>
-              <span>{language === 'ko' ? '근처 가볼 만한 곳' : 'Nearby'}</span>
-              {nearLinks.map((related) => (
-                <Link key={related.contentId} href={`/spot/${generateSlug(related.name, related.contentId)}`}>
-                  <Image src={getReliableImageUrl(related.imageUrl)} alt="" width={52} height={52} onError={handleImageError} />
-                  <strong>{related.name}</strong>
-                  {related.distanceText && <em>{related.distanceText}</em>}
-                  <Icons.compass size={16} />
+          {(railItems.length > 0 || ((relatedLoading || nearbyLoading) && spot.mapy && spot.mapx)) && (
+            <div className="sdp__rail">
+              <div className="sdp__rail-head">
+                <h2>{railTitle}</h2>
+                <Link href={mapHref} onClick={() => trackEvent('site_map_click', { from: 'rail' })}>
+                  {ko ? '지도로 보기' : 'On the map'}
                 </Link>
-              ))}
-            </nav>
+              </div>
+              <PlaceRail items={railItems} event="nearby_rail_click" loading={relatedLoading || nearbyLoading} />
+            </div>
           )}
 
           {/* 통계 정보 (조회수, 좋아요, 리뷰, 평점) */}
@@ -1311,7 +1468,7 @@ const SpotDetailPage = () => {
         </section>
 
         {/* 위치/교통 */}
-        <section className="sdp__section sdp__location">
+        <section className="sdp__section sdp__location" id="sdp-location">
           <div className="sdp__section-header">
             <span className="sdp__section-icon"><Icons.location size={18} /></span>
             <h2 className="sdp__section-title">{t.detail.location}</h2>
@@ -1340,6 +1497,15 @@ const SpotDetailPage = () => {
               <span>{t.detail.naverMap}</span>
             </a>
           </div>
+          {/* 외부 지도로 떠나기 전에 사이트 지도로 주변을 한 번 더 보여준다 */}
+          <Link href={mapHref} className="sdp__sitemap-link" onClick={() => trackEvent('site_map_click', { from: 'location' })}>
+            <Icons.location size={18} />
+            <span>
+              <strong>{ko ? '주변 장소 지도로 보기' : 'See what’s around on the map'}</strong>
+              <em>{ko ? '이 근처 관광지와 맛집을 한 지도에서' : 'Sights and food near here, on one map'}</em>
+            </span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+          </Link>
         </section>
 
         {/* 시설/서비스 */}
@@ -1365,7 +1531,7 @@ const SpotDetailPage = () => {
 
         {/* 소개 */}
         {(spot.overview || spot.overview_en) && (
-          <section className="sdp__section sdp__overview">
+          <section className="sdp__section sdp__overview" id="sdp-about">
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.about size={18} /></span>
               <h2 className="sdp__section-title">{t.detail.about}</h2>
@@ -1376,7 +1542,7 @@ const SpotDetailPage = () => {
 
         {/* 이용 안내 */}
         {spot.intro_info && Object.keys(spot.intro_info).length > 0 && (
-          <section className="sdp__section sdp__usage">
+          <section className="sdp__section sdp__usage" id={spot.overview || spot.overview_en ? undefined : 'sdp-about'}>
             <div className="sdp__section-header">
               <span className="sdp__section-icon"><Icons.info size={18} /></span>
               <h2 className="sdp__section-title">{t.detail.usageInfo}</h2>
@@ -1539,18 +1705,6 @@ const SpotDetailPage = () => {
           </section>
         )}
 
-        {CITY.districtNames.find((district) => spot?.addr1?.includes(district)) && (
-          <section className="sdp__section">
-            <div className="sdp__section-header">
-              <span className="sdp__section-icon"><Icons.map size={18} /></span>
-              <h2 className="sdp__section-title">{language === 'ko' ? '이 지역 더 둘러보기' : 'Explore this area'}</h2>
-            </div>
-            <Link className="sdp__website-link" href={`/area/${CITY.districtNames.find((district) => spot?.addr1?.includes(district))}`}>
-              {CITY.districtNames.find((district) => spot?.addr1?.includes(district))} {language === 'ko' ? '여행 가이드' : 'local guide'}
-            </Link>
-          </section>
-        )}
-
         {/* 연관 여행코스 섹션 */}
         {relatedTrips.length > 0 && (
           <section className="sdp__section sdp__trips">
@@ -1616,6 +1770,18 @@ const SpotDetailPage = () => {
                 </Link>
               ))}
             </div>
+          </section>
+        )}
+
+        <div id="sdp-nearby">
+        {/* 같은 종류 근처 장소 */}
+        {sameKindItems.length > 0 && (
+          <section className="sdp__section sdp__samekind">
+            <div className="sdp__section-header">
+              <span className="sdp__section-icon"><Icons.compass size={18} /></span>
+              <h2 className="sdp__section-title">{sameKindTitle}</h2>
+            </div>
+            <PlaceRail items={sameKindItems} event="same_kind_click" />
           </section>
         )}
 
@@ -1886,6 +2052,8 @@ const SpotDetailPage = () => {
           </section>
         )}
 
+        </div>
+
         {/* FAQ 섹션 (음식점에서 AI 생성 FAQ가 있을 때만 표시) */}
         {spot.content_type_id === '39' && spot.intro_info?.faq && (() => {
           // FAQ가 배열인지 텍스트인지 확인하고 파싱
@@ -1939,7 +2107,7 @@ const SpotDetailPage = () => {
         })()}
 
         {/* 리뷰 섹션 */}
-        <section className="sdp__section sdp__reviews">
+        <section className="sdp__section sdp__reviews" id="sdp-reviews">
           <div className="sdp__section-header">
             <span className="sdp__section-icon"><Icons.review size={18} /></span>
             <h2 className="sdp__section-title">
