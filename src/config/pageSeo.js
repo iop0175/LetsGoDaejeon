@@ -61,9 +61,10 @@ export function getPageSeo(page, locale = 'kr', { count = 0 } = {}) {
       h1: `${city} 숙소`
     },
     parking: {
-      title: `${city}시 주차장 | 공영·무료·24시간 주차장 요금 안내 - ${site}`,
-      description: `${city}시 공영주차장의 위치, 운영시간, 주차 요금을 구별로 찾아보세요. 무료 주차장과 24시간 운영 주차장, 관광지 근처 주차장을 방문 전에 미리 확인할 수 있습니다.`,
-      keywords: `${city} 주차장, ${city}시 주차장, ${city} 공영주차장, ${city} 주차 요금, ${city} 무료 주차장, ${city} 24시간 주차장, ${city} 노상주차장`,
+      // 제주는 전 주차장이 00:00~23:59 기본값이라 24시간 모아보기를 만들지 않으므로 문구에서도 뺀다
+      title: `${city}시 주차장 | 공영·무료${CITY.key === 'jeju' ? '' : '·24시간'} 주차장 요금 안내 - ${site}`,
+      description: `${city}시 공영주차장의 위치, 운영시간, 주차 요금을 구별로 찾아보세요. 무료 주차장${CITY.key === 'jeju' ? '과' : '과 24시간 운영 주차장,'} 관광지 근처 주차장을 방문 전에 미리 확인할 수 있습니다.`,
+      keywords: `${city} 주차장, ${city}시 주차장, ${city} 공영주차장, ${city} 주차 요금, ${city} 무료 주차장${CITY.key === 'jeju' ? '' : `, ${city} 24시간 주차장`}, ${city} 노상주차장`,
       h1: `${city}시 주차장`
     },
     medical: {
