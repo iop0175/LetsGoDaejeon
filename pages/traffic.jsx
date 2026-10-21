@@ -126,7 +126,10 @@ export async function getStaticProps() {
     return { props: { updated, total: links.length, shares, congested, roads }, revalidate: 300 }
   } catch (error) {
     console.error('Traffic error:', error.message)
-    // 마지막 정상 페이지가 있으면 ISR이 그대로 유지한다
-    throw error
+    // 빌드 중 실패로 배포 전체가 멈추지 않게 빈 페이지를 내고 곧바로 다시 만든다.
+    // 운영 중에는 던져서 ISR이 마지막 정상 페이지를 그대로 유지하게 한다.
+    if (process.env.NEXT_PHASE !== 'phase-production-build') throw error
+    const updated = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return { props: { updated, total: 0, shares: { 1: 0, 2: 0, 3: 0 }, congested: [], roads: [] }, revalidate: 10 }
   }
 }
