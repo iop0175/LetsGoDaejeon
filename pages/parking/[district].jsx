@@ -17,10 +17,10 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
 
   const title = en
     ? `${district}, ${city} Parking Lots: Fees & Hours (${stats.total}) | ${site}`
-    : `${city} ${district} 주차장 ${stats.total}곳 요금·운영시간 | ${site}`
+    : `${city}시 ${district} 주차장 ${stats.total}곳 | 공영·무료 요금·운영시간 - ${site}`
   const description = en
     ? `${stats.total} parking lots in ${district}, ${city}, with fees, opening hours and directions.${stats.freeCount ? ` ${stats.freeCount} are free.` : ''}`
-    : `${city} ${district} 공영주차장 ${stats.total}곳의 위치, 요금, 운영시간을 모았습니다.${stats.freeCount ? ` 무료 주차장 ${stats.freeCount}곳,` : ''}${stats.allDayCount ? ` 24시간 운영 ${stats.allDayCount}곳.` : ''} 방문 전 가까운 주차장을 확인하세요.`
+    : `${city}시 ${district} 공영주차장 ${stats.total}곳의 위치, 요금, 운영시간을 모았습니다.${stats.freeCount ? ` 무료 주차장 ${stats.freeCount}곳,` : ''}${stats.allDayCount ? ` 24시간 운영 ${stats.allDayCount}곳.` : ''} 방문 전 가까운 주차장을 확인하세요.`
 
   const faq = [
     stats.freeCount > 0 && {
@@ -93,6 +93,8 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
           <nav className="pk-district-links" aria-label={en ? 'Other districts' : '다른 지역'}>
             <h2>{en ? 'Other districts' : '다른 지역 주차장'}</h2>
             <div>
+              {!en && <Link href="/parking/free">{city}시 무료 주차장</Link>}
+              {!en && <Link href="/parking/24h">{city}시 24시간 주차장</Link>}
               {otherDistricts.map((name) => (
                 <Link key={name} href={districtPath(name)}>{en ? name : `${name} 주차장`}</Link>
               ))}

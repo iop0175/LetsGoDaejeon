@@ -14,13 +14,19 @@ export default function ParkingPageWrapper({ counts }) {
   const seo = getPageSeo('parking', loc)
   const home = loc === 'en' ? 'Home' : '홈'
   // 구별 주차장 페이지로 가는 링크를 서버 HTML에 넣어 검색 로봇이 따라가게 한다
-  const items = CITY.districtNames
-    .filter((district) => counts[district] > 0)
-    .map((district) => ({
-      name: loc === 'en' ? district : `${CITY.cityName} ${district} 주차장`,
-      path: districtPath(district),
-      sub: loc === 'en' ? `${counts[district]} lots` : `${counts[district]}곳`
-    }))
+  const items = [
+    ...(loc === 'kr' && Object.keys(counts).length ? [
+      { name: `${CITY.cityName}시 무료 주차장`, path: '/parking/free' },
+      { name: `${CITY.cityName}시 24시간 주차장`, path: '/parking/24h' }
+    ] : []),
+    ...CITY.districtNames
+      .filter((district) => counts[district] > 0)
+      .map((district) => ({
+        name: loc === 'en' ? district : `${CITY.cityName}시 ${district} 주차장`,
+        path: districtPath(district),
+        sub: loc === 'en' ? `${counts[district]} lots` : `${counts[district]}곳`
+      }))
+  ]
 
   return (
     <>

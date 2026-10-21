@@ -113,6 +113,23 @@ export async function loadParkingLots() {
   return lots
 }
 
+const THEME_FILTER = { free: (lot) => lot.free, '24h': (lot) => lot.allDay }
+
+// 무료·24시간 주차장 모아보기 페이지의 getStaticProps 결과
+export async function themeProps(kind) {
+  if (!CITY.parkingReady || !THEME_FILTER[kind]) return { notFound: true }
+  const matched = (await loadParkingLots()).filter(THEME_FILTER[kind])
+  if (!matched.length) return { notFound: true, revalidate: 3600 }
+  const byDistrict = {}
+  for (const lot of matched) if (lot.district) byDistrict[lot.district] = (byDistrict[lot.district] || 0) + 1
+  const lots = [...matched]
+    .sort((a, b) => Number(b.isPublic) - Number(a.isPublic) || b.totalLot - a.totalLot)
+    .slice(0, 200)
+    .map(({ id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket }) =>
+      ({ id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket }))
+  return { props: { total: matched.length, lots, byDistrict }, revalidate: 21600 }
+}
+
 // 정확히 같은 slug를 먼저 찾고, 없으면 끝의 id로 찾는다(이름만 바뀐 옛 주소 대응)
 export const findLot = (lots, slug) =>
   lots.find((lot) => lot.slug === slug)

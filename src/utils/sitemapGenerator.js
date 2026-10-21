@@ -146,7 +146,12 @@ export async function generateParkingSitemap() {
     console.error('Parking sitemap error:', error)
   }
   const districts = CITY.districtNames.filter((district) => lots.some((lot) => lot.district === district))
+  const themes = [
+    lots.some((lot) => lot.free) && '/parking/free',
+    lots.some((lot) => lot.allDay) && '/parking/24h'
+  ].filter(Boolean)
   const entries = [
+    ...themes.map((path) => urlEntries({ paths: { kr: path }, lastmod: date, changefreq: 'weekly', priority: '0.8' })),
     ...districts.map((district) => urlEntries({ paths: { kr: `/parking/${district}` }, lastmod: date, changefreq: 'weekly', priority: '0.7' })),
     ...lots.map((lot) => urlEntries({ paths: { kr: `/parking/lot/${lot.slug}` }, lastmod: /^\d{4}-\d{2}-\d{2}$/.test(lot.updated) ? lot.updated : date, changefreq: 'monthly', priority: '0.5' }))
   ]

@@ -248,6 +248,8 @@ const ParkingPage = () => {
         <nav className="pk-district-links" aria-label={language === 'ko' ? '구별 주차장' : 'Parking by district'}>
           <h2>{language === 'ko' ? '구별 주차장 보기' : 'Parking by district'}</h2>
           <div>
+            {language === 'ko' && <Link href="/parking/free">무료 주차장</Link>}
+            {language === 'ko' && <Link href="/parking/24h">24시간 주차장</Link>}
             {CITY.districtNames.map(district => (
               <Link key={district} href={`/parking/${district}`}>
                 {language === 'ko' ? `${district} 주차장` : district}
