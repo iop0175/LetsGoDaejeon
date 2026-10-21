@@ -1,3 +1,4 @@
+import InfoTable from '../common/InfoTable'
 import { useLive } from '../Bus/LiveBox'
 
 // 충전 가능 대수(실시간). 값이 없으면 제공되지 않는 충전소로 안내한다.
@@ -8,10 +9,10 @@ export default function EvLive({ id }) {
   if (!data.available) return <p className="bt-note">이 충전소는 실시간 충전 가능 대수를 제공하지 않습니다.</p>
   return (
     <>
-      <table className="bt-table">
+      <InfoTable>
         <thead><tr><th>급속</th><th>완속</th></tr></thead>
         <tbody><tr><td>{data.available.fast}대 가능</td><td>{data.available.slow}대 가능</td></tr></tbody>
-      </table>
+      </InfoTable>
       {error && <p className="bt-note bt-note--error">갱신에 실패해 마지막 정보를 보여 드립니다.</p>}
     </>
   )

@@ -127,7 +127,11 @@ export default function SpotPage({ seoData }) {
           <h2>{view.name} 근처 버스정류장</h2>
           <ul className="bt-nearby">
             {seoData.busStops.map((stop) => (
-              <li key={stop.id}><Link href={`/bus/stop/${stop.slug}`}>{stop.name}</Link><small>약 {stop.meters}m · {stop.routeCount}개 노선</small></li>
+              <li key={stop.id}>
+                <Link href={`/bus/stop/${stop.slug}`}>{stop.name}</Link>
+                <small>약 {stop.meters}m · {stop.routeCount}개 노선</small>
+                {stop.routes?.length > 0 && <div className="bt-nearby__routes">{stop.routes.map((route) => <Link key={route.slug} href={`/bus/route/${route.slug}`}>{route.no}번</Link>)}</div>}
+              </li>
             ))}
           </ul>
         </section>
@@ -246,8 +250,9 @@ export async function getStaticProps({ params, locale }) {
     let busStops = []
     if (CITY.key === 'daejeon' && contentTypeId !== 15) {
       try {
-        const { nearestStops } = await import('../../src/services/busData')
+        const { nearestStops, getStop, routeNos, routeSlug } = await import('../../src/services/busData')
         busStops = nearestStops({ lat: Number(row.mapy), lon: Number(row.mapx) }, 3, 0.5)
+          .map((stop) => ({ ...stop, routes: routeNos(getStop(stop.id)).map((route) => ({ no: route.no, slug: routeSlug(route) })) }))
       } catch (err) {
         console.error('Nearby bus stops error:', err.message)
       }

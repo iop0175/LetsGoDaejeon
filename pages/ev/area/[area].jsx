@@ -1,3 +1,4 @@
+import InfoPageNav from '../../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../../src/components/common/SeoHead'
 import { CITY } from '../../../src/config/cities'
@@ -20,6 +21,7 @@ export default function EvAreaPage({ area, city, total, fastCount, stations }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>제주 {area} 전기차 충전소</h1>
           <p className="bt-intro">{description}</p>
           <ul className="bt-nearby">

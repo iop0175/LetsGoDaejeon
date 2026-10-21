@@ -1,7 +1,10 @@
+import InfoPageNav from '../src/components/common/InfoPageNav'
+import InfoTable from '../src/components/common/InfoTable'
 import SeoHead from '../src/components/common/SeoHead'
 import { CITY } from '../src/config/cities'
 import { hasCityFeature } from '../src/config/cityFeatures'
 import JejuTraffic from '../src/components/Jeju/JejuTraffic'
+import TransitMap from '../src/components/common/TransitMap'
 
 const LEVEL = { 1: '원활', 2: '서행', 3: '정체' }
 
@@ -26,43 +29,45 @@ function DaejeonTraffic({ updated, total, shares, congested, roads }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>대전 실시간 교통정보</h1>
           <p className="bt-intro">{description}</p>
           <p className="bt-note">기준 시각 {updated} · 대전시 교통정보센터 자료이며 5분마다 갱신됩니다.</p>
 
           <h2>지금 대전 도로 상황</h2>
-          <table className="bt-table">
+          <TransitMap traffic label="대전 실시간 도로 지도" />
+          <InfoTable>
             <thead><tr><th>상태</th><th>구간 비율</th></tr></thead>
             <tbody>
               {[1, 2, 3].map((level) => (
                 <tr key={level}><th><span className={`bt-level bt-level--${level}`}>{LEVEL[level]}</span></th><td>{shares[level]}%</td></tr>
               ))}
             </tbody>
-          </table>
+          </InfoTable>
 
           <h2>지금 가장 혼잡한 도로</h2>
           {congested.length === 0
             ? <p className="bt-note">현재 눈에 띄는 정체 도로가 없습니다.</p>
             : (
-              <table className="bt-table">
+              <InfoTable>
                 <thead><tr><th>도로</th><th>서행·정체 비율</th><th>평균 속도</th></tr></thead>
                 <tbody>
                   {congested.map((item) => (
                     <tr key={item.road}><th>{item.road}</th><td>{item.slowShare}%</td><td>{item.avgSpeed}km/h</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </InfoTable>
             )}
 
           <h2>주요 도로 평균 속도</h2>
-          <table className="bt-table">
+          <InfoTable>
             <thead><tr><th>도로</th><th>구간 수</th><th>평균 속도</th><th>상태</th></tr></thead>
             <tbody>
               {roads.map((item) => (
                 <tr key={item.road}><th>{item.road}</th><td>{item.links}</td><td>{item.avgSpeed}km/h</td><td><span className={`bt-level bt-level--${item.level}`}>{LEVEL[item.level]}</span></td></tr>
               ))}
             </tbody>
-          </table>
+          </InfoTable>
           <p className="bt-note">구간별 속도와 상태를 도로 이름으로 묶어 평균을 낸 값입니다. 실제 도로 상황과 다를 수 있으니 운전 중에는 현장 표지판과 안내를 따라 주세요.</p>
         </div>
       </section>

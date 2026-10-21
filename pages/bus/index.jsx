@@ -5,6 +5,7 @@ import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
 import { hasCityFeature } from '../../src/config/cityFeatures'
 import { POPULAR_BUS } from '../../src/utils/busRoutes'
+import TransitMap from '../../src/components/common/TransitMap'
 
 export default function BusPage({ routeLinks = [] }) {
   const { locale } = useRouter()
@@ -66,6 +67,8 @@ export default function BusPage({ routeLinks = [] }) {
             <article className="bus-route">
               <button type="button" className="bus-route__back" onClick={() => setRoute(null)}>← {en ? 'Back to results' : '검색 결과로'}</button>
               <h2><b>{route.number}</b> {route.start} → {route.end}</h2>
+              <TransitMap line label={`${route.number}번 버스 노선 지도`} points={[...route.outbound, ...route.inbound].map((stop) => ({ ...stop, lon: stop.lng, detail: stop.stopNumber ? `정류장 ${stop.stopNumber}` : '' }))} />
+              {routeLinks.filter((item) => item.no === route.number).map((item) => <p key={item.slug}><Link href={`/bus/route/${item.slug}`}>{en ? 'View live bus map and stops' : '실시간 버스 위치·정류장 지도 보기'}</Link></p>)}
               <dl>
                 <div><dt>{en ? 'First bus' : '첫차'}</dt><dd>{route.first || '-'}</dd></div>
                 <div><dt>{en ? 'Last bus' : '막차'}</dt><dd>{route.last || '-'}</dd></div>

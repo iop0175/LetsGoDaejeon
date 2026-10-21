@@ -1,3 +1,4 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import SeoHead from '../../src/components/common/SeoHead'
@@ -62,6 +63,7 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
       />
       <section className="pk-page">
         <div className="pk-container">
+          <InfoPageNav />
           <h1>{en ? `${district}, ${city} Parking Lots` : `${where} 주차장`}</h1>
           <p className="pk-intro">
             {en

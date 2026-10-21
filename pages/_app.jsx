@@ -86,6 +86,7 @@ import '../src/pages/PolicyPage.css'
 import '../src/pages/TripPlannerPage.css'
 import '../src/pages/DevCitiesPage.css'
 import '../src/styles/contentPresentation.css'
+import '../src/styles/travelInfo.css'
 
 // 카카오맵 SDK 동적 로드 - 필요한 페이지에서만 로드
 const loadKakaoMapSDK = (pathname) => {
@@ -93,9 +94,10 @@ const loadKakaoMapSDK = (pathname) => {
   if (window.kakao?.maps) return
   
   // 지도가 필요한 페이지에서만 SDK 로드
-  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip', '/trip-planner']
+  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip', '/trip-planner', '/traffic', '/bus']
   const needsMap = mapPages.some(page => pathname.startsWith(page))
   if (!needsMap) return
+  if (document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]')) return
   
   const kakaoScript = document.createElement('script')
   kakaoScript.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`

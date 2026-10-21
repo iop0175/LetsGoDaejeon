@@ -1,6 +1,9 @@
+import InfoPageNav from '../common/InfoPageNav'
+import InfoTable from '../common/InfoTable'
 import Link from 'next/link'
 import SeoHead from '../common/SeoHead'
 import { CITY } from '../../config/cities'
+import TransitMap from '../common/TransitMap'
 
 const COLOR = { 1: '원활', 2: '서행', 3: '정체' }
 
@@ -21,15 +24,20 @@ export default function JejuTraffic({ updated, data }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>제주 실시간 도로 상황</h1>
           <p className="bt-intro">{description}</p>
           <p className="bt-note">{updated} 기준 · 제주 교통정보센터 제공 자료이며 5분마다 갱신됩니다. 운전 중에는 현장 표지판과 안내를 따라 주세요.</p>
 
           <h2>주요 교차로 구간별 소요시간</h2>
+          <TransitMap traffic label="제주 도로·위험 정보 지도" points={[
+            ...data.points.map((point) => ({ ...point, detail: point.destinations.map((dest) => `${dest.place} ${dest.minutes}분`).join(' · ') })),
+            ...data.events.map((event) => ({ ...event, kind: 'event', name: event.label, detail: event.place }))
+          ]} />
           {data.points.length === 0
             ? <p className="bt-note">지금은 구간 소요시간 자료가 없습니다.</p>
             : (
-              <table className="bt-table">
+              <InfoTable>
                 <thead><tr><th>기점</th><th>목적지별 소요시간</th><th>속도</th></tr></thead>
                 <tbody>
                   {data.points.map((point) => (
@@ -42,7 +50,7 @@ export default function JejuTraffic({ updated, data }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </InfoTable>
             )}
 
           <h2>도로 위험 정보 ({data.eventTotal}건)</h2>
@@ -68,14 +76,14 @@ export default function JejuTraffic({ updated, data }) {
           {data.weather.length === 0
             ? <p className="bt-note">지금은 노면 기상 자료가 없습니다.</p>
             : (
-              <table className="bt-table">
+              <InfoTable>
                 <thead><tr><th>위치</th><th>노면</th><th>시정</th><th>노면 온도</th></tr></thead>
                 <tbody>
                   {data.weather.map((item, index) => (
                     <tr key={index}><th>{item.place}</th><td>{item.state}{item.snow ? ` (적설 ${item.snow}cm)` : ''}</td><td>{item.visibility ? `${item.visibility.toLocaleString('ko-KR')}m` : '-'}</td><td>{item.roadTemp !== null ? `${item.roadTemp}℃` : '-'}</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </InfoTable>
             )}
           <p className="bt-note">위치는 가장 가까운 주요 교차로 이름으로 표시한 대략적인 곳이에요. <Link href="/ev">전기차 충전소</Link> · <Link href="/gas">주유소 가격</Link></p>
         </div>

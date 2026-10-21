@@ -7,6 +7,12 @@
   background: var(--bg-primary, #fff);
   color: var(--text-primary, var(--hub-ink));
 }
+.dark-theme .content-hub {
+  --hub-ink: #4a5168;
+  --hub-muted: #9a9fb0;
+  --hub-line: #2d2d3a;
+  --hub-soft: var(--bg-secondary);
+}
 .content-hub__hero { position: relative; isolation: isolate; overflow: hidden; }
 .content-hub__hero > div { position: relative; z-index: 2; width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 .content-hub__hero p { margin: 0 0 14px; font-size: 12px; font-weight: 800; letter-spacing: .14em; }

@@ -27,7 +27,7 @@ export async function loadJejuTraffic() {
     return near && near.meters < 8000 ? `${near.name} 부근` : '제주'
   }
 
-  const events = (eventRows || []).filter(valid).map((row) => ({ label: EVENT_LABEL[row.code] || '도로 위험', place: whereIs(row.latitude, row.longitude) }))
+  const events = (eventRows || []).filter(valid).map((row) => ({ label: EVENT_LABEL[row.code] || '도로 위험', place: whereIs(row.latitude, row.longitude), lat: row.latitude, lon: row.longitude }))
   const eventCounts = {}
   for (const event of events) eventCounts[event.label] = (eventCounts[event.label] || 0) + 1
 

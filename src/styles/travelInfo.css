@@ -1,0 +1,164 @@
+.app {
+  --info-accent: var(--primary-color, #1760ac);
+  --info-paper: var(--bg-primary, #fff);
+  --info-background: var(--bg-secondary, #f4f7fa);
+  --info-text: var(--text-primary, #202a32);
+  --info-muted: var(--text-secondary, #56636d);
+  --info-line: var(--border-color, #dce3e8);
+  --info-radius: 10px;
+}
+
+.app[data-city="seoul"] { --info-radius: 4px; }
+.app[data-city="busan"] { --info-radius: 20px; }
+.app[data-city="jeju"] { --info-radius: 20px 6px 20px 6px; }
+.app[data-city="seoul"] { --info-background: #f7f4ee; }
+.app[data-city="busan"] { --info-background: #f0f7f9; }
+.app[data-city="jeju"] { --info-background: #f6f5ef; }
+.dark-theme .app[data-city] { --info-background: var(--bg-secondary); }
+.dark-theme .app[data-city="seoul"] { --info-accent: #ed9ca4; }
+.dark-theme .app[data-city="busan"] { --info-accent: #81c5ee; }
+.dark-theme .app[data-city="jeju"] { --info-accent: #74cec2; }
+.dark-theme .app :is(.info-navigation__links a[aria-current], .pk-directions, .bt-button, .parking-page .filter-btn.active) { color: #171d24; }
+
+.app :is(.pk-page, .bt-page) {
+  padding: 112px 0 72px;
+  background: var(--info-background);
+  color: var(--info-text);
+}
+
+.app :is(.pk-container, .bt-container) { max-width: 1080px; padding: 0 32px; }
+.info-navigation { margin-bottom: 32px; }
+.info-navigation__context { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; font-size: 13px; color: var(--info-muted); }
+.info-navigation__context a, .info-navigation__context span { display: inline-flex; align-items: center; gap: 8px; }
+.info-navigation__context a { min-height: 44px; color: var(--info-text); text-decoration: none; }
+.info-navigation__links { display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 20px; border-bottom: 1px solid var(--info-line); }
+.info-navigation__links a { display: inline-flex; align-items: center; min-height: 44px; padding: 9px 16px; border: 1px solid var(--info-line); border-radius: var(--info-radius); background: var(--info-paper); color: var(--info-muted); font-size: 14px; text-decoration: none; }
+.info-navigation__links a[aria-current] { background: var(--info-accent); color: white; border-color: var(--info-accent); font-weight: 700; }
+
+.app :is(.pk-page, .bt-page) h1 { max-width: 850px; margin: 0 0 16px; font-size: 34px; line-height: 1.3; letter-spacing: -.035em; word-break: keep-all; overflow-wrap: anywhere; }
+.app :is(.pk-page, .bt-page) h1::before { content: ''; display: block; width: 40px; height: 4px; margin-bottom: 20px; background: var(--info-accent); }
+.app[data-city="seoul"] :is(.pk-page, .bt-page) h1 { font-family: 'Noto Serif KR', 'AppleMyungjo', serif; }
+.app[data-city="seoul"] :is(.pk-page, .bt-page) h1::before { background: var(--secondary-color); height: 2px; width: 64px; }
+.app[data-city="busan"] :is(.pk-page, .bt-page) h1::before { border-radius: 100% 0 100% 0; height: 7px; }
+.app[data-city="jeju"] :is(.pk-page, .bt-page) h1::before { background: var(--secondary-color); width: 12px; height: 12px; border-radius: 50%; }
+.app :is(.pk-page, .bt-page) h1 small { display: block; margin: 10px 0 0; font-size: 14px; font-weight: 500; line-height: 1.5; color: var(--info-muted); }
+.app :is(.pk-intro, .bt-intro) { max-width: 760px; font-size: 16px; line-height: 1.85; color: var(--info-muted); margin-bottom: 28px; word-break: keep-all; overflow-wrap: anywhere; }
+.app :is(.pk-page, .bt-page) h2 { display: block; margin: 40px 0 18px; font-size: 21px; line-height: 1.5; letter-spacing: -.025em; word-break: keep-all; }
+.app :is(.pk-note, .bt-note, .pk-more) { color: var(--info-muted); line-height: 1.8; overflow-wrap: anywhere; }
+.app :is(.bt-note--error, .feature-note--error) { color: #bb352b; }
+.app :is(.bt-note, .pk-note) a { color: var(--info-accent); text-underline-offset: 4px; }
+
+.app .pk-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.app .pk-list li { position: relative; min-width: 0; gap: 8px; padding: 24px; border-color: var(--info-line); border-radius: var(--info-radius); background: var(--info-paper); box-shadow: none; }
+.app .pk-list a { display: block; color: var(--info-text); font-size: 18px; line-height: 1.55; padding-right: 24px; word-break: keep-all; overflow-wrap: anywhere; }
+.app .pk-list a::after { content: '→'; position: absolute; right: 24px; color: var(--info-accent); }
+.app :is(.pk-meta, .pk-addr) { font-size: 13px; line-height: 1.7; color: var(--info-muted); overflow-wrap: anywhere; }
+.app .pk-fee { color: var(--info-accent); font-size: 15px; line-height: 1.7; font-weight: 650; }
+.app .pk-details { padding: 8px 24px; background: var(--info-paper); border-color: var(--info-line); border-radius: var(--info-radius); }
+.app .pk-details div { padding: 16px 0; border-color: var(--info-line); line-height: 1.7; }
+.app .pk-details dt { color: var(--info-muted); }
+.app .pk-details dd { min-width: 0; color: var(--info-text); overflow-wrap: anywhere; }
+.app :is(.pk-directions, .bt-button) { display: inline-flex; align-items: center; justify-content: center; min-height: 48px; margin: 12px 0; padding: 12px 24px; border-radius: var(--info-radius); background: var(--info-accent); color: #fff; }
+.app :is(.pk-district-links, .bt-links) > div { gap: 10px; }
+.app :is(.pk-district-links, .bt-links) a { display: inline-flex; align-items: center; min-height: 44px; padding: 10px 16px; background: var(--info-paper); border-color: var(--info-line); border-radius: var(--info-radius); color: var(--info-accent); line-height: 1.5; }
+.app :is(.pk-faq, .bt-faq) details { border-color: var(--info-line); border-radius: var(--info-radius); padding: 0 20px; background: var(--info-paper); }
+.app :is(.pk-faq, .bt-faq) summary { padding: 18px 0; line-height: 1.7; cursor: pointer; }
+.app :is(.pk-faq, .bt-faq) details p { padding-bottom: 20px; color: var(--info-muted); line-height: 1.85; }
+
+.info-table { margin: 16px 0 24px; }
+.info-table__hint { display: none; }
+.info-table__scroll { overflow-x: auto; border: 1px solid var(--info-line); border-radius: var(--info-radius); background: var(--info-paper); overscroll-behavior-x: contain; }
+.app .info-table .bt-table { border: 0; border-radius: 0; margin: 0; background: var(--info-paper); font-size: 14px; }
+.app .bt-table th, .app .bt-table td { padding: 16px 18px; border-color: var(--info-line); color: var(--info-text); vertical-align: middle; line-height: 1.7; font-variant-numeric: tabular-nums; }
+.app .bt-table thead th { background: var(--info-background); color: var(--info-muted); font-weight: 600; }
+.app .bt-table th { word-break: keep-all; }
+.app .bt-table a { color: var(--info-accent); text-underline-offset: 4px; }
+.app .bt-table tbody tr:last-child > * { border-bottom: 0; }
+.app :is(.bt-nearby, .bt-spots) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.app :is(.bt-nearby, .bt-spots) li { flex-direction: column; align-items: flex-start; min-width: 0; padding: 22px; gap: 10px; background: var(--info-paper); border-color: var(--info-line); border-radius: var(--info-radius); }
+.app :is(.bt-nearby, .bt-spots) a { color: var(--info-text); font-size: 16px; line-height: 1.6; overflow-wrap: anywhere; }
+.app :is(.bt-nearby, .bt-spots, .bt-stops) small { color: var(--info-muted); line-height: 1.7; }
+.app .bt-stops { gap: 0; padding: 0 0 0 32px; margin: 20px 0; border-left: 2px solid var(--info-line); list-style: decimal-leading-zero; }
+.app .bt-stops li { padding: 10px 0 10px 8px; }
+.app .bt-stops li::marker { color: var(--info-accent); font-size: 13px; }
+.app .bt-stops a { display: inline-block; padding: 6px 0; color: var(--info-text); }
+.app .bt-arrivals { gap: 12px; }
+.app .bt-arrivals li { background: var(--info-paper); padding: 20px; border-color: var(--info-line); border-radius: var(--info-radius); }
+.app .bt-arrivals b { color: var(--info-accent); }
+.app .jt-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.app .jt-grid li { min-width: 0; padding: 0 0 20px; overflow: hidden; border-color: var(--info-line); border-radius: var(--info-radius); background: var(--info-paper); }
+.app .jt-grid li > :not(img) { margin-left: 20px; margin-right: 20px; }
+.app .jt-grid img { width: 100%; height: 180px; object-fit: cover; border-radius: 0; }
+.app .jt-grid a { color: var(--info-accent); }
+.app .bt-page .jt-grid h2 { font-size: 18px; margin-top: 18px; margin-bottom: 4px; }
+.app .jt-grid p, .app .jt-grid small { color: var(--info-muted); line-height: 1.75; }
+
+.app .parking-page { background: var(--info-background); }
+.app .parking-page .container { max-width: 1080px; padding: 32px; }
+.app .parking-page .filter-btn, .app .parking-page .district-select { min-height: 44px; border-width: 1px; border-radius: var(--info-radius); border-color: var(--info-line); background: var(--info-paper); color: var(--info-text); }
+.app .parking-page .filter-btn.active { background: var(--info-accent); border-color: var(--info-accent); color: #fff; }
+.dark-theme .app[data-city] .parking-page .filter-btn.active { background: var(--info-accent); border-color: var(--info-accent); color: #171d24; }
+.app .parking-page .stats-section { background: transparent; }
+.app .parking-page .stat-card { border: 1px solid var(--info-line); border-radius: var(--info-radius); box-shadow: none; background: var(--info-paper); }
+.app .parking-page :is(.stat-icon, .stat-number, .info-icon) { color: var(--info-accent); }
+.app .parking-card { border: 1px solid var(--info-line); border-radius: var(--info-radius); box-shadow: none; background: var(--info-paper); }
+.app .parking-page .parking-header { background: var(--info-paper); border-bottom: 1px solid var(--info-line); }
+.app .parking-page .parking-header h3 { color: var(--info-text); }
+.transit-map { margin: 20px 0 28px; min-width: 0; }
+.transit-map__toolbar { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center; margin-bottom: 12px; color: var(--info-text); }
+.transit-map__toolbar label { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-size: 14px; color: var(--info-muted); }
+.transit-map__toolbar input { width: 18px; height: 18px; accent-color: var(--info-accent); }
+.transit-map__canvas { height: clamp(320px, 48vw, 480px); width: 100%; border: 1px solid var(--info-line); border-radius: var(--info-radius); background: var(--info-paper); overflow: hidden; isolation: isolate; }
+.app .transit-map__pin { display: block; min-width: 28px; height: 28px; border: 2px solid #fff; border-radius: 50%; background: #174d85; color: #fff; box-shadow: 0 2px 5px #0005; font-size: 12px; line-height: 20px; padding: 0 5px; cursor: pointer; }
+.app .transit-map__pin--bus { min-width: 40px; height: 32px; border-radius: 8px; background: #154b35; font-weight: 700; }
+.app .transit-map__pin--event { background: #9e2436; font-weight: 800; }
+.app .transit-map__pin:focus-visible { outline: 3px solid var(--info-accent); outline-offset: 3px; }
+.transit-map__selection { padding: 16px; background: var(--info-paper); border: 1px solid var(--info-line); border-radius: var(--info-radius); color: var(--info-text); overflow-wrap: anywhere; }
+.transit-map__selection button { margin-left: 12px; min-height: 44px; border: 1px solid var(--info-line); background: var(--info-paper); color: var(--info-text); padding: 0 12px; border-radius: 6px; }
+.app .parking-page :is(.directions-btn, .parking-type) { background: var(--info-accent); color: #fff; }
+.app .parking-page .parking-info { color: var(--info-muted); }
+.app .parking-page .parking-info.fee { background: var(--info-background); }
+.app .parking-page .parking-info strong { color: var(--info-accent); }
+.app .parking-page .parking-nav-btn { background: var(--info-accent); color: #fff; }
+.app .bt-arrivals small { color: var(--info-muted); }
+.app .bt-level--1 { color: #216b31; }
+.app .bt-level--2 { color: #865000; }
+.dark-theme .app :is(.parking-page .parking-type, .parking-page .parking-nav-btn) { color: #171d24; }
+.dark-theme .app .bt-arrivals strong { color: #ffad7a; }
+.dark-theme .app :is(.bt-note--error, .feature-note--error) { color: #ffa69e; }
+.dark-theme .app .bt-level--1 { background: #163e2a; color: #9de5b5; }
+.dark-theme .app .bt-level--2 { background: #443414; color: #f5d37d; }
+.dark-theme .app .bt-level--3 { background: #4c2429; color: #ffb3b8; }
+
+.app :is(.info-navigation a, .pk-list a, .pk-directions, .bt-button, .pk-district-links a, .bt-links a, .bt-faq summary, .pk-faq summary, .info-table__scroll):focus-visible { outline: 3px solid var(--info-accent); outline-offset: 4px; }
+@media (hover: hover) {
+  .app :is(.pk-list li, .bt-nearby li, .bt-spots li):hover { border-color: var(--info-accent); }
+  .info-navigation a:hover { text-decoration: underline; text-underline-offset: 4px; }
+}
+.info-navigation a:active, .app :is(.pk-directions, .bt-button):active { opacity: .8; }
+
+@media (max-width: 640px) {
+  .app :is(.pk-page, .bt-page) { padding-top: 88px; padding-bottom: 48px; }
+  .app :is(.pk-container, .bt-container), .app .parking-page .container { padding-left: 20px; padding-right: 20px; }
+  .info-navigation { margin-bottom: 24px; }
+  .info-navigation__context { flex-wrap: wrap; gap: 4px 12px; margin-bottom: 12px; font-size: 12px; }
+  .info-navigation__links { flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding: 4px 3px 16px; scroll-padding-inline: 3px; }
+  .info-navigation__links a { flex: none; padding: 10px 14px; }
+  .app :is(.pk-page, .bt-page) h1 { font-size: 27px; line-height: 1.4; }
+  .app :is(.pk-page, .bt-page) h2 { font-size: 19px; margin-top: 32px; }
+  .app :is(.pk-intro, .bt-intro) { font-size: 15px; line-height: 1.8; }
+  .app :is(.pk-list, .bt-nearby, .bt-spots, .jt-grid) { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  .app :is(.pk-list li, .bt-nearby li, .bt-spots li) { padding: 20px; }
+  .app .pk-details { padding: 4px 20px; }
+  .app .pk-details div { gap: 12px; }
+  .app .pk-details dt { flex-basis: 72px; font-size: 13px; }
+  .app .pk-details dd { font-size: 14px; }
+  .info-table__hint { display: block; margin: 0 0 8px; font-size: 12px; color: var(--info-muted); }
+  .app .info-table .bt-table { min-width: 520px; }
+  .app .bt-table th, .app .bt-table td { padding: 14px; }
+  .app .bt-arrivals li { padding: 16px; grid-template-columns: 54px 1fr auto; gap: 8px; }
+  .app .bt-arrivals li > * { min-width: 0; overflow-wrap: anywhere; }
+  .app .parking-page .stats-section { gap: 8px; }
+  .app .parking-page .stat-card { padding: 16px 10px; min-width: 0; }
+  .app .parking-page .stat-number { font-size: 24px; }
+}

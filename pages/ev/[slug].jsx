@@ -1,3 +1,4 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import EvLive from '../../src/components/Jeju/EvLive'
@@ -45,6 +46,7 @@ export default function EvStationPage({ station, nearby }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>{station.name}</h1>
           <p className="bt-intro">{description}</p>
 

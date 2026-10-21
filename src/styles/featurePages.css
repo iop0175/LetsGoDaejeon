@@ -147,3 +147,5 @@
 .jt-grid small { color: #868e96; }
 .jt-grid a { color: #4f46e5; font-weight: 600; text-decoration: none; margin-top: auto; }
 .bt-nearby b { font-weight: 600; }
+.app .bt-nearby .bt-nearby__routes { display: flex; flex-wrap: wrap; gap: 6px; }
+.app .bt-nearby .bt-nearby__routes a { padding: 2px 9px; border: 1px solid var(--info-line, #e9ecef); border-radius: 999px; font-size: 13px; font-weight: 700; }

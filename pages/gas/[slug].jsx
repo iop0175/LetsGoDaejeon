@@ -1,3 +1,5 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
+import InfoTable from '../../src/components/common/InfoTable'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
@@ -46,12 +48,13 @@ export default function GasStationPage({ station, ranks, nearby, updated }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>{station.name}</h1>
           <p className="bt-intro">{description}</p>
-          <table className="bt-table">
+          <InfoTable>
             <thead><tr>{FUELS.map(([, label]) => <th key={label}>{label}</th>)}</tr></thead>
             <tbody><tr>{FUELS.map(([key]) => <td key={key}>{station[key] > 0 ? won(station[key]) : '-'}</td>)}</tr></tbody>
-          </table>
+          </InfoTable>
           <p className="bt-note">{updated} 기준 · 제주 교통정보센터 제공 자료이며 '-'는 판매하지 않거나 정보가 없는 유종입니다.</p>
 
           <dl className="pk-details">

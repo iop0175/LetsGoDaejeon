@@ -1,3 +1,5 @@
+import InfoPageNav from '../../../src/components/common/InfoPageNav'
+import InfoTable from '../../../src/components/common/InfoTable'
 import Link from 'next/link'
 import SeoHead from '../../../src/components/common/SeoHead'
 import { RunningBuses } from '../../../src/components/Bus/LiveBox'
@@ -39,22 +41,23 @@ export default function BusRoutePage({ route, stops, names, nearbyRoutes }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>대전 {route.no}번 버스</h1>
           <p className="bt-intro">{description}</p>
 
           <h2>시간표와 배차간격</h2>
-          <table className="bt-table">
+          <InfoTable>
             <thead><tr><th>구분</th><th>배차간격</th><th>{first.name} 첫차</th><th>{first.name} 막차</th><th>{turn || last.name} 막차</th></tr></thead>
             <tbody>
               {DAYS.map(([key, label]) => (
                 <tr key={key}><th>{label}</th><td>{route.intervalMin[key]}분</td><td>{route.startFirst[key]}</td><td>{route.startLast[key]}</td><td>{route.turnLast[key]}</td></tr>
               ))}
             </tbody>
-          </table>
+          </InfoTable>
           <p className="bt-note">운행거리 편도 약 {route.distanceKm}km, 소요 {route.runMinutes}분 안팎입니다. 시각은 대전시 공공데이터 기준이며 교통 상황에 따라 달라질 수 있습니다.</p>
 
           <h2>운행 중인 버스 (실시간)</h2>
-          <RunningBuses routeId={route.id} stopNames={names} />
+          <RunningBuses routeId={route.id} stopNames={names} stops={stops} />
 
           <h2>정차 정류장 {route.stopCount}곳</h2>
           <ol className="bt-stops">
@@ -93,7 +96,7 @@ export async function getStaticProps({ params }) {
   const route = findRoute(decodeURIComponent(params.slug))
   if (!route || !route.stops.length) return { notFound: true }
 
-  const stopsList = route.stops.map((id) => ({ id, name: stopName(id) || id, slug: getStop(id) ? stopSlug(getStop(id)) : id }))
+  const stopsList = route.stops.map((id) => ({ id, name: stopName(id) || id, slug: getStop(id) ? stopSlug(getStop(id)) : id, lat: getStop(id)?.lat || 0, lon: getStop(id)?.lon || 0 }))
   const names = Object.fromEntries(stopsList.map((stop) => [stop.id, stop.name]))
   if (route.turnStopId) names[route.turnStopId] = stopName(route.turnStopId)
 

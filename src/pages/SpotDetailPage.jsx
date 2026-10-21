@@ -197,7 +197,7 @@ const SpotDetailPage = () => {
   
   const { language, t } = useLanguage()
   const { isDark } = useTheme()
-  const { user } = useAuth()
+  const { user, loading: authLoading, loginWithKakao } = useAuth()
   
   const [spot, setSpot] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -224,6 +224,8 @@ const SpotDetailPage = () => {
   const [reviewCount, setReviewCount] = useState(0)
   const [avgRating, setAvgRating] = useState(0)
   const [showReviewForm, setShowReviewForm] = useState(false)
+  const [showReviewLoginPrompt, setShowReviewLoginPrompt] = useState(false)
+  const [reviewLoginError, setReviewLoginError] = useState(false)
   const [newRating, setNewRating] = useState(5)
   const [newReviewContent, setNewReviewContent] = useState('')
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
@@ -1007,7 +1009,7 @@ const SpotDetailPage = () => {
   // 리뷰 제출
   const handleSubmitReview = async () => {
     if (!user) {
-      alert(t.ui.loginRequired)
+      setShowReviewLoginPrompt(true)
       return
     }
     
@@ -2114,15 +2116,41 @@ const SpotDetailPage = () => {
               {t.detail.reviews}
               {reviewCount > 0 && <span className="sdp__review-count">({reviewCount})</span>}
             </h2>
-            {user && (
-              <button 
-                className="sdp__review-write-btn"
-                onClick={() => setShowReviewForm(!showReviewForm)}
-              >
-                {showReviewForm ? t.ui.cancel : t.detail.writeReview}
-              </button>
-            )}
+            <button
+              type="button"
+              className="sdp__review-write-btn"
+              aria-expanded={user ? showReviewForm : showReviewLoginPrompt}
+              aria-controls={user ? 'sdp-review-form' : 'sdp-review-login'}
+              disabled={authLoading}
+              onClick={() => {
+                if (user) {
+                  setShowReviewForm(!showReviewForm)
+                } else {
+                  setReviewLoginError(false)
+                  setShowReviewLoginPrompt(!showReviewLoginPrompt)
+                }
+              }}
+            >
+              {(user ? showReviewForm : showReviewLoginPrompt) ? t.ui.cancel : t.detail.writeReview}
+            </button>
           </div>
+
+          {!user && showReviewLoginPrompt && (
+            <div className="sdp__review-login" id="sdp-review-login">
+              <p>{language === 'ko' ? '리뷰를 남기려면 로그인해 주세요. 로그인 후 이 장소로 돌아옵니다.' : 'Sign in to leave a review. You’ll return to this place afterward.'}</p>
+              <button type="button" onClick={async () => {
+                setReviewLoginError(false)
+                try {
+                  await loginWithKakao(`${router.asPath.split('#')[0]}#sdp-reviews`)
+                } catch (error) {
+                  setReviewLoginError(true)
+                }
+              }}>
+                {t.trip.continueWithKakao}
+              </button>
+              {reviewLoginError && <p role="alert">{t.trip.loginFailed}</p>}
+            </div>
+          )}
           
           {/* 평균 평점 */}
           {avgRating > 0 && (
@@ -2140,8 +2168,8 @@ const SpotDetailPage = () => {
           )}
           
           {/* 리뷰 작성 폼 */}
-          {showReviewForm && (
-            <div className="sdp__review-form">
+          {user && showReviewForm && (
+            <div className="sdp__review-form" id="sdp-review-form">
               <div className="sdp__rating-input">
                 <span>{t.detail.rating}:</span>
                 <div className="sdp__rating-stars">

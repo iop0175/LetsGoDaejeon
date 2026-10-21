@@ -2012,7 +2012,7 @@
   border-color: #374151;
 }
 
-.parking-header {
+.parking-list .parking-header {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -2023,12 +2023,12 @@
   font-weight: 600;
 }
 
-.dark-theme .parking-header {
+.dark-theme .parking-list .parking-header {
   border-bottom-color: #374151;
   color: #38bdf8;
 }
 
-.parking-header button {
+.parking-list .parking-header button {
   margin-left: auto;
   background: none;
   border: none;
@@ -2037,7 +2037,7 @@
   padding: 4px;
 }
 
-.parking-header button:hover {
+.parking-list .parking-header button:hover {
   color: #dc2626;
 }
 
@@ -2073,19 +2073,19 @@
   margin-bottom: 0;
 }
 
-.parking-info {
+.parking-list .parking-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 6px;
 }
 
-.parking-info strong {
+.parking-list .parking-info strong {
   font-size: 0.9rem;
   color: #1e293b;
 }
 
-.dark-theme .parking-info strong {
+.dark-theme .parking-list .parking-info strong {
   color: #f1f5f9;
 }
 

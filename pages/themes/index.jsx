@@ -1,3 +1,4 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
@@ -12,6 +13,7 @@ export default function ThemesIndexPage({ themes, total }) {
         crumbs={[{ name: '홈', path: '/' }, { name: '테마별 여행지', path: '/themes' }]} />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>제주 테마별 여행지</h1>
           <p className="bt-intro">{description}</p>
           <ul className="bt-nearby">

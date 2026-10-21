@@ -1,3 +1,4 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
@@ -24,6 +25,7 @@ export default function ThemePage({ theme, total, spots, others }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>{theme.title}</h1>
           <p className="bt-intro">{description}</p>
           <ul className="jt-grid">

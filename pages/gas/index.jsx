@@ -1,3 +1,5 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
+import InfoTable from '../../src/components/common/InfoTable'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
@@ -22,32 +24,33 @@ export default function GasIndexPage({ updated, average, top, rows }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>제주 주유소 가격</h1>
           <p className="bt-intro">{description}</p>
           <p className="bt-note">{updated} 기준 · 제주 교통정보센터 제공 자료입니다. 가격은 판매점 사정에 따라 바뀔 수 있어요.</p>
 
           <h2>제주 평균 가격</h2>
-          <table className="bt-table">
+          <InfoTable>
             <thead><tr><th>휘발유</th><th>고급휘발유</th><th>경유</th><th>LPG</th></tr></thead>
             <tbody><tr>{['gasoline', 'premium', 'diesel', 'lpg'].map((key) => <td key={key}>{average[key] ? won(average[key]) : '-'}</td>)}</tr></tbody>
-          </table>
+          </InfoTable>
 
           {[['gasoline', '휘발유'], ['diesel', '경유'], ['lpg', 'LPG']].map(([key, label]) => top[key].length > 0 && (
             <div key={key}>
               <h2>제주 {label} 최저가 주유소 TOP {top[key].length}</h2>
-              <table className="bt-table">
+              <InfoTable>
                 <thead><tr><th>순위</th><th>주유소</th><th>지역</th><th>가격</th></tr></thead>
                 <tbody>
                   {top[key].map((station, index) => (
                     <tr key={station.id}><td>{index + 1}</td><th><Link href={`/gas/${station.slug}`}>{station.name}</Link></th><td>{station.town || station.city}</td><td>{won(station[key])}</td></tr>
                   ))}
                 </tbody>
-              </table>
+              </InfoTable>
             </div>
           ))}
 
           <h2>전체 주유소 ({rows.length}곳)</h2>
-          <table className="bt-table">
+          <InfoTable>
             <thead><tr><th>주유소</th><th>지역</th><th>휘발유</th><th>경유</th><th>LPG</th></tr></thead>
             <tbody>
               {rows.map((station) => (
@@ -60,7 +63,7 @@ export default function GasIndexPage({ updated, average, top, rows }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </InfoTable>
           <p className="bt-note">가격이 '-'인 곳은 해당 유종을 팔지 않거나 가격 정보가 없는 곳입니다. 렌터카를 반납하기 전 가까운 주유소를 찾을 때 활용해 보세요. <Link href="/ev">전기차 충전소 찾기</Link></p>
         </div>
       </section>

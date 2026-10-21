@@ -696,7 +696,7 @@
   z-index: 50;
 }
 
-.mobile-menu-btn {
+.admin-page .mobile-menu-btn {
   display: none;
   background: none;
   border: none;
@@ -1464,7 +1464,7 @@
     margin-left: 0;
   }
   
-  .mobile-menu-btn {
+  .admin-page .mobile-menu-btn {
     display: block;
   }
   
@@ -4681,27 +4681,27 @@
   color: #64748b;
 }
 
-.dark-theme .nav-item {
+.dark-theme .admin-page .nav-item {
   color: #94a3b8;
 }
 
-.dark-theme .nav-item:hover {
+.dark-theme .admin-page .nav-item:hover {
   background: #1e293b;
   color: #f1f5f9;
 }
 
-.dark-theme .nav-item.active {
+.dark-theme .admin-page .nav-item.active {
   background: #3b82f6;
   color: white;
 }
 
 /* 모바일 메뉴 버튼 */
-.dark-theme .mobile-menu-btn {
+.dark-theme .admin-page .mobile-menu-btn {
   background: #334155;
   color: #e2e8f0;
 }
 
-.dark-theme .mobile-menu-btn:hover {
+.dark-theme .admin-page .mobile-menu-btn:hover {
   background: #475569;
 }
 

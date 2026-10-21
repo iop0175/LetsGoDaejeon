@@ -1,3 +1,4 @@
+import InfoPageNav from '../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../src/components/common/SeoHead'
 import { CITY } from '../../src/config/cities'
@@ -19,6 +20,7 @@ export default function EvIndexPage({ total, fastTotal, chargerTotal, areas, top
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>제주 전기차 충전소</h1>
           <p className="bt-intro">{description}</p>
           <p className="bt-note">제주 교통정보센터 제공 자료입니다. 전기차 렌터카를 반납하기 전에 가까운 급속충전소를 미리 확인해 보세요.</p>

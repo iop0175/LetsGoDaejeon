@@ -1,8 +1,10 @@
+import InfoPageNav from '../../../src/components/common/InfoPageNav'
 import Link from 'next/link'
 import SeoHead from '../../../src/components/common/SeoHead'
 import { Arrivals } from '../../../src/components/Bus/LiveBox'
 import { CITY } from '../../../src/config/cities'
 import { getDirectionsUrl } from '../../../src/utils/mapLinks'
+import TransitMap from '../../../src/components/common/TransitMap'
 
 const CATEGORY = { 12: '관광지', 14: '문화시설', 28: '레포츠', 39: '맛집' }
 
@@ -44,11 +46,13 @@ export default function BusStopPage({ stop, routes, spots, nearby }) {
       />
       <section className="bt-page">
         <div className="bt-container">
+          <InfoPageNav />
           <h1>{stop.name} 버스정류장 <small>{stop.id}</small></h1>
           <p className="bt-intro">{description}</p>
 
           <h2>실시간 도착 정보</h2>
           <Arrivals stopId={stop.id} />
+          <TransitMap label={`${stop.name} 정류장 위치`} points={[{ ...stop, detail: `정류장 ${stop.id}` }]} />
 
           <h2>정차 노선 {routes.length}개</h2>
           <div className="bt-links"><div>{routes.map((route) => <Link key={route.slug} href={`/bus/route/${route.slug}`}>{route.no}번</Link>)}</div></div>

@@ -1,3 +1,4 @@
+import InfoPageNav from '../common/InfoPageNav'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import SeoHead from '../common/SeoHead'
@@ -50,6 +51,7 @@ export default function ParkingThemePage({ kind, total, lots, byDistrict, themes
       />
       <section className="pk-page">
         <div className="pk-container">
+          <InfoPageNav />
           <h1>{theme.h1(city)}</h1>
           <p className="pk-intro">
             {theme.description(city, total)} 요금과 운영시간은 공공데이터 기준이므로 방문 전에 현장 안내를 확인해 주세요.

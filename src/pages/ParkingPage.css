@@ -196,6 +196,7 @@
 
 /* 주차장 카드 */
 .parking-card {
+  min-width: 0;
   background: white;
   border-radius: 16px;
   overflow: hidden;
@@ -266,6 +267,8 @@
 }
 
 .parking-header h3 {
+  overflow-wrap: anywhere;
+  word-break: keep-all;
   font-size: 1.1rem;
   font-weight: 600;
   color: #1f2937;
@@ -288,6 +291,11 @@
 
 .parking-info:last-child {
   margin-bottom: 0;
+}
+
+.parking-card .parking-info > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .info-icon {
