@@ -2,6 +2,13 @@
 
 const won = (value) => `${Number(value).toLocaleString('ko-KR')}원`
 
+// "대전시 유성구", 제주는 "제주시", "제주 서귀포시"처럼 도시명과 구·시를 겹치지 않게 붙인다
+export const placeLabel = (city, district) => {
+  if (!district) return `${city}시`
+  if (district.startsWith(city)) return district
+  return district.endsWith('시') ? `${city} ${district}` : `${city}시 ${district}`
+}
+
 export const lotPath = (lot) => `/parking/lot/${lot.slug}`
 export const districtPath = (district) => `/parking/${district}`
 

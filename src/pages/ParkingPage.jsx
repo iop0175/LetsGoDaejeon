@@ -24,6 +24,11 @@ const ParkingPage = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 20
 
+  // 모아보기 링크는 해당 주차장이 있을 때만(서버 페이지가 만들어지는 조건과 맞춘다). 거의 전부가 24시간이면 입력 기본값으로 보고 뺀다.
+  const hasFree = allParkingData.some(item => item.chargeInfo === '무료')
+  const allDayCount = allParkingData.filter(item => /^0?0:00/.test(item.weekdayOpen || '') && /^(23:59|24:00)/.test(item.weekdayClose || '')).length
+  const hasAllDay = allDayCount > 0 && allDayCount / allParkingData.length < 0.9
+
   // 최초 1회 전체 데이터 로드
   useEffect(() => {
     fetchAllParkingData()
@@ -248,8 +253,8 @@ const ParkingPage = () => {
         <nav className="pk-district-links" aria-label={language === 'ko' ? '구별 주차장' : 'Parking by district'}>
           <h2>{language === 'ko' ? '구별 주차장 보기' : 'Parking by district'}</h2>
           <div>
-            {language === 'ko' && <Link href="/parking/free">무료 주차장</Link>}
-            {language === 'ko' && <Link href="/parking/24h">24시간 주차장</Link>}
+            {language === 'ko' && hasFree && <Link href="/parking/free">무료 주차장</Link>}
+            {language === 'ko' && hasAllDay && <Link href="/parking/24h">24시간 주차장</Link>}
             {CITY.districtNames.map(district => (
               <Link key={district} href={`/parking/${district}`}>
                 {language === 'ko' ? `${district} 주차장` : district}

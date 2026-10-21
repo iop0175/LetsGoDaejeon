@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 import SeoHead from '../../../src/components/common/SeoHead'
 import LotList from '../../../src/components/Parking/LotList'
 import { CITY } from '../../../src/config/cities'
-import { districtPath, feeText, hoursText, lotPath, nearestLots } from '../../../src/utils/parkingFormat'
+import { districtPath, feeText, hoursText, lotPath, nearestLots, placeLabel } from '../../../src/utils/parkingFormat'
 import { absoluteUrl } from '../../../src/utils/seo'
 import { getDirectionsUrl } from '../../../src/utils/mapLinks'
 
@@ -21,7 +21,7 @@ export default function ParkingLotPage({ lot, nearby }) {
 
   const title = en
     ? `${lot.name} Parking, ${city} - Fees & Hours | ${site}`
-    : `${lot.name}${lot.name.includes('주차') ? '' : ' 주차장'} 요금·운영시간 - ${city}시${lot.district ? ` ${lot.district}` : ''} | ${site}`
+    : `${lot.name}${lot.name.includes('주차') ? '' : ' 주차장'} 요금·운영시간 - ${placeLabel(city, lot.district)} | ${site}`
   const description = en
     ? `${lot.name} is a ${type} parking lot in ${city}. Fee: ${fee}.${hours ? ` Hours: ${hours}.` : ''}${lot.addr ? ` Address: ${lot.addr}.` : ''}`
     : `${lot.name}은(는) ${city}${lot.district ? ` ${lot.district}` : ''}의 ${type} 주차장입니다. 요금: ${fee}.${hours ? ` 운영시간: ${hours}.` : ''}${lot.totalLot ? ` 주차면 ${lot.totalLot}면.` : ''}${lot.addr ? ` 주소: ${lot.addr}.` : ''}`

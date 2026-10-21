@@ -26,7 +26,7 @@ const THEMES = {
   }
 }
 
-export default function ParkingThemePage({ kind, total, lots, byDistrict }) {
+export default function ParkingThemePage({ kind, total, lots, byDistrict, themes }) {
   const { locale } = useRouter()
   const en = locale === 'en'
   const theme = THEMES[kind]
@@ -68,7 +68,8 @@ export default function ParkingThemePage({ kind, total, lots, byDistrict }) {
           <nav className="pk-district-links">
             <div>
               <Link href="/parking">{city}시 주차장 전체</Link>
-              <Link href={kind === 'free' ? '/parking/24h' : '/parking/free'}>{kind === 'free' ? '24시간 주차장' : '무료 주차장'}</Link>
+              {kind === 'free' && themes.allDay && <Link href="/parking/24h">24시간 주차장</Link>}
+              {kind === '24h' && themes.free && <Link href="/parking/free">무료 주차장</Link>}
             </div>
           </nav>
         </div>

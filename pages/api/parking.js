@@ -62,6 +62,19 @@ export default async function handler(req, res) {
       return res.status(502).json({ success: false, items: [], totalCount: 0, error: error.message })
     }
   }
+  if (CITY.key === 'jeju') {
+    try {
+      const { readJeju } = await import('../../src/services/parkingServer.js')
+      const rows = (await readJeju()).filter((item) => item.name)
+      const items = [...new Map(rows.map((item) => [item.parkingId, item])).values()]
+      const pageNo = Math.max(1, Math.floor(Number(req.query.pageNo) || 1))
+      const numOfRows = Math.min(3000, Math.max(1, Math.floor(Number(req.query.numOfRows) || 50)))
+      res.setHeader('Cache-Control', 's-maxage=21600, stale-while-revalidate=86400')
+      return res.status(200).json({ success: true, totalCount: items.length, items: items.slice((pageNo - 1) * numOfRows, pageNo * numOfRows) })
+    } catch (error) {
+      return res.status(502).json({ success: false, items: [], totalCount: 0, error: error.message })
+    }
+  }
   if (CITY.key !== 'seoul') return res.status(404).json({ success: false, items: [], totalCount: 0 })
 
   const key = process.env.SEOUL_OPENAPI_KEY?.trim()

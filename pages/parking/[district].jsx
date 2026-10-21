@@ -3,36 +3,37 @@ import { useRouter } from 'next/router'
 import SeoHead from '../../src/components/common/SeoHead'
 import LotList from '../../src/components/Parking/LotList'
 import { CITY } from '../../src/config/cities'
-import { districtPath, feeText, summarize } from '../../src/utils/parkingFormat'
+import { districtPath, feeText, placeLabel, summarize } from '../../src/utils/parkingFormat'
 import { itemListLd } from '../../src/utils/seo'
 
 const MAX_LOTS = 150
 
-export default function ParkingDistrictPage({ district, lots, stats, otherDistricts }) {
+export default function ParkingDistrictPage({ district, lots, stats, otherDistricts, themes }) {
   const { locale } = useRouter()
   const loc = locale === 'en' ? 'en' : 'kr'
   const en = loc === 'en'
   const city = en ? CITY.cityNameEn : CITY.cityName
   const site = en ? CITY.englishName : CITY.name
+  const where = placeLabel(city, district)
 
   const title = en
     ? `${district}, ${city} Parking Lots: Fees & Hours (${stats.total}) | ${site}`
-    : `${city}시 ${district} 주차장 ${stats.total}곳 | 공영·무료 요금·운영시간 - ${site}`
+    : `${where} 주차장 ${stats.total}곳 | 공영·무료 요금·운영시간 - ${site}`
   const description = en
     ? `${stats.total} parking lots in ${district}, ${city}, with fees, opening hours and directions.${stats.freeCount ? ` ${stats.freeCount} are free.` : ''}`
-    : `${city}시 ${district} 공영주차장 ${stats.total}곳의 위치, 요금, 운영시간을 모았습니다.${stats.freeCount ? ` 무료 주차장 ${stats.freeCount}곳,` : ''}${stats.allDayCount ? ` 24시간 운영 ${stats.allDayCount}곳.` : ''} 방문 전 가까운 주차장을 확인하세요.`
+    : `${where} 공영주차장 ${stats.total}곳의 위치, 요금, 운영시간을 모았습니다.${stats.freeCount ? ` 무료 주차장 ${stats.freeCount}곳,` : ''}${stats.allDayCount ? ` 24시간 운영 ${stats.allDayCount}곳.` : ''} 방문 전 가까운 주차장을 확인하세요.`
 
   const faq = [
     stats.freeCount > 0 && {
-      question: `${city} ${district} 무료 주차장은 어디인가요?`,
+      question: `${where} 무료 주차장은 어디인가요?`,
       answer: `${district}에는 무료 주차장이 ${stats.freeCount}곳 있습니다. ${stats.freeNames.join(', ')}${stats.freeCount > 5 ? ' 등' : ''}이 있습니다.`
     },
     stats.allDayCount > 0 && {
-      question: `${city} ${district}에 24시간 운영하는 주차장이 있나요?`,
+      question: `${where}에 24시간 운영하는 주차장이 있나요?`,
       answer: `네, ${stats.allDayCount}곳이 24시간 운영합니다. ${stats.allDayNames.join(', ')}${stats.allDayCount > 5 ? ' 등' : ''}입니다.`
     },
     stats.cheapest && {
-      question: `${city} ${district}에서 요금이 가장 저렴한 주차장은 어디인가요?`,
+      question: `${where}에서 요금이 가장 저렴한 주차장은 어디인가요?`,
       answer: `유료 주차장 중 시간당 기본요금이 가장 낮은 곳은 ${stats.cheapest.name}(${feeText(stats.cheapest)})입니다. 요금은 운영 기관 사정에 따라 바뀔 수 있어 현장 안내를 함께 확인하세요.`
     }
   ].filter(Boolean)
@@ -42,7 +43,7 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
     '@type': 'FAQPage',
     mainEntity: faq.map((item) => ({ '@type': 'Question', name: item.question, acceptedAnswer: { '@type': 'Answer', text: item.answer } }))
   } : null
-  const listLd = itemListLd(loc, `${city} ${district} 주차장`, lots.map((lot) => ({ name: lot.name, path: `/parking/lot/${lot.slug}` })))
+  const listLd = itemListLd(loc, `${where} 주차장`, lots.map((lot) => ({ name: lot.name, path: `/parking/lot/${lot.slug}` })))
 
   return (
     <>
@@ -61,11 +62,11 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
       />
       <section className="pk-page">
         <div className="pk-container">
-          <h1>{en ? `${district}, ${city} Parking Lots` : `${city} ${district} 주차장`}</h1>
+          <h1>{en ? `${district}, ${city} Parking Lots` : `${where} 주차장`}</h1>
           <p className="pk-intro">
             {en
               ? `${district} has ${stats.total} parking lots (${stats.publicCount} public) with about ${stats.spaces.toLocaleString()} spaces.`
-              : `${city} ${district}에는 주차장 ${stats.total}곳(공영 ${stats.publicCount}곳)이 있고, 주차면은 모두 ${stats.spaces.toLocaleString('ko-KR')}면입니다.`}
+              : `${where}에는 주차장 ${stats.total}곳(공영 ${stats.publicCount}곳)이 있고, 주차면은 모두 ${stats.spaces.toLocaleString('ko-KR')}면입니다.`}
             {' '}
             {en ? 'Fees and hours are reference data from the public database; confirm on site.' : '요금과 운영시간은 공공데이터 기준이므로 방문 전에 현장 안내를 확인해 주세요.'}
           </p>
@@ -93,8 +94,8 @@ export default function ParkingDistrictPage({ district, lots, stats, otherDistri
           <nav className="pk-district-links" aria-label={en ? 'Other districts' : '다른 지역'}>
             <h2>{en ? 'Other districts' : '다른 지역 주차장'}</h2>
             <div>
-              {!en && <Link href="/parking/free">{city}시 무료 주차장</Link>}
-              {!en && <Link href="/parking/24h">{city}시 24시간 주차장</Link>}
+              {!en && themes.free && <Link href="/parking/free">{city}시 무료 주차장</Link>}
+              {!en && themes.allDay && <Link href="/parking/24h">{city}시 24시간 주차장</Link>}
               {otherDistricts.map((name) => (
                 <Link key={name} href={districtPath(name)}>{en ? name : `${name} 주차장`}</Link>
               ))}
@@ -115,7 +116,7 @@ export async function getStaticProps({ params }) {
   const district = decodeURIComponent(params.district)
   if (!CITY.parkingReady || !CITY.districtNames.includes(district)) return { notFound: true }
 
-  const { loadParkingLots } = await import('../../src/services/parkingServer')
+  const { loadParkingLots, themeAvailability } = await import('../../src/services/parkingServer')
   const all = await loadParkingLots()
   const inDistrict = all.filter((lot) => lot.district === district)
   if (!inDistrict.length) return { notFound: true, revalidate: 3600 }
@@ -143,7 +144,8 @@ export async function getStaticProps({ params }) {
         allDayNames: stats.allDay.slice(0, 5).map((lot) => lot.name),
         cheapest: stats.cheapest ? brief(stats.cheapest) : null
       },
-      otherDistricts: CITY.districtNames.filter((name) => name !== district && countOf(name))
+      otherDistricts: CITY.districtNames.filter((name) => name !== district && countOf(name)),
+      themes: themeAvailability(all)
     },
     revalidate: 21600
   }

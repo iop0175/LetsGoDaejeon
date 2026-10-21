@@ -93,7 +93,54 @@ const readSeoul = async () => {
 
 const readBusan = async () => (await loadBusan('parking')).map(normalizeBusanParking)
 
-const READERS = { daejeon: readDaejeon, seoul: readSeoul, busan: readBusan }
+// 전국주차장정보표준데이터(국토교통부)에서 제주 항목만 뽑아 다른 도시와 같은 모양으로 맞춘다.
+// 제주 전용 주차장 API가 없고, 이 표준데이터는 지자체가 6개월 단위로 갱신한다(실시간 아님).
+export const normalizeJejuParking = (row) => ({
+  name: row.prkplceNm,
+  parkingId: row.prkplceNo,
+  lat: Number(row.latitude) || 0,
+  lon: Number(row.longitude) || 0,
+  addr: row.lnmadr || row.rdnmadr,
+  addrRoad: row.rdnmadr || row.lnmadr,
+  divideNum: row.prkplceSe === '공영' ? '6' : '1',
+  typeNum: row.prkplceType === '노외' ? '2' : row.prkplceType === '노상' ? '1' : '',
+  parkingType: row.prkplceSe,
+  parkingCategory: row.prkplceType,
+  totalLot: Number(row.prkcmprt) || 0,
+  weekdayOpen: row.weekdayOperOpenHhmm,
+  weekdayClose: row.weekdayOperColseHhmm,
+  chargeInfo: row.parkingchrgeInfo,
+  basicTime: Number(row.basicTime) || 0,
+  basicCharge: Number(row.basicCharge) || 0,
+  addTime: Number(row.addUnitTime) || 0,
+  addCharge: Number(row.addUnitCharge) || 0,
+  dayTicket: Number(row.dayCmmtkt) || 0,
+  monthTicket: Number(row.monthCmmtkt) || 0,
+  payMethod: row.metpay,
+  phone: row.phoneNumber,
+  referenceDate: row.referenceDate
+})
+
+export const readJeju = async () => {
+  const key = process.env.DATA_GO_KR_KEY?.trim()
+  if (!key) throw new Error('DATA_GO_KR_KEY가 없습니다.')
+  const rows = []
+  for (let pageNo = 1; ; pageNo++) {
+    const query = new URLSearchParams({ serviceKey: key, pageNo: String(pageNo), numOfRows: '1000', type: 'json' })
+    const response = await fetch(`https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api?${query}`, { signal: AbortSignal.timeout(30000) })
+    if (!response.ok) throw new Error(`표준 주차장 API ${response.status}`)
+    const body = (await response.json()).body
+    if (!body) throw new Error('표준 주차장 API 응답 오류')
+    const items = Array.isArray(body.items) ? body.items : body.items?.item || []
+    rows.push(...items)
+    if (!items.length || pageNo * 1000 >= Number(body.totalCount)) break
+  }
+  return rows
+    .filter((row) => /제주특별자치도/.test(`${row.lnmadr} ${row.rdnmadr}`) || /^제주특별자치도/.test(row.institutionNm || ''))
+    .map(normalizeJejuParking)
+}
+
+const READERS = { daejeon: readDaejeon, seoul: readSeoul, busan: readBusan, jeju: readJeju }
 
 let cached = null
 
@@ -109,16 +156,29 @@ export async function loadParkingLots() {
   }
   const lots = [...byId.values()]
   if (!lots.length) throw new Error('주차장 목록이 비어 있습니다.')
+  // 거의 모든 주차장이 00:00~23:59로 적혀 있으면 입력 기본값일 가능성이 커서 "24시간 운영"으로 내세우지 않는다
+  if (lots.filter((lot) => lot.allDay).length / lots.length >= 0.9) lots.forEach((lot) => { lot.allDay = false })
   cached = { at: Date.now(), lots }
   return lots
 }
 
 const THEME_FILTER = { free: (lot) => lot.free, '24h': (lot) => lot.allDay }
 
+// 모아보기 페이지가 실제로 만들어지는지(해당 주차장이 하나라도 있는지)
+export const themeAvailability = (lots) => ({ free: lots.some(THEME_FILTER.free), allDay: lots.some(THEME_FILTER['24h']) })
+
 // 무료·24시간 주차장 모아보기 페이지의 getStaticProps 결과
 export async function themeProps(kind) {
   if (!CITY.parkingReady || !THEME_FILTER[kind]) return { notFound: true }
-  const matched = (await loadParkingLots()).filter(THEME_FILTER[kind])
+  let all
+  try {
+    all = await loadParkingLots()
+  } catch (error) {
+    // 빌드 중 외부 API가 막혀도 배포가 실패하지 않게 하고, 곧바로 다시 만든다
+    console.error('Parking theme error:', error.message)
+    return { notFound: true, revalidate: 10 }
+  }
+  const matched = all.filter(THEME_FILTER[kind])
   if (!matched.length) return { notFound: true, revalidate: 3600 }
   const byDistrict = {}
   for (const lot of matched) if (lot.district) byDistrict[lot.district] = (byDistrict[lot.district] || 0) + 1
@@ -127,7 +187,7 @@ export async function themeProps(kind) {
     .slice(0, 200)
     .map(({ id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket }) =>
       ({ id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket }))
-  return { props: { total: matched.length, lots, byDistrict }, revalidate: 21600 }
+  return { props: { total: matched.length, lots, byDistrict, themes: themeAvailability(all) }, revalidate: 21600 }
 }
 
 // 정확히 같은 slug를 먼저 찾고, 없으면 끝의 id로 찾는다(이름만 바뀐 옛 주소 대응)

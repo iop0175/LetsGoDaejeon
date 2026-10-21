@@ -8,7 +8,7 @@ import { districtPath } from '../../src/utils/parkingFormat'
 
 const PageContent = dynamic(() => import('../../src/pages/ParkingPage'), { ssr: false, loading: FallbackLoading })
 
-export default function ParkingPageWrapper({ counts }) {
+export default function ParkingPageWrapper({ counts, themes }) {
   const { locale } = useRouter()
   const loc = locale === 'en' ? 'en' : 'kr'
   const seo = getPageSeo('parking', loc)
@@ -16,8 +16,8 @@ export default function ParkingPageWrapper({ counts }) {
   // 구별 주차장 페이지로 가는 링크를 서버 HTML에 넣어 검색 로봇이 따라가게 한다
   const items = [
     ...(loc === 'kr' && Object.keys(counts).length ? [
-      { name: `${CITY.cityName}시 무료 주차장`, path: '/parking/free' },
-      { name: `${CITY.cityName}시 24시간 주차장`, path: '/parking/24h' }
+      ...(themes.free ? [{ name: `${CITY.cityName}시 무료 주차장`, path: '/parking/free' }] : []),
+      ...(themes.allDay ? [{ name: `${CITY.cityName}시 24시간 주차장`, path: '/parking/24h' }] : [])
     ] : []),
     ...CITY.districtNames
       .filter((district) => counts[district] > 0)
@@ -44,14 +44,15 @@ export default function ParkingPageWrapper({ counts }) {
 
 export async function getStaticProps() {
   try {
-    const { loadParkingLots } = await import('../../src/services/parkingServer')
+    const { loadParkingLots, themeAvailability } = await import('../../src/services/parkingServer')
     const counts = {}
-    for (const lot of await loadParkingLots()) {
+    const all = await loadParkingLots()
+    for (const lot of all) {
       if (lot.district) counts[lot.district] = (counts[lot.district] || 0) + 1
     }
-    return { props: { counts }, revalidate: 21600 }
+    return { props: { counts, themes: themeAvailability(all) }, revalidate: 21600 }
   } catch (error) {
     console.error('Parking index error:', error)
-    return { props: { counts: {} }, revalidate: 600 }
+    return { props: { counts: {}, themes: { free: false, allDay: false } }, revalidate: 600 }
   }
 }

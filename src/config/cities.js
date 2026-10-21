@@ -131,7 +131,7 @@ export const CITIES = {
     publicUrl: 'https://www.letsgojeju.com',
     tourismOrgName: '제주관광공사',
     governmentUrl: 'https://www.jeju.go.kr',
-    parkingReady: false,
+    parkingReady: true,
     medicalReady: true,
     pageCopy: {
       ko: {
