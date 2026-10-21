@@ -6,6 +6,7 @@ export const CITIES = {
   daejeon: {
     key: 'daejeon',
     gaId: 'G-610JNHR72K', // 도시마다 GA4 속성을 따로 쓴다
+    naverVerification: '3dae5e0fb04d30964913bdedff8cea8116f3c850', // 네이버 서치어드바이저 소유 확인 (도메인마다 다름)
     seoHighlights: {'ko':['성심당','엑스포과학공원','유성온천','계족산 황톳길','대청호'],'en':['Sungsimdang Bakery','Expo Science Park','Yuseong Hot Springs','Gyejoksan Mountain','Daecheong Lake']},
     cityName: '대전',
     cityNameEn: 'Daejeon',
@@ -27,6 +28,7 @@ export const CITIES = {
   seoul: {
     key: 'seoul',
     gaId: 'G-QSVD5ZTVK2',
+    naverVerification: 'cec1be6f86ca5cb62db584206a27436adbaf8159',
     seoHighlights: {'ko':['경복궁','북촌한옥마을','명동','한강공원','홍대'],'en':['Gyeongbokgung Palace','Bukchon Hanok Village','Myeongdong','Han River Parks','Hongdae']},
     cityName: '서울',
     cityNameEn: 'Seoul',
@@ -71,6 +73,7 @@ export const CITIES = {
   busan: {
     key: 'busan',
     gaId: 'G-527Y3MZR0L',
+    naverVerification: '508a24ce776b272f6f85aa56e812a3bcc0524787',
     seoHighlights: {'ko':['해운대','광안리','감천문화마을','자갈치시장','태종대'],'en':['Haeundae Beach','Gwangalli Beach','Gamcheon Culture Village','Jagalchi Market','Taejongdae']},
     cityName: '부산',
     cityNameEn: 'Busan',
@@ -112,6 +115,7 @@ export const CITIES = {
   jeju: {
     key: 'jeju',
     gaId: 'G-PECZLH9B7X',
+    naverVerification: '7ccb12eebd17f9f664cb3a0cc685ff006754ee92',
     seoHighlights: {'ko':['성산일출봉','한라산','협재해수욕장','우도','애월'],'en':['Seongsan Ilchulbong','Hallasan Mountain','Hyeopjae Beach','Udo Island','Aewol']},
     cityName: '제주',
     cityNameEn: 'Jeju',
