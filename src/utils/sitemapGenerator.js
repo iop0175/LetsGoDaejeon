@@ -2,7 +2,7 @@
 // 모든 주소는 언어별(/kr, /en)로 나누어 hreflang으로 서로 연결한다.
 import { createClient } from '@supabase/supabase-js'
 import { CITY, SITE_URL } from '../config/cities'
-import { generateLocalizedSlug } from './slugUtils'
+import { generateLocalizedSlug, generateSlug } from './slugUtils'
 import { getCityGuides } from '../config/cityGuides'
 import { getCityFeatures } from '../config/cityFeatures'
 import { eventSlug } from './eventSlug'
@@ -170,9 +170,33 @@ export async function generateBusSitemap() {
   return wrapInUrlset(entries.join('\n'))
 }
 
+// 제주 주유소·전기차 충전소·테마 페이지. 영어판은 색인하지 않으므로 한국어 주소만 싣는다.
+export async function generateJejuInfoSitemap() {
+  if (CITY.key !== 'jeju') return wrapInUrlset('')
+  const date = today()
+  const entry = (path, changefreq, priority) => urlEntries({ paths: { kr: path }, lastmod: date, changefreq, priority })
+  const entries = []
+  try {
+    const { loadGasStations, loadEvStations, loadTourSpots } = await import('../services/jejuIts')
+    const { THEMES, spotsOf } = await import('../config/jejuThemes')
+    const stations = await loadGasStations()
+    entries.push(...stations.map((station) => entry(`/gas/${generateSlug(station.name, station.id)}`, 'daily', '0.6')))
+    const ev = await loadEvStations()
+    const areas = new Map()
+    for (const station of ev) if (station.town) areas.set(station.town, (areas.get(station.town) || 0) + 1)
+    entries.push(...[...areas].filter(([, count]) => count >= 3).map(([area]) => entry(`/ev/area/${area}`, 'weekly', '0.7')))
+    entries.push(...ev.map((station) => entry(`/ev/${generateSlug(station.name, station.id)}`, 'weekly', '0.5')))
+    const spots = await loadTourSpots()
+    entries.push(...THEMES.filter((theme) => spotsOf(theme, spots).length >= 5).map((theme) => entry(`/themes/${theme.slug}`, 'weekly', '0.7')))
+  } catch (error) {
+    console.error('Jeju info sitemap error:', error.message)
+  }
+  return wrapInUrlset(entries.join('\n'))
+}
+
 export function generateSitemapIndex() {
   const date = today()
-  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival', ...(CITY.parkingReady ? ['parking'] : []), ...(CITY.key === 'daejeon' ? ['bus'] : [])]
+  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival', ...(CITY.parkingReady ? ['parking'] : []), ...(CITY.key === 'daejeon' ? ['bus'] : []), ...(CITY.key === 'jeju' ? ['info'] : [])]
   const entries = names.map((name) => `  <sitemap>
     <loc>${SITE_URL}/sitemap-${name}.xml</loc>
     <lastmod>${date}</lastmod>

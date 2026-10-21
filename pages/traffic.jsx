@@ -1,10 +1,15 @@
 import SeoHead from '../src/components/common/SeoHead'
 import { CITY } from '../src/config/cities'
 import { hasCityFeature } from '../src/config/cityFeatures'
+import JejuTraffic from '../src/components/Jeju/JejuTraffic'
 
 const LEVEL = { 1: '원활', 2: '서행', 3: '정체' }
 
-export default function TrafficPage({ updated, total, shares, congested, roads }) {
+export default function TrafficPage(props) {
+  return props.city === 'jeju' ? <JejuTraffic updated={props.updated} data={props.data} /> : <DaejeonTraffic {...props} />
+}
+
+function DaejeonTraffic({ updated, total, shares, congested, roads }) {
   const title = `대전 실시간 교통정보 | 도로 소통·정체 구간 - ${CITY.name}`
   const worst = congested[0]
   const description = `대전 도로 ${total.toLocaleString('ko-KR')}개 구간의 실시간 소통 상황입니다. 지금 원활 ${shares[1]}%, 서행 ${shares[2]}%, 정체 ${shares[3]}%${worst ? `, 가장 혼잡한 도로는 ${worst.road}입니다` : ''}. 정체 구간과 주요 도로 평균 속도를 확인하세요.`
@@ -67,6 +72,11 @@ export default function TrafficPage({ updated, total, shares, congested, roads }
 
 export async function getStaticProps() {
   if (!hasCityFeature(CITY.key, 'traffic')) return { notFound: true }
+  if (CITY.key === 'jeju') {
+    const { loadJejuTraffic } = await import('../src/services/jejuTraffic')
+    const updated = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+    return { props: { city: 'jeju', updated, data: await loadJejuTraffic() }, revalidate: 300 }
+  }
   try {
     const { assertOk, callTransit, listItems } = await import('../src/utils/daejeonTransit')
     const xml = assertOk(await callTransit('rest/getTrafficInfoAll', { numOfRows: '20000', pageNo: '1' }))
