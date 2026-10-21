@@ -8,7 +8,6 @@ import Link from 'next/link'
 import { CITY } from '../config/cities'
 import { getCityGuides } from '../config/cityGuides'
 import SectionHeading from '../components/common/SectionHeading'
-import NextTrip from '../components/common/NextTrip'
 // CSS는 pages/_app.jsx에서 import
 
 // Dynamic imports for below-the-fold components
@@ -63,7 +62,6 @@ const HomePage = () => {
       </section>
       <FestivalSection />
       <FoodSection />
-      <div className="container"><NextTrip /></div>
       
       {/* 오른쪽 사이드바 날씨 위젯 */}
       <div className="weather-sidebar">

@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import HeroSection from '../src/components/HeroSection/HeroSection'
 import { getHeroSlides } from '../src/services/dbService'
 import { CITY, IS_CITY_PREVIEW } from '../src/config/cities'
+import NextTrip from '../src/components/common/NextTrip'
 
 // SSR 호환성을 위해 클라이언트 전용 컴포넌트로 동적 임포트
 const QuickMenu = dynamic(() => import('../src/components/QuickMenu/QuickMenu'), { ssr: true })
@@ -45,6 +46,7 @@ export default function HomePage({ heroSlides }) {
       {CITY.key === 'daejeon' && <TravelCourse />}
       <FestivalSection />
       <FoodSection />
+      <div className="container"><NextTrip /></div>
       
       {/* 오른쪽 사이드바 날씨 위젯 */}
       <div className="weather-sidebar">
