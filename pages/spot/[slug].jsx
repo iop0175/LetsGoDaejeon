@@ -1,6 +1,9 @@
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { CITY } from '../../src/config/cities'
+import LotList from '../../src/components/Parking/LotList'
+import { nearestLots } from '../../src/utils/parkingFormat'
 import SeoHead from '../../src/components/common/SeoHead'
 import { FallbackContext, FallbackLoading } from '../../src/components/common/PageFallback'
 import { generateLocalizedSlug } from '../../src/utils/slugUtils'
@@ -119,6 +122,13 @@ export default function SpotPage({ seoData }) {
       >
         <SpotDetailPageComponent />
       </FallbackContext.Provider>
+      {seoData.parking?.length > 0 && (
+        <section className="pk-nearby pk-nearby--spot">
+          <h2>{loc === 'en' ? `Parking near ${view.name}` : `${view.name} 근처 주차장`}</h2>
+          <LotList lots={seoData.parking} en={loc === 'en'} />
+          <Link href="/parking">{loc === 'en' ? 'All parking' : `${cityName} 주차장 전체 보기`}</Link>
+        </section>
+      )}
     </>
   )
 }
@@ -222,6 +232,21 @@ export async function getStaticProps({ params, locale }) {
 
     const faqItems = parseFaq(row.intro_info)
 
+    // 근처 주차장 3곳. 주차장 API가 실패해도 장소 페이지는 그대로 만든다.
+    let parking = []
+    if (CITY.parkingReady && contentTypeId !== 15) {
+      try {
+        const { loadParkingLots } = await import('../../src/services/parkingServer')
+        parking = nearestLots(await loadParkingLots(), { lat: Number(row.mapy), lon: Number(row.mapx), district }, 3)
+          .map(({ id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket, km }) => ({
+            id, slug, name, addr, category, isPublic, totalLot, open, close, allDay, free, basicTime, basicCharge, addTime, addCharge, dayTicket, monthTicket,
+            ...(km !== undefined && { km })
+          }))
+      } catch (err) {
+        console.error('Nearby parking error:', err.message)
+      }
+    }
+
     return {
       props: {
         seoData: {
@@ -233,6 +258,7 @@ export async function getStaticProps({ params, locale }) {
           lat: row.mapy || null,
           lng: row.mapx || null,
           faqItems: faqItems.length ? faqItems : null,
+          parking,
           kr: build('kr'),
           en: build('en')
         }

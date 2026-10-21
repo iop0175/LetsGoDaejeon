@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
 import { FiMapPin, FiClock, FiInfo, FiLoader, FiNavigation, FiPhone } from 'react-icons/fi'
 import { FaCar, FaParking } from 'react-icons/fa'
 import { useLanguage } from '../context/LanguageContext'
@@ -243,6 +244,17 @@ const ParkingPage = () => {
             </div>
           </div>
         </div>
+
+        <nav className="pk-district-links" aria-label={language === 'ko' ? '구별 주차장' : 'Parking by district'}>
+          <h2>{language === 'ko' ? '구별 주차장 보기' : 'Parking by district'}</h2>
+          <div>
+            {CITY.districtNames.map(district => (
+              <Link key={district} href={`/parking/${district}`}>
+                {language === 'ko' ? `${district} 주차장` : district}
+              </Link>
+            ))}
+          </div>
+        </nav>
 
         {/* 로딩 상태 */}
         {loading ? (

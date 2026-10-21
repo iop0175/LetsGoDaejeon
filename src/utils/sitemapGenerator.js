@@ -134,9 +134,28 @@ export const generateAccommodationSitemap = () => generateSpotSitemap(32, '0.7')
 export const generateShoppingSitemap = () => generateSpotSitemap(38, '0.6')
 export const generateFoodSitemap = () => generateSpotSitemap(39, '0.7')
 
+// 구별 주차장 페이지와 주차장 상세. 영어판은 색인하지 않으므로 한국어 주소만 싣는다.
+export async function generateParkingSitemap() {
+  if (!CITY.parkingReady) return wrapInUrlset('')
+  const date = today()
+  let lots = []
+  try {
+    const { loadParkingLots } = await import('../services/parkingServer')
+    lots = await loadParkingLots()
+  } catch (error) {
+    console.error('Parking sitemap error:', error)
+  }
+  const districts = CITY.districtNames.filter((district) => lots.some((lot) => lot.district === district))
+  const entries = [
+    ...districts.map((district) => urlEntries({ paths: { kr: `/parking/${district}` }, lastmod: date, changefreq: 'weekly', priority: '0.7' })),
+    ...lots.map((lot) => urlEntries({ paths: { kr: `/parking/lot/${lot.slug}` }, lastmod: /^\d{4}-\d{2}-\d{2}$/.test(lot.updated) ? lot.updated : date, changefreq: 'monthly', priority: '0.5' }))
+  ]
+  return wrapInUrlset(entries.join('\n'))
+}
+
 export function generateSitemapIndex() {
   const date = today()
-  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival']
+  const names = ['main', 'travel', 'food', 'accommodation', 'leisure', 'culture', 'shopping', 'festival', ...(CITY.parkingReady ? ['parking'] : [])]
   const entries = names.map((name) => `  <sitemap>
     <loc>${SITE_URL}/sitemap-${name}.xml</loc>
     <lastmod>${date}</lastmod>

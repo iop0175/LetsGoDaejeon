@@ -518,3 +518,33 @@
 .dark-theme .parking-page .pagination span {
   color: var(--text-primary);
 }
+
+/* 구별 주차장 · 주차장 상세 · 근처 주차장 */
+.pk-page { min-height: 60vh; background: #f8f9fa; padding: 110px 0 3rem; }
+.pk-container { max-width: 960px; margin: 0 auto; padding: 0 1rem; }
+.pk-page h1 { font-size: 1.9rem; font-weight: 700; margin-bottom: 0.75rem; }
+.pk-page h2, .pk-nearby h2, .pk-district-links h2 { font-size: 1.2rem; font-weight: 700; margin: 2rem 0 0.75rem; }
+.pk-intro, .pk-note, .pk-more { color: #495057; line-height: 1.7; margin-bottom: 1.25rem; }
+.pk-note { font-size: 0.85rem; color: #868e96; margin-top: 1rem; }
+.pk-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.pk-list li { background: #fff; border: 1px solid #e9ecef; border-radius: 10px; padding: 0.85rem 1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.pk-list a { font-weight: 600; color: #4f46e5; text-decoration: none; }
+.pk-list a:hover { text-decoration: underline; }
+.pk-meta { font-size: 0.85rem; color: #868e96; }
+.pk-fee { font-size: 0.95rem; color: #212529; }
+.pk-addr { font-size: 0.85rem; color: #868e96; }
+.pk-details { background: #fff; border: 1px solid #e9ecef; border-radius: 10px; padding: 0.5rem 1rem; margin: 1rem 0; }
+.pk-details div { display: flex; gap: 1rem; padding: 0.55rem 0; border-bottom: 1px solid #f1f3f5; }
+.pk-details div:last-child { border-bottom: 0; }
+.pk-details dt { flex: 0 0 5.5rem; color: #868e96; }
+.pk-details dd { margin: 0; flex: 1; }
+.pk-directions { display: inline-block; background: #4f46e5; color: #fff; padding: 0.6rem 1.25rem; border-radius: 999px; text-decoration: none; font-weight: 600; }
+.pk-faq details { background: #fff; border: 1px solid #e9ecef; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
+.pk-faq summary { cursor: pointer; font-weight: 600; }
+.pk-faq p { margin: 0.5rem 0 0; color: #495057; line-height: 1.6; }
+.pk-district-links > div { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.pk-district-links a { background: #fff; border: 1px solid #e9ecef; border-radius: 999px; padding: 0.4rem 0.9rem; color: #4f46e5; text-decoration: none; font-size: 0.9rem; }
+.pk-district-links a:hover { border-color: #4f46e5; }
+.parking-page .pk-district-links { margin-bottom: 1.5rem; }
+.pk-nearby--spot { max-width: 960px; margin: 0 auto; padding: 0 1rem 2rem; }
+.pk-nearby--spot > a { display: inline-block; margin-top: 0.75rem; color: #4f46e5; }
