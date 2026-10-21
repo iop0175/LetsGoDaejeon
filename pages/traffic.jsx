@@ -73,9 +73,16 @@ function DaejeonTraffic({ updated, total, shares, congested, roads }) {
 export async function getStaticProps() {
   if (!hasCityFeature(CITY.key, 'traffic')) return { notFound: true }
   if (CITY.key === 'jeju') {
-    const { loadJejuTraffic } = await import('../src/services/jejuTraffic')
     const updated = new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', hour12: false, month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    return { props: { city: 'jeju', updated, data: await loadJejuTraffic() }, revalidate: 300 }
+    try {
+      const { loadJejuTraffic } = await import('../src/services/jejuTraffic')
+      return { props: { city: 'jeju', updated, data: await loadJejuTraffic() }, revalidate: 300 }
+    } catch (error) {
+      // 제주 ITS는 해외 접속이 막혀 있을 수 있어 빌드 중에는 실패할 수 있다. 빈 페이지를 내고 곧바로 다시 만든다.
+      console.error('Jeju traffic error:', error.message)
+      const data = { points: [], events: [], eventCounts: {}, eventTotal: 0, closures: [], works: [], weather: [], averageSpeed: 0, linkCount: 0 }
+      return { props: { city: 'jeju', updated, data }, revalidate: 10 }
+    }
   }
   try {
     const { assertOk, callTransit, listItems } = await import('../src/utils/daejeonTransit')
