@@ -3,8 +3,6 @@ const FEATURES = [
   { id: 'today', path: '/today', ko: '오늘의 추천 코스', en: "Today's picks", cities: ['daejeon', 'seoul', 'busan', 'jeju'] },
   { id: 'subway', path: '/subway', ko: '지하철 실시간 도착', en: 'Live subway arrivals', cities: ['seoul'] },
   { id: 'beaches', path: '/beaches', ko: '해수욕장 바다 컨디션', en: 'Beach sea conditions', cities: ['busan', 'jeju'] },
-  { id: 'bus', path: '/bus', ko: '버스 노선 검색', en: 'Bus route finder', cities: ['daejeon'] },
-  { id: 'traffic', path: '/traffic', ko: '실시간 교통정보', en: 'Live traffic', cities: ['daejeon', 'jeju'] },
   { id: 'gas', path: '/gas', ko: '주유소 가격', en: 'Gas prices', cities: ['jeju'] },
   { id: 'ev', path: '/ev', ko: '전기차 충전소', en: 'EV charging', cities: ['jeju'] },
   { id: 'themes', path: '/themes', ko: '테마별 여행지', en: 'Trips by theme', cities: ['jeju'] }

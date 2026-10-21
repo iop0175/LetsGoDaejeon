@@ -147,5 +147,13 @@
 .jt-grid small { color: #868e96; }
 .jt-grid a { color: #4f46e5; font-weight: 600; text-decoration: none; margin-top: auto; }
 .bt-nearby b { font-weight: 600; }
-.app .bt-nearby .bt-nearby__routes { display: flex; flex-wrap: wrap; gap: 6px; }
-.app .bt-nearby .bt-nearby__routes a { padding: 2px 9px; border: 1px solid var(--info-line, #e9ecef); border-radius: 999px; font-size: 13px; font-weight: 700; }
+.bt-stop-cards { display: grid; gap: 12px; margin: 0 0 1rem; padding: 0; list-style: none; }
+.bt-stop-cards > li { display: grid; gap: 12px; padding: 18px; border: 1px solid var(--info-line, #e9ecef); border-radius: var(--info-radius, 12px); background: var(--info-paper, #fff); }
+.bt-stop-cards header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.bt-stop-cards header strong { font-size: 17px; }
+.bt-stop-cards header small { color: var(--info-muted, #868e96); }
+.bt-stop-cards .bt-arrivals, .bt-stop-cards .bt-note { margin: 0; }
+.app .bt-stop-cards .bt-arrivals { gap: 6px; }
+.app .bt-stop-cards .bt-arrivals li { padding: 10px 12px; background: var(--info-background); }
+.bt-nearby__routes { display: flex; flex-wrap: wrap; gap: 6px; }
+.bt-nearby__routes span { padding: 2px 9px; border: 1px solid var(--info-line, #e9ecef); border-radius: 999px; font-size: 13px; font-weight: 700; }

@@ -3,6 +3,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { CITY } from '../../src/config/cities'
 import LotList from '../../src/components/Parking/LotList'
+import TransitMap from '../../src/components/common/TransitMap'
+import { Arrivals } from '../../src/components/Bus/LiveBox'
 import { nearestLots } from '../../src/utils/parkingFormat'
 import SeoHead from '../../src/components/common/SeoHead'
 import { FallbackContext, FallbackLoading } from '../../src/components/common/PageFallback'
@@ -122,18 +124,28 @@ export default function SpotPage({ seoData }) {
       >
         <SpotDetailPageComponent />
       </FallbackContext.Provider>
+      {seoData.lat && seoData.lng && loc === 'kr' && (
+        <section className="pk-nearby pk-nearby--spot">
+          <h2>{view.name} 주변 도로 상황</h2>
+          <TransitMap traffic label={`${view.name} 주변 실시간 교통`} points={[
+            { kind: 'place', name: view.name, lat: seoData.lat, lon: seoData.lng },
+            ...(seoData.busStops || []).map((stop) => ({ ...stop, detail: `정류장 ${stop.id} · 약 ${stop.meters}m` }))
+          ]} />
+        </section>
+      )}
       {seoData.busStops?.length > 0 && loc === 'kr' && (
         <section className="pk-nearby pk-nearby--spot">
           <h2>{view.name} 근처 버스정류장</h2>
-          <ul className="bt-nearby">
+          <ul className="bt-stop-cards">
             {seoData.busStops.map((stop) => (
               <li key={stop.id}>
-                <Link href={`/bus/stop/${stop.slug}`}>{stop.name}</Link>
-                <small>약 {stop.meters}m · {stop.routeCount}개 노선</small>
-                {stop.routes?.length > 0 && <div className="bt-nearby__routes">{stop.routes.map((route) => <Link key={route.slug} href={`/bus/route/${route.slug}`}>{route.no}번</Link>)}</div>}
+                <header><strong>{stop.name}</strong><small>정류장 {stop.id} · 걸어서 약 {stop.meters}m</small></header>
+                {stop.routes.length > 0 && <div className="bt-nearby__routes">{stop.routes.map((no) => <span key={no}>{no}번</span>)}</div>}
+                <Arrivals stopId={stop.id} />
               </li>
             ))}
           </ul>
+          <p className="bt-note">도착 예정 시간은 대전시 버스 정보 시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.</p>
         </section>
       )}
       {seoData.parking?.length > 0 && (
@@ -250,9 +262,8 @@ export async function getStaticProps({ params, locale }) {
     let busStops = []
     if (CITY.key === 'daejeon' && contentTypeId !== 15) {
       try {
-        const { nearestStops, getStop, routeNos, routeSlug } = await import('../../src/services/busData')
+        const { nearestStops } = await import('../../src/services/busData')
         busStops = nearestStops({ lat: Number(row.mapy), lon: Number(row.mapx) }, 3, 0.5)
-          .map((stop) => ({ ...stop, routes: routeNos(getStop(stop.id)).map((route) => ({ no: route.no, slug: routeSlug(route) })) }))
       } catch (err) {
         console.error('Nearby bus stops error:', err.message)
       }

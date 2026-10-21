@@ -3,13 +3,12 @@ import { getCityFeatures, hasCityFeature } from '../src/config/cityFeatures.js'
 import { normalizeArrival, groupArrivals, isSubwayStation } from '../src/utils/subway.js'
 import { seaLevel, waterLevel, buildBeachRows, BEACHES } from '../src/utils/beaches.js'
 import { dayMode, pickSlots, seededOrder, SLOTS } from '../src/utils/todayPlan.js'
-import { normalizeLane, normalizeRoute } from '../src/utils/busRoutes.js'
 
 // 도시별 기능 켜짐
 assert.deepEqual(getCityFeatures('seoul').map((f) => f.id), ['today', 'subway'])
 assert.deepEqual(getCityFeatures('busan').map((f) => f.id), ['today', 'beaches'])
-assert.deepEqual(getCityFeatures('jeju').map((f) => f.id), ['today', 'beaches'])
-assert.deepEqual(getCityFeatures('daejeon').map((f) => f.id), ['today', 'bus'])
+assert.deepEqual(getCityFeatures('jeju').map((f) => f.id), ['today', 'beaches', 'gas', 'ev', 'themes'])
+assert.deepEqual(getCityFeatures('daejeon').map((f) => f.id), ['today'])
 assert.equal(hasCityFeature('daejeon', 'subway'), false)
 
 // 지하철
@@ -60,10 +59,4 @@ assert.deepEqual(pickSlots('clear', spots, 'x').map((s) => s.spot.contentId), pi
 assert.notDeepEqual(seededOrder(spots, 'a').map((s) => s.contentId), seededOrder(spots, 'b').map((s) => s.contentId))
 assert.equal(pickSlots('rainy', [], 'x').every((slot) => slot.spot === null), true)
 
-// 버스
-assert.equal(normalizeLane({ busID: 1, busNo: 604, busStartPoint: 'a', busEndPoint: 'b', busCityName: '대전' }).number, '604')
-const route = normalizeRoute({ busID: 1, busNo: '604', turningPointIdx: 1, station: [{ idx: 0, stationName: 'A', arsID: '123' }, { idx: 1, stationName: 'B', arsID: '0' }, { idx: 2, stationName: 'C', arsID: '5' }] })
-assert.equal(route.outbound.length, 2); assert.equal(route.inbound.length, 1)
-assert.equal(route.outbound[1].stopNumber, '')
-assert.equal(normalizeRoute({ busID: 1, busNo: '1', station: [{ idx: 0, stationName: 'A' }] }).inbound.length, 0)
 console.log('feature page tests passed')

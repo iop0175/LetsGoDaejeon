@@ -112,6 +112,7 @@
 .app .transit-map__pin { display: block; min-width: 28px; height: 28px; border: 2px solid #fff; border-radius: 50%; background: #174d85; color: #fff; box-shadow: 0 2px 5px #0005; font-size: 12px; line-height: 20px; padding: 0 5px; cursor: pointer; }
 .app .transit-map__pin--bus { min-width: 40px; height: 32px; border-radius: 8px; background: #154b35; font-weight: 700; }
 .app .transit-map__pin--event { background: #9e2436; font-weight: 800; }
+.app .transit-map__pin--place { min-width: 40px; height: 32px; border-radius: 8px; background: #9e2436; font-weight: 800; }
 .app .transit-map__pin:focus-visible { outline: 3px solid var(--info-accent); outline-offset: 3px; }
 .transit-map__selection { padding: 16px; background: var(--info-paper); border: 1px solid var(--info-line); border-radius: var(--info-radius); color: var(--info-text); overflow-wrap: anywhere; }
 .transit-map__selection button { margin-left: 12px; min-height: 44px; border: 1px solid var(--info-line); background: var(--info-paper); color: var(--info-text); padding: 0 12px; border-radius: 6px; }

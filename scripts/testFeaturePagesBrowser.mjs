@@ -3,8 +3,9 @@ import assert from 'node:assert/strict'
 import { chromium } from 'playwright'
 
 const [city, base] = process.argv.slice(2)
-const expected = { seoul: 'subway', busan: 'beaches', jeju: 'beaches', daejeon: 'bus' }[city]
-const all = ['subway', 'beaches', 'bus']
+const expected = { seoul: 'subway', busan: 'beaches', jeju: 'beaches', daejeon: 'today' }[city]
+// bus·traffic 페이지는 모든 도시에서 지웠다(장소 상세로 옮김)
+const all = ['subway', 'beaches', 'bus', 'traffic']
 const status = async (path) => (await fetch(base + path, { redirect: 'manual' })).status
 
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH })
@@ -20,7 +21,7 @@ const noOverflow = async (page, label) => assert.equal(await page.evaluate(() =>
 // 다른 도시 기능은 404
 for (const id of all.filter((id) => id !== expected)) assert.equal(await status('/kr/' + id), 404, city + ' /' + id + ' should be 404')
 assert.equal(await status('/api/subway?station=' + encodeURIComponent('서울')), city === 'seoul' ? 200 : 404)
-assert.equal(await status('/api/bus?q=604'), city === 'daejeon' ? 200 : 404)
+assert.equal(await status('/api/bus?q=604'), 404)
 
 // 오늘의 코스
 for (const width of [1280, 390]) {
@@ -63,21 +64,6 @@ if (expected === 'beaches') {
     await page.close()
   }
 }
-if (expected === 'bus') {
-  assert.equal(await status('/api/bus?q=' + encodeURIComponent('<script>')), 400)
-  for (const width of [1280, 390]) {
-    const page = await open(width, '/kr/bus')
-    await page.fill('input[aria-label="버스 번호"]', '604')
-    await page.locator('.bus-search button[type=submit]').click()
-    await page.waitForSelector('.bus-lanes button', { timeout: 20000 })
-    await page.locator('.bus-lanes button').first().click()
-    await page.waitForSelector('.bus-stops li', { timeout: 20000 })
-    assert.ok(await page.locator('.bus-stops li').count() > 30, 'bus stops')
-    await noOverflow(page, 'bus ' + width)
-    await page.close()
-  }
-}
-
 // 메뉴·푸터·사이트맵 노출
 const sitemap = await (await fetch(base + '/sitemap-main.xml')).text()
 for (const path of ['today', expected]) assert.ok(sitemap.includes('/kr/' + path + '</loc>'), city + ' sitemap /' + path)

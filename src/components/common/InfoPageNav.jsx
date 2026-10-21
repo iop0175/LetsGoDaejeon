@@ -10,7 +10,7 @@ export default function InfoPageNav() {
   const section = `/${pathname.split('/')[1]}`
   const links = [
     ...(CITY.parkingReady ? [{ path: '/parking', ko: '주차장', en: 'Parking' }] : []),
-    ...getCityFeatures(CITY.key).filter((feature) => ['bus', 'traffic', 'gas', 'ev', 'themes', 'subway', 'beaches'].includes(feature.id))
+    ...getCityFeatures(CITY.key).filter((feature) => ['gas', 'ev', 'themes', 'subway', 'beaches'].includes(feature.id))
   ]
   const current = links.find((item) => item.path === section)
   const back = pathname === section || pathname === '/parking' ? '/' : section

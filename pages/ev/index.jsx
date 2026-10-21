@@ -38,7 +38,7 @@ export default function EvIndexPage({ total, fastTotal, chargerTotal, areas, top
               {areas.map((area) => <Link key={area.name} href={`/ev/area/${area.name}`}>{area.name} {area.count}곳</Link>)}
             </div>
           </nav>
-          <p className="bt-note"><Link href="/gas">제주 주유소 가격</Link> · <Link href="/traffic">제주 도로 상황</Link></p>
+          <p className="bt-note"><Link href="/gas">제주 주유소 가격</Link></p>
         </div>
       </section>
     </>

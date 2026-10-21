@@ -527,10 +527,13 @@
 
   .more-menu {
     position: static;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .dropdown-menu {
     position: static;
+    min-width: 0;
     box-shadow: none;
     background: rgba(0, 102, 204, 0.05);
     border-radius: 8px;

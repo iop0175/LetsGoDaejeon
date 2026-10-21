@@ -4,7 +4,7 @@ import { CITY } from '../../config/cities'
 const EMPTY_POINTS = []
 const CENTERS = { daejeon: [36.3504, 127.3845], jeju: [33.38, 126.55] }
 
-export default function TransitMap({ points = EMPTY_POINTS, traffic = false, line = false, label = '교통 지도' }) {
+export default function TransitMap({ points = EMPTY_POINTS, traffic = false, label = '교통 지도' }) {
   const container = useRef(null)
   const mapRef = useRef(null)
   const fitted = useRef(false)
@@ -50,16 +50,12 @@ export default function TransitMap({ points = EMPTY_POINTS, traffic = false, lin
     if (!ready || !mapRef.current) return
     const maps = window.kakao.maps
     const bounds = new maps.LatLngBounds()
-    const valid = points.filter((point) => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lon)) && Number(point.lat) > 32 && Number(point.lat) < 39 && Number(point.lon) > 124 && Number(point.lon) < 132)
-    // 노선이면 정류장을 순서대로 이어 경로를 그린다(실제 도로 모양이 아니라 정류장 사이 직선).
-    const path = line && valid.filter((point) => point.kind !== 'bus').map((point) => new maps.LatLng(Number(point.lat), Number(point.lon)))
-    const polyline = path?.length > 1 && new maps.Polyline({ map: mapRef.current, path, strokeWeight: 4, strokeColor: '#2f6fed', strokeOpacity: 0.75 })
-    const overlays = valid.map((point) => {
+    const overlays = points.filter((point) => Number.isFinite(Number(point.lat)) && Number.isFinite(Number(point.lon)) && Number(point.lat) > 32 && Number(point.lat) < 39 && Number(point.lon) > 124 && Number(point.lon) < 132).map((point) => {
       const position = new maps.LatLng(Number(point.lat), Number(point.lon))
       const button = document.createElement('button')
       button.type = 'button'
-      button.className = `transit-map__pin transit-map__pin--${point.kind === 'bus' ? 'bus' : point.kind === 'event' ? 'event' : 'stop'}`
-      button.textContent = point.kind === 'bus' ? '버스' : point.kind === 'event' ? '!' : '●'
+      button.className = `transit-map__pin transit-map__pin--${['bus', 'event', 'place'].includes(point.kind) ? point.kind : 'stop'}`
+      button.textContent = point.kind === 'bus' ? '버스' : point.kind === 'event' ? '!' : point.kind === 'place' ? '여기' : '●'
       button.setAttribute('aria-label', point.name)
       button.title = point.name
       button.onclick = () => setSelected(point)
@@ -71,11 +67,8 @@ export default function TransitMap({ points = EMPTY_POINTS, traffic = false, lin
       if (overlays.length === 1) mapRef.current.setLevel(4)
       fitted.current = true
     }
-    return () => {
-      overlays.forEach((overlay) => overlay.setMap(null))
-      if (polyline) polyline.setMap(null)
-    }
-  }, [ready, points, line])
+    return () => overlays.forEach((overlay) => overlay.setMap(null))
+  }, [ready, points])
 
   return (
     <div className="transit-map">
@@ -86,7 +79,7 @@ export default function TransitMap({ points = EMPTY_POINTS, traffic = false, lin
       <div ref={container} className="transit-map__canvas" role="region" aria-label={label} data-map-ready={ready} />
       {!ready && <p className="bt-note" role="status">{failed ? '지도를 불러오지 못했습니다. 아래 목록에서 정보를 확인해 주세요.' : '지도를 불러오는 중입니다.'}</p>}
       {selected && <p className="transit-map__selection" role="status"><strong>{selected.name}</strong>{selected.detail && ` · ${selected.detail}`}<button type="button" onClick={() => setSelected(null)} aria-label="선택 정보 닫기">닫기</button></p>}
-      <p className="bt-note">도로 색상은 카카오맵 교통정보이며 아래 공공데이터 집계와 기준 시각·범위가 다를 수 있습니다. 초록 원활 · 노랑 서행 · 빨강 정체. 지도 표식을 누르면 상세 정보가 나옵니다.</p>
+      <p className="bt-note">도로 색상은 카카오맵 실시간 교통정보입니다. 초록 원활 · 노랑 서행 · 빨강 정체. 지도 표식을 누르면 상세 정보가 나옵니다.</p>
     </div>
   )
 }

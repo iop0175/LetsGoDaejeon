@@ -7,8 +7,7 @@ assert.ok(city && base, 'Usage: node scripts/testTravelInfoBrowser.mjs <city> <b
 const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_EXECUTABLE_PATH })
 const paths = ['/kr/parking', '/kr/parking/free']
 if (city === 'busan') paths.pop()
-if (city === 'daejeon') paths.push('/kr/bus/route/604번-30300071', '/kr/traffic')
-if (city === 'jeju') paths.push('/kr/gas', '/kr/ev', '/kr/themes', '/kr/traffic')
+if (city === 'jeju') paths.push('/kr/gas', '/kr/ev', '/kr/themes')
 const results = []
 if (output) await fs.mkdir(output, { recursive: true })
 
@@ -47,10 +46,6 @@ try {
     const lot = await page.locator('.pk-list a').first().getAttribute('href')
     assert.ok(lot, `${city} parking detail link`)
     await check(lot)
-    if (city === 'daejeon') {
-      await page.goto(base + '/kr/bus/route/604번-30300071', { waitUntil: 'load' })
-      await check(await page.locator('.bt-stops a').first().getAttribute('href'))
-    }
     if (city === 'jeju') {
       for (const [source, selector] of [['gas', '.bt-table a'], ['ev', '.bt-nearby a'], ['themes', '.bt-nearby a'], ['ev', '.bt-links a']]) {
         await page.goto(`${base}/kr/${source}`, { waitUntil: 'load', timeout: 90000 })

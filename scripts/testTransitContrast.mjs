@@ -36,13 +36,6 @@ try {
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
       for (const item of await contrast('.parking-header h3, .parking-info strong, .parking-info > span, .parking-type, .parking-category, .charge-badge, .parking-nav-btn, .filter-btn, .stat-label, .info-navigation__links a')) assert.ok(item.ratio >= 4.5, `${city} ${theme} contrast ${JSON.stringify(item)}`)
       await page.screenshot({ path: `${output}/${city}-parking-${theme}-${width}.png`, fullPage: true })
-      if (['daejeon', 'jeju'].includes(city)) {
-        await page.goto(`${base}/kr/traffic`, { waitUntil: 'load', timeout: 120000 })
-        await page.waitForSelector('.transit-map__canvas')
-        for (const item of await contrast('.bt-note, .bt-intro, .bt-table th, .bt-table td, .bt-level')) assert.ok(item.ratio >= 4.5, `${city} traffic ${theme} contrast ${JSON.stringify(item)}`)
-        assert.equal(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1), false)
-        await page.screenshot({ path: `${output}/${city}-traffic-${theme}-${width}.png`, fullPage: true })
-      }
       assert.deepEqual(errors, [])
       console.log(`${city} ${width} ${theme}: contrast and long-name cards passed`)
       await context.close()

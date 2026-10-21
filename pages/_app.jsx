@@ -94,7 +94,7 @@ const loadKakaoMapSDK = (pathname) => {
   if (window.kakao?.maps) return
   
   // 지도가 필요한 페이지에서만 SDK 로드
-  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip', '/trip-planner', '/traffic', '/bus']
+  const mapPages = ['/map', '/my-trip', '/spot', '/shared-trip', '/trip-planner']
   const needsMap = mapPages.some(page => pathname.startsWith(page))
   if (!needsMap) return
   if (document.querySelector('script[src*="dapi.kakao.com/v2/maps/sdk.js"]')) return

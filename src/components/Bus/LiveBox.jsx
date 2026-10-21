@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import TransitMap from '../common/TransitMap'
 
 // 실시간 값을 주기적으로 불러와 보여 준다. 화면이 숨겨져 있으면 쉬고, 다시 보이면 곧바로 갱신한다.
 export function useLive(url, intervalMs = 20000) {
@@ -50,32 +49,3 @@ export function Arrivals({ stopId }) {
   )
 }
 
-export function RunningBuses({ routeId, stopNames, stops = [] }) {
-  const { data, error, loading } = useLive(`/api/bus-live?route=${routeId}`)
-  return (
-    <>
-      <TransitMap line label="정류장·실시간 버스 위치" points={[
-        ...stops.map((stop) => ({ ...stop, kind: 'stop', detail: `정류장 ${stop.id}` })),
-        ...(error ? [] : data?.buses || []).map((bus) => ({ ...bus, kind: 'bus', name: bus.plate, detail: `${stopNames[bus.stopId] || bus.stopId} 부근 · ${bus.direction === '1' ? '오는 방향' : '가는 방향'}` }))
-      ]} />
-      <p className="bt-note">동그라미는 정류장, 버스 표식은 20초마다 갱신하는 차량 위치입니다. 정류장 사이의 실제 주행 경로는 표시하지 않습니다.</p>
-      {loading && <p className="bt-note">운행 중인 버스를 불러오는 중...</p>}
-      {!loading && !data && <p className="bt-note bt-note--error">버스 위치를 불러오지 못했습니다. 정류장 위치만 표시합니다.</p>}
-      {data && <>
-      <p className="bt-note"><strong>{data.buses.length}대</strong> 운행 중{data.buses.length === 0 ? ' (운행 시간이 아니거나 위치 정보가 없습니다)' : ''}</p>
-      {data.buses.length > 0 && (
-        <ul className="bt-arrivals">
-          {data.buses.map((bus) => (
-            <li key={bus.plate}>
-              <b>{bus.plate.replace(/^대전/, '')}</b>
-              <span>{stopNames[bus.stopId] || bus.stopId} 부근</span>
-              <small>{bus.direction === '1' ? '오는 방향' : '가는 방향'}</small>
-            </li>
-          ))}
-        </ul>
-      )}
-      {error && <p className="bt-note bt-note--error">갱신에 실패해 마지막 정보를 보여 드립니다.</p>}
-      </>}
-    </>
-  )
-}
