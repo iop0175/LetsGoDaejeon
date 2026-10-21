@@ -3,7 +3,9 @@ const SERVICES = {
   themes: '6260000/RecommendedService/getRecommendedKr',
   food: '6260000/FoodService/getFoodKr',
   festivals: '6260000/FestivalService/getFestivalKr',
-  medical: 'B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire'
+  medical: 'B552657/HsptlAsembySearchService/getHsptlMdcncListInfoInqire',
+  // 전국주차장정보표준데이터. 제주처럼 전용 API가 없는 지역이 관리기관명(institution)으로 걸러 쓴다.
+  nationalParking: 'https://api.data.go.kr/openapi/tn_pubr_prkplce_info_api'
 }
 
 const MEDICAL_REGIONS = { busan: '부산광역시', jeju: '제주특별자치도' }
@@ -15,12 +17,17 @@ export async function fetchBusan(request, env) {
   if (request.method !== 'GET') return { status: 405, data: { error: 'Method Not Allowed' } }
   const key = (env.BUSAN_API_KEY || env.DAEJEON_API_KEY || env.KTO_API_KEY || '').trim()
   if (!key) return { status: 503, data: { error: '공공데이터 인증키 설정이 필요합니다.' } }
-  const upstream = new URL(`https://apis.data.go.kr/${SERVICES[resource]}`)
+  const upstream = new URL(SERVICES[resource].startsWith('http') ? SERVICES[resource] : `https://apis.data.go.kr/${SERVICES[resource]}`)
   upstream.searchParams.set('serviceKey', key)
   upstream.searchParams.set('pageNo', String(Math.min(1000, Math.max(1, Number(incoming.searchParams.get('pageNo')) || 1))))
   upstream.searchParams.set('numOfRows', String(Math.min(1000, Math.max(1, Number(incoming.searchParams.get('numOfRows')) || 100))))
   if (resource === 'medical') upstream.searchParams.set('Q0', MEDICAL_REGIONS[incoming.searchParams.get('region')] || MEDICAL_REGIONS.busan)
-  else upstream.searchParams.set('resultType', 'json')
+  else if (resource === 'nationalParking') {
+    const institution = incoming.searchParams.get('institution') || ''
+    if (!/^[가-힣]{2,20}$/.test(institution)) return { status: 400, data: { error: 'institution 값이 필요합니다.' } }
+    upstream.searchParams.set('type', 'json')
+    upstream.searchParams.set('institutionNm', institution)
+  } else upstream.searchParams.set('resultType', 'json')
   try {
     const response = await fetch(upstream, { signal: AbortSignal.timeout(20000) })
     if (!response.ok) return { status: 502, data: { error: `부산 공공데이터 API HTTP ${response.status}` } }
