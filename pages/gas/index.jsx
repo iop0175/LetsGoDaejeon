@@ -94,6 +94,6 @@ export async function getStaticProps() {
     }
   } catch (error) {
     console.error('Gas index error:', error.message)
-    return { props: { updated: '', average: { gasoline: 0, premium: 0, diesel: 0, lpg: 0 }, top: { gasoline: [], diesel: [], lpg: [] }, rows: [] }, revalidate: 300 }
+    return { props: { updated: '', average: { gasoline: 0, premium: 0, diesel: 0, lpg: 0 }, top: { gasoline: [], diesel: [], lpg: [] }, rows: [] }, revalidate: 10 }
   }
 }

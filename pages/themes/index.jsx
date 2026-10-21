@@ -35,6 +35,6 @@ export async function getStaticProps() {
     return { props: { themes, total: spots.length }, revalidate: 86400 }
   } catch (error) {
     console.error('Themes index error:', error.message)
-    return { props: { themes: [], total: 0 }, revalidate: 300 }
+    return { props: { themes: [], total: 0 }, revalidate: 10 }
   }
 }

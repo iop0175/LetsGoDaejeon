@@ -60,6 +60,6 @@ export async function getStaticProps() {
     }
   } catch (error) {
     console.error('EV index error:', error.message)
-    return { props: { total: 0, fastTotal: 0, chargerTotal: 0, areas: [], top: [] }, revalidate: 300 }
+    return { props: { total: 0, fastTotal: 0, chargerTotal: 0, areas: [], top: [] }, revalidate: 10 }
   }
 }
