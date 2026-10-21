@@ -2429,7 +2429,17 @@
 .sdp__quick-btn:focus-visible { outline: 2px solid #2f6fed; outline-offset: 2px; }
 .sdp--dark .sdp__quick-btn { border-color: #2d2d35; background: #1a1a1e; color: #eee; }
 .sdp--dark .sdp__quick-btn--primary { border-color: #de2f5f; background: #de2f5f; color: #fff; }
-.sdp__nearlinks { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin: 10px 0 2px; font-size: 13px; }
-.sdp__nearlinks span { color: #687083; font-weight: 700; }
-.sdp__nearlinks a { max-width: 100%; padding: 5px 10px; overflow: hidden; border-radius: 999px; background: #f2f4f8; color: #222; font-weight: 600; text-decoration: none; text-overflow: ellipsis; white-space: nowrap; }
-.sdp--dark .sdp__nearlinks a { background: #26262d; color: #eee; }
+/* 근처 장소: 사진과 거리가 보이는 목록. 한 번 더 누르게 만드는 것이 목적이라 알약보다 크게 한다 */
+.sdp__nearlinks { display: grid; gap: 8px; margin: 16px 0 4px; font-size: 14px; }
+.sdp__nearlinks > span { color: #1a1a1a; font-size: 15px; font-weight: 800; }
+.sdp__nearlinks a { display: flex; min-width: 0; align-items: center; gap: 12px; padding: 8px 14px 8px 8px; border: 1px solid #e3e7ee; border-radius: 12px; background: #fff; color: #222; text-decoration: none; }
+.sdp__nearlinks a img { flex: none; width: 52px; height: 52px; border-radius: 8px; object-fit: cover; background: #f2f4f8; }
+.sdp__nearlinks a strong { flex: 1; min-width: 0; overflow: hidden; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.sdp__nearlinks a em { flex: none; color: #687083; font-size: 12px; font-style: normal; }
+.sdp__nearlinks a svg { flex: none; color: #9aa3b2; }
+.sdp__nearlinks a:active { background: #f2f4f8; }
+.sdp__nearlinks a:focus-visible { outline: 2px solid #2f6fed; outline-offset: 2px; }
+.sdp--dark .sdp__nearlinks > span { color: #f0f0f5; }
+.sdp--dark .sdp__nearlinks a { border-color: #2d2d35; background: #1a1a1e; color: #eee; }
+.sdp--dark .sdp__nearlinks a img { background: #26262d; }
+.sdp--dark .sdp__nearlinks a:active { background: #26262d; }

@@ -1276,7 +1276,12 @@ const SpotDetailPage = () => {
             <nav className="sdp__nearlinks" aria-label={language === 'ko' ? '근처 장소' : 'Nearby places'}>
               <span>{language === 'ko' ? '근처 가볼 만한 곳' : 'Nearby'}</span>
               {nearLinks.map((related) => (
-                <Link key={related.contentId} href={`/spot/${generateSlug(related.name, related.contentId)}`}>{related.name}</Link>
+                <Link key={related.contentId} href={`/spot/${generateSlug(related.name, related.contentId)}`}>
+                  <Image src={getReliableImageUrl(related.imageUrl)} alt="" width={52} height={52} onError={handleImageError} />
+                  <strong>{related.name}</strong>
+                  {related.distanceText && <em>{related.distanceText}</em>}
+                  <Icons.compass size={16} />
+                </Link>
               ))}
             </nav>
           )}

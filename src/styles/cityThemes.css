@@ -387,3 +387,11 @@ html:not(.dark-theme) .app[data-city] .sdp__license { background: var(--bg-secon
 /* 선택 영역과 폼 컨트롤 색도 도시 색으로 */
 .app[data-city] { accent-color: var(--primary-color); }
 .app[data-city] ::selection { background: var(--city-tint); color: var(--primary-dark); }
+
+/* 장소 상세 근처 링크: 도시 색 포인트 */
+.app[data-city] .sdp__nearlinks a:focus-visible { outline-color: var(--primary-color); }
+.app[data-city] .sdp__nearlinks a svg { color: var(--primary-color); }
+.app[data-city="seoul"] .sdp__nearlinks > span { font-family: var(--city-heading-font); }
+.app[data-city="seoul"] .sdp__nearlinks a { border-radius: 4px; }
+.app[data-city="busan"] .sdp__nearlinks a { border-radius: 18px; }
+.app[data-city="jeju"] .sdp__nearlinks a { border-radius: 20px 6px 20px 6px; }
