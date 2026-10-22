@@ -1,4 +1,4 @@
-// 서버 전용: 국토교통부 TAGO 버스 API(부산·제주). 서울은 TAGO에 없다.
+// 서버 전용: 국토교통부 TAGO로 부산·제주의 좌표 근처 정류장을 찾는다(서울은 TAGO에 없다). 도착 정보는 busLive.js.
 import { nearestStops as nearest } from '../utils/busStops.js'
 
 const BASE = 'https://apis.data.go.kr/1613000'
@@ -24,11 +24,4 @@ export async function nearestStops(point, cityKey, n = 3, maxKm = 0.5) {
     .filter((item) => Number(item.citycode) === cityCode)
     .map((item) => ({ id: item.nodeid, no: item.nodeno ? String(item.nodeno) : '', name: item.nodenm, lat: Number(item.gpslati), lon: Number(item.gpslong), routes: [] }))
   return nearest(stops, point, n, maxKm)
-}
-
-export async function arrivals(cityKey, nodeId) {
-  const items = await call('ArvlInfoInqireService/getSttnAcctoArvlPrearngeInfoList', { cityCode: TAGO_CITY[cityKey], nodeId, numOfRows: 50 })
-  return items
-    .map((item) => ({ routeId: item.routeid, routeNo: String(item.routeno), minutes: Math.round(Number(item.arrtime) / 60), stopsAway: Number(item.arrprevstationcnt) }))
-    .sort((a, b) => a.minutes - b.minutes)
 }

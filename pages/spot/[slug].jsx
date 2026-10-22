@@ -31,9 +31,9 @@ const CATEGORY = {
 
 const BUS_SOURCE = {
   daejeon: '도착 예정 시간은 대전시 버스 정보 시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
-  busan: '도착 예정 시간은 국토교통부 버스 정보 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
-  jeju: '도착 예정 시간은 국토교통부 버스 정보 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
-  seoul: '정류장 위치는 서울시 열린데이터 기준이며 거리는 직선거리입니다. 실시간 도착 정보는 준비 중입니다.'
+  busan: '도착 예정 시간은 부산버스정보시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
+  jeju: '도착 예정 시간은 제주 버스정보시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
+  seoul: '도착 예정 시간은 서울시 버스정보 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.'
 }
 
 const plain = (html, max) => {
@@ -148,7 +148,7 @@ export default function SpotPage({ seoData }) {
               <li key={stop.id}>
                 <header><strong>{stop.name}</strong><small>{stop.no && `정류장 ${stop.no} · `}걸어서 약 {stop.meters}m</small></header>
                 {stop.routes.length > 0 && <div className="bt-nearby__routes">{stop.routes.map((no) => <span key={no}>{no}번</span>)}</div>}
-                {CITY.key !== 'seoul' && <Arrivals stopId={stop.id} />}
+                <Arrivals stopId={stop.id} />
               </li>
             ))}
           </ul>
@@ -271,8 +271,12 @@ export async function getStaticProps({ params, locale }) {
       const point = { lat: Number(row.mapy), lon: Number(row.mapx) }
       try {
         if (CITY.key === 'daejeon') busStops = (await import('../../src/services/busData')).nearestStops(point)
-        else if (CITY.key === 'seoul') busStops = (await import('../../src/services/seoulBus')).nearestStops(point)
-        else busStops = await (await import('../../src/services/tagoBus')).nearestStops(point, CITY.key)
+        else {
+          const stops = CITY.key === 'seoul'
+            ? (await import('../../src/services/seoulBus')).nearestStops(point)
+            : await (await import('../../src/services/tagoBus')).nearestStops(point, CITY.key)
+          busStops = await (await import('../../src/services/busLive')).withRoutes(CITY.key, stops)
+        }
       } catch (err) {
         console.error('Nearby bus stops error:', err.message)
       }

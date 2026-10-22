@@ -4,6 +4,7 @@ import { normalizeArrival, groupArrivals, isSubwayStation } from '../src/utils/s
 import { seaLevel, waterLevel, buildBeachRows, BEACHES } from '../src/utils/beaches.js'
 import { dayMode, pickSlots, seededOrder, SLOTS } from '../src/utils/todayPlan.js'
 import { nearestStops } from '../src/utils/busStops.js'
+import { parseSeoulMessage } from '../src/services/busLive.js'
 
 // 도시별 기능 켜짐
 assert.deepEqual(getCityFeatures('seoul').map((f) => f.id), ['today', 'subway'])
@@ -64,4 +65,8 @@ assert.equal(pickSlots('rainy', [], 'x').every((slot) => slot.spot === null), tr
 const near = nearestStops([{ id: 'far', lat: 36.36, lon: 127.38 }, { id: 'b', lat: 36.3512, lon: 127.38 }, { id: 'a', lat: 36.3501, lon: 127.38 }], { lat: 36.35, lon: 127.38 }, 3, 0.5)
 assert.deepEqual(near.map((s) => [s.id, s.meters]), [['a', 10], ['b', 130]])
 assert.deepEqual(nearestStops([{ id: 'a', lat: 36.35, lon: 127.38 }], { lat: 0, lon: 0 }), [])
+// 서울 도착 문구
+assert.deepEqual(parseSeoulMessage('13분후[3번째 전]'), { minutes: 13, stopsAway: 3 })
+assert.deepEqual(parseSeoulMessage('곧 도착'), { minutes: 0, stopsAway: 0 })
+assert.equal(parseSeoulMessage('운행종료'), null)
 console.log('feature page tests passed')
