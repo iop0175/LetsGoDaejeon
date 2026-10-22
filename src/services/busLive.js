@@ -7,10 +7,11 @@ import { listItems } from '../utils/daejeonTransit.js'
 import SECTIGO_R36 from '../utils/sectigoR36.js'
 
 const KEY = () => process.env.DATA_GO_KR_KEY || ''
-const get = (url, type = 'json') => fetch(url, { signal: AbortSignal.timeout(15000) }).then((response) => {
+// 가끔 연결이 한 번 끊겨서('fetch failed') 한 번만 다시 부른다.
+const get = (url, type = 'json', retry = 1) => fetch(url, { signal: AbortSignal.timeout(15000) }).then((response) => {
   if (!response.ok) throw new Error(`버스 API ${response.status}`)
   return type === 'json' ? response.json() : response.text()
-})
+}).catch((error) => (retry > 0 ? get(url, type, retry - 1) : Promise.reject(error)))
 
 export const STOP_ID = { seoul: /^\d{5}$/, busan: /^BSB\d{5,12}$/, jeju: /^JEB\d{5,12}$/ }
 
@@ -20,7 +21,8 @@ const byNumber = (list) => [...new Set(list.filter(Boolean).map(String))].sort((
 export const parseSeoulMessage = (message = '') => {
   if (message.includes('곧 도착')) return { minutes: 0, stopsAway: 0 }
   const minutes = message.match(/(\d+)분/)?.[1]
-  return minutes ? { minutes: Number(minutes), stopsAway: Number(message.match(/(\d+)번째 전/)?.[1] || 0) } : null
+  const stops = message.match(/(\d+)번째 전/)?.[1]
+  return minutes ? { minutes: Number(minutes), stopsAway: stops ? Number(stops) : null } : null
 }
 
 async function seoulItems(ars) {

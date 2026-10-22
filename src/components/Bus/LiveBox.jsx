@@ -39,7 +39,7 @@ export function Arrivals({ stopId }) {
                 <b>{bus.routeNo}번</b>
                 <span>{bus.destination ? `${bus.destination} 방면` : ''}</span>
                 <strong>{bus.minutes <= 1 ? '곧 도착' : `${bus.minutes}분`}</strong>
-                <small>{bus.stopsAway > 0 ? `${bus.stopsAway}정거장 전` : '진입 중'}</small>
+                <small>{bus.stopsAway > 0 ? `${bus.stopsAway}정거장 전` : bus.stopsAway === 0 && bus.minutes <= 1 ? '진입 중' : ''}</small>
               </li>
             ))}
           </ul>
