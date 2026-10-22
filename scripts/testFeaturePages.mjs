@@ -3,6 +3,7 @@ import { getCityFeatures, hasCityFeature } from '../src/config/cityFeatures.js'
 import { normalizeArrival, groupArrivals, isSubwayStation } from '../src/utils/subway.js'
 import { seaLevel, waterLevel, buildBeachRows, BEACHES } from '../src/utils/beaches.js'
 import { dayMode, pickSlots, seededOrder, SLOTS } from '../src/utils/todayPlan.js'
+import { nearestStops } from '../src/utils/busStops.js'
 
 // 도시별 기능 켜짐
 assert.deepEqual(getCityFeatures('seoul').map((f) => f.id), ['today', 'subway'])
@@ -59,4 +60,8 @@ assert.deepEqual(pickSlots('clear', spots, 'x').map((s) => s.spot.contentId), pi
 assert.notDeepEqual(seededOrder(spots, 'a').map((s) => s.contentId), seededOrder(spots, 'b').map((s) => s.contentId))
 assert.equal(pickSlots('rainy', [], 'x').every((slot) => slot.spot === null), true)
 
+// 근처 버스정류장: 반경 밖은 빼고 가까운 순, 10m 단위
+const near = nearestStops([{ id: 'far', lat: 36.36, lon: 127.38 }, { id: 'b', lat: 36.3512, lon: 127.38 }, { id: 'a', lat: 36.3501, lon: 127.38 }], { lat: 36.35, lon: 127.38 }, 3, 0.5)
+assert.deepEqual(near.map((s) => [s.id, s.meters]), [['a', 10], ['b', 130]])
+assert.deepEqual(nearestStops([{ id: 'a', lat: 36.35, lon: 127.38 }], { lat: 0, lon: 0 }), [])
 console.log('feature page tests passed')

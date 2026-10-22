@@ -29,6 +29,13 @@ const CATEGORY = {
   39: { path: '/food', ko: '맛집', en: 'Restaurant', enPlural: 'Restaurants' }
 }
 
+const BUS_SOURCE = {
+  daejeon: '도착 예정 시간은 대전시 버스 정보 시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
+  busan: '도착 예정 시간은 국토교통부 버스 정보 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
+  jeju: '도착 예정 시간은 국토교통부 버스 정보 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.',
+  seoul: '정류장 위치는 서울시 열린데이터 기준이며 거리는 직선거리입니다. 실시간 도착 정보는 준비 중입니다.'
+}
+
 const plain = (html, max) => {
   const text = cleanIntroHtml(html || '', ' ').replace(/\s+/g, ' ').trim()
   return text.length > max ? `${text.slice(0, max - 1).trim()}…` : text
@@ -129,7 +136,7 @@ export default function SpotPage({ seoData }) {
           <h2>{view.name} 주변 도로 상황</h2>
           <TransitMap traffic label={`${view.name} 주변 실시간 교통`} points={[
             { kind: 'place', name: view.name, lat: seoData.lat, lon: seoData.lng },
-            ...(seoData.busStops || []).map((stop) => ({ ...stop, detail: `정류장 ${stop.id} · 약 ${stop.meters}m` }))
+            ...(seoData.busStops || []).map((stop) => ({ ...stop, detail: `${stop.no ? `정류장 ${stop.no} · ` : ''}약 ${stop.meters}m` }))
           ]} />
         </section>
       )}
@@ -139,13 +146,13 @@ export default function SpotPage({ seoData }) {
           <ul className="bt-stop-cards">
             {seoData.busStops.map((stop) => (
               <li key={stop.id}>
-                <header><strong>{stop.name}</strong><small>정류장 {stop.id} · 걸어서 약 {stop.meters}m</small></header>
+                <header><strong>{stop.name}</strong><small>{stop.no && `정류장 ${stop.no} · `}걸어서 약 {stop.meters}m</small></header>
                 {stop.routes.length > 0 && <div className="bt-nearby__routes">{stop.routes.map((no) => <span key={no}>{no}번</span>)}</div>}
-                <Arrivals stopId={stop.id} />
+                {CITY.key !== 'seoul' && <Arrivals stopId={stop.id} />}
               </li>
             ))}
           </ul>
-          <p className="bt-note">도착 예정 시간은 대전시 버스 정보 시스템 기준이며 20초마다 갱신합니다. 실제와 다를 수 있습니다.</p>
+          <p className="bt-note">{BUS_SOURCE[CITY.key]}</p>
         </section>
       )}
       {seoData.parking?.length > 0 && (
@@ -258,12 +265,14 @@ export async function getStaticProps({ params, locale }) {
 
     const faqItems = parseFaq(row.intro_info)
 
-    // 근처 버스정류장 3곳(대전만). 목록 파일이 없거나 좌표가 없으면 건너뛴다.
+    // 근처 버스정류장 3곳. 대전·서울은 저장한 정류장 목록, 부산·제주는 TAGO API. 실패하거나 좌표가 없으면 건너뛴다.
     let busStops = []
-    if (CITY.key === 'daejeon' && contentTypeId !== 15) {
+    if (contentTypeId !== 15) {
+      const point = { lat: Number(row.mapy), lon: Number(row.mapx) }
       try {
-        const { nearestStops } = await import('../../src/services/busData')
-        busStops = nearestStops({ lat: Number(row.mapy), lon: Number(row.mapx) }, 3, 0.5)
+        if (CITY.key === 'daejeon') busStops = (await import('../../src/services/busData')).nearestStops(point)
+        else if (CITY.key === 'seoul') busStops = (await import('../../src/services/seoulBus')).nearestStops(point)
+        else busStops = await (await import('../../src/services/tagoBus')).nearestStops(point, CITY.key)
       } catch (err) {
         console.error('Nearby bus stops error:', err.message)
       }

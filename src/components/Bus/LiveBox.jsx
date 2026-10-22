@@ -35,9 +35,9 @@ export function Arrivals({ stopId }) {
         : (
           <ul className="bt-arrivals">
             {data.arrivals.map((bus) => (
-              <li key={`${bus.routeId}-${bus.plate}`}>
+              <li key={`${bus.routeId}-${bus.plate || bus.minutes}`}>
                 <b>{bus.routeNo}번</b>
-                <span>{bus.destination} 방면</span>
+                <span>{bus.destination ? `${bus.destination} 방면` : ''}</span>
                 <strong>{bus.minutes <= 1 ? '곧 도착' : `${bus.minutes}분`}</strong>
                 <small>{bus.stopsAway > 0 ? `${bus.stopsAway}정거장 전` : '진입 중'}</small>
               </li>
